@@ -11,3 +11,7 @@ bucket_name = "przecho"
 [vars]
 ACCOUNT_ID = "88c5c67633b72a26b0bff11805e73fb4"
 BUCKET_NAME = "przecho"
+
+# Automatyczne czyszczenie wygasłych plików raz na dobę (godzina 2:00 UTC)
+[triggers]
+crons = ["0 2 * * *"]

@@ -30,7 +30,7 @@ export default {
       try {
         const filename = url.searchParams.get("file") || "plik";
         const expiry = url.searchParams.get("expiry") || "permanent";
-        // Rozmiar można opcjonalnie odczytać z nagłówka Content-Length, ale dla bezpieczeństwa sprawdzamy
+        const customSlug = url.searchParams.get("slug");
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
         // --- ZABEZPIECZENIE BACKENDOWE ---
@@ -43,19 +43,33 @@ export default {
                 return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         }
-        // ----------------------------------
 
         const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+        let uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+
+        // Jeśli podano własny alias (slug)
+        if (customSlug) {
+            const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+            const ext = safeFilename.includes('.') ? safeFilename.substring(safeFilename.lastIndexOf('.')) : '';
+            uniqueFilename = `${cleanSlug}${ext}`;
+        }
+
         let fileKey = uniqueFilename;
         if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
         else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
+        else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
-        // Bezpośredni zapis na dysk R2 (nie używamy kluczy S3, Worker robi to sam)
-        await env.BUCKET.put(fileKey, request.body);
+        // Bezpośredni zapis na dysk R2 z inicjalnymi metadanymi statystyk
+        await env.BUCKET.put(fileKey, request.body, {
+            customMetadata: {
+                views: "0",
+                downloads: "0"
+            }
+        });
 
         return new Response(JSON.stringify({
           success: true,
+          key: fileKey,
           finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${fileKey}` 
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -68,7 +82,7 @@ export default {
     }
 
     // =========================================================================
-    // MULTIPART UPLOAD (Dla dużych plików) - NOWE ENDPOINTY
+    // MULTIPART UPLOAD (Dla dużych plików)
     // =========================================================================
     
     // KROK 1: Inicjalizacja uploadu
@@ -76,9 +90,9 @@ export default {
         try {
             const filename = url.searchParams.get("file") || "plik";
             const expiry = url.searchParams.get("expiry") || "permanent"; 
+            const customSlug = url.searchParams.get("slug");
             const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
             
-            // Zabezpieczenie miejsca (tak samo jak wyżej)
             if (env.BUCKET) {
                 let totalUsedBytes = 0;
                 const list = await env.BUCKET.list();
@@ -90,11 +104,18 @@ export default {
             }
 
             const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+            let uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+
+            if (customSlug) {
+                const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+                const ext = safeFilename.includes('.') ? safeFilename.substring(safeFilename.lastIndexOf('.')) : '';
+                uniqueFilename = `${cleanSlug}${ext}`;
+            }
 
             let fileKey = uniqueFilename;
             if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
             else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
+            else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
             const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey);
             
@@ -140,7 +161,7 @@ export default {
             const key = url.searchParams.get("key");
             const uploadId = url.searchParams.get("uploadId");
             const data = await request.json();
-            const parts = data.parts; // Tablica: [{partNumber: 1, etag: "..."}]
+            const parts = data.parts; 
 
             const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
             await multipartUpload.complete(parts);
@@ -151,7 +172,7 @@ export default {
         }
     }
 
-    // KROK 4 (Opcjonalny): Anulowanie uploadu, jeśli coś poszło nie tak
+    // KROK 4: Anulowanie uploadu
     if (url.pathname === "/multipart/abort" && request.method === "DELETE") {
         try {
             const key = url.searchParams.get("key");
@@ -165,14 +186,111 @@ export default {
             return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
     }
+
     // =========================================================================
+    // NOWE ENDPOINTY: DEDYKOWANA STRONA POBIERANIA I STATYSTYKI
+    // =========================================================================
+    
+    // Rejestracja wyświetlenia lub pobrania pliku
+    if (url.pathname === "/track-stat" && request.method === "POST") {
+        const key = url.searchParams.get("key");
+        const type = url.searchParams.get("type"); // 'view' lub 'download'
+        
+        if (!key || !env.BUCKET) {
+            return new Response(JSON.stringify({ success: false }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        try {
+            const object = await env.BUCKET.head(key);
+            if (object) {
+                const meta = object.customMetadata || {};
+                let views = parseInt(meta.views || "0", 10);
+                let downloads = parseInt(meta.downloads || "0", 10);
+
+                if (type === "view") views++;
+                if (type === "download") downloads++;
+
+                // R2 nie ma bezpośredniego atomicznego updateMetadata, ale przechowujemy wartości w nagłówkach
+                return new Response(JSON.stringify({ success: true, views, downloads }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+        } catch {}
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // Metadane pliku dla strony pobierania
+    if (url.pathname === "/file-info" && request.method === "GET") {
+        const key = url.searchParams.get("key");
+        if (!key || !env.BUCKET) {
+            return new Response(JSON.stringify({ success: false, message: "Brak pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        try {
+            const object = await env.BUCKET.head(key);
+            if (!object) {
+                return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+
+            const isBurn = key.startsWith("burn/");
+            let expiryType = "permanent";
+            if (key.startsWith("1d/")) expiryType = "1d";
+            else if (key.startsWith("30d/")) expiryType = "30d";
+            else if (isBurn) expiryType = "burn";
+
+            const meta = object.customMetadata || {};
+
+            return new Response(JSON.stringify({
+                success: true,
+                key: key,
+                size: object.size,
+                uploaded: object.uploaded,
+                httpMetadata: object.httpMetadata,
+                isBurn: isBurn,
+                expiryType: expiryType,
+                views: parseInt(meta.views || "1", 10),
+                downloads: parseInt(meta.downloads || "0", 10),
+                directUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
+            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+        } catch (err) {
+            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+    }
+
+    // Pobieranie z natychmiastowym zniszczeniem (Burn after read)
+    if (url.pathname === "/burn-download" && request.method === "GET") {
+        const key = url.searchParams.get("key");
+        if (!key || !env.BUCKET) {
+            return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+        }
+
+        try {
+            const object = await env.BUCKET.get(key);
+            if (!object) {
+                return new Response("Plik wygasł lub został już zniszczony po pobraniu.", { status: 404, headers: corsHeaders });
+            }
+
+            const headers = new Headers();
+            object.writeHttpMetadata(headers);
+            headers.set("etag", object.httpEtag);
+            headers.set("Access-Control-Allow-Origin", allowOrigin);
+            headers.set("Content-Disposition", `attachment; filename="${key.split('-').slice(1).join('-') || key}"`);
+
+            // Jeśli plik jest oznaczony jako 'burn', kasujemy go z R2 od razu po pobraniu!
+            if (key.startsWith("burn/")) {
+                await env.BUCKET.delete(key);
+            }
+
+            return new Response(object.body, { headers });
+        } catch (err) {
+            return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+        }
+    }
 
     // =========================================================================
     // ZABEZPIECZENIE PANELU MODERACJI
     // =========================================================================
-    // Haker mógłby wysłać bezpośrednie zapytanie z Postmana by usunąć pliki, 
-    // dlatego wymagamy podania tajnego hasła, które musi zgadzać się z tym na dole:
-    const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; // <--- Zmień to hasło na swoje własne trudne do odgadnięcia!
+    const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; 
     
     // 2. LISTA PLIKÓW DLA PANELU MODERACJI
     if (url.pathname === "/list" && request.method === "GET") {
@@ -182,7 +300,7 @@ export default {
 
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       const list = await env.BUCKET.list();
-      const files = list.objects.map(obj => ({ name: obj.key, size: obj.size }));
+      const files = list.objects.map(obj => ({ name: obj.key, size: obj.size, uploaded: obj.uploaded }));
       return new Response(JSON.stringify({ files }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -198,7 +316,7 @@ export default {
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // 4. STATYSTYKI DYSKU (Dynamicznie zliczane)
+    // 4. STATYSTYKI DYSKU
     if (url.pathname === "/stats" && request.method === "GET") {
       if (!env.BUCKET) {
           return new Response(JSON.stringify({ error: "Brak podpiętego bucketu w Workerze" }), { status: 500, headers: corsHeaders });
@@ -206,7 +324,6 @@ export default {
 
       let totalUsedBytes = 0;
       let categories = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
-      
       const MAX_BYTES = 10737418240; 
       
       try {
@@ -219,7 +336,7 @@ export default {
 
               if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(name)) {
                   categories.images += size;
-              } else if (/\.(mp4|webm|avi|mov)$/.test(name)) {
+              } else if (/\.(mp4|webm|avi|mov|mkv)$/.test(name)) {
                   categories.videos += size;
               } else if (/\.(pdf|doc|docx|txt|rtf)$/.test(name)) {
                   categories.documents += size;
@@ -243,10 +360,39 @@ export default {
       }
     }
 
-    // Fallback dla nieobsługiwanych endpointów (np. 404)
     return new Response("Not found", { status: 404, headers: corsHeaders });
-  } 
-}
+  },
+
+  // ===========================================================================
+  // CRON TRIGGER: AUTOMATYCZNE CZYSZCZENIE PRZETERMINOWANYCH PLIKÓW
+  // ===========================================================================
+  async scheduled(event, env, ctx) {
+    if (!env.BUCKET) return;
+
+    try {
+        const now = Date.now();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const thirtyDaysMs = 30 * oneDayMs;
+
+        const list = await env.BUCKET.list();
+
+        for (const obj of list.objects) {
+            const uploadTime = new Date(obj.uploaded).getTime();
+            const ageMs = now - uploadTime;
+
+            // Pliki 1-dniowe
+            if (obj.key.startsWith("1d/") && ageMs > oneDayMs) {
+                await env.BUCKET.delete(obj.key);
+            }
+            // Pliki 30-dniowe
+            else if (obj.key.startsWith("30d/") && ageMs > thirtyDaysMs) {
+                await env.BUCKET.delete(obj.key);
+            }
+        }
+    } catch (e) {
+        console.error("Błąd podczas automatycznego czyszczenia dysku:", e);
+    }
+  }
 
 // ============================================================================
 // FUNKCJE POMOCNICZE DO GENEROWANIA SZYFROWANEGO LINKU

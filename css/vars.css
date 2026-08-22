@@ -61,6 +61,14 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Na mniejszych ekranach lub niższych wysokościach okna pozwalamy treści płynnie przewijać się od góry */
+@media (max-width: 1200px), (max-height: 820px) {
+    body {
+        justify-content: flex-start;
+        padding: 95px 16px 80px;
+    }
+}
+
 /* --- Aurora Background (Glassmorphism) --- */
 body::before, body::after {
     content: '';

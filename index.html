@@ -13,16 +13,19 @@
 
 <body>
 
+<!-- Canvas z interaktywnym tłem cząsteczek -->
+<canvas id="bgCanvas" class="bg-canvas"></canvas>
+
 <!-- Cinematic Drag & Drop Overlay -->
 <div id="globalDragOverlay" class="global-drag-overlay">
     <div class="drag-content">
         <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="drag-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <h2>Upuść plik tutaj</h2>
+        <h2>Upuść plik tutaj (lub wklej Ctrl+V)</h2>
         <p>Rozpocznie się błyskawiczne wgrywanie</p>
     </div>
 </div>
 
-<a href="#" class="nav-logo">
+<a href="#" class="nav-logo" onclick="document.querySelector('[data-target=\'view-glowna\']').click(); return false;">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="17 8 12 3 7 8"></polyline>
@@ -37,7 +40,17 @@
     <li><a href="#" class="nav-btn" data-target="view-funkcje">Funkcje</a></li>
     <li><a href="#" class="nav-btn" data-target="view-cennik">Cennik</a></li>
     <li><a href="#" class="nav-btn" data-target="view-kontakt">Kontakt</a></li>
-</ul>
+</ul>    <div class="nav-action-group">
+        <button id="soundToggleBtn" class="btn-nav-glass sound-btn" title="Dźwięki interfejsu (Włącz/Wyłącz)">
+            <svg id="soundIconOn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="soundIconOff" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+        </button>
+        
+        <button id="openHistoryBtn" class="btn-nav-glass history-btn" title="Historia Twoich wgranych plików">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Historia</span>
+        </button>
+    </div>
 </div>
 
 <div id="app-views">
@@ -81,14 +94,14 @@
             <div class="upload-container" id="uploadBox">
                 <header class="upload-header">
                     <h1>Dropsite</h1>
-                    <p>Wybierz czas przechowywania i prześlij swój plik</p>
+                    <p>Wybierz pliki/folder lub wklej ze schowka (Ctrl + V)</p>
                 </header>
 
                 <div class="dropzone" id="dropzone">
                     <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     
-                    <div class="drop-text">Wybierz plik lub przeciągnij i upuść tutaj</div>
-                    <div class="drop-subtext">Wszystkie formaty</div>
+                    <div class="drop-text">Wybierz pliki lub upuść tutaj</div>
+                    <div class="drop-subtext">Obsługa folderów • Ctrl+V • Wszystkie formaty</div>
                     
                     <button class="btn-select" onclick="document.getElementById('fileInput').click()">Wybierz pliki</button>
                     <input type="file" id="fileInput" aria-label="Wybierz pliki do wgrania" multiple>
@@ -112,7 +125,48 @@
                     </div>
                 </div>
 
-                <div class="options-container" aria-label="Wybór czasu przechowywania">
+                <!-- PANEL KOMPRESJI GRAFIKI (PREMIUM GLASS) -->
+                <div id="imageCompressPanel" class="compress-panel" hidden>
+                    <div class="compress-header">
+                        <label class="custom-switch-label" for="compressToggleCheckbox">
+                            <div class="custom-switch">
+                                <input type="checkbox" id="compressToggleCheckbox" checked>
+                                <span class="switch-slider"></span>
+                            </div>
+                            <span class="switch-text">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                                Optymalizuj wagę zdjęcia
+                            </span>
+                        </label>
+                        <span id="compressQualityLabel" class="compress-badge">Jakość: 80%</span>
+                    </div>
+                    <div class="compress-slider-wrap">
+                        <div class="slider-container">
+                            <input type="range" id="compressQualitySlider" min="30" max="95" value="80" step="5" class="dropsite-slider" aria-label="Suwak jakości kompresji">
+                        </div>
+                        <div class="compress-presets">
+                            <button type="button" class="btn-preset" data-q="50">Mocna (50%)</button>
+                            <button type="button" class="btn-preset active" data-q="80">Zbalansowana (80%)</button>
+                            <button type="button" class="btn-preset" data-q="92">Wysoka (92%)</button>
+                        </div>
+                    </div>
+                    <div class="compress-footer">
+                        <span class="compress-info-label">Szacowana waga po kompresji:</span>
+                        <strong id="estCompressedSize" class="compress-savings-val">--</strong>
+                    </div>
+                </div>
+
+                <!-- OPCJONALNA WŁASNA NAZWA LINKU -->
+                <div class="custom-slug-wrap">
+                    <div class="slug-toggle-header" id="slugToggleBtn">
+                        <span>🔤 Własny alias linku (opcjonalnie) <span id="slugArrow" style="font-size: 10px;">▼</span></span>
+                    </div>
+                    <div id="customSlugBox" class="slug-input-box" hidden>
+                        <input type="text" id="customSlugInput" placeholder="np. moj-projekt-klient" class="dropsite-input" maxlength="40" style="padding: 10px 14px; font-size: 13px;">
+                    </div>
+                </div>
+
+                <div class="options-container" aria-label="Wybór czasu przechowywania" style="margin-top: 15px;">
                     <p class="options-label">Czas przechowywania:</p>
                     <div class="options-radios">
                         <label class="option-item">
@@ -125,7 +179,11 @@
                         </label>
                         <label class="option-item">
                             <input type="radio" name="duration" value="permanent">
-                            <span>Bez ustanku</span>
+                            <span>Bezterminowo</span>
+                        </label>
+                        <label class="option-item burn-option" title="Plik zostanie skasowany z serwera po pierwszym pobraniu">
+                            <input type="radio" name="duration" value="burn">
+                            <span style="color: #FF4439;">💥 1x Pobranie</span>
                         </label>
                     </div>
                 </div>
@@ -139,7 +197,7 @@
 
                 <div id="successFlow" class="success-flow" hidden>
                     <div class="success-header">
-                        <h3>Plik przesłany</h3>
+                        <h3>Plik przesłany pomyślnie! 🎉</h3>
                     </div>
                     
                     <div class="success-link-box">
@@ -148,16 +206,16 @@
 
                     <div class="success-actions">
                         <button class="btn-secondary" onclick="copyToClipboard()">
-                            <span class="btn-icon"></span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             Kopiuj link
                         </button>
-                        <button class="btn-secondary" onclick="shareLink()">
-                            <span class="btn-icon"></span>
-                            Udostępnij
+                        <button class="btn-secondary" onclick="openQrModal()" id="showQrBtn" title="Pokaż kod QR do skanowania telefonem">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            Kod QR
                         </button>
-                        <button class="btn-secondary" onclick="resetUpload()">
-                            <span class="btn-icon"></span>
-                            Wgraj nowy
+                        <button class="btn-secondary" onclick="shareLink()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            Udostępnij
                         </button>
                     </div>
                     <div class="success-tips">
@@ -232,12 +290,48 @@
             <div class="upload-container info-panel">
                 <header class="upload-header">
                     <h1>Kontakt</h1>
-                    <p>Masz pytania?  Chcesz zgłosić plik?</p>
+                    <p>Masz pytania? Chcesz zgłosić plik?</p>
                 </header>
                 <div class="contact-box">
                     <p>Skontaktuj się z administracją serwisu poprzez e-mail:</p>
                     <a href="mailto:kontakt@dropsite.pl" class="clickable-link">kontakt@dropsite.pl</a>
                     <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted);">Zgłoszenia dotyczące naruszeń regulaminu (DMCA) rozpatrujemy w ciągu 24 godzin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEDYTKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE) -->
+    <div id="view-download" class="view-section" hidden>
+        <div class="main-wrapper">
+            <div class="upload-container download-card">
+                <header class="upload-header" style="text-align: center;">
+                    <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
+                    <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;">Pobieranie pliku...</h1>
+                    <p id="dlFileSize" class="dl-subtitle" style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Ładowanie informacji o pliku...</p>
+                    <div id="dlStatsCounter" class="dl-stats-counter" style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted);">
+                        👁️ <span id="dlViewCount">1</span> wyświetleń • 📥 <span id="dlDownloadCount">0</span> pobrań
+                    </div>
+                </header>
+
+                <div id="dlPreviewContainer" class="dl-preview-container">
+                    <!-- Podgląd wideo/obrazu/ikona generowany przez app.js -->
+                </div>
+
+                <div id="dlBurnWarning" class="burn-warning-box" hidden>
+                    ⚠️ <strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!
+                </div>
+
+                <div class="dl-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+                    <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large" style="text-decoration: none; justify-content: center; padding: 16px; font-size: 16px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span class="btn-text">Pobierz plik</span>
+                        <div class="btn-ripple"></div>
+                    </a>
+                    
+                    <button class="btn-secondary" onclick="document.querySelector('[data-target=\'view-glowna\']').click()" style="width: 100%; justify-content: center; padding: 12px;">
+                        Prześlij własny plik na Dropsite 🚀
+                    </button>
                 </div>
             </div>
         </div>
@@ -279,17 +373,93 @@
 <div id="modModal" class="mod-modal" hidden>
     <div class="mod-container">
         <div class="mod-header">
-            <h2>Panel Administratora</h2>
-            <button id="closeModBtn" class="mod-close">&times;</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <svg width="22" height="22" viewBox="0 0 31 31" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z"></path>
+                    <path d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674"></path>
+                </svg>
+                <h2>Panel Administratora</h2>
+            </div>
+            <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">&times;</button>
+        </div>
+
+        <!-- Mini-statystyki u góry -->
+        <div class="mod-stats-grid">
+            <div class="mod-stat-card">
+                <span class="mod-stat-label">Wszystkie pliki</span>
+                <span class="mod-stat-value" id="modTotalFiles">0</span>
+            </div>
+            <div class="mod-stat-card">
+                <span class="mod-stat-label">Zajęte miejsce</span>
+                <span class="mod-stat-value" id="modTotalSize">0 B</span>
+            </div>
+            <div class="mod-stat-card">
+                <span class="mod-stat-label">Struktura</span>
+                <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0 zdjęć</span>
+            </div>
+        </div>
+
+        <!-- Pasek narzędzi (Szukajka + Sortowanie + Odśwież) -->
+        <div class="mod-toolbar">
+            <div class="mod-search-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mod-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="modSearchInput" placeholder="Szukaj pliku po nazwie..." class="mod-search-input">
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="modSortSelect" class="mod-select" aria-label="Sortowanie plików">
+                    <option value="newest">Najnowsze</option>
+                    <option value="size-desc">Rozmiar: od największych</option>
+                    <option value="size-asc">Rozmiar: od najmniejszych</option>
+                    <option value="name-asc">Nazwa: A-Z</option>
+                </select>
+                <button id="refreshModBtn" class="btn-select" style="margin: 0; padding: 10px 14px;">Odśwież</button>
+            </div>
+        </div>
+
+        <!-- Filtry kategorii (Pill buttons) -->
+        <div class="mod-filter-pills" id="modFilterPills">
+            <button class="mod-pill active" data-filter="all">Wszystkie <span id="count-all">0</span></button>
+            <button class="mod-pill" data-filter="video">🎬 Wideo <span id="count-video">0</span></button>
+            <button class="mod-pill" data-filter="image">🖼️ Zdjęcia <span id="count-image">0</span></button>
+            <button class="mod-pill" data-filter="doc">📄 Dokumenty <span id="count-doc">0</span></button>
+            <button class="mod-pill" data-filter="archive">📦 Archiwa <span id="count-archive">0</span></button>
         </div>
 
         <div id="modFilesScreen">
-            <div class="mod-files-header">
-                <span>Wgrane pliki</span>
-                <button id="refreshModBtn" class="btn-select" style="margin: 0;">Odśwież</button>
-            </div>
             <ul id="modFileList" class="mod-file-list"></ul>
         </div>
+    </div>
+</div>
+
+<!-- MODAL HISTORII PLIKÓW DLA UŻYTKOWNIKA -->
+<div id="historyModalWrap" class="mod-modal" hidden>
+    <div class="mod-container" style="max-width: 620px;">
+        <div class="mod-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <h2>Twoja historia plików</h2>
+            </div>
+            <button id="closeHistoryModal" class="mod-close">&times;</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Pliki przesłane z Twojej przeglądarki (zapisane w pamięci urządzenia):</p>
+        <ul id="userHistoryList" class="mod-file-list" style="max-height: 380px;"></ul>
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+            <button id="clearHistoryBtn" class="btn-secondary" style="font-size: 12px; padding: 8px 16px;">Wyczyść historię</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL KODU QR -->
+<div id="qrModalWrap" class="mod-modal" hidden>
+    <div class="mod-container qr-modal-container" style="max-width: 380px; text-align: center; align-items: center;">
+        <div class="mod-header" style="width: 100%;">
+            <h2 style="font-size: 18px;">Kod QR do pobrania</h2>
+            <button id="closeQrModal" class="mod-close">&times;</button>
+        </div>
+        <div class="qr-box-wrap" style="background: white; padding: 16px; border-radius: 12px; display: inline-flex; margin: 10px 0;">
+            <canvas id="qrCanvas"></canvas>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 10px;">Zeskanuj aparatem w telefonie, aby błyskawicznie otworzyć i pobrać plik!</p>
     </div>
 </div>
 
@@ -304,7 +474,6 @@
 
 <div id="loginModalWrap" class="mod-modal" hidden>
     <div class="mod-container" style="max-width: 400px; padding: 40px;">
-        
         <div class="mod-header" style="justify-content: center; position: relative; margin-bottom: 30px;">
             <h2 style="font-size: 24px; font-weight: 700; color: var(--text-main);">Panel Logowania</h2>
             <button id="closeLoginModal" class="mod-close" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);">&times;</button>
@@ -321,12 +490,12 @@
             
             <p id="loginError" style="color: #FF4439; font-size: 13px; text-align: center; margin: 0; min-height: 18px; font-weight: 600;"></p>
         </div>
-
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="app.js"></script>

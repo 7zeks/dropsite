@@ -303,7 +303,7 @@ input[type='file'] {
 .option-item span {
     display: block;
     text-align: center;
-    padding: 10px 0;
+    padding: 10px 4px;
     font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
@@ -320,6 +320,13 @@ input[type='file'] {
 .option-item:hover input:not(:checked) + span {
     color: var(--text-main);
     background: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 600px) {
+    .options-radios {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* --- Główny Przycisk --- */
