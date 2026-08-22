@@ -5,11 +5,13 @@ export default {
 
     const allowedOrigins = [
       "https://7zeks.github.io",
+      "https://dropsite-umber.vercel.app",
       "http://127.0.0.1:5500",
       "http://localhost:5500"
     ];
 
-    const allowOrigin = allowedOrigins.includes(origin) ? origin : "https://7zeks.github.io";
+    const isVercel = origin && origin.endsWith(".vercel.app");
+    const allowOrigin = allowedOrigins.includes(origin) || isVercel ? origin : "https://7zeks.github.io";
 
     // Nagłówki CORS dla Twojego API
     const corsHeaders = {
