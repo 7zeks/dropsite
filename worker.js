@@ -25,54 +25,37 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 1. GENEROWANIE LINKU DO UPLOADU (Tradycyjny upload dla małych plików)
-    if (url.pathname === "/get-upload-url" && request.method === "GET") {
+    // 1. BEZPOŚREDNI UPLOAD DLA MAŁYCH PLIKÓW (Bez presigned URLs i kluczy)
+    if (url.pathname === "/upload-small" && request.method === "PUT") {
       try {
         const filename = url.searchParams.get("file") || "plik";
-        const expiry = url.searchParams.get("expiry") || "permanent"; 
-        const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
-
+        const expiry = url.searchParams.get("expiry") || "permanent";
+        // Rozmiar można opcjonalnie odczytać z nagłówka Content-Length, ale dla bezpieczeństwa sprawdzamy
+        const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
+        
         // --- ZABEZPIECZENIE BACKENDOWE ---
         if (env.BUCKET) {
             let totalUsedBytes = 0;
             const list = await env.BUCKET.list();
             list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-            
             const MAX_BYTES = 10737418240; // 10 GB
-            
             if (totalUsedBytes + fileSize > MAX_BYTES) {
-                return new Response(JSON.stringify({ 
-                    success: false, 
-                    message: "Odmowa: Brak miejsca na dysku. Przekroczono limit 10 GB." 
-                }), { 
-                    status: 403, 
-                    headers: { "Content-Type": "application/json", ...corsHeaders } 
-                });
+                return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         }
         // ----------------------------------
 
         const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
         const uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
-
         let fileKey = uniqueFilename;
-        if (expiry === '1d') {
-            fileKey = `1d/${uniqueFilename}`;
-        } else if (expiry === '30d') {
-            fileKey = `30d/${uniqueFilename}`;
-        }
+        if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
+        else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
 
-        const signedUrl = await createPresignedUrl(
-            env.ACCOUNT_ID,
-            env.R2_ACCESS_KEY_ID,
-            env.R2_SECRET_ACCESS_KEY,
-            env.BUCKET_NAME,
-            fileKey 
-        );
+        // Bezpośredni zapis na dysk R2 (nie używamy kluczy S3, Worker robi to sam)
+        await env.BUCKET.put(fileKey, request.body);
 
         return new Response(JSON.stringify({
           success: true,
-          uploadUrl: signedUrl,
           finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${fileKey}` 
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }

@@ -257,11 +257,8 @@ async function uploadFile() {
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
 async function uploadFileStandard(file, duration, btnTextSpan) {
-    const urlReq = `${WORKER_URL}/get-upload-url?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type || 'application/octet-stream')}&expiry=${duration}&size=${file.size}`;
-    const response = await fetch(urlReq);
-    const data = await response.json();
-
-    if (!data.success) throw new Error(data.message || "Błąd generowania linku");
+    const urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(file.name)}&expiry=${duration}`;
+    
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie...';
 
     const xhr = new XMLHttpRequest();
@@ -275,7 +272,12 @@ async function uploadFileStandard(file, duration, btnTextSpan) {
 
     xhr.addEventListener("load", () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-            showSuccessScreen(data.finalUrl);
+            const data = JSON.parse(xhr.responseText);
+            if (data.success) {
+                showSuccessScreen(data.finalUrl);
+            } else {
+                showError(data.message || 'Błąd serwera.');
+            }
         } else {
             showError('Błąd podczas zapisu na dysku: ' + xhr.status);
         }
@@ -283,7 +285,8 @@ async function uploadFileStandard(file, duration, btnTextSpan) {
     xhr.addEventListener("error", () => showError('Błąd połączenia podczas wgrywania.'));
     xhr.addEventListener("abort", () => showError('Wgrywanie przerwane.'));
 
-    xhr.open("PUT", data.uploadUrl, true);
+    xhr.open("PUT", urlReq, true);
+    // Cloudflare potrzebuje Content-Length, ale przeglądarka dodaje go sama dla FormData/Blob
     xhr.setRequestHeader("Content-Type", file.type || 'application/octet-stream');
     xhr.send(file);
 }
