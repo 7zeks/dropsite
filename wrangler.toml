@@ -9,5 +9,5 @@ bucket_name = "przecho"
 
 # Zmienne środowiskowe, które Cloudflare musi znać
 [vars]
-ACCOUNT_ID = "TUTAJ_WKLEJ_SWOJE_ACCOUNT_ID"
+ACCOUNT_ID = "88c5c67633b72a26b0bff11805e73fb4"
 BUCKET_NAME = "przecho"
