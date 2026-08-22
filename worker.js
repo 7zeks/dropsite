@@ -15,7 +15,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": allowOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret",
     };
 
     // Obsługa preflight request
@@ -182,8 +182,19 @@ export default {
     }
     // =========================================================================
 
+    // =========================================================================
+    // ZABEZPIECZENIE PANELU MODERACJI
+    // =========================================================================
+    // Haker mógłby wysłać bezpośrednie zapytanie z Postmana by usunąć pliki, 
+    // dlatego wymagamy podania tajnego hasła, które musi zgadzać się z tym na dole:
+    const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; // <--- Zmień to hasło na swoje własne trudne do odgadnięcia!
+    
     // 2. LISTA PLIKÓW DLA PANELU MODERACJI
     if (url.pathname === "/list" && request.method === "GET") {
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       const list = await env.BUCKET.list();
       const files = list.objects.map(obj => ({ name: obj.key, size: obj.size }));
@@ -192,6 +203,10 @@ export default {
 
     // 3. USUWANIE PLIKÓW Z PANELU MODERACJI
     if (url.pathname.startsWith("/delete/") && request.method === "DELETE") {
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
       if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
       const key = decodeURIComponent(url.pathname.split("/delete/")[1]);
       await env.BUCKET.delete(key);

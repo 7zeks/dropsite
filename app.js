@@ -483,14 +483,36 @@ refreshModBtn.addEventListener('click', fetchModFiles);
 
 async function fetchModFiles() {
     refreshModBtn.innerText = 'Ładowanie...';
+    
+    // Zabezpieczenie backendu: Pobieramy klucz API od administratora
+    let apiSecret = localStorage.getItem('apiSecret');
+    if (!apiSecret) {
+        apiSecret = prompt("Zabezpieczenie serwera: Podaj klucz API do zarządzania plikami (np. 1234):");
+        if (!apiSecret) {
+            refreshModBtn.innerText = 'Odśwież';
+            return;
+        }
+        localStorage.setItem('apiSecret', apiSecret);
+    }
+
     try {
-        const response = await fetch(`${WORKER_URL}/list`);
+        const response = await fetch(`${WORKER_URL}/list`, {
+            headers: {
+                'X-Admin-Secret': apiSecret
+            }
+        });
+        
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('apiSecret');
+            throw new Error('Nieprawidłowy klucz API! Odmowa dostępu.');
+        }
+        
         if (!response.ok) throw new Error('Błąd serwera');
         
         const data = await response.json();
         renderModFiles(data.files);
     } catch (e) {
-        alert('Błąd pobierania listy plików.');
+        alert(e.message);
     } finally {
         refreshModBtn.innerText = 'Odśwież';
     }
@@ -537,15 +559,31 @@ function renderModFiles(files) {
 }
 
 window.deleteModFile = async function(filename) {
+    let apiSecret = localStorage.getItem('apiSecret');
+    if (!apiSecret) {
+        alert("Brak klucza API! Odśwież listę plików, aby się zalogować.");
+        return;
+    }
+
     try {
-        const response = await fetch(`${WORKER_URL}/delete/${filename}`, { method: 'DELETE' });
+        const response = await fetch(`${WORKER_URL}/delete/${filename}`, { 
+            method: 'DELETE',
+            headers: {
+                'X-Admin-Secret': apiSecret
+            }
+        });
+        
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('apiSecret');
+            alert('Nieprawidłowy klucz API! Odmowa dostępu.');
+            return;
+        }
+
         if (response.ok) {
             fetchModFiles(); 
             fetchDiskStats(); 
         }
-        // Brak alertu - jak coś pójdzie nie tak, po prostu zignoruje
     } catch (e) {
-        // Zostawiamy tylko cichy log w konsoli dla Ciebie, żeby strona nie wywalała okienek
         console.error('Błąd połączenia z serwerem:', e);
     }
 };

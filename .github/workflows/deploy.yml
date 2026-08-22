@@ -1,0 +1,24 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'worker.js'       # Workflow uruchomi się tylko wtedy, gdy zmienisz plik worker.js
+      - 'wrangler.toml'   # ...lub zmienisz plik z ustawieniami wranglera
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare
+    steps:
+      - name: Pobieranie kodu
+        uses: actions/checkout@v4
+      
+      - name: Wgrywanie na serwery Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
