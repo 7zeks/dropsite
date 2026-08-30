@@ -1773,3 +1773,125 @@ body.is-admin .storage-widget {
     padding: 6px 14px;
     border-radius: 20px;
 }
+
+/* ============================================================================
+   5. LUKSUSOWE POWIADOMIENIA TOAST (Dark Glass, Głębia 3D, Ambient Glow)
+   ============================================================================ */
+.dropsite-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999999;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: linear-gradient(165deg, rgba(22, 27, 38, 0.96) 0%, rgba(12, 15, 22, 0.98) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 550;
+    color: var(--text-main);
+    user-select: none;
+    box-shadow: 
+        0 18px 45px -4px rgba(0, 0, 0, 0.85),
+        0 0 0 1px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    animation: toastEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top right;
+}
+
+.dropsite-toast.toast-hide {
+    animation: toastExit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes toastEnter {
+    from {
+        opacity: 0;
+        transform: translateY(-14px) scale(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes toastExit {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.96);
+    }
+}
+
+.toast-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Wariant: Sukces (Ciemne szkło + miętowa poświata) */
+.dropsite-toast.toast-success {
+    border-top: 1px solid rgba(196, 231, 212, 0.65);
+    box-shadow: 
+        0 18px 45px -4px rgba(0, 0, 0, 0.85),
+        0 0 25px rgba(196, 231, 212, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dropsite-toast.toast-success .toast-icon-wrap {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.22) 0%, rgba(196, 231, 212, 0.05) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.35);
+    border-top: 1px solid rgba(196, 231, 212, 0.6);
+    color: #C4E7D4;
+    box-shadow: 0 0 12px rgba(196, 231, 212, 0.2);
+}
+
+/* Wariant: Błąd (Ciemne szkło + stonowana czerwień) */
+.dropsite-toast.toast-error {
+    border-top: 1px solid rgba(255, 68, 57, 0.6);
+    box-shadow: 
+        0 18px 45px -4px rgba(0, 0, 0, 0.85),
+        0 0 25px rgba(255, 68, 57, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dropsite-toast.toast-error .toast-icon-wrap {
+    background: linear-gradient(135deg, rgba(255, 68, 57, 0.22) 0%, rgba(255, 68, 57, 0.05) 100%);
+    border: 1px solid rgba(255, 68, 57, 0.35);
+    border-top: 1px solid rgba(255, 68, 57, 0.6);
+    color: #FF4439;
+    box-shadow: 0 0 12px rgba(255, 68, 57, 0.2);
+}
+
+/* Wariant: Info (Ciemne szkło + błękit) */
+.dropsite-toast.toast-info {
+    border-top: 1px solid rgba(15, 145, 210, 0.6);
+    box-shadow: 
+        0 18px 45px -4px rgba(0, 0, 0, 0.85),
+        0 0 25px rgba(15, 145, 210, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dropsite-toast.toast-info .toast-icon-wrap {
+    background: linear-gradient(135deg, rgba(15, 145, 210, 0.22) 0%, rgba(15, 145, 210, 0.05) 100%);
+    border: 1px solid rgba(15, 145, 210, 0.35);
+    border-top: 1px solid rgba(15, 145, 210, 0.6);
+    color: #0F91D2;
+    box-shadow: 0 0 12px rgba(15, 145, 210, 0.2);
+}
+
+.toast-text {
+    line-height: 1.4;
+    letter-spacing: -0.1px;
+}

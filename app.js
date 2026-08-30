@@ -1311,28 +1311,33 @@ function resetUpload() {
 }
 
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? 'var(--success-green)' : 'var(--accent-blue)'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        z-index: 1000;
-        animation: slideInRight 0.3s ease-out;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    // Usuń ewentualne stare powiadomienia, aby uniknąć nakładania
+    const oldToast = document.querySelector('.dropsite-toast');
+    if (oldToast) oldToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `dropsite-toast toast-${type}`;
+    
+    let iconSvg = '';
+    if (type === 'success') {
+        iconSvg = `<div class="toast-icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>`;
+    } else if (type === 'error') {
+        iconSvg = `<div class="toast-icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+    } else {
+        iconSvg = `<div class="toast-icon-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>`;
+    }
+
+    toast.innerHTML = `
+        ${iconSvg}
+        <span class="toast-text">${message}</span>
     `;
-    document.body.appendChild(notification);
+
+    document.body.appendChild(toast);
     
     setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => document.body.removeChild(notification), 300);
-    }, 3000);
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 240);
+    }, 3200);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
