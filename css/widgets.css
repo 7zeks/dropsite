@@ -1425,17 +1425,34 @@ body.is-admin .storage-widget {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease, opacity 0.2s ease;
+    color: var(--text-muted);
+}
+
+.btn-nav-glass.sound-btn .sound-icon-on {
+    display: block;
+}
+
+.btn-nav-glass.sound-btn .sound-icon-off {
+    display: none;
+}
+
+.btn-nav-glass.sound-btn.is-muted .sound-icon-on {
+    display: none !important;
+}
+
+.btn-nav-glass.sound-btn.is-muted .sound-icon-off {
+    display: block !important;
+    color: rgba(255, 68, 57, 0.75);
 }
 
 .btn-nav-glass.sound-btn:hover svg {
     transform: translate(-50%, -50%) scale(1.1);
+    color: var(--accent-blue);
 }
 
-.btn-nav-glass.sound-btn svg[hidden],
-.btn-nav-glass.sound-btn svg.hidden,
-.btn-nav-glass.sound-btn svg[style*="display: none"] {
-    display: none !important;
+.btn-nav-glass.sound-btn.is-muted:hover .sound-icon-off {
+    color: #FF4439;
 }
 
 /* 2. Luksusowy Panel Kompresji Grafiki */

@@ -170,11 +170,10 @@ const soundIconOn = document.getElementById('soundIconOn');
 const soundIconOff = document.getElementById('soundIconOff');
 
 function updateSoundButtonUI() {
-    if (soundIconOn && soundIconOff) {
-        soundIconOn.hidden = !soundEnabled;
-        soundIconOff.hidden = soundEnabled;
-        soundIconOn.style.display = soundEnabled ? 'block' : 'none';
-        soundIconOff.style.display = soundEnabled ? 'none' : 'block';
+    if (soundToggleBtn) {
+        soundToggleBtn.classList.toggle('is-muted', !soundEnabled);
+        soundToggleBtn.setAttribute('title', soundEnabled ? 'Dźwięki włączone (kliknij, aby wyciszyć)' : 'Dźwięki wyciszone (kliknij, aby włączyć)');
+        soundToggleBtn.setAttribute('aria-label', soundEnabled ? 'Wycisz dźwięki interfejsu' : 'Włącz dźwięki interfejsu');
     }
 }
 
