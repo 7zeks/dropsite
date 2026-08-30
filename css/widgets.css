@@ -467,6 +467,8 @@ body.is-admin .storage-widget {
 
 /* Pasek narzędzi (Szukajka + Sort) */
 .mod-toolbar {
+    position: relative;
+    z-index: 50;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -515,6 +517,8 @@ body.is-admin .storage-widget {
 }
 
 .mod-toolbar-actions {
+    position: relative;
+    z-index: 60;
     display: flex;
     gap: 10px;
     align-items: center;
@@ -524,6 +528,10 @@ body.is-admin .storage-widget {
 .custom-select-wrap {
     position: relative;
     user-select: none;
+}
+
+.custom-select-wrap.open {
+    z-index: 100;
 }
 
 .custom-select-trigger {
@@ -573,23 +581,25 @@ body.is-admin .storage-widget {
     color: var(--accent-blue);
 }
 
-/* Menu rozwijane - Solid Dark Obsidian & Głębia (100% krycia) */
+/* Menu rozwijane - Solid Dark Obsidian (100% krycia bez prześwitywania) */
 .custom-select-menu {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
     min-width: 100%;
-    background: linear-gradient(180deg, #151924 0%, #0D0F16 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 1px solid rgba(196, 231, 212, 0.5);
+    background-color: #121620 !important;
+    background: linear-gradient(180deg, #161A26 0%, #0E1118 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-top: 1px solid rgba(196, 231, 212, 0.6) !important;
     border-radius: 14px;
     padding: 6px;
     box-shadow: 
-        0 24px 60px -4px rgba(0, 0, 0, 0.98),
-        0 0 0 1px rgba(0, 0, 0, 0.9),
-        0 0 25px rgba(196, 231, 212, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    z-index: 1000;
+        0 24px 60px rgba(0, 0, 0, 0.98),
+        0 0 0 1px rgba(0, 0, 0, 0.95),
+        0 0 30px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    z-index: 9999 !important;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -613,6 +623,8 @@ body.is-admin .storage-widget {
 }
 
 .custom-select-option {
+    position: relative;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -623,6 +635,8 @@ body.is-admin .storage-widget {
     font-weight: 500;
     color: var(--text-muted);
     cursor: pointer;
+    pointer-events: auto;
+    background: transparent;
     transition: all 0.18s ease;
     white-space: nowrap;
 }

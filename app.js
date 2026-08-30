@@ -863,6 +863,7 @@ if (customSortTrigger && customSortMenu) {
     });
 
     customSortMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
         const opt = e.target.closest('.custom-select-option');
         if (!opt) return;
         const val = opt.getAttribute('data-value');
