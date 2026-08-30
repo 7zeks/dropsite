@@ -316,7 +316,61 @@ export default {
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // 4. STATYSTYKI DYSKU
+    // 4. ZMIANA TERMINOWOŚCI PLIKU PRZEZ ADMINISTRATORA
+    if (url.pathname === "/update-expiry" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      if (!env.BUCKET) return new Response(JSON.stringify({ success: false, message: "Błąd: Brak podpiętego dysku" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+      try {
+          const body = await request.json();
+          const { key, newExpiry } = body;
+
+          if (!key || !newExpiry) {
+              return new Response(JSON.stringify({ success: false, message: "Brak parametrów key lub newExpiry." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+
+          let baseKey = key;
+          if (baseKey.startsWith("1d/")) baseKey = baseKey.substring(3);
+          else if (baseKey.startsWith("30d/")) baseKey = baseKey.substring(4);
+          else if (baseKey.startsWith("burn/")) baseKey = baseKey.substring(5);
+
+          let newKey = baseKey;
+          if (newExpiry === "1d") newKey = `1d/${baseKey}`;
+          else if (newExpiry === "30d") newKey = `30d/${baseKey}`;
+          else if (newExpiry === "burn") newKey = `burn/${baseKey}`;
+          else if (newExpiry === "permanent") newKey = baseKey;
+
+          if (key === newKey) {
+              return new Response(JSON.stringify({ success: true, oldKey: key, newKey: newKey }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+
+          const object = await env.BUCKET.get(key);
+          if (!object) {
+              return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub został już usunięty." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+
+          await env.BUCKET.put(newKey, object.body, {
+              httpMetadata: object.httpMetadata,
+              customMetadata: object.customMetadata
+          });
+          await env.BUCKET.delete(key);
+
+          return new Response(JSON.stringify({
+              success: true,
+              oldKey: key,
+              newKey: newKey,
+              finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${newKey}`
+          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+      } catch (err) {
+          return new Response(JSON.stringify({ success: false, message: "Błąd podczas zmiany terminu: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // 5. STATYSTYKI DYSKU
     if (url.pathname === "/stats" && request.method === "GET") {
       if (!env.BUCKET) {
           return new Response(JSON.stringify({ error: "Brak podpiętego bucketu w Workerze" }), { status: 500, headers: corsHeaders });
@@ -393,6 +447,7 @@ export default {
         console.error("Błąd podczas automatycznego czyszczenia dysku:", e);
     }
   }
+};
 
 // ============================================================================
 // FUNKCJE POMOCNICZE DO GENEROWANIA SZYFROWANEGO LINKU

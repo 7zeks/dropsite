@@ -173,6 +173,8 @@ function updateSoundButtonUI() {
     if (soundIconOn && soundIconOff) {
         soundIconOn.hidden = !soundEnabled;
         soundIconOff.hidden = soundEnabled;
+        soundIconOn.style.display = soundEnabled ? 'block' : 'none';
+        soundIconOff.style.display = soundEnabled ? 'none' : 'block';
     }
 }
 
@@ -282,9 +284,14 @@ const customSlugBox = document.getElementById('customSlugBox');
 const slugArrow = document.getElementById('slugArrow');
 if (slugToggleBtn && customSlugBox) {
     slugToggleBtn.addEventListener('click', () => {
-        const isHidden = customSlugBox.hidden;
+        const isHidden = customSlugBox.hidden || customSlugBox.style.display === 'none';
         customSlugBox.hidden = !isHidden;
-        if (slugArrow) slugArrow.textContent = isHidden ? '▲' : '▼';
+        customSlugBox.style.display = isHidden ? 'block' : 'none';
+        slugToggleBtn.classList.toggle('active', isHidden);
+        slugToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        if (slugArrow && slugArrow.tagName === 'SPAN') {
+            slugArrow.textContent = isHidden ? '▲' : '▼';
+        }
     });
 }
 
@@ -342,7 +349,7 @@ async function updateSelectedFile(filesList) {
         fsName.textContent = `Paczka_folder.zip (${filesList.length} el.)`;
         fsSizeOrProgress.innerText = 'Trwa pakowanie, proszę czekać...';
         
-        dropzone.innerHTML = `<div style="padding: 40px; text-align: center; font-size: 48px;">📦</div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center;">Pakowanie ${filesList.length} plików do ZIP...</div>`;
+        dropzone.innerHTML = `<div style="padding: 30px; text-align: center;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center;">Pakowanie ${filesList.length} plików do ZIP...</div>`;
         dropzone.style.padding = "10px";
 
         setTimeout(async () => {
@@ -399,13 +406,21 @@ async function updateSelectedFile(filesList) {
             dropzone.innerHTML = `<video src="${vidUrl}" controls autoplay muted loop playsinline style="max-width: 100%; max-height: 250px; border-radius: 8px; background: #000;"></video>`;
             dropzone.style.padding = "10px";
         } else {
-            let icon = '📄';
-            if (file.name.endsWith('.pdf')) icon = '📕';
-            else if (file.name.endsWith('.zip') || file.name.endsWith('.rar')) icon = '📦';
-            else if (file.name.endsWith('.js') || file.name.endsWith('.html') || file.name.endsWith('.css') || file.name.endsWith('.json')) icon = '💻';
-            else if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx') || file.name.endsWith('.csv')) icon = '📊';
+            let iconSvg = '';
+            const lowerName = file.name.toLowerCase();
+            if (lowerName.endsWith('.pdf')) {
+                iconSvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>`;
+            } else if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
+                iconSvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+            } else if (/\.(js|html|css|json|py|cpp|ts|jsx|tsx)$/i.test(lowerName)) {
+                iconSvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+            } else if (/\.(xls|xlsx|csv)$/i.test(lowerName)) {
+                iconSvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#59A829" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>`;
+            } else {
+                iconSvg = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+            }
 
-            dropzone.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-main); font-size: 48px;">${icon}</div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center;">${file.name}</div>`;
+            dropzone.innerHTML = `<div style="padding: 30px; text-align: center;">${iconSvg}</div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center; word-break: break-word;">${file.name}</div>`;
             dropzone.style.padding = "10px";
         }
     }
@@ -760,9 +775,65 @@ if (modSearchInput) {
     });
 }
 
-if (modSortSelect) {
-    modSortSelect.addEventListener('change', (e) => {
-        activeSort = e.target.value;
+// Obsługa własnego szklanego dropdowna sortowania
+const customSortDropdown = document.getElementById('customSortDropdown');
+const customSortTrigger = document.getElementById('customSortTrigger');
+const customSortLabel = document.getElementById('customSortLabel');
+const customSortMenu = document.getElementById('customSortMenu');
+
+function closeAllCustomDropdowns() {
+    document.querySelectorAll('.custom-select-wrap.open').forEach(w => {
+        w.classList.remove('open');
+        const m = w.querySelector('.custom-select-menu');
+        if (m) m.hidden = true;
+        const t = w.querySelector('.custom-select-trigger');
+        if (t) t.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('.custom-expiry-wrap.open').forEach(w => {
+        w.classList.remove('open');
+        const row = w.closest('.mod-file-item');
+        if (row) row.style.zIndex = '';
+        const m = w.querySelector('.custom-select-menu');
+        if (m) m.hidden = true;
+    });
+}
+
+window.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-select-wrap') && !e.target.closest('.custom-expiry-wrap')) {
+        closeAllCustomDropdowns();
+    }
+});
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeAllCustomDropdowns();
+    }
+});
+
+if (customSortTrigger && customSortMenu) {
+    customSortTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !customSortMenu.hidden;
+        closeAllCustomDropdowns();
+        if (!isOpen) {
+            customSortMenu.hidden = false;
+            customSortDropdown.classList.add('open');
+            customSortTrigger.setAttribute('aria-expanded', 'true');
+        }
+    });
+
+    customSortMenu.addEventListener('click', (e) => {
+        const opt = e.target.closest('.custom-select-option');
+        if (!opt) return;
+        const val = opt.getAttribute('data-value');
+        const text = opt.querySelector('span')?.textContent || opt.textContent;
+        
+        customSortMenu.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        
+        if (customSortLabel) customSortLabel.textContent = text;
+        activeSort = val;
+        closeAllCustomDropdowns();
         applyModFiltersAndRender();
     });
 }
@@ -923,21 +994,60 @@ function renderModFilesList(files) {
                               </div>
                            </div>`;
         } else {
-            let icon = '📄';
-            if (file.name.endsWith('.pdf')) icon = '📕';
-            else if (file.name.endsWith('.zip') || file.name.endsWith('.rar')) icon = '📦';
-            previewHtml = `<div class="mod-preview-icon">${icon}</div>`;
+            let iconSvg = '';
+            const lowerName = file.name.toLowerCase();
+            if (lowerName.endsWith('.pdf')) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>`;
+            } else if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+            } else if (/\.(mp3|wav|ogg|flac|m4a)$/i.test(lowerName)) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+            } else if (/\.(json|js|html|css|py|cpp|c|ts|jsx|tsx)$/i.test(lowerName)) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+            } else {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+            }
+            previewHtml = `<div class="mod-preview-icon">${iconSvg}</div>`;
         }
 
         const displayName = cleanFileName(file.name);
 
-        // Badge wygasania
-        let expBadge = '<span class="mod-badge-exp exp-perm">♾️ Permanentny</span>';
-        if (file.name.startsWith('1d/')) {
-            expBadge = '<span class="mod-badge-exp exp-1d">⏳ 1 Dzień</span>';
-        } else if (file.name.startsWith('30d/')) {
-            expBadge = '<span class="mod-badge-exp exp-30d">📅 30 Dni</span>';
-        }
+        // Określenie bieżącego terminu wygasania
+        let currentExp = 'permanent';
+        if (file.name.startsWith('1d/')) currentExp = '1d';
+        else if (file.name.startsWith('30d/')) currentExp = '30d';
+
+        const expiryLabels = {
+            '1d': '1 Dzień',
+            '30d': '30 Dni',
+            'permanent': 'Bezterminowo'
+        };
+
+        const expSelectHtml = `
+            <div class="custom-expiry-wrap exp-${currentExp}" data-current="${currentExp}" title="Zmień czas przechowywania pliku">
+                <button type="button" class="custom-expiry-trigger" onclick="toggleExpiryDropdown(this, event)">
+                    <span class="custom-expiry-label">${expiryLabels[currentExp] || 'Bezterminowo'}</span>
+                    <svg class="custom-select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="custom-select-menu expiry-menu" hidden>
+                    <div class="custom-select-option ${currentExp === '1d' ? 'selected' : ''}" data-value="1d" onclick="selectExpiryOption('${file.name}', '1d', this)">
+                        <span class="exp-dot exp-dot-1d"></span>
+                        <span>1 Dzień</span>
+                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div class="custom-select-option ${currentExp === '30d' ? 'selected' : ''}" data-value="30d" onclick="selectExpiryOption('${file.name}', '30d', this)">
+                        <span class="exp-dot exp-dot-30d"></span>
+                        <span>30 Dni</span>
+                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div class="custom-select-option ${currentExp === 'permanent' ? 'selected' : ''}" data-value="permanent" onclick="selectExpiryOption('${file.name}', 'permanent', this)">
+                        <span class="exp-dot exp-dot-perm"></span>
+                        <span>Bezterminowo</span>
+                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+            </div>
+        `;
 
         li.innerHTML = `
             <div class="mod-file-main">
@@ -946,26 +1056,146 @@ function renderModFilesList(files) {
                     <a href="${publicLink}" target="_blank" class="mod-file-name" title="${file.name}">${displayName}</a>
                     <div class="mod-meta-row">
                         <span class="mod-badge-size">${formatBytes(file.size)}</span>
-                        ${expBadge}
+                        ${expSelectHtml}
                     </div>
                 </div>
             </div>
             <div class="mod-actions">
                 <button class="btn-copy-mod" onclick="copyDirectLink('${publicLink}')" title="Kopiuj bezpośredni link">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    Kopiuj
+                    <span>Kopiuj</span>
                 </button>
-                <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')">Usuń</button>
+                <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń trwale plik">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Usuń</span>
+                </button>
             </div>
         `;
         modFileList.appendChild(li);
     });
 }
 
+// Otwieranie / zamykanie własnego dropdowna w wierszu pliku
+window.toggleExpiryDropdown = function(triggerBtn, event) {
+    event.stopPropagation();
+    const wrap = triggerBtn.closest('.custom-expiry-wrap');
+    const row = wrap.closest('.mod-file-item');
+    const menu = wrap.querySelector('.custom-select-menu');
+    const isOpen = wrap.classList.contains('open');
+
+    closeAllCustomDropdowns();
+
+    if (!isOpen) {
+        wrap.classList.add('open');
+        if (row) row.style.zIndex = '50';
+        menu.hidden = false;
+    }
+};
+
+// Zmiana terminu wygasania przez własny szklany dropdown
+window.selectExpiryOption = async function(oldKey, newExpiry, optElem) {
+    const wrap = optElem.closest('.custom-expiry-wrap');
+    const trigger = wrap.querySelector('.custom-expiry-trigger');
+    const label = wrap.querySelector('.custom-expiry-label');
+    const menu = wrap.querySelector('.custom-select-menu');
+    
+    const previousValue = wrap.getAttribute('data-current') || (
+        oldKey.startsWith('1d/') ? '1d' :
+        oldKey.startsWith('30d/') ? '30d' :
+        oldKey.startsWith('burn/') ? 'burn' : 'permanent'
+    );
+
+    closeAllCustomDropdowns();
+
+    if (previousValue === newExpiry) return;
+
+    let apiSecret = localStorage.getItem('apiSecret');
+    if (!apiSecret) {
+        showNotification('Brak autoryzacji administratora!', 'error');
+        return;
+    }
+
+    wrap.classList.add('loading');
+    trigger.disabled = true;
+
+    try {
+        const response = await fetch(`${WORKER_URL}/update-expiry`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': apiSecret
+            },
+            body: JSON.stringify({ key: oldKey, newExpiry: newExpiry })
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('apiSecret');
+            throw new Error('Nieprawidłowy klucz API! Odmowa dostępu.');
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Błąd aktualizacji terminu');
+        }
+
+        const newKey = data.newKey;
+        const expiryLabels = {
+            '1d': '1 Dzień',
+            '30d': '30 Dni',
+            'permanent': 'Bezterminowo'
+        };
+
+        wrap.className = `custom-expiry-wrap exp-${newExpiry}`;
+        wrap.setAttribute('data-current', newExpiry);
+        if (label) label.textContent = expiryLabels[newExpiry] || newExpiry;
+
+        menu.querySelectorAll('.custom-select-option').forEach(o => {
+            const isSel = o.getAttribute('data-value') === newExpiry;
+            o.classList.toggle('selected', isSel);
+            o.setAttribute('onclick', `selectExpiryOption('${newKey}', '${o.getAttribute('data-value')}', this)`);
+        });
+
+        // Zaktualizuj plik w pamięci podręcznej modera
+        const fileObj = loadedModFiles.find(f => f.name === oldKey);
+        if (fileObj) {
+            fileObj.name = newKey;
+        }
+        updateModStats(loadedModFiles);
+
+        // Zaktualizuj powiązane linki i przyciski w wierszu
+        const row = wrap.closest('.mod-file-item');
+        if (row) {
+            const publicLink = `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${newKey}`;
+            const fileNameLink = row.querySelector('.mod-file-name');
+            if (fileNameLink) {
+                fileNameLink.href = publicLink;
+                fileNameLink.title = newKey;
+            }
+            const copyBtn = row.querySelector('.btn-copy-mod');
+            if (copyBtn) {
+                copyBtn.setAttribute('onclick', `copyDirectLink('${publicLink}')`);
+            }
+            const deleteBtn = row.querySelector('.btn-delete');
+            if (deleteBtn) {
+                deleteBtn.setAttribute('data-filename', newKey);
+                deleteBtn.setAttribute('onclick', `handleSafeDelete(this, '${newKey}')`);
+            }
+        }
+
+        showNotification(`Zmieniono termin na: ${expiryLabels[newExpiry] || newExpiry}`, 'success');
+
+    } catch (err) {
+        showNotification(err.message || 'Błąd zmiany terminu', 'error');
+    } finally {
+        wrap.classList.remove('loading');
+        trigger.disabled = false;
+    }
+};
+
 // Szybkie kopiowanie linku z powiadomieniem
 window.copyDirectLink = function(url) {
     navigator.clipboard.writeText(url).then(() => {
-        showNotification('Skopiowano link do pliku! 📋', 'success');
+        showNotification('Skopiowano link do pliku!', 'success');
     }).catch(() => {
         showNotification('Nie udało się skopiować linku', 'error');
     });
@@ -975,11 +1205,11 @@ window.copyDirectLink = function(url) {
 window.handleSafeDelete = async function(btn, filename) {
     if (!btn.classList.contains('confirming')) {
         btn.classList.add('confirming');
-        btn.innerText = 'Na pewno?';
+        btn.innerHTML = `<span>Na pewno?</span>`;
         
         const timer = setTimeout(() => {
             btn.classList.remove('confirming');
-            btn.innerText = 'Usuń';
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><span>Usuń</span>`;
         }, 3500);
 
         btn._confirmTimer = timer;
@@ -989,7 +1219,7 @@ window.handleSafeDelete = async function(btn, filename) {
     // Drugie kliknięcie - usuwamy!
     clearTimeout(btn._confirmTimer);
     btn.disabled = true;
-    btn.innerText = 'Usuwanie...';
+    btn.innerHTML = `<span>Usuwanie...</span>`;
 
     let apiSecret = localStorage.getItem('apiSecret');
     if (!apiSecret) {
@@ -1012,7 +1242,7 @@ window.handleSafeDelete = async function(btn, filename) {
         }
 
         if (response.ok) {
-            showNotification('Plik został usunięty 🗑️', 'success');
+            showNotification('Plik został usunięty', 'success');
             fetchModFiles(); 
             fetchDiskStats(); 
         } else {
@@ -1428,7 +1658,7 @@ window.addEventListener('paste', (e) => {
     }
 
     if (files.length > 0) {
-        showNotification(`Wklejono ${files.length} plik(ów) ze schowka! 📋`, 'success');
+        showNotification(`Wklejono ${files.length} plik(ów) ze schowka!`, 'success');
         updateSelectedFile(files);
         // Przełącz na główny widok, jeśli użytkownik był w innej zakładce
         const mainNav = document.querySelector('[data-target="view-glowna"]');
@@ -1530,19 +1760,28 @@ function renderUserHistory() {
         const li = document.createElement('li');
         li.className = 'mod-file-item';
 
-        let icon = '📄';
-        if (/\.(mp4|webm|mov)$/i.test(item.name)) icon = '🎬';
-        else if (/\.(jpg|jpeg|png|gif|webp)$/i.test(item.name)) icon = '🖼️';
-        else if (/\.(zip|rar)$/i.test(item.name)) icon = '📦';
+        let iconSvg = '';
+        const lowerName = item.name.toLowerCase();
+        if (/\.(mp4|webm|mov|mkv)$/i.test(lowerName)) {
+            iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`;
+        } else if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(lowerName)) {
+            iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+        } else if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
+            iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+        } else if (/\.(pdf)$/i.test(lowerName)) {
+            iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+        } else {
+            iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+        }
 
         let badge = '<span class="mod-badge-exp exp-30d">30 Dni</span>';
         if (item.duration === '1d') badge = '<span class="mod-badge-exp exp-1d">1 Dzień</span>';
-        else if (item.duration === 'permanent') badge = '<span class="mod-badge-exp exp-perm">Permanentny</span>';
-        else if (item.duration === 'burn') badge = '<span class="mod-badge-exp" style="background: rgba(255,68,57,0.2); color:#FF4439;">1x Pobranie</span>';
+        else if (item.duration === 'permanent') badge = '<span class="mod-badge-exp exp-perm">Bezterminowo</span>';
+        else if (item.duration === 'burn') badge = '<span class="mod-badge-exp exp-burn">1x Pobranie</span>';
 
         li.innerHTML = `
             <div class="mod-file-main">
-                <div class="mod-preview-icon">${icon}</div>
+                <div class="mod-preview-icon">${iconSvg}</div>
                 <div class="mod-file-info">
                     <a href="${item.url}" target="_blank" class="mod-file-name" title="${item.name}">${item.name}</a>
                     <div class="mod-meta-row">
@@ -1590,7 +1829,7 @@ window.copyDirectLink = function(url) {
         navigator.clipboard.writeText(url).then(() => {
             playSound('copy');
             if (typeof showNotification === 'function') {
-                showNotification('Link został skopiowany do schowka! 📋', 'success');
+                showNotification('Link został skopiowany do schowka!', 'success');
             }
         }).catch(() => {
             prompt('Skopiuj link poniżej:', url);
@@ -1638,7 +1877,7 @@ async function initDownloadRouter() {
         if (!data.success) {
             dlFileName.innerText = 'Plik niedostępny';
             dlFileSize.innerText = data.message || 'Plik wygasł lub został zniszczony po pobraniu.';
-            dlPreviewContainer.innerHTML = '<div style="font-size: 48px; padding: 20px;">⚠️</div>';
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>';
             dlDownloadBtn.style.display = 'none';
             return;
         }
@@ -1652,15 +1891,15 @@ async function initDownloadRouter() {
 
         // Badge
         if (data.isBurn) {
-            dlBadgeWrap.innerHTML = '<span class="dl-badge burn">💥 Jednorazowy (Burn after download)</span>';
+            dlBadgeWrap.innerHTML = '<span class="dl-badge burn">Jednorazowy (Burn after download)</span>';
             dlBurnWarning.hidden = false;
             dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}`;
         } else if (data.expiryType === 'permanent') {
-            dlBadgeWrap.innerHTML = '<span class="dl-badge perm">♾️ Bezterminowy</span>';
+            dlBadgeWrap.innerHTML = '<span class="dl-badge perm">Bezterminowy</span>';
             dlDownloadBtn.href = data.directUrl;
             dlDownloadBtn.setAttribute('download', cleanName);
         } else {
-            dlBadgeWrap.innerHTML = `<span class="dl-badge temp">📅 Wygasa za ${data.expiryType === '1d' ? '1 dzień' : '30 dni'}</span>`;
+            dlBadgeWrap.innerHTML = `<span class="dl-badge temp">Wygasa za ${data.expiryType === '1d' ? '1 dzień' : '30 dni'}</span>`;
             dlDownloadBtn.href = data.directUrl;
             dlDownloadBtn.setAttribute('download', cleanName);
         }
@@ -1681,11 +1920,11 @@ async function initDownloadRouter() {
         } else if (/\.(mp4|webm|mov)$/i.test(cleanName)) {
             dlPreviewContainer.innerHTML = `<video src="${data.directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000;"></video>`;
         } else if (/\.(pdf)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = '<div style="font-size: 54px; padding: 20px;">📕</div>';
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
         } else if (/\.(zip|rar|7z)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = '<div style="font-size: 54px; padding: 20px;">📦</div>';
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div>';
         } else {
-            dlPreviewContainer.innerHTML = '<div style="font-size: 54px; padding: 20px;">📄</div>';
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>';
         }
 
     } catch (err) {

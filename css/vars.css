@@ -25,9 +25,16 @@
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
+/* --- Global Reset for hidden attribute --- */
+[hidden] {
+    display: none !important;
+}
+
 /* --- Baza i Tło --- */
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     background-color: var(--bg-color); /* Twoje ciemne tło */
     
     /* UPGRADE: Wiele warstw dla efektu głębi i dynamiki */
@@ -67,6 +74,11 @@ body {
         justify-content: flex-start;
         padding: 95px 16px 80px;
     }
+}
+
+/* --- Wszystkie elementy tekstowe i nagłówki dziedziczą Plus Jakarta Sans --- */
+h1, h2, h3, .nav-logo, button, input, select, textarea {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
 }
 
 /* --- Aurora Background (Glassmorphism) --- */

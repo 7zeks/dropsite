@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dropsite</title>
-    <link rel="icon" href="favicon.png" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -41,9 +42,9 @@
     <li><a href="#" class="nav-btn" data-target="view-cennik">Cennik</a></li>
     <li><a href="#" class="nav-btn" data-target="view-kontakt">Kontakt</a></li>
 </ul>    <div class="nav-action-group">
-        <button id="soundToggleBtn" class="btn-nav-glass sound-btn" title="Dźwięki interfejsu (Włącz/Wyłącz)">
+        <button id="soundToggleBtn" class="btn-nav-glass sound-btn" title="Dźwięki interfejsu (Włącz/Wyłącz)" aria-label="Włącz lub wyłącz dźwięki">
             <svg id="soundIconOn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg id="soundIconOff" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+            <svg id="soundIconOff" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden style="display: none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </button>
         
         <button id="openHistoryBtn" class="btn-nav-glass history-btn" title="Historia Twoich wgranych plików">
@@ -158,11 +159,16 @@
 
                 <!-- OPCJONALNA WŁASNA NAZWA LINKU -->
                 <div class="custom-slug-wrap">
-                    <div class="slug-toggle-header" id="slugToggleBtn">
-                        <span>🔤 Własny alias linku (opcjonalnie) <span id="slugArrow" style="font-size: 10px;">▼</span></span>
-                    </div>
-                    <div id="customSlugBox" class="slug-input-box" hidden>
-                        <input type="text" id="customSlugInput" placeholder="np. moj-projekt-klient" class="dropsite-input" maxlength="40" style="padding: 10px 14px; font-size: 13px;">
+                    <button type="button" class="slug-toggle-header" id="slugToggleBtn" aria-expanded="false">
+                        <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        <span class="slug-toggle-label">Własny alias linku <span class="slug-optional">(opcjonalnie)</span></span>
+                        <svg class="slug-arrow-svg" id="slugArrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div id="customSlugBox" class="slug-input-box" hidden style="display: none;">
+                        <div class="slug-input-container">
+                            <span class="slug-prefix">dropsite.space/</span>
+                            <input type="text" id="customSlugInput" placeholder="moj-wlasny-alias" class="dropsite-input custom-slug-input" maxlength="40" autocomplete="off" spellcheck="false">
+                        </div>
                     </div>
                 </div>
 
@@ -181,10 +187,6 @@
                             <input type="radio" name="duration" value="permanent">
                             <span>Bezterminowo</span>
                         </label>
-                        <label class="option-item burn-option" title="Plik zostanie skasowany z serwera po pierwszym pobraniu">
-                            <input type="radio" name="duration" value="burn">
-                            <span style="color: #FF4439;">💥 1x Pobranie</span>
-                        </label>
                     </div>
                 </div>
 
@@ -197,7 +199,7 @@
 
                 <div id="successFlow" class="success-flow" hidden>
                     <div class="success-header">
-                        <h3>Plik przesłany pomyślnie! 🎉</h3>
+                        <h3>Plik przesłany pomyślnie!</h3>
                     </div>
                     
                     <div class="success-link-box">
@@ -219,7 +221,10 @@
                         </button>
                     </div>
                     <div class="success-tips">
-                        <p>💡 <strong></strong> Link jest aktywny przez wybrany okres czasu</p>
+                        <p style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Link jest aktywny przez wybrany okres czasu
+                        </p>
                     </div>
                 </div>
             </div>
@@ -235,15 +240,15 @@
                 </header>
                 <div class="info-grid">
                     <div class="info-card">
-                        <h3>🚀 Błyskawiczny Upload</h3>
+                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Błyskawiczny Upload</h3>
                         <p>Infrastruktura oparta na Cloudflare R2 gwarantuje maksymalną prędkość z każdego miejsca na świecie.</p>
                     </div>
                     <div class="info-card">
-                        <h3>🔒 Pełna Prywatność</h3>
+                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Pełna Prywatność</h3>
                         <p>Pliki są automatycznie usuwane po wybranym czasie. Nie śledzimy pobrań ani nie udostępniamy danych.</p>
                     </div>
                     <div class="info-card">
-                        <h3>🎬 Stworzone dla Mediów</h3>
+                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg> Stworzone dla Mediów</h3>
                         <p>Zoptymalizowane odtwarzacze wideo i podgląd zdjęć bez utraty jakości.</p>
                     </div>
                 </div>
@@ -309,8 +314,10 @@
                     <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
                     <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;">Pobieranie pliku...</h1>
                     <p id="dlFileSize" class="dl-subtitle" style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Ładowanie informacji o pliku...</p>
-                    <div id="dlStatsCounter" class="dl-stats-counter" style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted);">
-                        👁️ <span id="dlViewCount">1</span> wyświetleń • 📥 <span id="dlDownloadCount">0</span> pobrań
+                    <div id="dlStatsCounter" class="dl-stats-counter" style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span id="dlViewCount">1</span> wyświetleń</span>
+                        <span>&bull;</span>
+                        <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span id="dlDownloadCount">0</span> pobrań</span>
                     </div>
                 </header>
 
@@ -319,7 +326,8 @@
                 </div>
 
                 <div id="dlBurnWarning" class="burn-warning-box" hidden>
-                    ⚠️ <strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <span><strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!</span>
                 </div>
 
                 <div class="dl-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
@@ -330,7 +338,7 @@
                     </a>
                     
                     <button class="btn-secondary" onclick="document.querySelector('[data-target=\'view-glowna\']').click()" style="width: 100%; justify-content: center; padding: 12px;">
-                        Prześlij własny plik na Dropsite 🚀
+                        Prześlij własny plik na Dropsite
                     </button>
                 </div>
             </div>
@@ -373,28 +381,44 @@
 <div id="modModal" class="mod-modal" hidden>
     <div class="mod-container">
         <div class="mod-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <svg width="22" height="22" viewBox="0 0 31 31" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z"></path>
-                    <path d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674"></path>
-                </svg>
-                <h2>Panel Administratora</h2>
+            <div class="mod-title-wrap">
+                <div class="mod-icon-badge">
+                    <svg width="22" height="22" viewBox="0 0 31 31" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z"></path>
+                        <path d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Panel Administratora</h2>
+                    <span class="mod-subtitle">Zarządzanie magazynem Cloudflare R2</span>
+                </div>
             </div>
-            <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">&times;</button>
+            <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
 
         <!-- Mini-statystyki u góry -->
         <div class="mod-stats-grid">
             <div class="mod-stat-card">
-                <span class="mod-stat-label">Wszystkie pliki</span>
+                <div class="mod-stat-header">
+                    <span class="mod-stat-label">Wszystkie pliki</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                </div>
                 <span class="mod-stat-value" id="modTotalFiles">0</span>
             </div>
             <div class="mod-stat-card">
-                <span class="mod-stat-label">Zajęte miejsce</span>
+                <div class="mod-stat-header">
+                    <span class="mod-stat-label">Zajęte miejsce</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                </div>
                 <span class="mod-stat-value" id="modTotalSize">0 B</span>
             </div>
             <div class="mod-stat-card">
-                <span class="mod-stat-label">Struktura</span>
+                <div class="mod-stat-header">
+                    <span class="mod-stat-label">Struktura</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                </div>
                 <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0 zdjęć</span>
             </div>
         </div>
@@ -405,27 +429,65 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mod-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input type="text" id="modSearchInput" placeholder="Szukaj pliku po nazwie..." class="mod-search-input">
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <select id="modSortSelect" class="mod-select" aria-label="Sortowanie plików">
-                    <option value="newest">Najnowsze</option>
-                    <option value="size-desc">Rozmiar: od największych</option>
-                    <option value="size-asc">Rozmiar: od najmniejszych</option>
-                    <option value="name-asc">Nazwa: A-Z</option>
-                </select>
-                <button id="refreshModBtn" class="btn-select" style="margin: 0; padding: 10px 14px;">Odśwież</button>
+            <div class="mod-toolbar-actions">
+                <div class="custom-select-wrap" id="customSortDropdown">
+                    <button type="button" class="custom-select-trigger" id="customSortTrigger" aria-haspopup="listbox" aria-expanded="false">
+                        <span class="custom-select-label" id="customSortLabel">Najnowsze</span>
+                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="custom-select-menu" id="customSortMenu" role="listbox" hidden>
+                        <div class="custom-select-option selected" data-value="newest" role="option">
+                            <span>Najnowsze</span>
+                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="custom-select-option" data-value="size-desc" role="option">
+                            <span>Rozmiar: od największych</span>
+                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="custom-select-option" data-value="size-asc" role="option">
+                            <span>Rozmiar: od najmniejszych</span>
+                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <div class="custom-select-option" data-value="name-asc" role="option">
+                            <span>Nazwa: A-Z</span>
+                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+                <button id="refreshModBtn" class="btn-select mod-refresh-btn">Odśwież</button>
             </div>
         </div>
 
         <!-- Filtry kategorii (Pill buttons) -->
         <div class="mod-filter-pills" id="modFilterPills">
-            <button class="mod-pill active" data-filter="all">Wszystkie <span id="count-all">0</span></button>
-            <button class="mod-pill" data-filter="video">🎬 Wideo <span id="count-video">0</span></button>
-            <button class="mod-pill" data-filter="image">🖼️ Zdjęcia <span id="count-image">0</span></button>
-            <button class="mod-pill" data-filter="doc">📄 Dokumenty <span id="count-doc">0</span></button>
-            <button class="mod-pill" data-filter="archive">📦 Archiwa <span id="count-archive">0</span></button>
+            <button class="mod-pill active" data-filter="all">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                <span>Wszystkie</span>
+                <span class="pill-badge" id="count-all">0</span>
+            </button>
+            <button class="mod-pill" data-filter="video">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                <span>Wideo</span>
+                <span class="pill-badge" id="count-video">0</span>
+            </button>
+            <button class="mod-pill" data-filter="image">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>Zdjęcia</span>
+                <span class="pill-badge" id="count-image">0</span>
+            </button>
+            <button class="mod-pill" data-filter="doc">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Dokumenty</span>
+                <span class="pill-badge" id="count-doc">0</span>
+            </button>
+            <button class="mod-pill" data-filter="archive">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                <span>Archiwa</span>
+                <span class="pill-badge" id="count-archive">0</span>
+            </button>
         </div>
 
-        <div id="modFilesScreen">
+        <div id="modFilesScreen" class="mod-files-screen">
             <ul id="modFileList" class="mod-file-list"></ul>
         </div>
     </div>
@@ -439,7 +501,9 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 <h2>Twoja historia plików</h2>
             </div>
-            <button id="closeHistoryModal" class="mod-close">&times;</button>
+            <button id="closeHistoryModal" class="mod-close" aria-label="Zamknij historię">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
         <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Pliki przesłane z Twojej przeglądarki (zapisane w pamięci urządzenia):</p>
         <ul id="userHistoryList" class="mod-file-list" style="max-height: 380px;"></ul>
@@ -454,7 +518,9 @@
     <div class="mod-container qr-modal-container" style="max-width: 380px; text-align: center; align-items: center;">
         <div class="mod-header" style="width: 100%;">
             <h2 style="font-size: 18px;">Kod QR do pobrania</h2>
-            <button id="closeQrModal" class="mod-close">&times;</button>
+            <button id="closeQrModal" class="mod-close" aria-label="Zamknij kod QR">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
         <div class="qr-box-wrap" style="background: white; padding: 16px; border-radius: 12px; display: inline-flex; margin: 10px 0;">
             <canvas id="qrCanvas"></canvas>
@@ -476,7 +542,9 @@
     <div class="mod-container" style="max-width: 400px; padding: 40px;">
         <div class="mod-header" style="justify-content: center; position: relative; margin-bottom: 30px;">
             <h2 style="font-size: 24px; font-weight: 700; color: var(--text-main);">Panel Logowania</h2>
-            <button id="closeLoginModal" class="mod-close" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);">&times;</button>
+            <button id="closeLoginModal" class="mod-close" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);" aria-label="Zamknij logowanie">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 16px;">
