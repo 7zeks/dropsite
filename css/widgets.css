@@ -1443,16 +1443,12 @@ body.is-admin .storage-widget {
 
 .btn-nav-glass.sound-btn.is-muted .sound-icon-off {
     display: block !important;
-    color: rgba(255, 68, 57, 0.75);
+    color: var(--text-muted);
 }
 
 .btn-nav-glass.sound-btn:hover svg {
     transform: translate(-50%, -50%) scale(1.1);
-    color: var(--accent-blue);
-}
-
-.btn-nav-glass.sound-btn.is-muted:hover .sound-icon-off {
-    color: #FF4439;
+    color: var(--text-main);
 }
 
 /* 2. Luksusowy Panel Kompresji Grafiki */
