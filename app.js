@@ -288,9 +288,19 @@ if (slugToggleBtn && customSlugBox) {
         customSlugBox.style.display = isHidden ? 'block' : 'none';
         slugToggleBtn.classList.toggle('active', isHidden);
         slugToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-        if (slugArrow && slugArrow.tagName === 'SPAN') {
-            slugArrow.textContent = isHidden ? '▲' : '▼';
-        }
+    });
+}
+
+// === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) ===
+const advToggleBtn = document.getElementById('advToggleBtn');
+const customAdvBox = document.getElementById('customAdvBox');
+if (advToggleBtn && customAdvBox) {
+    advToggleBtn.addEventListener('click', () => {
+        const isHidden = customAdvBox.hidden || customAdvBox.style.display === 'none';
+        customAdvBox.hidden = !isHidden;
+        customAdvBox.style.display = isHidden ? 'flex' : 'none';
+        advToggleBtn.classList.toggle('active', isHidden);
+        advToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
     });
 }
 
@@ -467,13 +477,16 @@ document.addEventListener('change', (e) => {
     }
 });
 
-// === NOWY SYSTEM WGRYWANIA BEZ LIMITU WAGI (Z OBSŁUGĄ MULTIPART) ===
+// === NOWY SYSTEM WGRYWANIA BEZ LIMITU WAGI (Z OBSŁUGĄ MULTIPART, TELEMETRII I OPCJI) ===
 async function uploadFile() {
     if (!selectedFile) return;
 
     let file = selectedFile;
     const duration = document.querySelector('input[name="duration"]:checked')?.value || '30d';
     const customSlug = document.getElementById('customSlugInput')?.value.trim() || '';
+    const filePassword = document.getElementById('filePasswordInput')?.value.trim() || '';
+    const fileNote = document.getElementById('fileNoteInput')?.value.trim() || '';
+    const fileMaxDl = document.querySelector('input[name="maxDownloads"]:checked')?.value || '';
 
     // Obsługa kompresji obrazu przed uploadem
     if (originalImageFile && compressToggleCheckbox?.checked) {
@@ -499,11 +512,31 @@ async function uploadFile() {
     fsSizeOrProgress.innerText = `0% - 0 B z ${formatBytes(file.size)}`;
     statusDiv.innerText = '';
 
+    const fsTelemetry = document.getElementById('fsTelemetry');
+    if (fsTelemetry) fsTelemetry.hidden = false;
+
+    const uploadStartTime = Date.now();
+
+    const updateTelemetry = (uploadedBytes) => {
+        const elapsedSec = (Date.now() - uploadStartTime) / 1000;
+        if (elapsedSec > 0.25) {
+            const speedBytes = uploadedBytes / elapsedSec;
+            const speedMB = (speedBytes / (1024 * 1024)).toFixed(1);
+            const remainingBytes = file.size - uploadedBytes;
+            const remainingSec = Math.max(0, Math.round(remainingBytes / speedBytes));
+            
+            const elSpeed = document.getElementById('fsSpeed');
+            const elEta = document.getElementById('fsEta');
+            if (elSpeed) elSpeed.textContent = `${speedMB} MB/s`;
+            if (elEta) elEta.textContent = remainingSec > 60 ? `Pozostało: ~${Math.ceil(remainingSec / 60)} min` : `Pozostało: ~${remainingSec}s`;
+        }
+    };
+
     try {
         if (file.size <= 10 * 1024 * 1024) { 
-            await uploadFileStandard(file, duration, customSlug, btnTextSpan);
+            await uploadFileStandard(file, duration, customSlug, filePassword, fileNote, fileMaxDl, btnTextSpan, updateTelemetry);
         } else { 
-            await uploadFileMultipart(file, duration, customSlug, btnTextSpan);
+            await uploadFileMultipart(file, duration, customSlug, filePassword, fileNote, fileMaxDl, btnTextSpan, updateTelemetry);
         }
     } catch (error) {
         showError(error.message);
@@ -511,9 +544,12 @@ async function uploadFile() {
 }
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
-async function uploadFileStandard(file, duration, customSlug, btnTextSpan) {
+async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, btnTextSpan, onProgressUpdate) {
     let urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(file.name)}&expiry=${duration}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
+    if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
+    if (note) urlReq += `&note=${encodeURIComponent(note)}`;
+    if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
     
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie...';
 
@@ -523,6 +559,7 @@ async function uploadFileStandard(file, duration, customSlug, btnTextSpan) {
             const percentComplete = (event.loaded / event.total) * 100;
             fsProgressBar.style.width = percentComplete + '%';
             fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(event.loaded)} z ${formatBytes(event.total)}`;
+            if (typeof onProgressUpdate === 'function') onProgressUpdate(event.loaded);
         }
     });
 
@@ -547,9 +584,12 @@ async function uploadFileStandard(file, duration, customSlug, btnTextSpan) {
 }
 
 // === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Niezawodny) ===
-async function uploadFileMultipart(file, duration, customSlug, btnTextSpan) {
+async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, btnTextSpan, onProgressUpdate) {
     let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
+    if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
+    if (note) urlReq += `&note=${encodeURIComponent(note)}`;
+    if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
     
     const response = await fetch(urlReq);
     const data = await response.json();
@@ -577,6 +617,7 @@ async function uploadFileMultipart(file, duration, customSlug, btnTextSpan) {
                     const percentComplete = (currentTotalUploaded / file.size) * 100;
                     fsProgressBar.style.width = percentComplete + '%';
                     fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(currentTotalUploaded)} z ${formatBytes(file.size)}`;
+                    if (typeof onProgressUpdate === 'function') onProgressUpdate(currentTotalUploaded);
                 }
             });
 
@@ -1844,7 +1885,7 @@ window.copyDirectLink = function(url) {
 };
 
 // ============================================================================
-// 5. DEDYKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE, STATS & BURN)
+// 5. DEDYKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE, STATS, AUDIO & LOCK)
 // ============================================================================
 async function initDownloadRouter() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1870,6 +1911,120 @@ async function initDownloadRouter() {
     const dlDownloadBtn = document.getElementById('dlDownloadBtn');
     const dlViewCount = document.getElementById('dlViewCount');
     const dlDownloadCount = document.getElementById('dlDownloadCount');
+    const dlNoteBox = document.getElementById('dlNoteBox');
+    const dlNoteText = document.getElementById('dlNoteText');
+    const dlPasswordLockBox = document.getElementById('dlPasswordLockBox');
+    const dlContentWrap = document.getElementById('dlContentWrap');
+    const dlUnlockBtn = document.getElementById('dlUnlockBtn');
+    const dlUnlockPasswordInput = document.getElementById('dlUnlockPasswordInput');
+    const dlPasswordError = document.getElementById('dlPasswordError');
+
+    // Funkcja do renderowania podglądów i odtwarzacza audio
+    function renderDownloadPreview(cleanName, directUrl) {
+        if (!dlPreviewContainer || !directUrl) return;
+
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(cleanName);
+        const isVideo = /\.(mp4|webm|mov|mkv|avi)$/i.test(cleanName);
+        const isAudio = /\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(cleanName);
+        const isPdf = /\.pdf$/i.test(cleanName);
+        const isArchive = /\.(zip|rar|7z|tar|gz)$/i.test(cleanName);
+        const isCode = /\.(txt|json|js|html|css|md|py|c|cpp|java|xml|yaml|yml)$/i.test(cleanName);
+
+        if (isImage) {
+            dlPreviewContainer.innerHTML = `<img src="${directUrl}" class="dl-preview-media" alt="${cleanName}">`;
+        } else if (isVideo) {
+            dlPreviewContainer.innerHTML = `<video src="${directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000; border-radius: 12px;"></video>`;
+        } else if (isAudio) {
+            dlPreviewContainer.innerHTML = `
+                <div class="dropsite-audio-player" id="dropsiteAudioPlayer">
+                    <audio id="mainAudioElement" src="${directUrl}" preload="metadata"></audio>
+                    <div class="audio-top-row">
+                        <button type="button" class="audio-play-btn" id="audioPlayBtn" aria-label="Odtwórz lub wstrzymaj">
+                            <svg id="audioPlayIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            <svg id="audioPauseIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                        </button>
+                        <div class="audio-info-col">
+                            <span class="audio-title">${cleanName}</span>
+                            <span class="audio-time-row" id="audioTimeDisplay">0:00 / --:--</span>
+                        </div>
+                        <div class="audio-waveform-bars" id="audioWaveform">
+                            <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                        </div>
+                    </div>
+                    <div class="audio-progress-wrap">
+                        <input type="range" id="audioProgressSlider" min="0" max="100" value="0" step="0.1" class="audio-progress-slider" aria-label="Pasek postępu odtwarzania audio">
+                    </div>
+                </div>
+            `;
+
+            // Podpięcie logiki odtwarzacza audio
+            setTimeout(() => {
+                const audio = document.getElementById('mainAudioElement');
+                const playBtn = document.getElementById('audioPlayBtn');
+                const playIcon = document.getElementById('audioPlayIcon');
+                const pauseIcon = document.getElementById('audioPauseIcon');
+                const timeDisplay = document.getElementById('audioTimeDisplay');
+                const slider = document.getElementById('audioProgressSlider');
+                const playerContainer = document.getElementById('dropsiteAudioPlayer');
+
+                if (!audio || !playBtn) return;
+
+                const formatTime = (secs) => {
+                    if (isNaN(secs) || secs === Infinity) return '0:00';
+                    const m = Math.floor(secs / 60);
+                    const s = Math.floor(secs % 60);
+                    return `${m}:${s < 10 ? '0' : ''}${s}`;
+                };
+
+                audio.addEventListener('loadedmetadata', () => {
+                    if (timeDisplay) timeDisplay.textContent = `0:00 / ${formatTime(audio.duration)}`;
+                });
+
+                playBtn.addEventListener('click', () => {
+                    if (audio.paused) {
+                        audio.play();
+                        if (playerContainer) playerContainer.classList.add('playing');
+                        if (playIcon) playIcon.style.display = 'none';
+                        if (pauseIcon) pauseIcon.style.display = 'block';
+                    } else {
+                        audio.pause();
+                        if (playerContainer) playerContainer.classList.remove('playing');
+                        if (playIcon) playIcon.style.display = 'block';
+                        if (pauseIcon) pauseIcon.style.display = 'none';
+                    }
+                });
+
+                audio.addEventListener('timeupdate', () => {
+                    if (audio.duration && slider) {
+                        slider.value = (audio.currentTime / audio.duration) * 100;
+                        if (timeDisplay) timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+                    }
+                });
+
+                if (slider) {
+                    slider.addEventListener('input', () => {
+                        if (audio.duration) {
+                            audio.currentTime = (slider.value / 100) * audio.duration;
+                        }
+                    });
+                }
+
+                audio.addEventListener('ended', () => {
+                    if (playerContainer) playerContainer.classList.remove('playing');
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
+                    if (slider) slider.value = 0;
+                });
+            }, 50);
+
+        } else if (isPdf) {
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
+        } else if (isArchive) {
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div>';
+        } else {
+            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>';
+        }
+    }
 
     try {
         // Rejestracja wyświetlenia na backendzie
@@ -1882,7 +2037,7 @@ async function initDownloadRouter() {
             dlFileName.innerText = 'Plik niedostępny';
             dlFileSize.innerText = data.message || 'Plik wygasł lub został zniszczony po pobraniu.';
             dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>';
-            dlDownloadBtn.style.display = 'none';
+            if (dlDownloadBtn) dlDownloadBtn.style.display = 'none';
             return;
         }
 
@@ -1893,19 +2048,89 @@ async function initDownloadRouter() {
         if (dlViewCount) dlViewCount.textContent = (data.views || 1);
         if (dlDownloadCount) dlDownloadCount.textContent = (data.downloads || 0);
 
-        // Badge
+        // Notatka od nadawcy
+        if (data.note && dlNoteBox && dlNoteText) {
+            dlNoteText.textContent = data.note;
+            dlNoteBox.hidden = false;
+        }
+
+        // Badges
+        let badgeHtml = '';
         if (data.isBurn) {
-            dlBadgeWrap.innerHTML = '<span class="dl-badge burn">Jednorazowy (Burn after download)</span>';
-            dlBurnWarning.hidden = false;
-            dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}`;
+            badgeHtml = '<span class="dl-badge burn">Jednorazowy (Burn after download)</span>';
+            if (dlBurnWarning) dlBurnWarning.hidden = false;
         } else if (data.expiryType === 'permanent') {
-            dlBadgeWrap.innerHTML = '<span class="dl-badge perm">Bezterminowy</span>';
-            dlDownloadBtn.href = data.directUrl;
-            dlDownloadBtn.setAttribute('download', cleanName);
+            badgeHtml = '<span class="dl-badge perm">Bezterminowy</span>';
         } else {
-            dlBadgeWrap.innerHTML = `<span class="dl-badge temp">Wygasa za ${data.expiryType === '1d' ? '1 dzień' : '30 dni'}</span>`;
-            dlDownloadBtn.href = data.directUrl;
-            dlDownloadBtn.setAttribute('download', cleanName);
+            badgeHtml = `<span class="dl-badge temp">Wygasa za ${data.expiryType === '1d' ? '1 dzień' : '30 dni'}</span>`;
+        }
+
+        if (data.maxDownloads) {
+            badgeHtml += ` <span class="dl-badge temp" style="margin-left: 6px;">Limit: ${data.downloads || 0}/${data.maxDownloads} pobrań</span>`;
+        }
+
+        if (dlBadgeWrap) dlBadgeWrap.innerHTML = badgeHtml;
+
+        // Obsługa blokady hasłem
+        if (data.hasPassword) {
+            if (dlPasswordLockBox) dlPasswordLockBox.hidden = false;
+            if (dlContentWrap) dlContentWrap.hidden = true;
+
+            if (dlUnlockBtn && dlUnlockPasswordInput) {
+                const performUnlock = async () => {
+                    const passwordVal = dlUnlockPasswordInput.value.trim();
+                    if (!passwordVal) {
+                        if (dlPasswordError) dlPasswordError.textContent = 'Wpisz hasło, aby odblokować plik.';
+                        return;
+                    }
+                    dlUnlockBtn.disabled = true;
+                    if (dlPasswordError) dlPasswordError.textContent = 'Weryfikacja hasła...';
+
+                    try {
+                        const vRes = await fetch(`${WORKER_URL}/verify-password`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key: fileKey, password: passwordVal })
+                        });
+                        const vData = await vRes.json();
+                        if (vData.success && vData.directUrl) {
+                            data.directUrl = vData.directUrl;
+                            if (dlPasswordLockBox) dlPasswordLockBox.hidden = true;
+                            if (dlContentWrap) dlContentWrap.hidden = false;
+                            
+                            if (dlDownloadBtn) {
+                                dlDownloadBtn.href = data.directUrl;
+                                dlDownloadBtn.setAttribute('download', cleanName);
+                            }
+                            renderDownloadPreview(cleanName, data.directUrl);
+                            showNotification('Plik został pomyślnie odblokowany!', 'success');
+                        } else {
+                            if (dlPasswordError) dlPasswordError.textContent = vData.message || 'Nieprawidłowe hasło.';
+                        }
+                    } catch (e) {
+                        if (dlPasswordError) dlPasswordError.textContent = 'Błąd połączenia z serwerem.';
+                    } finally {
+                        dlUnlockBtn.disabled = false;
+                    }
+                };
+
+                dlUnlockBtn.onclick = performUnlock;
+                dlUnlockPasswordInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') performUnlock();
+                };
+            }
+        } else {
+            if (dlPasswordLockBox) dlPasswordLockBox.hidden = true;
+            if (dlContentWrap) dlContentWrap.hidden = false;
+
+            if (data.isBurn) {
+                dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}`;
+            } else {
+                dlDownloadBtn.href = data.directUrl;
+                dlDownloadBtn.setAttribute('download', cleanName);
+            }
+
+            renderDownloadPreview(cleanName, data.directUrl);
         }
 
         // Zwiększ licznik pobrań po kliknięciu
@@ -1917,19 +2142,6 @@ async function initDownloadRouter() {
                 dlDownloadCount.textContent = current + 1;
             }
         });
-
-        // Renderowanie podglądu multimediów
-        if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = `<img src="${data.directUrl}" class="dl-preview-media" alt="${cleanName}">`;
-        } else if (/\.(mp4|webm|mov)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = `<video src="${data.directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000;"></video>`;
-        } else if (/\.(pdf)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
-        } else if (/\.(zip|rar|7z)$/i.test(cleanName)) {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div>';
-        } else {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>';
-        }
 
     } catch (err) {
         dlFileName.innerText = 'Błąd połączenia z serwerem';

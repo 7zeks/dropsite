@@ -123,6 +123,17 @@
                         <div class="fs-track" id="fsTrack" hidden>
                             <div class="fs-fill" id="fsProgressBar"></div>
                         </div>
+                        <div class="fs-telemetry" id="fsTelemetry" hidden>
+                            <span class="telemetry-item speed-item">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                                <span id="fsSpeed">0.0 MB/s</span>
+                            </span>
+                            <span class="telemetry-dot">&bull;</span>
+                            <span class="telemetry-item eta-item">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span id="fsEta">Obliczanie...</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -168,6 +179,55 @@
                         <div class="slug-input-container">
                             <span class="slug-prefix">dropsite.space/</span>
                             <input type="text" id="customSlugInput" placeholder="moj-wlasny-alias" class="dropsite-input custom-slug-input" maxlength="40" autocomplete="off" spellcheck="false">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ZAAWANSOWANE OPCJE TRANSFERU (Hasło, Notatka, Limit) -->
+                <div class="custom-adv-wrap">
+                    <button type="button" class="slug-toggle-header" id="advToggleBtn" aria-expanded="false">
+                        <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span class="slug-toggle-label">Zabezpieczenie i notatka <span class="slug-optional">(opcjonalnie)</span></span>
+                        <svg class="slug-arrow-svg" id="advArrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div id="customAdvBox" class="adv-options-box" hidden style="display: none;">
+                        <div class="adv-field">
+                            <label class="adv-label" for="filePasswordInput">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                Hasło do pliku:
+                            </label>
+                            <input type="password" id="filePasswordInput" placeholder="Ustaw hasło dostępu (opcjonalnie)..." class="dropsite-input adv-input" autocomplete="new-password">
+                        </div>
+                        <div class="adv-field">
+                            <label class="adv-label" for="fileNoteInput">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Wiadomość dla odbiorcy:
+                            </label>
+                            <input type="text" id="fileNoteInput" placeholder="Krótka notatka widoczna na karcie pobierania..." class="dropsite-input adv-input" maxlength="200">
+                        </div>
+                        <div class="adv-field">
+                            <label class="adv-label">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                Maksymalny limit pobrań:
+                            </label>
+                            <div class="adv-limit-radios">
+                                <label class="limit-radio-item">
+                                    <input type="radio" name="maxDownloads" value="" checked>
+                                    <span>Bez limitu</span>
+                                </label>
+                                <label class="limit-radio-item">
+                                    <input type="radio" name="maxDownloads" value="1">
+                                    <span>1x</span>
+                                </label>
+                                <label class="limit-radio-item">
+                                    <input type="radio" name="maxDownloads" value="5">
+                                    <span>5x</span>
+                                </label>
+                                <label class="limit-radio-item">
+                                    <input type="radio" name="maxDownloads" value="10">
+                                    <span>10x</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -321,25 +381,54 @@
                     </div>
                 </header>
 
-                <div id="dlPreviewContainer" class="dl-preview-container">
-                    <!-- Podgląd wideo/obrazu/ikona generowany przez app.js -->
+                <!-- KARTA NOTATKI OD NADAWCY -->
+                <div id="dlNoteBox" class="dl-note-card" hidden>
+                    <div class="dl-note-header">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span>Wiadomość od nadawcy:</span>
+                    </div>
+                    <p id="dlNoteText" class="dl-note-body"></p>
                 </div>
 
-                <div id="dlBurnWarning" class="burn-warning-box" hidden>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <span><strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!</span>
+                <!-- BLOKADA HASŁEM -->
+                <div id="dlPasswordLockBox" class="dl-password-box" hidden>
+                    <div class="pwd-lock-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h3>Plik zabezpieczony hasłem</h3>
+                    <p>Nadawca ustawił hasło dostępu do tego pliku. Wpisz je poniżej, aby odblokować pobieranie.</p>
+                    <div class="pwd-input-wrap">
+                        <input type="password" id="dlUnlockPasswordInput" placeholder="Wpisz hasło do pliku..." class="dropsite-input pwd-unlock-input" autocomplete="current-password">
+                        <button type="button" id="dlUnlockBtn" class="btn-primary" style="padding: 12px 20px;">
+                            <span class="btn-text">Odblokuj</span>
+                            <div class="btn-ripple"></div>
+                        </button>
+                    </div>
+                    <p id="dlPasswordError" class="pwd-error-text"></p>
                 </div>
 
-                <div class="dl-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
-                    <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large" style="text-decoration: none; justify-content: center; padding: 16px; font-size: 16px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span class="btn-text">Pobierz plik</span>
-                        <div class="btn-ripple"></div>
-                    </a>
-                    
-                    <button class="btn-secondary" onclick="document.querySelector('[data-target=\'view-glowna\']').click()" style="width: 100%; justify-content: center; padding: 12px;">
-                        Prześlij własny plik na Dropsite
-                    </button>
+                <!-- ZAWARTOŚĆ PO ODBLOKOWANIU -->
+                <div id="dlContentWrap">
+                    <div id="dlPreviewContainer" class="dl-preview-container">
+                        <!-- Podgląd wideo/obrazu/audio/ikona generowany przez app.js -->
+                    </div>
+
+                    <div id="dlBurnWarning" class="burn-warning-box" hidden>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <span><strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!</span>
+                    </div>
+
+                    <div class="dl-actions" style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+                        <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large" style="text-decoration: none; justify-content: center; padding: 16px; font-size: 16px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span class="btn-text">Pobierz plik</span>
+                            <div class="btn-ripple"></div>
+                        </a>
+                        
+                        <button class="btn-secondary" onclick="document.querySelector('[data-target=\'view-glowna\']').click()" style="width: 100%; justify-content: center; padding: 12px;">
+                            Prześlij własny plik na Dropsite
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
