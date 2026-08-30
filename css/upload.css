@@ -331,6 +331,7 @@ input[type='file'] {
 
 /* --- Główny Przycisk --- */
 .btn-primary {
+    box-sizing: border-box;
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
     color: #090A0F;
     border: none;

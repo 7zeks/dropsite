@@ -1435,48 +1435,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// === PODGLĄD ZDJĘĆ W PANELU MODERACJI (LIGHTBOX) ===
-window.openImagePreview = function(url) {
-    let previewModal = document.getElementById('imagePreviewModal');
+// === PODGLĄD ZDJĘĆ W PANELU MODERACJI ORAZ NA STRONIE POBIERANIA (LIGHTBOX) ===
+window.openDownloadImageLightbox = function(url, title) {
+    const modal = document.getElementById('dlLightboxModal');
+    const img = document.getElementById('dlLightboxImg');
+    const titleEl = document.getElementById('dlLightboxTitle');
+    const newTabBtn = document.getElementById('dlLightboxOpenNewTab');
+    const zoomToggleBtn = document.getElementById('dlLightboxZoomToggle');
+    const zoomInIcon = document.getElementById('dlZoomInIcon');
+    const zoomOutIcon = document.getElementById('dlZoomOutIcon');
+    const zoomStatusText = document.getElementById('dlZoomStatusText');
+    const closeBtn = document.getElementById('dlLightboxCloseBtn');
+    const backdrop = document.getElementById('dlLightboxBackdrop');
 
-    if (!previewModal) {
-        previewModal = document.createElement('div');
-        previewModal.id = 'imagePreviewModal';
-        previewModal.style.cssText = `
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(5px);
-            z-index: 99999;
-            justify-content: center;
-            align-items: center;
-            cursor: zoom-out;
-        `;
+    if (!modal || !img) return;
 
-        const img = document.createElement('img');
-        img.id = 'imagePreviewSrc';
-        img.style.cssText = `
-            max-width: 90%;
-            max-height: 90vh;
-            border-radius: var(--radius-md, 14px);
-            box-shadow: 0 24px 60px rgba(0,0,0,0.8);
-            object-fit: contain;
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        `;
+    img.src = url;
+    img.alt = title || 'Podgląd zdjęcia';
+    img.classList.remove('zoomed');
 
-        previewModal.appendChild(img);
+    if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
+    if (newTabBtn) newTabBtn.href = url;
 
-        previewModal.onclick = () => {
-            previewModal.style.display = 'none';
-            img.src = ''; 
-        };
+    let isZoomed = false;
+    const updateZoomState = (zoomed) => {
+        isZoomed = zoomed;
+        if (isZoomed) {
+            img.classList.add('zoomed');
+            if (zoomInIcon) zoomInIcon.style.display = 'none';
+            if (zoomOutIcon) zoomOutIcon.style.display = 'block';
+            if (zoomStatusText) zoomStatusText.textContent = 'Dopasuj';
+        } else {
+            img.classList.remove('zoomed');
+            if (zoomInIcon) zoomInIcon.style.display = 'block';
+            if (zoomOutIcon) zoomOutIcon.style.display = 'none';
+            if (zoomStatusText) zoomStatusText.textContent = 'Powiększ';
+        }
+    };
 
-        document.body.appendChild(previewModal);
-    }
+    updateZoomState(false);
 
-    document.getElementById('imagePreviewSrc').src = url;
-    previewModal.style.display = 'flex';
+    const toggleZoom = (e) => {
+        if (e) e.stopPropagation();
+        updateZoomState(!isZoomed);
+    };
+
+    const closeModal = () => {
+        modal.hidden = true;
+        img.src = '';
+        img.classList.remove('zoomed');
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    };
+
+    img.onclick = toggleZoom;
+    if (zoomToggleBtn) zoomToggleBtn.onclick = toggleZoom;
+    if (closeBtn) closeBtn.onclick = closeModal;
+    if (backdrop) backdrop.onclick = closeModal;
+
+    document.addEventListener('keydown', handleKeyDown);
+    modal.hidden = false;
+};
+
+window.openImagePreview = function(url, title) {
+    window.openDownloadImageLightbox(url, title || 'Podgląd zdjęcia');
 };
 
 // === ODTWARZACZ WIDEO W PANELU MODERACJI ===
@@ -1932,7 +1959,66 @@ async function initDownloadRouter() {
         const isCode = /\.(txt|json|js|html|css|md|py|c|cpp|java|xml|yaml|yml)$/i.test(cleanName);
 
         if (isImage) {
-            dlPreviewContainer.innerHTML = `<img src="${directUrl}" class="dl-preview-media" alt="${cleanName}">`;
+            dlPreviewContainer.innerHTML = `
+                <div class="dl-preview-image-wrapper" id="dlPreviewImageWrapper" role="button" tabindex="0" title="Kliknij, aby powiększyć zdjęcie" aria-label="Powiększ zdjęcie">
+                    <img src="${directUrl}" class="dl-preview-media" alt="${cleanName}">
+                    <div class="dl-preview-toolbar">
+                        <button type="button" class="dl-tool-pill dl-tool-zoom" id="dlQuickZoomBtn" title="Powiększ zdjęcie w oknie">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                <line x1="11" y1="8" x2="11" y2="14"></line>
+                                <line x1="8" y1="11" x2="14" y2="11"></line>
+                            </svg>
+                            <span>Powiększ</span>
+                        </button>
+                        <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="dl-tool-pill dl-tool-newtab" id="dlQuickNewTabBtn" title="Otwórz oryginalne zdjęcie w nowej karcie">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            <span>Otwórz w nowej karcie</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            const imgWrap = document.getElementById('dlPreviewImageWrapper');
+            const quickZoomBtn = document.getElementById('dlQuickZoomBtn');
+            const quickNewTabBtn = document.getElementById('dlQuickNewTabBtn');
+
+            if (imgWrap) {
+                imgWrap.addEventListener('click', (e) => {
+                    if (e.target.closest('#dlQuickNewTabBtn')) return;
+                    if (window.openDownloadImageLightbox) {
+                        window.openDownloadImageLightbox(directUrl, cleanName);
+                    }
+                });
+                imgWrap.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (window.openDownloadImageLightbox) {
+                            window.openDownloadImageLightbox(directUrl, cleanName);
+                        }
+                    }
+                });
+            }
+
+            if (quickZoomBtn) {
+                quickZoomBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (window.openDownloadImageLightbox) {
+                        window.openDownloadImageLightbox(directUrl, cleanName);
+                    }
+                });
+            }
+
+            if (quickNewTabBtn) {
+                quickNewTabBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
         } else if (isVideo) {
             dlPreviewContainer.innerHTML = `<video src="${directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000; border-radius: 12px;"></video>`;
         } else if (isAudio) {
