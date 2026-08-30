@@ -31,6 +31,9 @@ export default {
         const filename = url.searchParams.get("file") || "plik";
         const expiry = url.searchParams.get("expiry") || "permanent";
         const customSlug = url.searchParams.get("slug");
+        const pwd = url.searchParams.get("pwd") || "";
+        const maxdl = url.searchParams.get("maxdl") || "";
+        const note = url.searchParams.get("note") || "";
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
         // --- ZABEZPIECZENIE BACKENDOWE ---
@@ -59,11 +62,14 @@ export default {
         else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
         else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
-        // Bezpośredni zapis na dysk R2 z inicjalnymi metadanymi statystyk
+        // Bezpośredni zapis na dysk R2 z rozszerzonymi metadanymi
         await env.BUCKET.put(fileKey, request.body, {
             customMetadata: {
                 views: "0",
-                downloads: "0"
+                downloads: "0",
+                password: pwd,
+                maxDownloads: maxdl,
+                note: note
             }
         });
 
@@ -91,6 +97,9 @@ export default {
             const filename = url.searchParams.get("file") || "plik";
             const expiry = url.searchParams.get("expiry") || "permanent"; 
             const customSlug = url.searchParams.get("slug");
+            const pwd = url.searchParams.get("pwd") || "";
+            const maxdl = url.searchParams.get("maxdl") || "";
+            const note = url.searchParams.get("note") || "";
             const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
             
             if (env.BUCKET) {
@@ -117,7 +126,15 @@ export default {
             else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
             else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
-            const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey);
+            const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey, {
+                customMetadata: {
+                    views: "0",
+                    downloads: "0",
+                    password: pwd,
+                    maxDownloads: maxdl,
+                    note: note
+                }
+            });
             
             return new Response(JSON.stringify({
                 success: true,
@@ -188,10 +205,10 @@ export default {
     }
 
     // =========================================================================
-    // NOWE ENDPOINTY: DEDYKOWANA STRONA POBIERANIA I STATYSTYKI
+    // ENDPOINTY: DEDYKOWANA STRONA POBIERANIA, STATYSTYKI I HASŁA
     // =========================================================================
     
-    // Rejestracja wyświetlenia lub pobrania pliku
+    // Rejestracja wyświetlenia lub pobrania pliku (z obsługą limitu pobrań)
     if (url.pathname === "/track-stat" && request.method === "POST") {
         const key = url.searchParams.get("key");
         const type = url.searchParams.get("type"); // 'view' lub 'download'
@@ -208,14 +225,58 @@ export default {
                 let downloads = parseInt(meta.downloads || "0", 10);
 
                 if (type === "view") views++;
-                if (type === "download") downloads++;
+                if (type === "download") {
+                    downloads++;
+                    // Sprawdzenie limitu pobrań
+                    if (meta.maxDownloads) {
+                        const maxDls = parseInt(meta.maxDownloads, 10);
+                        if (maxDls > 0 && downloads >= maxDls) {
+                            // Osiągnięto limit pobrań -> skasuj plik
+                            await env.BUCKET.delete(key);
+                            return new Response(JSON.stringify({ success: true, views, downloads, limitReached: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                        }
+                    }
+                }
 
-                // R2 nie ma bezpośredniego atomicznego updateMetadata, ale przechowujemy wartości w nagłówkach
                 return new Response(JSON.stringify({ success: true, views, downloads }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         } catch {}
 
         return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // Weryfikacja hasła do pliku
+    if (url.pathname === "/verify-password" && request.method === "POST") {
+        try {
+            const body = await request.json();
+            const { key, password } = body;
+
+            if (!key || !env.BUCKET) {
+                return new Response(JSON.stringify({ success: false, message: "Brak parametrów" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+
+            const object = await env.BUCKET.head(key);
+            if (!object) {
+                return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+
+            const meta = object.customMetadata || {};
+            const correctPassword = meta.password || "";
+
+            if (!correctPassword || correctPassword === password) {
+                return new Response(JSON.stringify({
+                    success: true,
+                    directUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
+                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+            } else {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: "Nieprawidłowe hasło dostępu do pliku."
+                }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+        } catch (err) {
+            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
     }
 
     // Metadane pliku dla strony pobierania
@@ -238,6 +299,9 @@ export default {
             else if (isBurn) expiryType = "burn";
 
             const meta = object.customMetadata || {};
+            const hasPassword = Boolean(meta.password && meta.password.trim().length > 0);
+            const maxDownloads = meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null;
+            const note = meta.note ? decodeURIComponent(meta.note) : "";
 
             return new Response(JSON.stringify({
                 success: true,
@@ -247,9 +311,12 @@ export default {
                 httpMetadata: object.httpMetadata,
                 isBurn: isBurn,
                 expiryType: expiryType,
+                hasPassword: hasPassword,
+                maxDownloads: maxDownloads,
+                note: note,
                 views: parseInt(meta.views || "1", 10),
                 downloads: parseInt(meta.downloads || "0", 10),
-                directUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
+                directUrl: hasPassword ? null : `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
             }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
 
         } catch (err) {
