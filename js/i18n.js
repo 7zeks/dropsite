@@ -182,6 +182,7 @@ const translations = {
         "pro_btn_activate": "Activate",
         "pro_active_text": "PRO account is active on this device!",
         "pro_btn_deactivate": "Deactivate key",
+        "pro_btn_manage_sub": "Manage / Cancel Subscription",
 
         // Modals & Panels
         "history_title": "File History",
@@ -376,6 +377,7 @@ const translations = {
         "pro_btn_activate": "Aktywuj",
         "pro_active_text": "Konto PRO jest aktywne na tym urządzeniu!",
         "pro_btn_deactivate": "Dezaktywuj klucz",
+        "pro_btn_manage_sub": "Zarządzaj subskrypcją / Anuluj",
 
         // Modals & Panels
         "history_title": "Historia Wgranych Plików",

@@ -352,6 +352,10 @@ function updateProUI() {
                 ? 'Konto Administratora (Pełny, nielimitowany dostęp PRO)' 
                 : 'Konto Dropsite PRO jest aktywne!';
         }
+        const manageSubBtn = document.getElementById('btnManageSubscription');
+        if (manageSubBtn) {
+            manageSubBtn.style.display = isAdmin ? 'none' : 'inline-flex';
+        }
         if (deactivateBtn) {
             deactivateBtn.style.display = isAdmin ? 'none' : 'inline-flex';
         }
