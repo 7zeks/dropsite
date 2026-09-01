@@ -559,45 +559,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Obsługa bezpośredniego zakupu Subskrypcji PRO przez Polar.sh
+    // Obsługa zakupu PRO (BLIK 30 Dni oraz Subskrypcja) przez Polar.sh
+    async function startPolarCheckout(planType, buttonElement) {
+        if (isProUser()) {
+            if (typeof showNotification === 'function') {
+                showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
+            }
+            return;
+        }
+
+        const btnText = buttonElement ? buttonElement.querySelector('.btn-text') : null;
+        const origText = btnText ? btnText.textContent : 'Kup PRO';
+        if (btnText) btnText.textContent = 'Przekierowanie do kasy...';
+        if (buttonElement) buttonElement.style.pointerEvents = 'none';
+
+        try {
+            const res = await fetch(`${WORKER_URL}/create-checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    plan_type: planType,
+                    success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error(data.error || 'Nie udało się otworzyć kasy');
+            }
+        } catch (err) {
+            console.error('Checkout error:', err);
+            if (typeof showNotification === 'function') {
+                showNotification('Błąd otwierania kasy Polar.sh. Spróbuj ponownie.', 'error');
+            }
+            if (btnText) btnText.textContent = origText;
+            if (buttonElement) buttonElement.style.pointerEvents = 'auto';
+        }
+    }
+
+    const btnBuyProBlik = document.getElementById('btnBuyProBlik');
+    if (btnBuyProBlik) {
+        btnBuyProBlik.addEventListener('click', (e) => {
+            e.preventDefault();
+            startPolarCheckout('one_time', btnBuyProBlik);
+        });
+    }
+
     const btnBuyProSub = document.getElementById('btnBuyProSub');
     if (btnBuyProSub) {
-        btnBuyProSub.addEventListener('click', async (e) => {
+        btnBuyProSub.addEventListener('click', (e) => {
             e.preventDefault();
-            if (isProUser()) {
-                if (typeof showNotification === 'function') {
-                    showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
-                }
-                return;
-            }
-
-            const btnText = btnBuyProSub.querySelector('.btn-text');
-            const origText = btnText ? btnText.textContent : 'Buy PRO';
-            if (btnText) btnText.textContent = 'Przekierowanie do kasy...';
-            btnBuyProSub.style.pointerEvents = 'none';
-
-            try {
-                const res = await fetch(`${WORKER_URL}/create-checkout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
-                    })
-                });
-                const data = await res.json();
-                if (data.success && data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error(data.error || 'Nie udało się otworzyć kasy');
-                }
-            } catch (err) {
-                console.error('Checkout error:', err);
-                if (typeof showNotification === 'function') {
-                    showNotification('Błąd otwierania kasy Polar.sh. Spróbuj ponownie.', 'error');
-                }
-                if (btnText) btnText.textContent = origText;
-                btnBuyProSub.style.pointerEvents = 'auto';
-            }
+            startPolarCheckout('subscription', btnBuyProSub);
         });
     }
 

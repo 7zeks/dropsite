@@ -610,9 +610,118 @@
                         <a href="mailto:dropsite33@gmail.com" class="clickable-link">dropsite33@gmail.com</a>
                         <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted);" data-i18n="contact_hours_desc">Support Availability: Mon – Sun: 08:00 – 22:00</p>
                     </div>
+
+                    <!-- Kwestie Prawne i Dokumenty -->
+                    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px;">Dokumenty prawne</span>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" class="btn-legal-pill nav-btn" data-target="view-regulamin">
+                                <span class="legal-pill-icon icon-blue">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                        <polyline points="10 9 9 9 8 9"></polyline>
+                                    </svg>
+                                </span>
+                                <span>Regulamin Serwisu</span>
+                            </button>
+                            <button type="button" class="btn-legal-pill nav-btn" data-target="view-polityka">
+                                <span class="legal-pill-icon icon-green">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        <polyline points="9 12 11 14 15 10"></polyline>
+                                    </svg>
+                                </span>
+                                <span>Polityka Prywatności</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- WIDOK: REGULAMIN SERWISU -->
+        <div id="view-regulamin" class="view-section" hidden>
+            <div class="main-wrapper" style="max-width: 780px;">
+                <div class="upload-container info-panel" style="text-align: left; padding: 36px 32px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; width: 100%;">
+                        <button type="button" class="btn-legal-back nav-btn" data-target="view-kontakt">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                            <span>Wróć do kontaktu</span>
+                        </button>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Aktualizacja: 01.09.2026</span>
+                    </div>
+
+                    <header class="upload-header" style="text-align: left; margin-bottom: 24px;">
+                        <h1 style="font-size: 24px;">Regulamin Serwisu Dropsite</h1>
+                        <p style="color: var(--text-muted); font-size: 13.5px; margin-top: 4px;">Zasady świadczenia usług drogą elektroniczną (https://dropsite.pages.dev)</p>
+                    </header>
+
+                    <div class="legal-content-body" style="color: #c8cdd4; font-size: 13.5px; line-height: 1.65; max-height: 520px; overflow-y: auto; padding-right: 12px;">
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 1. Postanowienia Ogólne</h3>
+                        <p>1. Niniejszy Regulamin określa zasady korzystania z serwisu <strong>Dropsite</strong> dostępnego pod adresem <code>https://dropsite.pages.dev</code>.</p>
+                        <p>2. Usługodawcą jest operator projektu Dropsite (kontakt: <strong>dropsite33@gmail.com</strong>).</p>
+                        <p>3. Sprzedaż planów Dropsite PRO prowadzona jest w modelu Merchant of Record przez platformę <strong>Polar Software Inc.</strong> (Sztokholm / Delaware), która odpowiada za rozliczenia podatkowe (VAT/Sales Tax).</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 2. Plany i Limity Usługi</h3>
+                        <p>• <strong>Konto Darmowe (Free):</strong> Pliki do 250 MB, czas przechowywania 24 godziny lub tryb jednorazowy <em>Burn after read</em> (usunięcie po pierwszym pobraniu), bez wymogu rejestracji.</p>
+                        <p>• <strong>Dropsite PRO:</strong> Pliki do 10 GB, retencja 30 dni lub Bezterminowa, własne aliasy linków, brak reklam, priorytetowa przepustowość.</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 3. Treści Niedozwolone</h3>
+                        <p>Zabrania się przesyłania plików zawierających: złośliwe oprogramowanie (wirusy, phishing), treści naruszające prawa autorskie (piractwo), materiały pornograficzne z udziałem małoletnich (CSAM), nawoływanie do terroryzmu lub bazy danych z wycieków danych osobowych.</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 4. Procedura Notice & Take Down</h3>
+                        <p>Zgłoszenia naruszeń praw autorskich lub nielegalnych plików należy kierować na adres: <strong>dropsite33@gmail.com</strong> z podaniem linku do pliku. Zgłoszenia rozpatrywane są w ciągu 24–48 godzin.</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 5. Subskrypcje i Płatności</h3>
+                        <p>Subskrypcję PRO można w każdej chwili anulować w Portalu Klienta Polar.sh (<code>https://polar.sh/dropsite/portal</code>). Zgodnie z art. 38 pkt 13 Ustawy o prawach konsumenta, natychmiastowe odblokowanie treści cyfrowych skutkuje utratą prawa do 14-dniowego odstąpienia od umowy.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: POLITYKA PRYWATNOŚCI (RODO) -->
+        <div id="view-polityka" class="view-section" hidden>
+            <div class="main-wrapper" style="max-width: 780px;">
+                <div class="upload-container info-panel" style="text-align: left; padding: 36px 32px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; width: 100%;">
+                        <button type="button" class="btn-legal-back nav-btn" data-target="view-kontakt">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                            <span>Wróć do kontaktu</span>
+                        </button>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Aktualizacja: 01.09.2026</span>
+                    </div>
+
+                    <header class="upload-header" style="text-align: left; margin-bottom: 24px;">
+                        <h1 style="font-size: 24px;">Polityka Prywatności i Cookies</h1>
+                        <p style="color: var(--text-muted); font-size: 13.5px; margin-top: 4px;">Informacje o przetwarzaniu danych osobowych i RODO</p>
+                    </header>
+
+                    <div class="legal-content-body" style="color: #c8cdd4; font-size: 13.5px; line-height: 1.65; max-height: 520px; overflow-y: auto; padding-right: 12px;">
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 1. Administrator Danych</h3>
+                        <p>Administratorem danych jest operator serwisu Dropsite. Kontakt: <strong>dropsite33@gmail.com</strong>. Działamy w oparciu o zasadę Privacy by Design.</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 2. Przetwarzane Dane</h3>
+                        <p>• <strong>Darmowy Transfer:</strong> Nie wymagamy danych osobowych ani rejestracji. Przechowujemy wyłącznie plik oraz techniczne metadane niezbędne do jego pobrania (rozmiar, nazwa, czas wygaśnięcia).</p>
+                        <p>• <strong>Konta Zalogowane:</strong> Przetwarzamy adres e-mail i identyfikator UID (Firebase Auth) oraz powiązany klucz licencyjny PRO.</p>
+                        <p>• <strong>Płatności:</strong> Dane kart płatniczych przetwarza bezpośrednio certyfikowany podmiot <strong>Polar Software Inc.</strong> — Dropsite nie gromadzi danych kart.</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 3. Podmioty Współpracujące</h3>
+                        <p>Dane przetwarzane są przy udziale zaufanych dostawców infrastruktury: Cloudflare Inc. (R2, Workers, CDN), Google Ireland Limited (Firebase Auth) oraz Polar Software Inc. (Bramka MoR).</p>
+
+                        <h3 style="color: #fff; font-size: 15px; margin: 18px 0 6px 0;">§ 4. Prawa Użytkownika</h3>
+                        <p>Każdy Użytkownik ma prawo do wglądu, sprostowania, żądania usunięcia swoich danych oraz wniesienia sprzeciwu. Wnioski prosimy kierować na adres: <strong>dropsite33@gmail.com</strong>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <!-- DEDYTKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE) -->
         <div id="view-download" class="view-section" hidden>
@@ -1162,6 +1271,13 @@
                         <span data-i18n="auth_no_account">Don't have an account?</span> <span style="color: var(--accent-blue); font-weight: 600;" data-i18n="auth_register_link">Register</span>
                     </button>
                 </div>
+
+                <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 10px 0 0 0; line-height: 1.4;">
+                    Kontynuując, akceptujesz nasz 
+                    <a href="#" class="nav-btn" data-target="view-regulamin" onclick="document.getElementById('loginModalWrap')?.setAttribute('hidden','');" style="color: var(--accent-blue); text-decoration: underline;">Regulamin</a> 
+                    oraz 
+                    <a href="#" class="nav-btn" data-target="view-polityka" onclick="document.getElementById('loginModalWrap')?.setAttribute('hidden','');" style="color: var(--accent-blue); text-decoration: underline;">Politykę Prywatności</a>.
+                </p>
             </form>
         </div>
     </div>
@@ -1213,13 +1329,68 @@
                 </div>
             </div>
 
-            <!-- Opcje zakupu -->
+            <!-- Opcje zakupu (Subskrypcja PRO + BLIK 30 dni) -->
             <div class="pro-purchase-options">
-                <button type="button" id="btnBuyProSub" class="btn-primary pro-buy-btn">
-                    <span class="btn-text" data-i18n="pro_modal_buy_btn">Buy PRO ($4.99 / month)</span>
-                    <div class="btn-ripple"></div>
-                </button>
-                <div class="pro-divider"><span data-i18n="pro_modal_or_key">or enter purchased license key</span></div>
+                <div class="pro-plan-selector-grid">
+                    <!-- Opcja 1: Subskrypcja cykliczna (WYRÓŻNIONA / NAJPOPULARNIEJSZA) -->
+                    <div class="pro-buy-card featured" id="cardBuySub">
+                        <div class="pro-buy-card-badge">NAJCZĘŚCIEJ WYBIERANA ✦</div>
+                        <div class="pro-buy-card-header">
+                            <div>
+                                <div class="pro-buy-card-title">Subskrypcja PRO</div>
+                                <div class="pro-buy-card-subtitle">Automatyczne comiesięczne odnawianie • Anuluj kiedy chcesz</div>
+                            </div>
+                            <div class="pro-buy-card-price">
+                                <span class="price-val">14.99 zł</span>
+                                <span class="price-period">/ miesiąc</span>
+                            </div>
+                        </div>
+
+                        <div class="pro-methods-row">
+                            <span class="pay-badge">Apple Pay</span>
+                            <span class="pay-badge">Google Pay</span>
+                            <span class="pay-badge">Karty Visa / MC</span>
+                        </div>
+
+                        <button type="button" id="btnBuyProSub" class="btn-primary pro-buy-btn-sub">
+                            <span class="btn-text">Włącz subskrypcję PRO (14.99 zł / mc)</span>
+                            <div class="btn-ripple"></div>
+                        </button>
+                    </div>
+
+                    <!-- Opcja 2: BLIK / Jednorazowo -->
+                    <div class="pro-buy-card" id="cardBuyBlik">
+                        <div class="pro-buy-card-header">
+                            <div>
+                                <div class="pro-buy-card-title">Dostęp na 30 Dni</div>
+                                <div class="pro-buy-card-subtitle">Płatność jednorazowa bez podpinania karty</div>
+                            </div>
+                            <div class="pro-buy-card-price">
+                                <span class="price-val">14.99 zł</span>
+                                <span class="price-period">jednorazowo</span>
+                            </div>
+                        </div>
+
+                        <div class="pro-methods-row">
+                            <span class="pay-badge blik-badge" title="Płatność kodem BLIK">
+                                <svg width="34" height="14" viewBox="0 0 50 20" fill="none" style="vertical-align: middle;">
+                                    <rect width="50" height="20" rx="4" fill="#000" />
+                                    <circle cx="10" cy="10" r="4.5" fill="#EB0029" />
+                                    <text x="20" y="14" fill="#FFF" font-size="11" font-weight="900" font-family="sans-serif" letter-spacing="0.5">BLIK</text>
+                                </svg>
+                            </span>
+                            <span class="pay-badge">Google Pay</span>
+                            <span class="pay-badge">Karta</span>
+                        </div>
+
+                        <button type="button" id="btnBuyProBlik" class="btn-secondary pro-buy-btn-blik">
+                            <span class="btn-text">Zapłać jednorazowo z BLIK (14.99 zł)</span>
+                            <div class="btn-ripple"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pro-divider"><span data-i18n="pro_modal_or_key">lub wpisz zakupiony klucz licencyjny</span></div>
             </div>
 
             <!-- Aktywacja klucza licencyjnego -->

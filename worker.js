@@ -254,7 +254,16 @@ export default {
         } catch(e){}
 
         const successUrl = body.success_url || `${env.FRONTEND_URL || "https://dropsite.pages.dev"}/?pro_success=1`;
-        const priceId = env.POLAR_PRODUCT_PRICE_ID || "778c4c13-f652-4dcf-8699-9895a04742c6";
+        let priceId = body.product_price_id || body.price_id;
+        if (!priceId) {
+          if (body.plan_type === "subscription") {
+            // ID Subskrypcji (domyślnie oryginalny)
+            priceId = env.POLAR_SUB_PRICE_ID || env.POLAR_PRODUCT_PRICE_ID || "778c4c13-f652-4dcf-8699-9895a04742c6";
+          } else {
+            // ID Produktu jednorazowego (BLIK 30 Dni)
+            priceId = env.POLAR_ONE_TIME_PRICE_ID || "680b4c00-0b31-4d6d-8a45-90d31c894c9a";
+          }
+        }
 
         const polarRes = await fetch("https://api.polar.sh/v1/checkouts/custom/", {
           method: "POST",

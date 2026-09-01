@@ -2912,24 +2912,160 @@ body.is-pro .pro-sparkle {
     color: var(--text-main, #F0F2F5);
 }
 
-.pro-buy-btn {
-    width: 100%;
-    padding: 16px !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%) !important;
-    color: #121214 !important;
-    text-decoration: none;
-    text-align: center;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(255, 167, 81, 0.35) !important;
+.pro-plan-selector-grid {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.pro-buy-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    padding: 16px 18px;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pro-buy-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.pro-buy-card.featured {
+    background: linear-gradient(145deg, rgba(255, 210, 76, 0.07) 0%, rgba(255, 167, 81, 0.03) 100%);
+    border: 1px solid rgba(255, 210, 76, 0.35);
+    box-shadow: 0 6px 20px rgba(255, 167, 81, 0.12);
+}
+
+.pro-buy-card.featured:hover {
+    border-color: rgba(255, 210, 76, 0.6);
+    box-shadow: 0 10px 28px rgba(255, 167, 81, 0.25);
+}
+
+.pro-buy-card-badge {
+    position: absolute;
+    top: -10px;
+    right: 14px;
+    background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%);
+    color: #121214;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(255, 167, 81, 0.4);
+}
+
+.pro-buy-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.pro-buy-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main, #FFFFFF);
+}
+
+.pro-buy-card-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.pro-buy-card-price {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.pro-buy-card-price .price-val {
+    font-size: 17px;
+    font-weight: 800;
+    color: #FFD24C;
+}
+
+.pro-buy-card-price .price-period {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.pro-methods-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pay-badge {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
     align-items: center;
 }
 
-.pro-buy-btn:hover {
-    box-shadow: 0 12px 32px rgba(255, 167, 81, 0.55) !important;
+.pay-badge.blik-badge {
+    background: #000000;
+    border-color: rgba(235, 0, 41, 0.4);
+    padding: 2px 6px;
+}
+
+.pro-buy-btn-sub {
+    width: 100%;
+    padding: 13px 16px !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, #FFE259 0%, #FFA751 100%) !important;
+    color: #121214 !important;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(255, 167, 81, 0.35) !important;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.pro-buy-btn-sub:hover {
+    box-shadow: 0 6px 26px rgba(255, 167, 81, 0.6) !important;
+    transform: translateY(-1px);
+}
+
+.pro-buy-btn-blik {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pro-buy-btn-blik:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
     transform: translateY(-1px);
 }
 
@@ -3544,4 +3680,105 @@ body.is-admin .ad-container {
         width: 100%;
         text-align: center;
     }
-}
+}
+
+/* === PRZYCISKI I WIDOKI DOKUMENTÓW PRAWNYCH === */
+.btn-legal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-main, #FFFFFF);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: fit-content;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.btn-legal-back:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(15, 145, 210, 0.6);
+    color: #FFFFFF;
+    transform: translateX(-3px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.btn-legal-back svg {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-legal-back:hover svg {
+    transform: translateX(-2px);
+}
+
+.btn-legal-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-main, #FFFFFF);
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex: 1;
+    min-width: 150px;
+    text-decoration: none;
+}
+
+.btn-legal-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.legal-pill-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.legal-pill-icon.icon-blue {
+    background: rgba(15, 145, 210, 0.15);
+    border: 1px solid rgba(15, 145, 210, 0.3);
+    color: var(--accent-blue, #0F91D2);
+}
+
+.legal-pill-icon.icon-green {
+    background: rgba(89, 168, 41, 0.15);
+    border: 1px solid rgba(89, 168, 41, 0.3);
+    color: #59A829;
+}
+
+.btn-legal-pill:hover .legal-pill-icon.icon-blue {
+    background: rgba(15, 145, 210, 0.25);
+    box-shadow: 0 0 10px rgba(15, 145, 210, 0.3);
+}
+
+.btn-legal-pill:hover .legal-pill-icon.icon-green {
+    background: rgba(89, 168, 41, 0.25);
+    box-shadow: 0 0 10px rgba(89, 168, 41, 0.3);
+}
+
+
