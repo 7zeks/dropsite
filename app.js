@@ -376,11 +376,17 @@ function updateProUI() {
     
     if (proActiveBox) {
         proActiveBox.hidden = !isPro;
-        const badgeSpan = proActiveBox.querySelector('.pro-active-badge span');
-        if (badgeSpan) {
-            badgeSpan.textContent = isAdmin 
-                ? 'Konto Administratora (Pełny, nielimitowany dostęp PRO)' 
+        const titleSpan = proActiveBox.querySelector('.pro-active-title');
+        const subtitleSpan = proActiveBox.querySelector('.pro-active-subtitle');
+        if (titleSpan) {
+            titleSpan.textContent = isAdmin 
+                ? 'Konto Administratora (Pełny dostęp PRO)' 
                 : 'Konto Dropsite PRO jest aktywne!';
+        }
+        if (subtitleSpan) {
+            subtitleSpan.textContent = isAdmin
+                ? 'Nielimitowany storage, brak reklam i priorytetowy transfer'
+                : 'Wszystkie limity odblokowane (10 GB, brak reklam, max prędkość)';
         }
         const manageSubBtn = document.getElementById('btnManageSubscription');
         if (manageSubBtn) {

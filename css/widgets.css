@@ -2584,12 +2584,137 @@ body.is-admin .storage-widget {
     border-radius: 12px;
 }
 
-.pwd-error-text {
-    color: #FF4439;
-    font-size: 12.5px;
+/* --- Dark Glass Odtwarzacz Audio (MP3, WAV, M4A, FLAC, OGG) --- */
+.dropsite-audio-player {
+    background: linear-gradient(165deg, rgba(24, 30, 42, 0.95) 0%, rgba(13, 16, 24, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(196, 231, 212, 0.35);
+    border-radius: 18px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.audio-top-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.audio-play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #C4E7D4 0%, #A8DABF 100%);
+    border: none;
+    color: #0A0C10;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(196, 231, 212, 0.35);
+    transition: all 0.22s cubic-bezier(0.25, 0.8, 0.25, 1);
+    flex-shrink: 0;
+}
+
+.audio-play-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 25px rgba(196, 231, 212, 0.5);
+}
+
+.audio-play-btn:active {
+    transform: scale(0.95);
+}
+
+.audio-info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.audio-title {
+    font-size: 13.5px;
     font-weight: 600;
-    margin: 10px 0 0 0 !important;
-    min-height: 16px;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audio-time-row {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Animowane słupki fal dźwiękowych (Waveform Bars) */
+.audio-waveform-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 28px;
+    padding: 0 4px;
+}
+
+.wave-bar {
+    width: 3px;
+    height: 6px;
+    background: rgba(196, 231, 212, 0.3);
+    border-radius: 2px;
+    transition: height 0.15s ease, background 0.2s ease;
+}
+
+.dropsite-audio-player.playing .wave-bar {
+    background: #C4E7D4;
+    animation: waveBounce 1.2s ease-in-out infinite alternate;
+}
+
+.dropsite-audio-player.playing .wave-bar:nth-child(2n) { animation-delay: 0.15s; }
+.dropsite-audio-player.playing .wave-bar:nth-child(3n) { animation-delay: 0.3s; }
+.dropsite-audio-player.playing .wave-bar:nth-child(4n) { animation-delay: 0.45s; }
+
+@keyframes waveBounce {
+    0% { height: 4px; }
+    50% { height: 26px; }
+    100% { height: 8px; }
+}
+
+.audio-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.audio-progress-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.audio-progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #C4E7D4;
+    box-shadow: 0 0 8px rgba(196, 231, 212, 0.6);
+    cursor: pointer;
+    transition: transform 0.18s ease;
+}
+
+.audio-progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
 }
 
 /* ============================================================================
@@ -2871,30 +2996,118 @@ body.is-pro .pro-sparkle {
 .pro-key-status-text.error { color: #FF4439; }
 
 .pro-active-box {
-    margin-top: 16px;
-    padding: 14px;
-    background: rgba(89, 168, 41, 0.1);
-    border: 1px solid rgba(89, 168, 41, 0.3);
+    margin-top: 18px;
+    padding: 18px 20px;
+    background: linear-gradient(145deg, rgba(34, 197, 94, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35), 0 0 20px -8px rgba(34, 197, 94, 0.12);
+    backdrop-filter: blur(12px);
+}
+
+.pro-active-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.pro-active-status-icon {
+    width: 42px;
+    height: 42px;
     border-radius: 12px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pro-active-status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+}
+
+.pro-active-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4ADE80;
+    letter-spacing: -0.2px;
+}
+
+.pro-active-subtitle {
+    font-size: 12px;
+    color: var(--text-muted, #94A3B8);
+    line-height: 1.4;
+}
+
+.pro-active-actions {
+    display: flex;
+    align-items: center;
     gap: 10px;
+    width: 100%;
 }
 
-.pro-active-badge {
-    display: flex;
+.btn-pro-manage {
+    flex: 1;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    padding: 10px 16px;
     font-size: 13px;
-    color: #8CE556;
     font-weight: 600;
+    color: #F8FAFC;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.btn-deactivate-pro {
-    font-size: 11px !important;
-    padding: 6px 12px !important;
-    color: var(--text-muted) !important;
+.btn-pro-manage:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    color: #FFFFFF;
+}
+
+.btn-pro-deactivate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted, #94A3B8);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-pro-deactivate:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #FCA5A5;
+}
+
+@media (max-width: 480px) {
+    .pro-active-actions {
+        flex-direction: column;
+    }
+    .btn-pro-manage, .btn-pro-deactivate {
+        width: 100%;
+    }
 }
 
 /* Viral Promo na karcie pobierania */
