@@ -30,6 +30,7 @@ if (loginBtn) {
     loginBtn.addEventListener('click', () => {
         if (auth.currentUser) {
             auth.signOut().then(() => {
+                setProKey('');
                 showNotification('Wylogowano pomyślnie', 'info');
             });
         } else {
@@ -250,7 +251,7 @@ function updateAdminRoleUI() {
 }
 
 // 3. Nasłuchiwanie stanu zalogowania
-auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(async user => {
     const btnText = loginBtn ? loginBtn.querySelector('span') : null;
 
     if (user) {
@@ -261,12 +262,36 @@ auth.onAuthStateChanged(user => {
             loginBtn.title = `Zalogowano jako: ${user.email || displayName} (Kliknij, aby się wylogować)`;
             loginBtn.classList.add('logged-in');
         }
+
+        // Weryfikacja czy zapisany klucz PRO w pamięci przeglądarki należy do tego zalogowanego konta
+        const storedKey = (localStorage.getItem('dropsite_pro_key') || '').trim();
+        if (storedKey && !isActualAdminUser()) {
+            try {
+                const vRes = await fetch(`${WORKER_URL}/verify-pro`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Pro-Key': storedKey,
+                        'X-User-Email': user.email || '',
+                        'X-User-Uid': user.uid || ''
+                    },
+                    body: JSON.stringify({ key: storedKey, email: user.email, uid: user.uid })
+                });
+                const vData = await vRes.json();
+                if (!vData.success || !vData.isPro) {
+                    setProKey('');
+                }
+            } catch(e) {}
+        }
     } else {
         document.body.classList.remove('is-user-logged');
         if (btnText) btnText.textContent = 'Login';
         if (loginBtn) {
             loginBtn.title = 'Zaloguj się';
             loginBtn.classList.remove('logged-in');
+        }
+        if (!isActualAdminUser()) {
+            setProKey('');
         }
     }
     updateAdminRoleUI();
@@ -413,16 +438,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Wymóg zalogowania: Klucz PRO musi być trwale powiązany z kontem!
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                if (statusText) {
+                    statusText.className = 'pro-key-status-text error';
+                    statusText.textContent = 'Musisz być zalogowany, aby przypisać klucz PRO do swojego konta.';
+                }
+                if (typeof showNotification === 'function') {
+                    showNotification('Zaloguj się lub załóż darmowe konto, aby aktywować klucz PRO.', 'info');
+                }
+                if (loginModalWrap) {
+                    loginModalWrap.removeAttribute('hidden');
+                }
+                return;
+            }
+
             activateProKeyBtn.disabled = true;
             if (statusText) {
                 statusText.className = 'pro-key-status-text';
-                statusText.textContent = 'Weryfikacja klucza...';
+                statusText.textContent = 'Weryfikacja i przypisywanie klucza do konta...';
             }
 
             try {
                 const res = await fetch(`${WORKER_URL}/verify-pro`, {
                     method: 'POST',
-                    headers: { 'X-Pro-Key': keyVal }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Pro-Key': keyVal,
+                        'X-User-Email': currentUser.email || '',
+                        'X-User-Uid': currentUser.uid || ''
+                    },
+                    body: JSON.stringify({
+                        key: keyVal,
+                        email: currentUser.email || '',
+                        uid: currentUser.uid || ''
+                    })
                 });
                 const data = await res.json();
 
@@ -430,13 +481,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     setProKey(keyVal);
                     if (statusText) {
                         statusText.className = 'pro-key-status-text success';
-                        statusText.textContent = 'Sukces! Konto Dropsite PRO zostało aktywowane.';
+                        statusText.textContent = data.message || `Sukces! Konto Dropsite PRO zostało aktywowane dla ${currentUser.email}.`;
                     }
                     playSound('success');
                     if (typeof showNotification === 'function') {
-                        showNotification('Konto Dropsite PRO jest teraz aktywne!', 'success');
+                        showNotification(data.message || 'Konto Dropsite PRO jest teraz aktywne!', 'success');
                     }
-                    setTimeout(() => window.closeProModal(), 1200);
+                    setTimeout(() => window.closeProModal(), 1500);
                 } else {
                     if (statusText) {
                         statusText.className = 'pro-key-status-text error';
@@ -1245,8 +1296,14 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     let shareableUrl = smartShareUrl;
 
     if (finalLink) {
-        finalLink.href = shareableUrl;
+        finalLink.href = pageUrl;
+        finalLink.dataset.shareUrl = shareableUrl;
         finalLink.textContent = shareableUrl;
+        finalLink.removeAttribute('target');
+        finalLink.onclick = (e) => {
+            e.preventDefault();
+            window.location.href = pageUrl;
+        };
     }
 
     // Zapisujemy w lokalnej historii użytkownika
@@ -2636,14 +2693,16 @@ const qrCanvas = document.getElementById('qrCanvas');
 
 window.copyToClipboard = function() {
     const finalLink = document.getElementById('finalLink');
-    if (!finalLink || !finalLink.href) return;
-    window.copyDirectLink(finalLink.href);
+    if (!finalLink) return;
+    const url = finalLink.dataset.shareUrl || finalLink.href || finalLink.textContent;
+    if (!url || url === '#') return;
+    window.copyDirectLink(url);
 };
 
 window.shareLink = function() {
     const finalLink = document.getElementById('finalLink');
-    const url = finalLink?.href;
-    if (navigator.share && url) {
+    const url = finalLink?.dataset.shareUrl || finalLink?.href || finalLink?.textContent;
+    if (navigator.share && url && url !== '#') {
         navigator.share({
             title: 'Pobierz plik z Dropsite',
             text: 'Przesyłam Ci plik przez Dropsite:',
@@ -2920,7 +2979,87 @@ async function initDownloadRouter() {
         } else if (isVideo) {
             dlPreviewContainer.innerHTML = `<video src="${directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000; border-radius: 12px;"></video>`;
         } else if (isAudio) {
-            dlPreviewContainer.innerHTML = `<audio src="${directUrl}" controls class="dl-preview-media" style="width: 100%; border-radius: 12px; margin-bottom: 12px;"></audio>`;
+            dlPreviewContainer.innerHTML = `
+                <div class="dropsite-audio-player" id="dropsiteAudioPlayer">
+                    <audio id="mainAudioElement" src="${directUrl}" preload="metadata"></audio>
+                    <div class="audio-top-row">
+                        <button type="button" class="audio-play-btn" id="audioPlayBtn" aria-label="Odtwórz lub wstrzymaj">
+                            <svg id="audioPlayIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            <svg id="audioPauseIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                        </button>
+                        <div class="audio-info-col">
+                            <span class="audio-title">${cleanName}</span>
+                            <span class="audio-time-row" id="audioTimeDisplay">0:00 / --:--</span>
+                        </div>
+                        <div class="audio-waveform-bars" id="audioWaveform">
+                            <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                        </div>
+                    </div>
+                    <div class="audio-progress-wrap">
+                        <input type="range" id="audioProgressSlider" min="0" max="100" value="0" step="0.1" class="audio-progress-slider" aria-label="Pasek postępu odtwarzania audio">
+                    </div>
+                </div>
+            `;
+
+            // Podpięcie logiki odtwarzacza audio
+            setTimeout(() => {
+                const audio = document.getElementById('mainAudioElement');
+                const playBtn = document.getElementById('audioPlayBtn');
+                const playIcon = document.getElementById('audioPlayIcon');
+                const pauseIcon = document.getElementById('audioPauseIcon');
+                const timeDisplay = document.getElementById('audioTimeDisplay');
+                const slider = document.getElementById('audioProgressSlider');
+                const playerContainer = document.getElementById('dropsiteAudioPlayer');
+
+                if (!audio || !playBtn) return;
+
+                const formatTime = (secs) => {
+                    if (isNaN(secs) || secs === Infinity) return '0:00';
+                    const m = Math.floor(secs / 60);
+                    const s = Math.floor(secs % 60);
+                    return `${m}:${s < 10 ? '0' : ''}${s}`;
+                };
+
+                audio.addEventListener('loadedmetadata', () => {
+                    if (timeDisplay) timeDisplay.textContent = `0:00 / ${formatTime(audio.duration)}`;
+                });
+
+                playBtn.addEventListener('click', () => {
+                    if (audio.paused) {
+                        audio.play();
+                        if (playerContainer) playerContainer.classList.add('playing');
+                        if (playIcon) playIcon.style.display = 'none';
+                        if (pauseIcon) pauseIcon.style.display = 'block';
+                    } else {
+                        audio.pause();
+                        if (playerContainer) playerContainer.classList.remove('playing');
+                        if (playIcon) playIcon.style.display = 'block';
+                        if (pauseIcon) pauseIcon.style.display = 'none';
+                    }
+                });
+
+                audio.addEventListener('timeupdate', () => {
+                    if (audio.duration && slider) {
+                        slider.value = (audio.currentTime / audio.duration) * 100;
+                        if (timeDisplay) timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+                    }
+                });
+
+                if (slider) {
+                    slider.addEventListener('input', () => {
+                        if (audio.duration) {
+                            audio.currentTime = (slider.value / 100) * audio.duration;
+                        }
+                    });
+                }
+
+                audio.addEventListener('ended', () => {
+                    if (playerContainer) playerContainer.classList.remove('playing');
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
+                    if (slider) slider.value = 0;
+                });
+            }, 50);
         } else if (isPdf) {
             dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
         } else if (isArchive) {

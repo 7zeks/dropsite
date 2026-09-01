@@ -79,10 +79,15 @@ export default {
       return res;
     }
 
-    // =========================================================================
-    // HELPER: WERYFIKACJA AUTORYZACJI PRO (POLAR.SH & STATIC KEYS)
-    // =========================================================================
-    async function checkProKeyValidity(rawKey) {
+    // Helper do maskowania adresu e-mail: jan@gmail.com -> j***n@gmail.com
+    function maskEmail(email) {
+      if (!email || !email.includes("@")) return "innego konta";
+      const [name, domain] = email.split("@");
+      if (name.length <= 2) return name[0] + "***@" + domain;
+      return name[0] + "***" + name[name.length - 1] + "@" + domain;
+    }
+
+    async function checkProKeyValidity(rawKey, userEmail = "", userUid = "") {
       if (!rawKey) return { valid: false, message: "Brak klucza licencyjnego." };
       const trimmed = rawKey.trim();
       const upper = trimmed.toUpperCase();
@@ -105,7 +110,59 @@ export default {
         return { valid: true, type: "static_pro", message: "Klucz PRO aktywny." };
       }
 
-      // 3. Walidacja klucza w oficjalnym API Polar.sh (Customer Portal Validation)
+      const cleanEmail = (userEmail || "").toLowerCase().trim();
+
+      // 3. Sprawdzenie blokady i przypisania w magazynie R2 (_licenses/)
+      const licenseStorageKey = `_licenses/${trimmed.replace(/[^a-zA-Z0-9-]/g, '_')}.json`;
+      if (env.BUCKET) {
+        try {
+          const existingBinding = await env.BUCKET.get(licenseStorageKey);
+          if (existingBinding) {
+            const bindingData = await existingBinding.json();
+            const boundEmail = (bindingData.ownerEmail || "").toLowerCase().trim();
+
+            if (!cleanEmail) {
+              return { 
+                valid: false, 
+                requireAuth: true, 
+                message: `Zaloguj się na konto (${maskEmail(boundEmail)}), aby użyć tego klucza PRO.` 
+              };
+            }
+
+            if (boundEmail === cleanEmail) {
+              return {
+                valid: true,
+                type: "bound_pro",
+                ownerEmail: boundEmail,
+                activatedAt: bindingData.activatedAt,
+                message: `Konto Dropsite PRO jest aktywne dla ${cleanEmail}!`
+              };
+            } else {
+              return {
+                valid: false,
+                isPro: false,
+                message: `Ten klucz licencyjny jest już przypisany do innego konta (${maskEmail(boundEmail)}).`
+              };
+            }
+          }
+        } catch (storageErr) {
+          console.error("R2 license binding check error:", storageErr);
+        }
+      }
+
+      // Jeśli klucz nie był jeszcze aktywowany, użytkownik MUSI być zalogowany, by go przypisać
+      if (!cleanEmail) {
+        return { 
+          valid: false, 
+          requireAuth: true, 
+          message: "Musisz być zalogowany, aby przypisać klucz PRO do swojego konta." 
+        };
+      }
+
+      // 4. Walidacja nowego klucza w Polar.sh
+      let isValidFromPolar = false;
+      let expiresAt = null;
+
       try {
         const orgId = env.POLAR_ORG_ID || "a8ff89f6-b98c-4a21-bb7e-f231e79cf7d6";
         const polarRes = await fetch("https://api.polar.sh/v1/customer-portal/license-keys/validate", {
@@ -123,25 +180,43 @@ export default {
         if (polarRes.ok) {
           const data = await polarRes.json();
           if (data.status === "granted" || data.id || data.key) {
-            return { 
-              valid: true, 
-              type: "polar", 
-              expires_at: data.expires_at || null,
-              benefit_id: data.benefit_id || null,
-              message: "Klucz licencyjny z Polar.sh został pomyślnie zweryfikowany!" 
-            };
+            isValidFromPolar = true;
+            expiresAt = data.expires_at || null;
           }
         }
       } catch (err) {
         console.error("Polar API validation error:", err);
       }
 
-      // 4. Rozpoznawanie oficjalnych kluczy generowanych przez Polar (prefix DS- lub PRO-)
-      if (/^DS-[A-Z0-9-]{6,}/i.test(trimmed) || /^PRO-[A-Z0-9-]{6,}/i.test(trimmed)) {
+      // Format DS- lub PRO-
+      if (!isValidFromPolar && (/^DS-[A-Z0-9-]{6,}/i.test(trimmed) || /^PRO-[A-Z0-9-]{6,}/i.test(trimmed))) {
+        isValidFromPolar = true;
+      }
+
+      if (isValidFromPolar) {
+        // Zapisujemy przypisanie do konta użytkownika w R2 na stałe
+        if (env.BUCKET) {
+          try {
+            await env.BUCKET.put(licenseStorageKey, JSON.stringify({
+              key: trimmed,
+              ownerEmail: cleanEmail,
+              ownerUid: userUid || null,
+              activatedAt: new Date().toISOString(),
+              expiresAt: expiresAt
+            }), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          } catch (saveErr) {
+            console.error("Error saving license binding:", saveErr);
+          }
+        }
+
         return {
           valid: true,
-          type: "polar_verified",
-          message: "Klucz Dropsite PRO został pomyślnie aktywowany!"
+          type: "newly_bound",
+          ownerEmail: cleanEmail,
+          expires_at: expiresAt,
+          message: `Sukces! Klucz PRO został na stałe przypisany do konta ${cleanEmail}!`
         };
       }
 
@@ -227,16 +302,24 @@ export default {
     if (url.pathname === "/verify-pro" && request.method === "POST") {
       try {
         let key = request.headers.get("X-Pro-Key") || "";
-        if (!key) {
-          try {
-            const body = await request.json();
-            key = body.key || "";
-          } catch(e){}
-        }
-        const check = await checkProKeyValidity(key);
+        let email = request.headers.get("X-User-Email") || "";
+        let uid = request.headers.get("X-User-Uid") || "";
+
+        try {
+          const body = await request.json();
+          if (body) {
+            key = body.key || key;
+            email = body.email || email;
+            uid = body.uid || uid;
+          }
+        } catch(e){}
+
+        const check = await checkProKeyValidity(key, email, uid);
         return new Response(JSON.stringify({
           success: check.valid,
           isPro: check.valid,
+          requireAuth: check.requireAuth || false,
+          ownerEmail: check.ownerEmail || null,
           type: check.type || null,
           expires_at: check.expires_at || null,
           message: check.message
