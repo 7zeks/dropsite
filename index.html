@@ -1,714 +1,1323 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dropsite</title>
+    <link rel="icon" type="image/jpeg" href="favicon.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <script src="js/i18n.js"></script>
+
+    <!-- Google AdSense Verification & Auto Ads -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5653151226207684"
+        crossorigin="anonymous"></script>
 </head>
 
 <body>
 
-<!-- Canvas z interaktywnym tłem cząsteczek -->
-<canvas id="bgCanvas" class="bg-canvas"></canvas>
+    <!-- Canvas z interaktywnym tłem cząsteczek -->
+    <canvas id="bgCanvas" class="bg-canvas"></canvas>
 
-<!-- Cinematic Drag & Drop Overlay -->
-<div id="globalDragOverlay" class="global-drag-overlay">
-    <div class="drag-content">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="drag-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <h2>Upuść plik tutaj (lub wklej Ctrl+V)</h2>
-        <p>Rozpocznie się błyskawiczne wgrywanie</p>
-    </div>
-</div>
-
-<a href="#" class="nav-logo" onclick="document.querySelector('[data-target=\'view-glowna\']').click(); return false;">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-        <polyline points="17 8 12 3 7 8"></polyline>
-        <line x1="12" y1="3" x2="12" y2="15"></line>
-    </svg>
-    <span>Dropsite</span>
-</a>
-
-<div class="nav-right">
-    <ul class="nav-links">
-    <li><a href="#" class="nav-btn active" data-target="view-glowna">Główna</a></li>
-    <li><a href="#" class="nav-btn" data-target="view-funkcje">Funkcje</a></li>
-    <li><a href="#" class="nav-btn" data-target="view-cennik">Cennik</a></li>
-    <li><a href="#" class="nav-btn" data-target="view-kontakt">Kontakt</a></li>
-</ul>    <div class="nav-action-group">
-        <button id="soundToggleBtn" class="btn-nav-glass sound-btn" title="Dźwięki interfejsu (Włącz/Wyłącz)" aria-label="Włącz lub wyłącz dźwięki">
-            <svg id="soundIconOn" class="sound-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg id="soundIconOff" class="sound-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></svg>
-        </button>
-        
-        <button id="openHistoryBtn" class="btn-nav-glass history-btn" title="Historia Twoich wgranych plików">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <span>Historia</span>
-        </button>
-    </div>
-</div>
-
-<div id="app-views">
-    
-    <div id="view-glowna" class="view-section active">
-        
-        <div class="value-prop-section">
-            <div class="value-prop">
-                <h2 class="value-title">Bezpieczne przechowywanie plików</h2>
-                <p class="value-description">Przesyłaj pliki szybko i bezpiecznie. Otrzymaj natychmiastowy link do udostępniania. Brak limitów, pełna prywatność.</p>
-                <div class="value-features">
-                    <span class="feature-tag">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M7.425 10.025C6.912 9.78 6.35 9.654 5.782 9.655C5.213 9.657 4.653 9.786 4.141 10.034C3.629 10.282 3.18 10.641 2.826 11.086C2.472 11.532 2.223 12.05 2.098 12.605C1.972 13.159 1.972 13.735 2.099 14.289C2.226 14.843 2.476 15.362 2.831 15.806C3.185 16.251 3.635 16.61 4.147 16.856C4.659 17.103 5.22 17.232 5.789 17.232M18.871 17.175C20.649 16.861 22 15.313 22 13.443C22 12.612 21.726 11.804 21.221 11.144C20.716 10.483 20.008 10.007 19.206 9.789C19.078 8.944 18.652 8.173 18.004 7.616C17.357 7.059 16.531 6.752 15.677 6.752C15.162 6.752 14.654 6.864 14.188 7.08"></path>
-                            <path d="M5.601 9.658C5.58 9.486 5.569 9.313 5.568 9.14C5.568 8.541 5.686 7.948 5.915 7.395C6.144 6.841 6.479 6.339 6.903 5.915C7.326 5.492 7.829 5.156 8.382 4.927C8.935 4.698 9.528 4.58 10.127 4.581C10.969 4.579 11.795 4.812 12.512 5.254C13.229 5.695 13.809 6.328 14.187 7.08C14.517 7.716 14.688 8.423 14.686 9.14M9.669 19.42C9.264 19.42 8.866 19.31 8.518 19.102C8.17 18.894 7.885 18.596 7.693 18.239C7.501 17.882 7.409 17.48 7.427 17.075C7.446 16.671 7.573 16.278 7.796 15.94C8.019 15.602 8.33 15.33 8.695 15.154C9.06 14.978 9.466 14.904 9.869 14.94C10.273 14.977 10.659 15.121 10.987 15.359C11.315 15.597 11.573 15.92 11.732 16.292H14.362L15.115 17.046L15.869 16.292H16.559L17.155 17.175L16.558 18.059H11.732C11.559 18.462 11.271 18.807 10.905 19.049C10.538 19.29 10.108 19.419 9.669 19.42Z"></path>
-                            <path d="M9.246 17.857C9.592 17.857 9.872 17.577 9.872 17.232C9.872 16.886 9.592 16.606 9.246 16.606C8.901 16.606 8.621 16.886 8.621 17.232C8.621 17.577 8.901 17.857 9.246 17.857Z"></path>
-                        </svg>
-                        Bezpieczne
-                    </span>
-                    <span class="feature-tag">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20.097 16.305H21.75C21.75 13.719 20.723 11.239 18.894 9.41C17.066 7.582 14.586 6.555 12 6.555C9.414 6.555 6.934 7.582 5.106 9.41C3.277 11.239 2.25 13.719 2.25 16.305H3.904"></path>
-                            <path d="M18.957 16.305C18.957 14.459 18.224 12.69 16.919 11.385C15.615 10.081 13.845 9.348 12 9.348M15.817 16.305C15.817 15.292 15.414 14.322 14.699 13.606C13.983 12.89 13.012 12.488 12 12.488"></path>
-                            <path d="M12 17.446C12.63 17.446 13.141 16.935 13.141 16.305C13.141 15.674 12.63 15.164 12 15.164C11.37 15.164 10.859 15.674 10.859 16.305C10.859 16.935 11.37 17.446 12 17.446Z"></path>
-                            <path d="M12 15.164V7.393"></path>
-                        </svg>
-                        Szybkie
-                    </span>
-                    <span class="feature-tag">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19.25 2.75H4.75C4.22 2.75 3.711 2.961 3.336 3.336C2.961 3.711 2.75 4.22 2.75 4.75V19.25C2.75 19.78 2.961 20.289 3.336 20.664C3.711 21.039 4.22 21.25 4.75 21.25H19.25C19.78 21.25 20.289 21.039 20.664 20.664C21.039 20.289 21.25 19.78 21.25 19.25V4.75C21.25 4.22 21.039 3.711 20.664 3.336C20.289 2.961 19.78 2.75 19.25 2.75Z"></path>
-                            <path d="M4.664 14.864L5.882 9.136L8.459 14.864L9.677 9.136M14.645 14.237C14.899 14.694 15.303 14.864 15.916 14.864H16.764C17.554 14.864 18.329 14.224 18.497 13.435L18.498 13.429C18.666 12.64 18.162 12 17.373 12H16.438C15.648 12 15.143 11.36 15.311 10.57C15.479 9.777 16.258 9.136 17.05 9.136H17.893C18.506 9.136 18.91 9.306 19.164 9.763M10.868 12H12.73M10.259 14.864L11.477 9.136H14.341"></path>
-                        </svg>
-                        Bez limitów
-                    </span>
-                </div>
+    <!-- Pasek przełączania ról dla Administratora -->
+    <div id="adminRoleBar" class="admin-role-bar" hidden>
+        <div class="admin-role-bar-inner">
+            <div class="admin-role-badge">
+                <span class="role-icon">👑</span>
+                <span>Widok:</span>
             </div>
-        </div>
-
-        <div class="main-wrapper">
-            <div class="upload-container" id="uploadBox">
-                <header class="upload-header">
-                    <h1>Dropsite</h1>
-                    <p>Wybierz pliki/folder lub wklej ze schowka (Ctrl + V)</p>
-                </header>
-
-                <div class="dropzone" id="dropzone">
-                    <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    
-                    <div class="drop-text">Wybierz pliki lub upuść tutaj</div>
-                    <div class="drop-subtext">Obsługa folderów • Ctrl+V • Wszystkie formaty</div>
-                    
-                    <button class="btn-select" onclick="document.getElementById('fileInput').click()">Wybierz pliki</button>
-                    <input type="file" id="fileInput" aria-label="Wybierz pliki do wgrania" multiple>
-                </div>
-
-                <div class="file-status-box" id="fileStatusBox">
-                    <div class="fs-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M19.6335 20.9654C19.8587 20.9654 20.0818 20.921 20.2899 20.8348C20.498 20.7486 20.6871 20.6222 20.8464 20.4629C21.0057 20.3037 21.1321 20.1146 21.2183 19.9064C21.3045 19.6983 21.3488 19.4753 21.3488 19.25C21.3488 19.0248 21.3045 18.8017 21.2183 18.5936C21.1321 18.3855 21.0057 18.1964 20.8464 18.0371C20.6871 17.8778 20.498 17.7514 20.2899 17.6652C20.0818 17.579 19.8587 17.5347 19.6335 17.5347C19.1785 17.5347 18.7422 17.7154 18.4206 18.0371C18.0989 18.3588 17.9181 18.7951 17.9181 19.25C17.9181 19.705 18.0989 20.1413 18.4206 20.4629C18.7422 20.7846 19.1785 20.9654 19.6335 20.9654V20.9654Z" fill="#C4E7D4" fill-opacity="0.8"/>
-                            <path d="M28.2079 28.9703C28.2079 29.5769 27.967 30.1586 27.538 30.5875C27.1091 31.0165 26.5274 31.2574 25.9208 31.2574H16.7723C16.1657 31.2574 15.584 31.0165 15.155 30.5875C14.7261 30.1586 14.4852 29.5769 14.4852 28.9703V15.2475C14.4852 14.6409 14.7261 14.0592 15.155 13.6303C15.584 13.2014 16.1657 12.9604 16.7723 12.9604H23.0619L28.2079 18.1064V28.9703ZM16.7723 14.104C16.469 14.104 16.1781 14.2244 15.9637 14.4389C15.7492 14.6534 15.6287 14.9442 15.6287 15.2475V26.6832L18.172 24.1399C18.2621 24.05 18.3797 23.9927 18.5061 23.9772C18.6324 23.9616 18.7604 23.9887 18.8696 24.0541L21.3465 25.5396L23.8132 22.086C23.8615 22.0185 23.9239 21.9623 23.996 21.9214C24.0682 21.8804 24.1484 21.8556 24.2311 21.8488C24.3138 21.8419 24.397 21.8532 24.4749 21.8817C24.5528 21.9102 24.6236 21.9554 24.6823 22.014L27.0644 24.396V18.1064H24.7772C24.3223 18.1064 23.886 17.9257 23.5643 17.604C23.2426 17.2823 23.0619 16.846 23.0619 16.3911V14.104H16.7723Z" fill="#0F91D2" fill-opacity="0.8" transform="translate(-10, -10)"/>
-                        </svg>
-                    </div>
-                    <div class="fs-content">
-                        <div class="fs-header">
-                            <span id="fsName" class="fs-filename"></span>
-                            <span id="fsSizeOrProgress" class="fs-size"></span>
-                        </div>
-                        <div class="fs-track" id="fsTrack" hidden>
-                            <div class="fs-fill" id="fsProgressBar"></div>
-                        </div>
-                        <div class="fs-telemetry" id="fsTelemetry" hidden>
-                            <span class="telemetry-item speed-item">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                                <span id="fsSpeed">0.0 MB/s</span>
-                            </span>
-                            <span class="telemetry-dot">&bull;</span>
-                            <span class="telemetry-item eta-item">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                <span id="fsEta">Obliczanie...</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PANEL KOMPRESJI GRAFIKI (PREMIUM GLASS) -->
-                <div id="imageCompressPanel" class="compress-panel" hidden>
-                    <div class="compress-header">
-                        <label class="custom-switch-label" for="compressToggleCheckbox">
-                            <div class="custom-switch">
-                                <input type="checkbox" id="compressToggleCheckbox" checked>
-                                <span class="switch-slider"></span>
-                            </div>
-                            <span class="switch-text">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                                Optymalizuj wagę zdjęcia
-                            </span>
-                        </label>
-                        <span id="compressQualityLabel" class="compress-badge">Jakość: 80%</span>
-                    </div>
-                    <div class="compress-slider-wrap">
-                        <div class="slider-container">
-                            <input type="range" id="compressQualitySlider" min="30" max="95" value="80" step="5" class="dropsite-slider" aria-label="Suwak jakości kompresji">
-                        </div>
-                        <div class="compress-presets">
-                            <button type="button" class="btn-preset" data-q="50">Mocna (50%)</button>
-                            <button type="button" class="btn-preset active" data-q="80">Zbalansowana (80%)</button>
-                            <button type="button" class="btn-preset" data-q="92">Wysoka (92%)</button>
-                        </div>
-                    </div>
-                    <div class="compress-footer">
-                        <span class="compress-info-label">Szacowana waga po kompresji:</span>
-                        <strong id="estCompressedSize" class="compress-savings-val">--</strong>
-                    </div>
-                </div>
-
-                <!-- OPCJONALNA WŁASNA NAZWA LINKU -->
-                <div class="custom-slug-wrap">
-                    <button type="button" class="slug-toggle-header" id="slugToggleBtn" aria-expanded="false">
-                        <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                        <span class="slug-toggle-label">Własny alias linku <span class="slug-optional">(opcjonalnie)</span></span>
-                        <svg class="slug-arrow-svg" id="slugArrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                    <div id="customSlugBox" class="slug-input-box" hidden style="display: none;">
-                        <div class="slug-input-container">
-                            <span class="slug-prefix">dropsite.space/</span>
-                            <input type="text" id="customSlugInput" placeholder="moj-wlasny-alias" class="dropsite-input custom-slug-input" maxlength="40" autocomplete="off" spellcheck="false">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ZAAWANSOWANE OPCJE TRANSFERU (Hasło, Notatka, Limit) -->
-                <div class="custom-adv-wrap">
-                    <button type="button" class="slug-toggle-header" id="advToggleBtn" aria-expanded="false">
-                        <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <span class="slug-toggle-label">Zabezpieczenie i notatka <span class="slug-optional">(opcjonalnie)</span></span>
-                        <svg class="slug-arrow-svg" id="advArrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                    <div id="customAdvBox" class="adv-options-box" hidden style="display: none;">
-                        <div class="adv-field">
-                            <label class="adv-label" for="filePasswordInput">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                Hasło do pliku:
-                            </label>
-                            <input type="password" id="filePasswordInput" placeholder="Ustaw hasło dostępu (opcjonalnie)..." class="dropsite-input adv-input" autocomplete="new-password">
-                        </div>
-                        <div class="adv-field">
-                            <label class="adv-label" for="fileNoteInput">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                Wiadomość dla odbiorcy:
-                            </label>
-                            <input type="text" id="fileNoteInput" placeholder="Krótka notatka widoczna na karcie pobierania..." class="dropsite-input adv-input" maxlength="200">
-                        </div>
-                        <div class="adv-field">
-                            <label class="adv-label">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                Maksymalny limit pobrań:
-                            </label>
-                            <div class="adv-limit-radios">
-                                <label class="limit-radio-item">
-                                    <input type="radio" name="maxDownloads" value="" checked>
-                                    <span>Bez limitu</span>
-                                </label>
-                                <label class="limit-radio-item">
-                                    <input type="radio" name="maxDownloads" value="1">
-                                    <span>1x</span>
-                                </label>
-                                <label class="limit-radio-item">
-                                    <input type="radio" name="maxDownloads" value="5">
-                                    <span>5x</span>
-                                </label>
-                                <label class="limit-radio-item">
-                                    <input type="radio" name="maxDownloads" value="10">
-                                    <span>10x</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="options-container" aria-label="Wybór czasu przechowywania" style="margin-top: 15px;">
-                    <p class="options-label">Czas przechowywania:</p>
-                    <div class="options-radios">
-                        <label class="option-item">
-                            <input type="radio" name="duration" value="1d" checked>
-                            <span>1 Dzień</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="duration" value="30d">
-                            <span>30 Dni</span>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="duration" value="permanent">
-                            <span>Bezterminowo</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button onclick="uploadFile()" id="uploadBtn" class="btn-primary" disabled>
-                    <span class="btn-text">Upload</span>
-                    <div class="btn-ripple"></div>
+            <div class="admin-role-pills">
+                <button type="button" class="role-pill-btn active" data-role="admin"
+                    title="Pełne uprawnienia admina + moderacja wszystkich plików">
+                    <span>👑 Admin</span>
                 </button>
-
-                <div id="status" class="status" aria-live="polite"></div>
-
-                <div id="successFlow" class="success-flow" hidden>
-                    <div class="success-header">
-                        <h3>Plik przesłany pomyślnie!</h3>
-                    </div>
-                    
-                    <div class="success-link-box">
-                        <a href="#" id="finalLink" target="_blank" class="clickable-link">https://link...</a>
-                    </div>
-
-                    <div class="success-actions">
-                        <button class="btn-secondary" onclick="copyToClipboard()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            Kopiuj link
-                        </button>
-                        <button class="btn-secondary" onclick="openQrModal()" id="showQrBtn" title="Pokaż kod QR do skanowania telefonem">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                            Kod QR
-                        </button>
-                        <button class="btn-secondary" onclick="shareLink()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            Udostępnij
-                        </button>
-                    </div>
-                    <div class="success-tips">
-                        <p style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                            Link jest aktywny przez wybrany okres czasu
-                        </p>
-                    </div>
-                </div>
+                <button type="button" class="role-pill-btn" data-role="preview-pro"
+                    title="Podgląd widoku klienta subskrypcji PRO">
+                    <span>⭐ Klient PRO</span>
+                </button>
+                <button type="button" class="role-pill-btn" data-role="preview-free"
+                    title="Podgląd widoku darmowego użytkownika">
+                    <span>👤 Zwykły (Free)</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="view-funkcje" class="view-section" hidden>
-        <div class="main-wrapper">
-            <div class="upload-container info-panel">
-                <header class="upload-header">
-                    <h1>Funkcje</h1>
-                    <p>Dlaczego warto z nami przechowywać pliki?</p>
-                </header>
-                <div class="info-grid">
-                    <div class="info-card">
-                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Błyskawiczny Upload</h3>
-                        <p>Infrastruktura oparta na Cloudflare R2 gwarantuje maksymalną prędkość z każdego miejsca na świecie.</p>
-                    </div>
-                    <div class="info-card">
-                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Pełna Prywatność</h3>
-                        <p>Pliki są automatycznie usuwane po wybranym czasie. Nie śledzimy pobrań ani nie udostępniamy danych.</p>
-                    </div>
-                    <div class="info-card">
-                        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg> Stworzone dla Mediów</h3>
-                        <p>Zoptymalizowane odtwarzacze wideo i podgląd zdjęć bez utraty jakości.</p>
-                    </div>
-                </div>
-            </div>
+    <!-- Cinematic Drag & Drop Overlay -->
+    <div id="globalDragOverlay" class="global-drag-overlay">
+        <div class="drag-content">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" class="drag-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <h2 data-i18n="drag_overlay_title">Drop file here (or paste Ctrl+V)</h2>
+            <p data-i18n="drag_overlay_sub">Instant high-speed upload will begin</p>
         </div>
     </div>
 
-    <div id="view-cennik" class="view-section" hidden>
-        <div class="main-wrapper" style="max-width: 700px;">
-            <div class="upload-container info-panel">
-                <header class="upload-header">
-                    <h1>Cennik</h1>
-                    <p>Proste i przejrzyste zasady</p>
-                </header>
-                <div class="pricing-grid">
-                    <div class="pricing-card">
-                        <h3>Darmowy</h3>
-                        <h2>0 zł <span style="font-size:14px; color:var(--text-muted)">/ zawsze</span></h2>
-                        <ul>
-                            <li>Pliki do 10 GB</li>
-                            <li>Wygasanie do 30 dni</li>
-                            <li>Standardowy transfer</li>
-                        </ul>
-                        <button class="btn-select" onclick="document.querySelector('[data-target=\'view-glowna\']').click()">Zacznij wgrywać</button>
-                    </div>
-                    <div class="pricing-card premium">
-                        <h3>Dropsite Pro</h3>
-                        <h2>15 zł <span style="font-size:14px; color:var(--text-muted)">/ m-c</span></h2>
-                        <ul>
-                            <li>Brak limitu wagi plików</li>
-                            <li>Pliki bezterminowe (permanentne)</li>
-                            <li>Priorytetowy transfer</li>
-                            <li>Brak kompresji dla wideo</li>
-                        </ul>
-                        <button class="btn-primary" style="padding: 12px; font-size: 14px;">Wkrótce</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <a href="/" class="nav-logo"
+        onclick="if(window.navigateToHome){ window.navigateToHome(true); return false; }">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Dropsite</span>
+    </a>
 
-    <div id="view-kontakt" class="view-section" hidden>
-        <div class="main-wrapper">
-            <div class="upload-container info-panel">
-                <header class="upload-header">
-                    <h1>Kontakt</h1>
-                    <p>Masz pytania? Chcesz zgłosić plik?</p>
-                </header>
-                <div class="contact-box">
-                    <p>Skontaktuj się z administracją serwisu poprzez e-mail:</p>
-                    <a href="mailto:kontakt@dropsite.pl" class="clickable-link">kontakt@dropsite.pl</a>
-                    <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted);">Zgłoszenia dotyczące naruszeń regulaminu (DMCA) rozpatrujemy w ciągu 24 godzin.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- DEDYTKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE) -->
-    <div id="view-download" class="view-section" hidden>
-        <div class="main-wrapper">
-            <div class="upload-container download-card">
-                <header class="upload-header" style="text-align: center;">
-                    <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
-                    <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;">Pobieranie pliku...</h1>
-                    <p id="dlFileSize" class="dl-subtitle" style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Ładowanie informacji o pliku...</p>
-                    <div id="dlStatsCounter" class="dl-stats-counter" style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> <span id="dlViewCount">1</span> wyświetleń</span>
-                        <span>&bull;</span>
-                        <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> <span id="dlDownloadCount">0</span> pobrań</span>
-                    </div>
-                </header>
-
-                <!-- KARTA NOTATKI OD NADAWCY -->
-                <div id="dlNoteBox" class="dl-note-card" hidden>
-                    <div class="dl-note-header">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        <span>Wiadomość od nadawcy:</span>
-                    </div>
-                    <p id="dlNoteText" class="dl-note-body"></p>
-                </div>
-
-                <!-- BLOKADA HASŁEM -->
-                <div id="dlPasswordLockBox" class="dl-password-box" hidden>
-                    <div class="pwd-lock-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </div>
-                    <h3>Plik zabezpieczony hasłem</h3>
-                    <p>Nadawca ustawił hasło dostępu do tego pliku. Wpisz je poniżej, aby odblokować pobieranie.</p>
-                    <div class="pwd-input-wrap">
-                        <input type="password" id="dlUnlockPasswordInput" placeholder="Wpisz hasło do pliku..." class="dropsite-input pwd-unlock-input" autocomplete="current-password">
-                        <button type="button" id="dlUnlockBtn" class="btn-primary" style="padding: 12px 20px;">
-                            <span class="btn-text">Odblokuj</span>
-                            <div class="btn-ripple"></div>
-                        </button>
-                    </div>
-                    <p id="dlPasswordError" class="pwd-error-text"></p>
-                </div>
-
-                <!-- ZAWARTOŚĆ PO ODBLOKOWANIU -->
-                <div id="dlContentWrap">
-                    <div id="dlPreviewContainer" class="dl-preview-container">
-                        <!-- Podgląd wideo/obrazu/audio/ikona generowany przez app.js -->
-                    </div>
-
-                    <div id="dlBurnWarning" class="burn-warning-box" hidden>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <span><strong>Plik jednorazowy:</strong> Ten plik zostanie natychmiast i bezpowrotnie zniszczony z serwera po kliknięciu "Pobierz"!</span>
-                    </div>
-
-                    <div class="dl-actions">
-                        <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            <span class="btn-text">Pobierz plik</span>
-                            <div class="btn-ripple"></div>
-                        </a>
-                        
-                        <button type="button" class="btn-secondary dl-btn-secondary" onclick="document.querySelector('[data-target=\'view-glowna\']').click()">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                            <span>Prześlij własny plik na Dropsite</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<div class="storage-widget" id="storageWidget">
-    <button id="minimizeDot" class="minimize-dot" title="Zwiń/rozwiń dysk"></button>
-    <div class="storage-container">
-        <div class="storage-header">
-            <h2>Dysk</h2>
-            <div class="storage-stats">
-                <span id="diskUsedText">Ładowanie...</span>
-                <span class="storage-free" id="diskFreeText"></span>
-            </div>
-        </div>
-
-        <div class="storage-bar" id="storageBar"></div>
-
-        <div class="storage-legend">
-            <div class="legend-item"><span style="background: #C4E7D4;"></span> Zdjęcia</div>
-            <div class="legend-item"><span style="background: #FF4439;"></span> Wideo</div>
-            <div class="legend-item"><span style="background: #FFBC39;"></span> Dokumenty</div>
-            <div class="legend-item"><span style="background: #59A829;"></span> Archiwa</div>
-            <div class="legend-item"><span style="background: #48484A;"></span> Inne</div>
-        </div>
-    </div>
-</div>
-
-<button id="openModBtn" class="btn-mod-open">
-    <svg width="20" height="20" viewBox="0 0 31 31" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z"></path>
-        <path d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674"></path>
-    </svg>
-    Panel
-</button>
-
-<div id="modModal" class="mod-modal" hidden>
-    <div class="mod-container">
-        <div class="mod-header">
-            <div class="mod-title-wrap">
-                <div class="mod-icon-badge">
-                    <svg width="22" height="22" viewBox="0 0 31 31" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z"></path>
-                        <path d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674"></path>
+    <div class="nav-right">
+        <ul class="nav-links">
+            <li><a href="#" class="nav-btn active" data-target="view-glowna" data-i18n="nav_home">Home</a></li>
+            <li><a href="#" class="nav-btn" data-target="view-funkcje" data-i18n="nav_features">Features</a></li>
+            <li><a href="#" class="nav-btn" data-target="view-cennik" data-i18n="nav_pricing">Pricing</a></li>
+            <li><a href="#" class="nav-btn" data-target="view-kontakt" data-i18n="nav_contact">Contact</a></li>
+        </ul>
+        <div class="nav-action-group">
+            <!-- Selektor Języka (Language Switcher) -->
+            <div class="lang-dropdown-wrap" id="langDropdownWrap">
+                <button type="button" id="langSelectBtn" class="btn-nav-glass lang-btn" title="Change Language / Zmień Język" aria-label="Change Language">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                     </svg>
+                    <span id="currentLangLabel">EN</span>
+                    <svg class="lang-arrow-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lang-menu" id="langMenu" hidden>
+                    <button type="button" class="lang-option" data-lang="en"><span>🇬🇧 English</span><span class="lang-badge">Default</span></button>
+                    <button type="button" class="lang-option" data-lang="pl"><span>🇵🇱 Polski</span></button>
+                    <button type="button" class="lang-option" data-lang="de"><span>🇩🇪 Deutsch</span></button>
+                    <button type="button" class="lang-option" data-lang="es"><span>🇪🇸 Español</span></button>
+                    <button type="button" class="lang-option" data-lang="fr"><span>🇫🇷 Français</span></button>
+                    <button type="button" class="lang-option" data-lang="uk"><span>🇺🇦 Українська</span></button>
                 </div>
-                <div>
-                    <h2>Panel Administratora</h2>
-                    <span class="mod-subtitle">Zarządzanie magazynem Cloudflare R2</span>
-                </div>
             </div>
-            <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
 
-        <!-- Mini-statystyki u góry -->
-        <div class="mod-stats-grid">
-            <div class="mod-stat-card">
-                <div class="mod-stat-header">
-                    <span class="mod-stat-label">Wszystkie pliki</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                </div>
-                <span class="mod-stat-value" id="modTotalFiles">0</span>
-            </div>
-            <div class="mod-stat-card">
-                <div class="mod-stat-header">
-                    <span class="mod-stat-label">Zajęte miejsce</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                </div>
-                <span class="mod-stat-value" id="modTotalSize">0 B</span>
-            </div>
-            <div class="mod-stat-card">
-                <div class="mod-stat-header">
-                    <span class="mod-stat-label">Struktura</span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                </div>
-                <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0 zdjęć</span>
-            </div>
-        </div>
-
-        <!-- Pasek narzędzi (Szukajka + Sortowanie + Odśwież) -->
-        <div class="mod-toolbar">
-            <div class="mod-search-wrap">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mod-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="modSearchInput" placeholder="Szukaj pliku po nazwie..." class="mod-search-input">
-            </div>
-            <div class="mod-toolbar-actions">
-                <div class="custom-select-wrap" id="customSortDropdown">
-                    <button type="button" class="custom-select-trigger" id="customSortTrigger" aria-haspopup="listbox" aria-expanded="false">
-                        <span class="custom-select-label" id="customSortLabel">Najnowsze</span>
-                        <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                    <div class="custom-select-menu" id="customSortMenu" role="listbox" hidden>
-                        <div class="custom-select-option selected" data-value="newest" role="option">
-                            <span>Najnowsze</span>
-                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                        <div class="custom-select-option" data-value="size-desc" role="option">
-                            <span>Rozmiar: od największych</span>
-                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                        <div class="custom-select-option" data-value="size-asc" role="option">
-                            <span>Rozmiar: od najmniejszych</span>
-                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                        <div class="custom-select-option" data-value="name-asc" role="option">
-                            <span>Nazwa: A-Z</span>
-                            <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        </div>
-                    </div>
-                </div>
-                <button id="refreshModBtn" class="btn-select mod-refresh-btn">Odśwież</button>
-            </div>
-        </div>
-
-        <!-- Filtry kategorii (Pill buttons) -->
-        <div class="mod-filter-pills" id="modFilterPills">
-            <button class="mod-pill active" data-filter="all">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                <span>Wszystkie</span>
-                <span class="pill-badge" id="count-all">0</span>
+            <button id="openProBtn" class="btn-nav-glass pro-nav-btn" title="Dropsite PRO">
+                <span class="pro-sparkle">✦</span>
+                <span id="proNavLabel">PRO</span>
             </button>
-            <button class="mod-pill" data-filter="video">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                <span>Wideo</span>
-                <span class="pill-badge" id="count-video">0</span>
-            </button>
-            <button class="mod-pill" data-filter="image">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                <span>Zdjęcia</span>
-                <span class="pill-badge" id="count-image">0</span>
-            </button>
-            <button class="mod-pill" data-filter="doc">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                <span>Dokumenty</span>
-                <span class="pill-badge" id="count-doc">0</span>
-            </button>
-            <button class="mod-pill" data-filter="archive">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
-                <span>Archiwa</span>
-                <span class="pill-badge" id="count-archive">0</span>
-            </button>
-        </div>
 
-        <div id="modFilesScreen" class="mod-files-screen">
-            <ul id="modFileList" class="mod-file-list"></ul>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL HISTORII PLIKÓW DLA UŻYTKOWNIKA -->
-<div id="historyModalWrap" class="mod-modal" hidden>
-    <div class="mod-container" style="max-width: 620px;">
-        <div class="mod-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                <h2>Twoja historia plików</h2>
-            </div>
-            <button id="closeHistoryModal" class="mod-close" aria-label="Zamknij historię">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-        <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Pliki przesłane z Twojej przeglądarki (zapisane w pamięci urządzenia):</p>
-        <ul id="userHistoryList" class="mod-file-list" style="max-height: 380px;"></ul>
-        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-            <button id="clearHistoryBtn" class="btn-secondary" style="font-size: 12px; padding: 8px 16px;">Wyczyść historię</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL KODU QR -->
-<div id="qrModalWrap" class="mod-modal" hidden>
-    <div class="mod-container qr-modal-container" style="max-width: 380px; text-align: center; align-items: center;">
-        <div class="mod-header" style="width: 100%;">
-            <h2 style="font-size: 18px;">Kod QR do pobrania</h2>
-            <button id="closeQrModal" class="mod-close" aria-label="Zamknij kod QR">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-        <div class="qr-box-wrap" style="background: white; padding: 16px; border-radius: 12px; display: inline-flex; margin: 10px 0;">
-            <canvas id="qrCanvas"></canvas>
-        </div>
-        <p style="color: var(--text-muted); font-size: 13px; margin-top: 10px;">Zeskanuj aparatem w telefonie, aby błyskawicznie otworzyć i pobrać plik!</p>
-    </div>
-</div>
-
-<button id="loginBtn" class="btn-login">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-        <polyline points="10 17 15 12 10 7"></polyline>
-        <line x1="15" y1="12" x2="3" y2="12"></line>
-    </svg>
-    <span>Login</span>
-</button>
-
-<div id="loginModalWrap" class="mod-modal" hidden>
-    <div class="mod-container" style="max-width: 400px; padding: 40px;">
-        <div class="mod-header" style="justify-content: center; position: relative; margin-bottom: 30px;">
-            <h2 style="font-size: 24px; font-weight: 700; color: var(--text-main);">Panel Logowania</h2>
-            <button id="closeLoginModal" class="mod-close" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%);" aria-label="Zamknij logowanie">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            <input type="email" id="adminEmail" placeholder="Adres e-mail" class="dropsite-input" autocomplete="off">
-            <input type="password" id="adminPass" placeholder="Hasło" class="dropsite-input">
-            
-            <button id="doLoginBtn" class="btn-primary" style="margin-top: 10px; padding: 16px; border-radius: 14px;">
-                <span class="btn-text">Zaloguj się</span>
-                <div class="btn-ripple"></div>
-            </button>
-            
-            <p id="loginError" style="color: #FF4439; font-size: 13px; text-align: center; margin: 0; min-height: 18px; font-weight: 600;"></p>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL POWIĘKSZENIA ZDJĘCIA (LIGHTBOX) -->
-<div id="dlLightboxModal" class="dl-lightbox-modal" hidden>
-    <div class="dl-lightbox-backdrop" id="dlLightboxBackdrop"></div>
-    <div class="dl-lightbox-wrap">
-        <div class="dl-lightbox-header">
-            <div class="dl-lightbox-info">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
+            <button id="soundToggleBtn" class="btn-nav-glass sound-btn" title="Interface sounds (Toggle)" data-i18n-title="nav_sound_title"
+                aria-label="Toggle sounds">
+                <svg id="soundIconOn" class="sound-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                 </svg>
-                <span id="dlLightboxTitle" class="dl-lightbox-filename">Podgląd zdjęcia</span>
+                <svg id="soundIconOff" class="sound-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <line x1="22" y1="9" x2="16" y2="15"></line>
+                    <line x1="16" y1="9" x2="22" y2="15"></line>
+                </svg>
+            </button>
+
+            <button id="openHistoryBtn" class="btn-nav-glass history-btn" title="Your upload history / Historia wgranych plików" data-i18n-title="nav_history_title" aria-label="History">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="app-views">
+
+        <div id="view-glowna" class="view-section active">
+
+            <div class="value-prop-section">
+                <div class="value-prop">
+                    <h2 class="value-title" data-i18n="hero_title">Secure Cloud File Transfer</h2>
+                    <p class="value-description" data-i18n="hero_desc">Upload files quickly and securely. Get an instant shareable link. No bandwidth limits, full privacy.</p>
+                    <div class="value-features">
+                        <span class="feature-tag">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M7.425 10.025C6.912 9.78 6.35 9.654 5.782 9.655C5.213 9.657 4.653 9.786 4.141 10.034C3.629 10.282 3.18 10.641 2.826 11.086C2.472 11.532 2.223 12.05 2.098 12.605C1.972 13.159 1.972 13.735 2.099 14.289C2.226 14.843 2.476 15.362 2.831 15.806C3.185 16.251 3.635 16.61 4.147 16.856C4.659 17.103 5.22 17.232 5.789 17.232M18.871 17.175C20.649 16.861 22 15.313 22 13.443C22 12.612 21.726 11.804 21.221 11.144C20.716 10.483 20.008 10.007 19.206 9.789C19.078 8.944 18.652 8.173 18.004 7.616C17.357 7.059 16.531 6.752 15.677 6.752C15.162 6.752 14.654 6.864 14.188 7.08">
+                                </path>
+                                <path
+                                    d="M5.601 9.658C5.58 9.486 5.569 9.313 5.568 9.14C5.568 8.541 5.686 7.948 5.915 7.395C6.144 6.841 6.479 6.339 6.903 5.915C7.326 5.492 7.829 5.156 8.382 4.927C8.935 4.698 9.528 4.58 10.127 4.581C10.969 4.579 11.795 4.812 12.512 5.254C13.229 5.695 13.809 6.328 14.187 7.08C14.517 7.716 14.688 8.423 14.686 9.14M9.669 19.42C9.264 19.42 8.866 19.31 8.518 19.102C8.17 18.894 7.885 18.596 7.693 18.239C7.501 17.882 7.409 17.48 7.427 17.075C7.446 16.671 7.573 16.278 7.796 15.94C8.019 15.602 8.33 15.33 8.695 15.154C9.06 14.978 9.466 14.904 9.869 14.94C10.273 14.977 10.659 15.121 10.987 15.359C11.315 15.597 11.573 15.92 11.732 16.292H14.362L15.115 17.046L15.869 16.292H16.559L17.155 17.175L16.558 18.059H11.732C11.559 18.462 11.271 18.807 10.905 19.049C10.538 19.29 10.108 19.419 9.669 19.42Z">
+                                </path>
+                                <path
+                                    d="M9.246 17.857C9.592 17.857 9.872 17.577 9.872 17.232C9.872 16.886 9.592 16.606 9.246 16.606C8.901 16.606 8.621 16.886 8.621 17.232C8.621 17.577 8.901 17.857 9.246 17.857Z">
+                                </path>
+                            </svg>
+                            <span data-i18n="tag_secure">Secure</span>
+                        </span>
+                        <span class="feature-tag">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M20.097 16.305H21.75C21.75 13.719 20.723 11.239 18.894 9.41C17.066 7.582 14.586 6.555 12 6.555C9.414 6.555 6.934 7.582 5.106 9.41C3.277 11.239 2.25 13.719 2.25 16.305H3.904">
+                                </path>
+                                <path
+                                    d="M18.957 16.305C18.957 14.459 18.224 12.69 16.919 11.385C15.615 10.081 13.845 9.348 12 9.348M15.817 16.305C15.817 15.292 15.414 14.322 14.699 13.606C13.983 12.89 13.012 12.488 12 12.488">
+                                </path>
+                                <path
+                                    d="M12 17.446C12.63 17.446 13.141 16.935 13.141 16.305C13.141 15.674 12.63 15.164 12 15.164C11.37 15.164 10.859 15.674 10.859 16.305C10.859 16.935 11.37 17.446 12 17.446Z">
+                                </path>
+                                <path d="M12 15.164V7.393"></path>
+                            </svg>
+                            <span data-i18n="tag_fast">Fast</span>
+                        </span>
+                        <span class="feature-tag">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M19.25 2.75H4.75C4.22 2.75 3.711 2.961 3.336 3.336C2.961 3.711 2.75 4.22 2.75 4.75V19.25C2.75 19.78 2.961 20.289 3.336 20.664C3.711 21.039 4.22 21.25 4.75 21.25H19.25C19.78 21.25 20.289 21.039 20.664 20.664C21.039 20.289 21.25 19.78 21.25 19.25V4.75C21.25 4.22 21.039 3.711 20.664 3.336C20.289 2.961 19.78 2.75 19.25 2.75Z">
+                                </path>
+                                <path
+                                    d="M4.664 14.864L5.882 9.136L8.459 14.864L9.677 9.136M14.645 14.237C14.899 14.694 15.303 14.864 15.916 14.864H16.764C17.554 14.864 18.329 14.224 18.497 13.435L18.498 13.429C18.666 12.64 18.162 12 17.373 12H16.438C15.648 12 15.143 11.36 15.311 10.57C15.479 9.777 16.258 9.136 17.05 9.136H17.893C18.506 9.136 18.91 9.306 19.164 9.763M10.868 12H12.73M10.259 14.864L11.477 9.136H14.341">
+                                </path>
+                            </svg>
+                            <span data-i18n="tag_no_limits">No limits</span>
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div class="dl-lightbox-actions">
-                <button type="button" id="dlLightboxZoomToggle" class="dl-lightbox-tool-btn" title="Powiększ / Dopasuj">
-                    <svg id="dlZoomInIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        <line x1="11" y1="8" x2="11" y2="14"></line>
-                        <line x1="8" y1="11" x2="14" y2="11"></line>
-                    </svg>
-                    <svg id="dlZoomOutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        <line x1="8" y1="11" x2="14" y2="11"></line>
-                    </svg>
-                    <span id="dlZoomStatusText">Powiększ</span>
-                </button>
-                <a href="#" id="dlLightboxOpenNewTab" target="_blank" rel="noopener noreferrer" class="dl-lightbox-tool-btn dl-lightbox-newtab-btn" title="Otwórz oryginalne zdjęcie w nowej karcie">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                    </svg>
-                    <span>Otwórz w nowej karcie</span>
-                </a>
-                <button type="button" id="dlLightboxCloseBtn" class="dl-lightbox-tool-btn dl-lightbox-close-btn" aria-label="Zamknij podgląd" title="Zamknij (Esc)">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+
+            <div class="main-wrapper">
+                <div class="upload-container" id="uploadBox">
+                    <header class="upload-header">
+                        <h1 data-i18n="upload_title">Dropsite</h1>
+                        <p data-i18n="upload_subtitle">Select files/folder or paste from clipboard (Ctrl + V)</p>
+                    </header>
+
+                    <div class="dropzone" id="dropzone">
+                        <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+
+                        <div class="drop-text" data-i18n="drop_title">Select files or drop here</div>
+                        <div class="drop-subtext" data-i18n="drop_subtext">Folder support • Ctrl+V • All formats</div>
+
+                        <button type="button" class="btn-select" onclick="document.getElementById('fileInput').click()" data-i18n="btn_select_files">Select files</button>
+                        <input type="file" id="fileInput" aria-label="Select files to upload" multiple>
+                    </div>
+
+                    <div class="file-status-box" id="fileStatusBox">
+                        <div class="fs-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M19.6335 20.9654C19.8587 20.9654 20.0818 20.921 20.2899 20.8348C20.498 20.7486 20.6871 20.6222 20.8464 20.4629C21.0057 20.3037 21.1321 20.1146 21.2183 19.9064C21.3045 19.6983 21.3488 19.4753 21.3488 19.25C21.3488 19.0248 21.3045 18.8017 21.2183 18.5936C21.1321 18.3855 21.0057 18.1964 20.8464 18.0371C20.6871 17.8778 20.498 17.7514 20.2899 17.6652C20.0818 17.579 19.8587 17.5347 19.6335 17.5347C19.1785 17.5347 18.7422 17.7154 18.4206 18.0371C18.0989 18.3588 17.9181 18.7951 17.9181 19.25C17.9181 19.705 18.0989 20.1413 18.4206 20.4629C18.7422 20.7846 19.1785 20.9654 19.6335 20.9654V20.9654Z"
+                                    fill="#C4E7D4" fill-opacity="0.8" />
+                                <path
+                                    d="M28.2079 28.9703C28.2079 29.5769 27.967 30.1586 27.538 30.5875C27.1091 31.0165 26.5274 31.2574 25.9208 31.2574H16.7723C16.1657 31.2574 15.584 31.0165 15.155 30.5875C14.7261 30.1586 14.4852 29.5769 14.4852 28.9703V15.2475C14.4852 14.6409 14.7261 14.0592 15.155 13.6303C15.584 13.2014 16.1657 12.9604 16.7723 12.9604H23.0619L28.2079 18.1064V28.9703ZM16.7723 14.104C16.469 14.104 16.1781 14.2244 15.9637 14.4389C15.7492 14.6534 15.6287 14.9442 15.6287 15.2475V26.6832L18.172 24.1399C18.2621 24.05 18.3797 23.9927 18.5061 23.9772C18.6324 23.9616 18.7604 23.9887 18.8696 24.0541L21.3465 25.5396L23.8132 22.086C23.8615 22.0185 23.9239 21.9623 23.996 21.9214C24.0682 21.8804 24.1484 21.8556 24.2311 21.8488C24.3138 21.8419 24.397 21.8532 24.4749 21.8817C24.5528 21.9102 24.6236 21.9554 24.6823 22.014L27.0644 24.396V18.1064H24.7772C24.3223 18.1064 23.886 17.9257 23.5643 17.604C23.2426 17.2823 23.0619 16.846 23.0619 16.3911V14.104H16.7723Z"
+                                    fill="#0F91D2" fill-opacity="0.8" transform="translate(-10, -10)" />
+                            </svg>
+                        </div>
+                        <div class="fs-content">
+                            <div class="fs-header">
+                                <span id="fsName" class="fs-filename"></span>
+                                <span id="fsSizeOrProgress" class="fs-size"></span>
+                            </div>
+                            <div class="fs-track" id="fsTrack" hidden>
+                                <div class="fs-fill" id="fsProgressBar"></div>
+                            </div>
+                            <div class="fs-telemetry" id="fsTelemetry" hidden>
+                                <span class="telemetry-item speed-item">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    <span id="fsSpeed">0.0 MB/s</span>
+                                </span>
+                                <span class="telemetry-dot">&bull;</span>
+                                <span class="telemetry-item eta-item">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span id="fsEta">Obliczanie...</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL KOMPRESJI GRAFIKI (PREMIUM GLASS) -->
+                    <div id="imageCompressPanel" class="compress-panel" hidden>
+                        <div class="compress-header">
+                            <label class="custom-switch-label" for="compressToggleCheckbox">
+                                <div class="custom-switch">
+                                    <input type="checkbox" id="compressToggleCheckbox" checked>
+                                    <span class="switch-slider"></span>
+                                </div>
+                                <span class="switch-text">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    <span data-i18n="compress_toggle">Optimize image size</span>
+                                </span>
+                            </label>
+                            <span id="compressQualityLabel" class="compress-badge" data-i18n="compress_quality">Quality: 80%</span>
+                        </div>
+                        <div class="compress-slider-wrap">
+                            <div class="slider-container">
+                                <input type="range" id="compressQualitySlider" min="30" max="95" value="80" step="5"
+                                    class="dropsite-slider" aria-label="Suwak jakości kompresji">
+                            </div>
+                            <div class="compress-presets">
+                                <button type="button" class="btn-preset" data-q="50" data-i18n="preset_strong">High (50%)</button>
+                                <button type="button" class="btn-preset active" data-q="80" data-i18n="preset_balanced">Balanced (80%)</button>
+                                <button type="button" class="btn-preset" data-q="92" data-i18n="preset_high">Lossless (92%)</button>
+                            </div>
+                        </div>
+                        <div class="compress-footer">
+                            <span class="compress-info-label" data-i18n="compress_estimated">Estimated size after compression:</span>
+                            <strong id="estCompressedSize" class="compress-savings-val">--</strong>
+                        </div>
+                    </div>
+
+                    <!-- OPCJONALNA WŁASNA NAZWA LINKU -->
+                    <div class="custom-slug-wrap">
+                        <button type="button" class="slug-toggle-header" id="slugToggleBtn" aria-expanded="false">
+                            <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            <span class="slug-toggle-label"><span data-i18n="custom_slug_toggle">Custom link alias (Dropsite PRO)</span></span>
+                            <svg class="slug-arrow-svg" id="slugArrow" width="12" height="12" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div id="customSlugBox" class="slug-input-box" hidden style="display: none;">
+                            <div class="slug-input-container">
+                                <span class="slug-prefix" id="slugPrefixLabel">dropsite/</span>
+                                <input type="text" id="customSlugInput" placeholder="my-project" data-i18n-placeholder="custom_slug_placeholder"
+                                    class="dropsite-input custom-slug-input" maxlength="40" autocomplete="off"
+                                    spellcheck="false">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ZAAWANSOWANE OPCJE TRANSFERU (Hasło, Notatka, Limit) -->
+                    <div class="custom-adv-wrap">
+                        <button type="button" class="slug-toggle-header" id="advToggleBtn" aria-expanded="false">
+                            <svg class="slug-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span class="slug-toggle-label" data-i18n="adv_toggle">Advanced transfer options (Password, Note, Limit)</span>
+                            <svg class="slug-arrow-svg" id="advArrow" width="12" height="12" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div id="customAdvBox" class="adv-options-box" hidden style="display: none;">
+                            <div class="adv-field">
+                                <label class="adv-label" for="filePasswordInput">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                    <span data-i18n="adv_password_label">Protect with access password:</span>
+                                </label>
+                                <input type="password" id="filePasswordInput"
+                                    placeholder="Set file password..." data-i18n-placeholder="adv_password_placeholder" class="dropsite-input adv-input"
+                                    autocomplete="new-password">
+                            </div>
+                            <div class="adv-field">
+                                <label class="adv-label" for="fileNoteInput">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span data-i18n="adv_note_label">Message for recipient:</span>
+                                </label>
+                                <input type="text" id="fileNoteInput"
+                                    placeholder="Add note to appear on download page..." data-i18n-placeholder="adv_note_placeholder"
+                                    class="dropsite-input adv-input" maxlength="200">
+                            </div>
+                            <div class="adv-field">
+                                <label class="adv-label">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    <span data-i18n="adv_limit_label">Download limit (auto-destruct after N downloads):</span>
+                                </label>
+                                <div class="adv-limit-radios">
+                                    <label class="limit-radio-item">
+                                        <input type="radio" name="maxDownloads" value="" checked>
+                                        <span data-i18n="adv_limit_unlimited">Unlimited</span>
+                                    </label>
+                                    <label class="limit-radio-item">
+                                        <input type="radio" name="maxDownloads" value="1">
+                                        <span>1x</span>
+                                    </label>
+                                    <label class="limit-radio-item">
+                                        <input type="radio" name="maxDownloads" value="5">
+                                        <span>5x</span>
+                                    </label>
+                                    <label class="limit-radio-item">
+                                        <input type="radio" name="maxDownloads" value="10">
+                                        <span>10x</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="options-container" aria-label="Wybór czasu przechowywania">
+                        <p class="options-label" data-i18n="retention_label">Storage duration:</p>
+                        <div class="options-radios">
+                            <label class="option-item">
+                                <input type="radio" name="duration" value="1d" checked>
+                                <span data-i18n="dur_1d">1 Day</span>
+                            </label>
+                            <label class="option-item option-item-burn" title="File will be automatically and permanently deleted right after recipient downloads it" data-i18n-title="dur_burn_title">
+                                <input type="radio" name="duration" value="burn">
+                                <span>
+                                    <svg class="burn-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"></path>
+                                    </svg>
+                                    <span data-i18n="dur_burn">Burn after read</span>
+                                </span>
+                            </label>
+                            <label class="option-item option-item-pro">
+                                <input type="radio" name="duration" value="30d">
+                                <span><span data-i18n="dur_30d">30 Days</span> <span class="badge-pro-pill">PRO</span></span>
+                            </label>
+                            <label class="option-item option-item-pro">
+                                <input type="radio" name="duration" value="permanent">
+                                <span><span data-i18n="dur_perm">Permanent</span> <span class="badge-pro-pill">PRO</span></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="uploadFile()" id="uploadBtn" class="btn-primary" disabled>
+                        <span class="btn-text" data-i18n="btn_upload">Upload</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+
+                    <div id="status" class="status" aria-live="polite"></div>
+
+                    <div id="successFlow" class="success-flow" hidden>
+                        <div class="success-header">
+                            <h3 data-i18n="upload_success_title">File uploaded successfully!</h3>
+                        </div>
+
+                        <div class="success-link-box">
+                            <a href="#" id="finalLink" target="_blank" class="clickable-link">https://link...</a>
+                        </div>
+
+                        <div class="success-actions">
+                            <button class="btn-secondary" onclick="copyToClipboard()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span data-i18n="btn_copy_link">Copy link</span>
+                            </button>
+                            <button class="btn-secondary" onclick="openQrModal()" id="showQrBtn"
+                                title="Pokaż kod QR do skanowania telefonem">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                </svg>
+                                <span data-i18n="btn_qr_code">QR Code</span>
+                            </button>
+                            <button class="btn-secondary" onclick="shareLink()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                </svg>
+                                <span data-i18n="btn_share">Share</span>
+                            </button>
+                        </div>
+                        <button type="button" class="btn-outline-another" onclick="if(window.resetUploadFlow){ window.resetUploadFlow(); } else { resetUploadFlow(); }">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10"></polyline>
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                            </svg>
+                            <span data-i18n="btn_upload_another">Upload another file</span>
+                        </button>
+
+                        <!-- SLOT REKLAMOWY / SPONSOR NA EKRANIE SUKCESU -->
+                        <div class="ad-container ad-slot-success" id="successAdSlot"></div>
+
+                        <div class="success-tips">
+                            <p style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                Link jest aktywny przez wybrany okres czasu
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-funkcje" class="view-section" hidden>
+            <div class="main-wrapper">
+                <div class="upload-container info-panel">
+                    <header class="upload-header">
+                        <h1 data-i18n="features_header_title">Modern File Transfer Platform</h1>
+                        <p data-i18n="features_header_subtitle">Discover capabilities built for security, convenience, and performance</p>
+                    </header>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="vertical-align: -2px; margin-right: 6px;">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg> <span data-i18n="feat_speed_title">Zero Wait Time</span></h3>
+                            <p data-i18n="feat_speed_desc">Instant file processing powered by global Cloudflare edge network.</p>
+                        </div>
+                        <div class="info-card">
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="vertical-align: -2px; margin-right: 6px;">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg> <span data-i18n="feat_privacy_title">Complete Privacy</span></h3>
+                            <p data-i18n="feat_privacy_desc">Files automatically expire after chosen duration. No tracking or data selling.</p>
+                        </div>
+                        <div class="info-card">
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="vertical-align: -2px; margin-right: 6px;">
+                                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                                </svg> <span data-i18n="feat_media_title">Built for Media</span></h3>
+                            <p data-i18n="feat_media_desc">Optimized video player, music streaming, and image preview without quality loss.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-cennik" class="view-section" hidden>
+            <div class="main-wrapper" style="max-width: 860px;">
+                <div class="upload-container info-panel">
+                    <header class="upload-header">
+                        <h1 data-i18n="pricing_header_title">Choose your plan</h1>
+                        <p data-i18n="pricing_header_subtitle">Fast and secure file sharing without hidden fees</p>
+                    </header>
+                    <div class="pricing-grid">
+                        <div class="pricing-card">
+                            <div class="pricing-badge-free" data-i18n="plan_free_badge">Basic</div>
+                            <h3 data-i18n="plan_free_title">Free</h3>
+                            <h2 data-i18n="plan_free_price">$0 / no login required</h2>
+                            <ul class="pricing-features">
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_free_f1">Files up to 250 MB</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_free_f2">24-hour expiration</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_free_f3">Burn after read self-destruct</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_free_f4">Smart link Discord & social embeds</span></li>
+                            </ul>
+                            <button class="btn-select"
+                                onclick="document.querySelector('[data-target=\'view-glowna\']').click()" data-i18n="plan_free_action">Current plan</button>
+                        </div>
+                        <div class="pricing-card premium">
+                            <div class="pricing-badge-gold" data-i18n="plan_pro_badge">Most Popular ✦</div>
+                            <h3 data-i18n="plan_pro_title">Dropsite PRO</h3>
+                            <h2 data-i18n="plan_pro_price">$4.99 / month</h2>
+                            <ul class="pricing-features">
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_pro_f1">Large files up to 10 GB</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_pro_f2">Permanent & 30-Day storage</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_pro_f3">Custom link aliases</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="plan_pro_f4">Priority transfer & unlimited downloads</span></li>
+                            </ul>
+                            <button class="btn-primary btn-pro-action" onclick="window.openProModal()">
+                                <span class="btn-text" data-i18n="plan_pro_action">Unlock PRO / Enter Key</span>
+                                <div class="btn-ripple"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-kontakt" class="view-section" hidden>
+            <div class="main-wrapper">
+                <div class="upload-container info-panel">
+                    <header class="upload-header">
+                        <h1 data-i18n="contact_title">Contact Us</h1>
+                        <p data-i18n="contact_subtitle">Have questions, suggestions, or need business collaboration?</p>
+                    </header>
+                    <div class="contact-box">
+                        <p data-i18n="contact_email_title">Direct Email:</p>
+                        <a href="mailto:dropsite33@gmail.com" class="clickable-link">dropsite33@gmail.com</a>
+                        <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted);" data-i18n="contact_hours_desc">Support Availability: Mon – Sun: 08:00 – 22:00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEDYTKOWANA STRONA POBIERANIA (DOWNLOAD LANDING PAGE) -->
+        <div id="view-download" class="view-section" hidden>
+            <div class="main-wrapper">
+                <div class="upload-container download-card">
+                    <header class="upload-header" style="text-align: center;">
+                        <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
+                        <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;" data-i18n="dl_loading_title">Loading file info...</h1>
+                        <p id="dlFileSize" class="dl-subtitle"
+                            style="color: var(--text-muted); font-size: 14px; margin-top: 4px;" data-i18n="dl_loading_subtitle">Fetching metadata from server...</p>
+                        <div id="dlStatsCounter" class="dl-stats-counter"
+                            style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14"
+                                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg> <span id="dlViewCount">1</span> <span data-i18n="dl_views_label">views</span></span>
+                            <span>&bull;</span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14"
+                                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg> <span id="dlDownloadCount">0</span> <span data-i18n="dl_downloads_label">downloads</span></span>
+                        </div>
+                    </header>
+
+                    <!-- KARTA NOTATKI OD NADAWCY -->
+                    <div id="dlNoteBox" class="dl-note-card" hidden>
+                        <div class="dl-note-header">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span data-i18n="dl_sender_note">Message from sender:</span>
+                        </div>
+                        <p id="dlNoteText" class="dl-note-body"></p>
+                    </div>
+
+                    <!-- BLOKADA HASŁEM -->
+                    <div id="dlPasswordLockBox" class="dl-password-box" hidden>
+                        <div class="pwd-lock-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <h3 data-i18n="dl_password_title">Password Protected File</h3>
+                        <p data-i18n="dl_password_desc">The sender has set a password for this file. Enter it below to unlock download.</p>
+                        <div class="pwd-input-wrap">
+                            <input type="password" id="dlUnlockPasswordInput" placeholder="Enter file password..." data-i18n-placeholder="dl_password_placeholder"
+                                class="dropsite-input pwd-unlock-input" autocomplete="current-password">
+                            <button type="button" id="dlUnlockBtn" class="btn-primary" style="padding: 12px 20px;">
+                                <span class="btn-text" data-i18n="dl_btn_unlock">Unlock</span>
+                                <div class="btn-ripple"></div>
+                            </button>
+                        </div>
+                        <p id="dlPasswordError" class="pwd-error-text"></p>
+                    </div>
+
+                    <!-- ZAWARTOŚĆ PO ODBLOKOWANIU -->
+                    <div id="dlContentWrap">
+                        <!-- SLOT REKLAMOWY TOP (UKRYWANY DLA PRO) -->
+                        <div class="ad-container ad-slot-top" id="adSlotTop">
+                            <span class="ad-label" data-i18n="ad_label">Advertisement</span>
+                            <div class="ad-content" id="adContentTop">
+                                <div class="ad-placeholder-banner">
+                                    <div class="ad-placeholder-inner">
+                                        <span class="ad-badge-subtle">PRO</span>
+                                        <span data-i18n="ad_pro_teaser">Lightning fast & ad-free transfer with Dropsite PRO</span>
+                                        <button type="button" class="btn-ad-upgrade" onclick="window.openProModal()" data-i18n="ad_btn_upgrade">Upgrade</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="dlPreviewContainer" class="dl-preview-container">
+                            <!-- Podgląd wideo/obrazu/audio/ikona generowany przez app.js -->
+                        </div>
+
+                        <div id="dlBurnWarning" class="burn-warning-box" hidden>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                                </path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span data-i18n="dl_burn_warning">Single-use file: This file will be immediately and permanently destroyed from server after download!</span>
+                        </div>
+
+                        <div class="dl-actions">
+                            <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span class="btn-text" data-i18n="dl_btn_download">Download File</span>
+                                <div class="btn-ripple"></div>
+                            </a>
+
+                            <button type="button" class="btn-secondary dl-btn-secondary"
+                                onclick="if(window.navigateToHome){ window.navigateToHome(true); } else { document.querySelector('[data-target=\'view-glowna\']').click(); }">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span data-i18n="dl_btn_upload_own">Upload your own file for free</span>
+                            </button>
+                        </div>
+
+                        <!-- SLOT REKLAMOWY BOTTOM (UKRYWANY DLA PRO) -->
+                        <div class="ad-container ad-slot-bottom" id="adSlotBottom">
+                            <span class="ad-label" data-i18n="ad_label">Advertisement</span>
+                            <div class="ad-content" id="adContentBottom">
+                                <div class="ad-placeholder-banner">
+                                    <div class="ad-placeholder-inner">
+                                        <span class="ad-badge-subtle">✦</span>
+                                        <span data-i18n="ad_pro_teaser_2">Support Dropsite & remove ads permanently</span>
+                                        <button type="button" class="btn-ad-upgrade" onclick="window.openProModal()" data-i18n="ad_btn_upgrade_2">Remove Ads</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIRAL PROMO PRO -->
+                        <div class="dl-promo-card">
+                            <div class="dl-promo-left">
+                                <div class="dl-promo-tag" data-i18n="dl_promo_title">✦ Dropsite PRO</div>
+                                <p data-i18n="dl_promo_desc">Send huge packages up to 10 GB with zero ads and unlimited time.</p>
+                            </div>
+                            <button type="button" class="btn-promo-action" onclick="window.openProModal()" data-i18n="dl_promo_btn">Check PRO offer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="storage-widget" id="storageWidget">
+        <button id="minimizeDot" class="minimize-dot" title="Toggle disk"></button>
+        <div class="storage-container">
+            <div class="storage-header">
+                <h2 data-i18n="storage_title">Disk</h2>
+                <div class="storage-stats">
+                    <span id="diskUsedText">Loading...</span>
+                    <span class="storage-free" id="diskFreeText"></span>
+                </div>
+            </div>
+
+            <div class="storage-bar" id="storageBar"></div>
+
+            <div class="storage-legend">
+                <div class="legend-item"><span style="background: #C4E7D4;"></span> <span data-i18n="legend_images">Images</span></div>
+                <div class="legend-item"><span style="background: #FF4439;"></span> <span data-i18n="legend_videos">Videos</span></div>
+                <div class="legend-item"><span style="background: #FFBC39;"></span> <span data-i18n="legend_docs">Documents</span></div>
+                <div class="legend-item"><span style="background: #59A829;"></span> <span data-i18n="legend_archives">Archives</span></div>
+                <div class="legend-item"><span style="background: #48484A;"></span> <span data-i18n="legend_other">Other</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modModal" class="mod-modal" hidden>
+        <div class="mod-container">
+            <div class="mod-header">
+                <div class="mod-title-wrap">
+                    <div class="mod-icon-badge" id="modIconBadge">
+                        <svg width="22" height="22" viewBox="0 0 31 31" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z">
+                            </path>
+                            <path
+                                d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674">
+                            </path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 id="modPanelTitle">Panel Plików</h2>
+                        <span class="mod-subtitle" id="modPanelSubtitle">Zarządzanie magazynem plików</span>
+                    </div>
+                </div>
+
+                <!-- Przełącznik zakresu dla Administratora (Wszystkie vs Moje) -->
+                <div id="adminPanelScopeWrap" class="admin-scope-wrap" style="display: none;">
+                    <button type="button" class="scope-btn active" data-scope="all">
+                        <span>🌐 Wszystkie (Serwer)</span>
+                    </button>
+                    <button type="button" class="scope-btn" data-scope="mine">
+                        <span>👤 Tylko moje pliki</span>
+                    </button>
+                </div>
+
+                <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
             </div>
-        </div>
-        <div class="dl-lightbox-body" id="dlLightboxBody">
-            <img id="dlLightboxImg" src="" alt="" class="dl-lightbox-img">
-        </div>
-        <div class="dl-lightbox-footer">
-            <span>Kliknij zdjęcie, aby przybliżyć / oddalić &bull; Klawisz <strong>Esc</strong> zamyka</span>
+
+            <!-- Mini-statystyki u góry -->
+            <div id="adminAuthBox"
+                style="background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px; display: none; gap: 12px; align-items: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <input type="password" id="adminSecretInput"
+                    placeholder="Podaj hasło administratora (domyślnie: 12345678)..." class="dropsite-input"
+                    style="flex: 1; margin: 0;" autocomplete="new-password">
+                <button type="button" id="saveAdminSecretBtn" class="btn-secondary"
+                    style="padding: 12px 20px;">Zaloguj</button>
+            </div>
+            <div id="modContentArea">
+                <div class="mod-stats-grid">
+                    <div class="mod-stat-card">
+                        <div class="mod-stat-header">
+                            <span class="mod-stat-label">Wszystkie pliki</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </div>
+                        <span class="mod-stat-value" id="modTotalFiles">0</span>
+                    </div>
+                    <div class="mod-stat-card">
+                        <div class="mod-stat-header">
+                            <span class="mod-stat-label">Zajęte miejsce</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                </path>
+                            </svg>
+                        </div>
+                        <span class="mod-stat-value" id="modTotalSize">0 B</span>
+                    </div>
+                    <div class="mod-stat-card">
+                        <div class="mod-stat-header">
+                            <span class="mod-stat-label">Struktura</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F91D2"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
+                            </svg>
+                        </div>
+                        <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0
+                            zdjęć</span>
+                    </div>
+                </div>
+
+                <!-- Pasek narzędzi (Szukajka + Sortowanie + Odśwież) -->
+                <div class="mod-toolbar">
+                    <div class="mod-search-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mod-search-icon">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="modSearchInput" placeholder="Szukaj pliku po nazwie..."
+                            class="mod-search-input">
+                    </div>
+                    <div class="mod-toolbar-actions">
+                        <div class="custom-select-wrap" id="customSortDropdown">
+                            <button type="button" class="custom-select-trigger" id="customSortTrigger"
+                                aria-haspopup="listbox" aria-expanded="false">
+                                <span class="custom-select-label" id="customSortLabel">Najnowsze</span>
+                                <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            <div class="custom-select-menu" id="customSortMenu" role="listbox" hidden>
+                                <div class="custom-select-option selected" data-value="newest" role="option">
+                                    <span>Najnowsze</span>
+                                    <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-option" data-value="size-desc" role="option">
+                                    <span>Rozmiar: od największych</span>
+                                    <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-option" data-value="size-asc" role="option">
+                                    <span>Rozmiar: od najmniejszych</span>
+                                    <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-option" data-value="name-asc" role="option">
+                                    <span>Nazwa: A-Z</span>
+                                    <svg class="opt-check" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="refreshModBtn" class="btn-select mod-refresh-btn">Odśwież</button>
+                    </div>
+                </div>
+
+                <!-- Filtry kategorii (Pill buttons) -->
+                <div class="mod-filter-pills" id="modFilterPills">
+                    <button class="mod-pill active" data-filter="all">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Wszystkie</span>
+                        <span class="pill-badge" id="count-all">0</span>
+                    </button>
+                    <button class="mod-pill" data-filter="video">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                        <span>Wideo</span>
+                        <span class="pill-badge" id="count-video">0</span>
+                    </button>
+                    <button class="mod-pill" data-filter="image">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span>Zdjęcia</span>
+                        <span class="pill-badge" id="count-image">0</span>
+                    </button>
+                    <button class="mod-pill" data-filter="doc">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Dokumenty</span>
+                        <span class="pill-badge" id="count-doc">0</span>
+                    </button>
+                    <button class="mod-pill" data-filter="archive">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pill-icon">
+                            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                            <rect x="1" y="3" width="22" height="5"></rect>
+                            <line x1="10" y1="12" x2="14" y2="12"></line>
+                        </svg>
+                        <span>Archiwa</span>
+                        <span class="pill-badge" id="count-archive">0</span>
+                    </button>
+                </div>
+
+                <div id="modFilesScreen" class="mod-files-screen">
+                    <ul id="modFileList" class="mod-file-list"></ul>
+                </div>
+            </div> <!-- End of modContentArea -->
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="app.js"></script>
+    <!-- MODAL HISTORII PLIKÓW DLA UŻYTKOWNIKA -->
+    <div id="historyModalWrap" class="mod-modal" hidden>
+        <div class="mod-container" style="max-width: 620px;">
+            <div class="mod-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <h2>Twoja historia plików</h2>
+                </div>
+                <button id="closeHistoryModal" class="mod-close" aria-label="Zamknij historię">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Pliki przesłane z Twojej
+                przeglądarki (zapisane w pamięci urządzenia):</p>
+            <ul id="userHistoryList" class="mod-file-list" style="max-height: 380px;"></ul>
+            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                <button id="clearHistoryBtn" class="btn-secondary" style="font-size: 12px; padding: 8px 16px;">Wyczyść
+                    historię</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KODU QR -->
+    <div id="qrModalWrap" class="mod-modal" hidden>
+        <div class="mod-container qr-modal-container"
+            style="max-width: 380px; text-align: center; align-items: center;">
+            <div class="mod-header" style="width: 100%;">
+                <h2 style="font-size: 18px;">Kod QR do pobrania</h2>
+                <button id="closeQrModal" class="mod-close" aria-label="Zamknij kod QR">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="qr-box-wrap"
+                style="background: white; padding: 16px; border-radius: 12px; display: inline-flex; margin: 10px 0;">
+                <canvas id="qrCanvas"></canvas>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 10px;">Zeskanuj aparatem w telefonie, aby
+                błyskawicznie otworzyć i pobrać plik!</p>
+        </div>
+    </div>
+
+    <!-- Dolny pasek akcji / przyciski w lewym dolnym rogu -->
+    <div class="bottom-action-dock">
+        <button id="openModBtn" class="btn-mod-open" style="display: none;"
+            title="Panel Zarządzania Wszystkimi Plikami (Admin)">
+            <svg width="18" height="18" viewBox="0 0 31 31" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                    d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z">
+                </path>
+                <path
+                    d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674">
+                </path>
+            </svg>
+            <span>Panel Admina</span>
+        </button>
+
+        <button id="openUserPanelBtn" class="btn-user-panel" title="Your uploaded files" data-i18n-title="dock_my_files">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span data-i18n="dock_my_files">My Files</span>
+        </button>
+
+        <button id="loginBtn" class="btn-login">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            <span data-i18n="dock_login">Login</span>
+        </button>
+    </div>
+
+    <div id="loginModalWrap" class="mod-modal" hidden>
+        <div class="mod-container auth-modal-container" style="max-width: 420px; padding: 36px 30px;">
+            <div class="mod-header" style="justify-content: space-between; position: relative; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div
+                        style="width: 38px; height: 38px; border-radius: 10px; background: rgba(15, 145, 210, 0.15); border: 1px solid rgba(15, 145, 210, 0.3); display: flex; align-items: center; justify-content: center; color: var(--accent-blue);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 id="authModalTitle"
+                            style="font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0;" data-i18n="auth_login_title">Sign in</h2>
+                        <span style="font-size: 12px; color: var(--text-muted);" data-i18n="auth_subtitle">Access your account & Dropsite license</span>
+                    </div>
+                </div>
+                <button id="closeLoginModal" class="mod-close" aria-label="Zamknij logowanie">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Przycisk Google 1-kliknięciem -->
+            <button type="button" id="googleLoginBtn" class="btn-google-auth">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span data-i18n="auth_google_btn">Continue with Google</span>
+            </button>
+
+            <!-- Separator -->
+            <div class="auth-divider">
+                <span data-i18n="auth_or_email">or with email</span>
+            </div>
+
+            <!-- Formularz tradycyjny -->
+            <form id="authEmailForm" onsubmit="event.preventDefault();"
+                style="display: flex; flex-direction: column; gap: 14px;">
+                <input type="email" id="adminEmail" placeholder="Email address" data-i18n-placeholder="auth_email_placeholder" class="dropsite-input"
+                    autocomplete="email" required>
+                <input type="password" id="adminPass" placeholder="Password (min. 6 characters)" data-i18n-placeholder="auth_pass_placeholder" class="dropsite-input"
+                    autocomplete="current-password" required>
+
+                <button type="submit" id="doLoginBtn" class="btn-primary"
+                    style="margin-top: 4px; padding: 14px; border-radius: 12px;">
+                    <span class="btn-text" data-i18n="auth_submit_login">Sign in</span>
+                    <div class="btn-ripple"></div>
+                </button>
+
+                <p id="loginError"
+                    style="color: #FF4439; font-size: 13px; text-align: center; margin: 0; min-height: 18px; font-weight: 600;">
+                </p>
+
+                <div style="text-align: center; margin-top: 4px;">
+                    <button type="button" id="toggleAuthModeBtn"
+                        style="background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 4px; font-family: inherit;">
+                        <span data-i18n="auth_no_account">Don't have an account?</span> <span style="color: var(--accent-blue); font-weight: 600;" data-i18n="auth_register_link">Register</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DROPSITE PRO (ZAKUP & AKTYWACJA) -->
+    <div id="proModalWrap" class="mod-modal" hidden>
+        <div class="mod-container pro-modal-container" style="max-width: 520px;">
+            <div class="mod-header">
+                <div class="pro-modal-header-left">
+                    <div class="pro-icon-badge">✦</div>
+                    <div>
+                        <h2>Dropsite PRO</h2>
+                        <span class="pro-modal-subtitle" data-i18n="pro_modal_subtitle">Unlock unlimited transfer capabilities</span>
+                    </div>
+                </div>
+                <button id="closeProModal" class="mod-close" aria-label="Zamknij okno PRO">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="pro-features-summary">
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f1">Upload files up to <strong>10 GB</strong> (no 250 MB limit)</span>
+                </div>
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f2">Storage duration: <strong>Permanent</strong> or 30 Days</span>
+                </div>
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f3">Custom link aliases (e.g. <code>dropsite/my-alias</code>)</span>
+                </div>
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f4">Priority upload pipeline & unlimited downloads</span>
+                </div>
+            </div>
+
+            <!-- Opcje zakupu -->
+            <div class="pro-purchase-options">
+                <button type="button" id="btnBuyProSub" class="btn-primary pro-buy-btn">
+                    <span class="btn-text" data-i18n="pro_modal_buy_btn">Buy PRO ($4.99 / month)</span>
+                    <div class="btn-ripple"></div>
+                </button>
+                <div class="pro-divider"><span data-i18n="pro_modal_or_key">or enter purchased license key</span></div>
+            </div>
+
+            <!-- Aktywacja klucza licencyjnego -->
+            <div class="pro-activation-box">
+                <label for="proKeyInput" class="pro-key-label" data-i18n="pro_key_label">PRO License Key:</label>
+                <div class="pro-key-input-row">
+                    <input type="text" id="proKeyInput" placeholder="e.g. PRO-8A9F-2K4L" data-i18n-placeholder="pro_key_placeholder"
+                        class="dropsite-input pro-key-input" maxlength="32" autocomplete="off" spellcheck="false">
+                    <button type="button" id="activateProKeyBtn" class="btn-secondary pro-activate-btn">
+                        <span data-i18n="pro_btn_activate">Activate</span>
+                    </button>
+                </div>
+                <p id="proKeyStatus" class="pro-key-status-text"></p>
+            </div>
+
+            <!-- Sekcja dla zalogowanych z aktywnym PRO -->
+            <div id="proActiveBox" class="pro-active-box" hidden>
+                <div class="pro-active-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#59A829" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_active_text">PRO account is active on this device!</span>
+                </div>
+                <button type="button" id="deactivateProKeyBtn" class="btn-secondary btn-deactivate-pro" data-i18n="pro_btn_deactivate">Deactivate key</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- MODAL POWIĘKSZENIA ZDJĘCIA (LIGHTBOX) -->
+    <div id="dlLightboxModal" class="dl-lightbox-modal" hidden>
+        <div class="dl-lightbox-backdrop" id="dlLightboxBackdrop"></div>
+        <div class="dl-lightbox-wrap">
+            <div class="dl-lightbox-header">
+                <div class="dl-lightbox-info">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span id="dlLightboxTitle" class="dl-lightbox-filename">Podgląd zdjęcia</span>
+                </div>
+                <div class="dl-lightbox-actions">
+                    <button type="button" id="dlLightboxZoomToggle" class="dl-lightbox-tool-btn"
+                        title="Powiększ / Dopasuj">
+                        <svg id="dlZoomInIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="11" y1="8" x2="11" y2="14"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                        <svg id="dlZoomOutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="display: none;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                        <span id="dlZoomStatusText">Powiększ</span>
+                    </button>
+                    <a href="#" id="dlLightboxOpenNewTab" target="_blank" rel="noopener noreferrer"
+                        class="dl-lightbox-tool-btn dl-lightbox-newtab-btn"
+                        title="Otwórz oryginalne zdjęcie w nowej karcie">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        <span>Otwórz w nowej karcie</span>
+                    </a>
+                    <button type="button" id="dlLightboxCloseBtn" class="dl-lightbox-tool-btn dl-lightbox-close-btn"
+                        aria-label="Zamknij podgląd" title="Zamknij (Esc)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="dl-lightbox-body" id="dlLightboxBody">
+                <img id="dlLightboxImg" src="" alt="" class="dl-lightbox-img">
+            </div>
+            <div class="dl-lightbox-footer">
+                <span>Kliknij zdjęcie, aby przybliżyć / oddalić &bull; Klawisz <strong>Esc</strong> zamyka</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="js/ads-engine.js"></script>
+    <script src="app.js"></script>
 </body>
+
 </html>

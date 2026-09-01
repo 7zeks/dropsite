@@ -5,12 +5,17 @@ compatibility_date = "2024-03-20"
 # Przypinamy Twój dysk (Bucket) z Cloudflare
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "przecho" 
+bucket_name = "dropsite-storage" 
 
 # Zmienne środowiskowe, które Cloudflare musi znać
 [vars]
-ACCOUNT_ID = "88c5c67633b72a26b0bff11805e73fb4"
-BUCKET_NAME = "przecho"
+ACCOUNT_ID = "00239cd8de8eaea48da056276bf08dd4"
+BUCKET_NAME = "dropsite-storage"
+ADMIN_SECRET = "12345678"
+PRO_KEYS = "PRO-VIP-2026,PRO-LIFETIME,Popekzkalisza,12345678"
+POLAR_ACCESS_TOKEN = "polar_oat_7JGC3outXxtZzBmfz6O7vbTRQhQkhIu53TX7D0ki18S"
+POLAR_ORG_ID = "a8ff89f6-b98c-4a21-bb7e-f231e79cf7d6"
+POLAR_PRODUCT_PRICE_ID = "778c4c13-f652-4dcf-8699-9895a04742c6"
 
 # Automatyczne czyszczenie wygasłych plików raz na dobę (godzina 2:00 UTC)
 [triggers]

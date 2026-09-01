@@ -13,19 +13,27 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// 2. Obsługa okienka logowania
+// 2. Obsługa okienka logowania i rejestracji (Google + E-mail)
 const auth = firebase.auth();
 const loginBtn = document.getElementById('loginBtn');
 const loginModalWrap = document.getElementById('loginModalWrap');
 const closeLoginModal = document.getElementById('closeLoginModal');
 const doLoginBtn = document.getElementById('doLoginBtn');
+const googleLoginBtn = document.getElementById('googleLoginBtn');
+const toggleAuthModeBtn = document.getElementById('toggleAuthModeBtn');
+const authModalTitle = document.getElementById('authModalTitle');
 const loginError = document.getElementById('loginError');
+
+let isRegisterMode = false;
 
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
-        if (document.body.classList.contains('is-admin')) {
-            auth.signOut();
+        if (auth.currentUser) {
+            auth.signOut().then(() => {
+                showNotification('Wylogowano pomyślnie', 'info');
+            });
         } else {
+            loginError.textContent = '';
             loginModalWrap.removeAttribute('hidden');
         }
     });
@@ -38,41 +46,493 @@ if (closeLoginModal) {
     });
 }
 
-if (doLoginBtn) {
-    doLoginBtn.addEventListener('click', () => {
-        const email = document.getElementById('adminEmail').value;
-        const pass = document.getElementById('adminPass').value;
-        loginError.textContent = '';
-        
-        auth.signInWithEmailAndPassword(email, pass)
-            .then(() => {
-                loginModalWrap.setAttribute('hidden', '');
-            })
-            .catch(error => {
-    loginError.textContent = error.message; // Teraz pokaże prawdziwy powód!
-    console.error("Błąd Firebase:", error.code, error.message);
-});
+if (loginModalWrap) {
+    loginModalWrap.addEventListener('click', (e) => {
+        if (e.target === loginModalWrap) {
+            loginModalWrap.setAttribute('hidden', '');
+            loginError.textContent = '';
+        }
     });
 }
 
-// 3. Nasłuchiwanie czy jesteś zalogowany
+// Przełącznik Logowanie <-> Rejestracja
+if (toggleAuthModeBtn) {
+    toggleAuthModeBtn.addEventListener('click', () => {
+        isRegisterMode = !isRegisterMode;
+        loginError.textContent = '';
+        if (isRegisterMode) {
+            if (authModalTitle) authModalTitle.textContent = 'Stwórz konto';
+            if (doLoginBtn) doLoginBtn.querySelector('.btn-text').textContent = 'Zarejestruj się';
+            toggleAuthModeBtn.innerHTML = 'Masz już konto? <span style="color: var(--accent-blue); font-weight: 600;">Zaloguj się</span>';
+        } else {
+            if (authModalTitle) authModalTitle.textContent = 'Zaloguj się';
+            if (doLoginBtn) doLoginBtn.querySelector('.btn-text').textContent = 'Zaloguj się';
+            toggleAuthModeBtn.innerHTML = 'Nie masz konta? <span style="color: var(--accent-blue); font-weight: 600;">Zarejestruj się</span>';
+        }
+    });
+}
+
+// Logowanie przez Google 1-kliknięciem
+if (googleLoginBtn) {
+    googleLoginBtn.addEventListener('click', async () => {
+        loginError.textContent = '';
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        try {
+            googleLoginBtn.disabled = true;
+            googleLoginBtn.style.opacity = '0.7';
+            const result = await auth.signInWithPopup(provider);
+            loginModalWrap.setAttribute('hidden', '');
+            showNotification(`Witaj, ${result.user.displayName || 'użytkowniku'}!`, 'success');
+        } catch (error) {
+            console.error("Błąd Google Auth:", error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                loginError.textContent = 'Logowanie Google zostało przerwane.';
+            } else if (error.code === 'auth/unauthorized-domain') {
+                loginError.textContent = 'Domena nie jest autoryzowana w Firebase Console (włącz 127.0.0.1 w Authentication -> Settings -> Authorized domains).';
+            } else {
+                loginError.textContent = error.message || 'Wystąpił błąd podczas logowania przez Google.';
+            }
+        } finally {
+            googleLoginBtn.disabled = false;
+            googleLoginBtn.style.opacity = '1';
+        }
+    });
+}
+
+// Logowanie / Rejestracja E-mail + Hasło
+if (doLoginBtn) {
+    doLoginBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('adminEmail').value.trim();
+        const pass = document.getElementById('adminPass').value;
+        loginError.textContent = '';
+
+        if (!email || !pass) {
+            loginError.textContent = 'Podaj adres e-mail i hasło.';
+            return;
+        }
+
+        if (pass.length < 6) {
+            loginError.textContent = 'Hasło musi mieć co najmniej 6 znaków.';
+            return;
+        }
+
+        try {
+            doLoginBtn.disabled = true;
+            if (isRegisterMode) {
+                await auth.createUserWithEmailAndPassword(email, pass);
+                showNotification('Konto zostało utworzone!', 'success');
+            } else {
+                await auth.signInWithEmailAndPassword(email, pass);
+                showNotification('Zalogowano pomyślnie!', 'success');
+            }
+            loginModalWrap.setAttribute('hidden', '');
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPass').value = '';
+        } catch (error) {
+            console.error("Błąd Auth:", error);
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                loginError.textContent = 'Nieprawidłowy adres e-mail lub hasło.';
+            } else if (error.code === 'auth/email-already-in-use') {
+                loginError.textContent = 'Konto z tym adresem e-mail już istnieje.';
+            } else if (error.code === 'auth/invalid-email') {
+                loginError.textContent = 'Wprowadzono niepoprawny adres e-mail.';
+            } else {
+                loginError.textContent = error.message;
+            }
+        } finally {
+            doLoginBtn.disabled = false;
+        }
+    });
+}
+
+// === SYSTEM RÓL I UPRAWNIEŃ DLA ADMINA / PRO / FREE ===
+let currentActiveRole = localStorage.getItem('dropsite_admin_role_view') || 'admin';
+const ADMIN_EMAILS = ['dropsite33@gmail.com', 'admin@zk.pl', 'admin@dropsite.com', 'admin@dropsite.pl'];
+
+function isActualAdminUser() {
+    const user = auth.currentUser;
+    if (!user || !user.email) return false;
+    const email = user.email.toLowerCase().trim();
+    return ADMIN_EMAILS.includes(email) || email.includes('dropsite33') || email === 'admin@zk.pl';
+}
+
+function isSuperAdmin() {
+    if (!isActualAdminUser()) {
+        return false;
+    }
+    return currentActiveRole === 'admin';
+}
+
+function getProKey() {
+    if (isActualAdminUser()) {
+        if (currentActiveRole === 'admin' || currentActiveRole === 'preview-pro') {
+            return sessionStorage.getItem('adminSecret') || '12345678';
+        }
+        if (currentActiveRole === 'preview-free') {
+            return '';
+        }
+    }
+    return (localStorage.getItem('dropsite_pro_key') || '').trim();
+}
+
+function isProUser() {
+    if (isActualAdminUser()) {
+        if (currentActiveRole === 'admin' || currentActiveRole === 'preview-pro') {
+            return true;
+        }
+        if (currentActiveRole === 'preview-free') {
+            return false;
+        }
+    }
+    return getProKey().length > 0;
+}
+
+function setProKey(key) {
+    if (key) {
+        localStorage.setItem('dropsite_pro_key', key.trim());
+    } else {
+        localStorage.removeItem('dropsite_pro_key');
+    }
+    updateProUI();
+}
+
+let currentAdminPanelScope = 'all'; // 'all' (serwer) | 'mine' (twoje pliki)
+
+function updateAdminRoleUI() {
+    const adminBar = document.getElementById('adminRoleBar');
+    const openModBtn = document.getElementById('openModBtn');
+    const openUserPanelBtn = document.getElementById('openUserPanelBtn');
+    const isRealAdmin = isActualAdminUser();
+    const isEffectiveAdmin = isSuperAdmin();
+
+    if (isRealAdmin) {
+        if (!sessionStorage.getItem('adminSecret')) {
+            sessionStorage.setItem('adminSecret', '12345678');
+        }
+    } else {
+        sessionStorage.removeItem('adminSecret');
+    }
+
+    if (adminBar) {
+        adminBar.hidden = !isRealAdmin;
+        if (isRealAdmin) {
+            adminBar.querySelectorAll('.role-pill-btn').forEach(btn => {
+                const role = btn.getAttribute('data-role');
+                btn.classList.toggle('active', role === currentActiveRole);
+            });
+        }
+    }
+
+    // Przycisk 1: Panel Admina (Wszystkie pliki serwera R2) - widoczny TYLKO dla prawdziwego admina w trybie 'admin'
+    if (openModBtn) {
+        openModBtn.style.display = isEffectiveAdmin ? 'inline-flex' : 'none';
+    }
+
+    // Przycisk 2: Panel Zwykły (Moje Pliki) - widoczny ZAWSZE dla każdego
+    if (openUserPanelBtn) {
+        openUserPanelBtn.style.display = 'inline-flex';
+        const span = openUserPanelBtn.querySelector('span');
+        if (span) {
+            if (isProUser() && (!isRealAdmin || currentActiveRole === 'preview-pro')) {
+                span.textContent = 'Moje Pliki (PRO)';
+                openUserPanelBtn.title = 'Panel Twoich plików PRO';
+            } else {
+                span.textContent = 'Moje Pliki';
+                openUserPanelBtn.title = 'Panel Twoich wgranych plików';
+            }
+        }
+    }
+
+    updateProUI();
+}
+
+// 3. Nasłuchiwanie stanu zalogowania
 auth.onAuthStateChanged(user => {
     const btnText = loginBtn ? loginBtn.querySelector('span') : null;
-    const openModBtn = document.getElementById('openModBtn');
 
     if (user) {
-        document.body.classList.add('is-admin');
-        if (btnText) btnText.textContent = 'Logout';
-        if (openModBtn) openModBtn.style.display = 'flex'; // Pokazuje przycisk Modera
+        document.body.classList.add('is-user-logged');
+        const displayName = user.displayName ? user.displayName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Konto');
+        if (btnText) btnText.textContent = displayName;
+        if (loginBtn) {
+            loginBtn.title = `Zalogowano jako: ${user.email || displayName} (Kliknij, aby się wylogować)`;
+            loginBtn.classList.add('logged-in');
+        }
     } else {
-        document.body.classList.remove('is-admin');
+        document.body.classList.remove('is-user-logged');
         if (btnText) btnText.textContent = 'Login';
-        if (openModBtn) openModBtn.style.display = 'none'; // Ukrywa przycisk Modera
+        if (loginBtn) {
+            loginBtn.title = 'Zaloguj się';
+            loginBtn.classList.remove('logged-in');
+        }
+    }
+    updateAdminRoleUI();
+});
+
+// Obsługa przełącznika ról dla Admina
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.role-pill-btn');
+    if (btn) {
+        const selectedRole = btn.getAttribute('data-role');
+        if (selectedRole && ['admin', 'preview-pro', 'preview-free'].includes(selectedRole)) {
+            currentActiveRole = selectedRole;
+            localStorage.setItem('dropsite_admin_role_view', selectedRole);
+            updateAdminRoleUI();
+            
+            const roleLabels = {
+                'admin': '👑 Tryb Administratora (Pełny dostęp do wszystkiego)',
+                'preview-pro': '⭐ Podgląd jako Klient PRO',
+                'preview-free': '👤 Podgląd jako Zwykły Użytkownik (Free)'
+            };
+            showNotification(`Widok: ${roleLabels[selectedRole]}`, 'info');
+        }
     }
 });
 
 let currentFreeSpace = 10737418240; // Domyślnie 10 GB
-const WORKER_URL = 'https://uploud-api.yytjarus.workers.dev';
+const WORKER_URL = 'https://uploud-api.dropsite33.workers.dev';
+
+function updateProUI() {
+    const isPro = isProUser();
+    const proKey = getProKey();
+    const isAdmin = isSuperAdmin() && currentActiveRole === 'admin';
+    document.body.classList.toggle('is-pro', isPro);
+    
+    const proNavLabel = document.getElementById('proNavLabel');
+    if (proNavLabel) {
+        if (isAdmin) {
+            proNavLabel.textContent = 'PRO (Admin)';
+        } else {
+            proNavLabel.textContent = isPro ? 'PRO ⭐' : 'PRO';
+        }
+    }
+
+    const proPurchaseOptions = document.querySelector('.pro-purchase-options');
+    const proActivationBox = document.querySelector('.pro-activation-box');
+    const proActiveBox = document.getElementById('proActiveBox');
+    const proKeyInput = document.getElementById('proKeyInput');
+    const deactivateBtn = document.getElementById('deactivateProKeyBtn');
+
+    if (proPurchaseOptions) proPurchaseOptions.style.display = isPro ? 'none' : 'block';
+    if (proActivationBox) proActivationBox.style.display = isPro ? 'none' : 'block';
+    
+    if (proActiveBox) {
+        proActiveBox.hidden = !isPro;
+        const badgeSpan = proActiveBox.querySelector('.pro-active-badge span');
+        if (badgeSpan) {
+            badgeSpan.textContent = isAdmin 
+                ? 'Konto Administratora (Pełny, nielimitowany dostęp PRO)' 
+                : 'Konto Dropsite PRO jest aktywne!';
+        }
+        if (deactivateBtn) {
+            deactivateBtn.style.display = isAdmin ? 'none' : 'inline-flex';
+        }
+    }
+
+    if (proKeyInput && isPro) {
+        proKeyInput.value = proKey || (isAdmin ? 'ADMIN-LIFETIME' : '');
+    }
+
+    // Aktualizacja przycisku w cenniku
+    const proPlanActionBtn = document.querySelector('.pricing-card.featured .btn-pro-action');
+    if (proPlanActionBtn) {
+        const textSpan = proPlanActionBtn.querySelector('.btn-text');
+        if (isPro) {
+            if (textSpan) textSpan.textContent = isAdmin ? 'Twój status: Administrator 👑' : 'Twoja obecna subskrypcja: PRO ⭐';
+            proPlanActionBtn.style.background = 'rgba(89, 168, 41, 0.2)';
+            proPlanActionBtn.style.borderColor = '#59A829';
+            proPlanActionBtn.style.color = '#C4E7D4';
+        } else {
+            if (textSpan) textSpan.textContent = 'Odblokuj PRO / Aktywuj klucz';
+            proPlanActionBtn.style.background = '';
+            proPlanActionBtn.style.borderColor = '';
+            proPlanActionBtn.style.color = '';
+        }
+    }
+
+    const slugPrefixLabel = document.getElementById('slugPrefixLabel');
+    if (slugPrefixLabel) {
+        const cleanHost = window.location.host.replace(/:\d+$/, '');
+        slugPrefixLabel.textContent = (cleanHost || 'dropsite') + '/';
+    }
+}
+
+window.openProModal = function() {
+    const modal = document.getElementById('proModalWrap');
+    if (modal) {
+        updateProUI();
+        const proKeyStatus = document.getElementById('proKeyStatus');
+        if (proKeyStatus) proKeyStatus.textContent = '';
+        modal.removeAttribute('hidden');
+    }
+};
+
+window.closeProModal = function() {
+    const modal = document.getElementById('proModalWrap');
+    if (modal) modal.setAttribute('hidden', '');
+};
+
+// Inicjalizacja przycisków PRO
+document.addEventListener('DOMContentLoaded', () => {
+    updateAdminRoleUI();
+
+    const openProBtn = document.getElementById('openProBtn');
+    const closeProModalBtn = document.getElementById('closeProModal');
+    const activateProKeyBtn = document.getElementById('activateProKeyBtn');
+    const deactivateProKeyBtn = document.getElementById('deactivateProKeyBtn');
+    const proModalWrap = document.getElementById('proModalWrap');
+
+    if (openProBtn) {
+        openProBtn.addEventListener('click', () => window.openProModal());
+    }
+
+    if (closeProModalBtn) {
+        closeProModalBtn.addEventListener('click', () => window.closeProModal());
+    }
+
+    if (proModalWrap) {
+        proModalWrap.addEventListener('click', (e) => {
+            if (e.target === proModalWrap) window.closeProModal();
+        });
+    }
+
+    if (activateProKeyBtn) {
+        activateProKeyBtn.addEventListener('click', async () => {
+            const input = document.getElementById('proKeyInput');
+            const statusText = document.getElementById('proKeyStatus');
+            const keyVal = input ? input.value.trim() : '';
+
+            if (!keyVal) {
+                if (statusText) {
+                    statusText.className = 'pro-key-status-text error';
+                    statusText.textContent = 'Wpisz klucz licencyjny.';
+                }
+                return;
+            }
+
+            activateProKeyBtn.disabled = true;
+            if (statusText) {
+                statusText.className = 'pro-key-status-text';
+                statusText.textContent = 'Weryfikacja klucza...';
+            }
+
+            try {
+                const res = await fetch(`${WORKER_URL}/verify-pro`, {
+                    method: 'POST',
+                    headers: { 'X-Pro-Key': keyVal }
+                });
+                const data = await res.json();
+
+                if (data.success && data.isPro) {
+                    setProKey(keyVal);
+                    if (statusText) {
+                        statusText.className = 'pro-key-status-text success';
+                        statusText.textContent = 'Sukces! Konto Dropsite PRO zostało aktywowane.';
+                    }
+                    playSound('success');
+                    if (typeof showNotification === 'function') {
+                        showNotification('Konto Dropsite PRO jest teraz aktywne!', 'success');
+                    }
+                    setTimeout(() => window.closeProModal(), 1200);
+                } else {
+                    if (statusText) {
+                        statusText.className = 'pro-key-status-text error';
+                        statusText.textContent = data.message || 'Nieprawidłowy klucz licencyjny PRO.';
+                    }
+                }
+            } catch (err) {
+                if (statusText) {
+                    statusText.className = 'pro-key-status-text error';
+                    statusText.textContent = 'Błąd połączenia podczas weryfikacji.';
+                }
+            } finally {
+                activateProKeyBtn.disabled = false;
+            }
+        });
+    }
+
+    if (deactivateProKeyBtn) {
+        deactivateProKeyBtn.addEventListener('click', () => {
+            setProKey('');
+            const statusText = document.getElementById('proKeyStatus');
+            if (statusText) {
+                statusText.className = 'pro-key-status-text';
+                statusText.textContent = 'Klucz został odpięty.';
+            }
+            if (typeof showNotification === 'function') {
+                showNotification('Klucz PRO został dezaktywowany', 'info');
+            }
+        });
+    }
+
+    // Obsługa bezpośredniego zakupu Subskrypcji PRO przez Polar.sh
+    const btnBuyProSub = document.getElementById('btnBuyProSub');
+    if (btnBuyProSub) {
+        btnBuyProSub.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (isProUser()) {
+                if (typeof showNotification === 'function') {
+                    showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
+                }
+                return;
+            }
+
+            const btnText = btnBuyProSub.querySelector('.btn-text');
+            const origText = btnText ? btnText.textContent : 'Buy PRO';
+            if (btnText) btnText.textContent = 'Przekierowanie do kasy...';
+            btnBuyProSub.style.pointerEvents = 'none';
+
+            try {
+                const res = await fetch(`${WORKER_URL}/create-checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error(data.error || 'Nie udało się otworzyć kasy');
+                }
+            } catch (err) {
+                console.error('Checkout error:', err);
+                if (typeof showNotification === 'function') {
+                    showNotification('Błąd otwierania kasy Polar.sh. Spróbuj ponownie.', 'error');
+                }
+                if (btnText) btnText.textContent = origText;
+                btnBuyProSub.style.pointerEvents = 'auto';
+            }
+        });
+    }
+
+    // Podpięcie przycisku PRO w sekcji Cennik
+    const proPricingBtn = document.querySelector('.pricing-card.featured .btn-pro-action');
+    if (proPricingBtn) {
+        proPricingBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.openProModal();
+        });
+    }
+
+    // Detekcja powrotu po udanym zakupie z Polar.sh (?pro_success=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('pro_success') === '1') {
+        window.openProModal();
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        }
+        playSound('success');
+        if (typeof showNotification === 'function') {
+            showNotification('Dziękujemy za zakup subskrypcji PRO! Wpisz swój klucz licencyjny z e-maila lub ekranu podziękowania.', 'success');
+        }
+        history.replaceState(null, '', window.location.pathname);
+    }
+});
 
 // Główne elementy UI
 const uploadBtn = document.getElementById('uploadBtn');
@@ -283,6 +743,13 @@ const customSlugBox = document.getElementById('customSlugBox');
 const slugArrow = document.getElementById('slugArrow');
 if (slugToggleBtn && customSlugBox) {
     slugToggleBtn.addEventListener('click', () => {
+        if (!isProUser()) {
+            if (typeof showNotification === 'function') {
+                showNotification(typeof t === 'function' ? t('notify_pro_required_slug') : 'Własny alias linku to funkcja Dropsite PRO!', 'info');
+            }
+            window.openProModal();
+            return;
+        }
         const isHidden = customSlugBox.hidden || customSlugBox.style.display === 'none';
         customSlugBox.hidden = !isHidden;
         customSlugBox.style.display = isHidden ? 'block' : 'none';
@@ -290,6 +757,70 @@ if (slugToggleBtn && customSlugBox) {
         slugToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
     });
 }
+
+// === EFEKT ANIMACJI OGNIA DLA OPCJI "BURN AFTER READ" ===
+function triggerBurnFireAnimation(targetElement) {
+    const parentLabel = (targetElement && targetElement.closest('.option-item-burn')) || document.querySelector('.option-item-burn');
+    if (!parentLabel) return;
+
+    parentLabel.classList.remove('ignite-anim');
+    void parentLabel.offsetWidth; // Wymuszenie ponownego renderowania (reflow)
+    parentLabel.classList.add('ignite-anim');
+
+    const rect = parentLabel.getBoundingClientRect();
+    const sparksCount = 20;
+    const colors = ['#FF4439', '#FF7A00', '#FFBC39', '#FF2D55', '#FFA07A', '#FFF066'];
+
+    for (let i = 0; i < sparksCount; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'burn-fire-spark';
+        
+        const size = Math.floor(Math.random() * 6) + 4;
+        spark.style.width = `${size}px`;
+        spark.style.height = `${size}px`;
+        
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        spark.style.background = `radial-gradient(circle, #FFFFFF 15%, ${color} 75%, transparent 100%)`;
+        spark.style.boxShadow = `0 0 8px ${color}, 0 0 16px ${color}`;
+
+        const startX = (rect.width * 0.15) + (Math.random() * (rect.width * 0.7));
+        const startY = (rect.height * 0.3) + (Math.random() * (rect.height * 0.4));
+        spark.style.left = `${startX}px`;
+        spark.style.top = `${startY}px`;
+
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
+        const distance = Math.random() * 55 + 25;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+
+        spark.style.setProperty('--dx', `${dx}px`);
+        spark.style.setProperty('--dy', `${dy}px`);
+        spark.style.animationDelay = `${Math.random() * 0.08}s`;
+
+        parentLabel.appendChild(spark);
+        setTimeout(() => spark.remove(), 850);
+    }
+}
+
+// Nasłuchiwanie wyboru czasu przechowywania
+document.querySelectorAll('input[name="duration"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'burn') {
+            triggerBurnFireAnimation(e.target);
+            if (typeof showNotification === 'function') {
+                showNotification(typeof t === 'function' ? t('notify_burn_active') : '🔥 Tryb samozniszczenia: Plik zostanie trwale usunięty z serwera zaraz po pobraniu!', 'info');
+            }
+        } else if ((val === '30d' || val === 'permanent') && !isProUser()) {
+            if (typeof showNotification === 'function') {
+                showNotification(typeof t === 'function' ? t('notify_pro_required_perm') : 'Przechowywanie 30 Dni i Bezterminowe wymaga Dropsite PRO.', 'info');
+            }
+            window.openProModal();
+            const defaultRadio = document.querySelector('input[name="duration"][value="1d"]');
+            if (defaultRadio) defaultRadio.checked = true;
+        }
+    });
+});
 
 // === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) ===
 const advToggleBtn = document.getElementById('advToggleBtn');
@@ -477,16 +1008,38 @@ document.addEventListener('change', (e) => {
     }
 });
 
-// === NOWY SYSTEM WGRYWANIA BEZ LIMITU WAGI (Z OBSŁUGĄ MULTIPART, TELEMETRII I OPCJI) ===
+// === NOWY SYSTEM WGRYWANIA (Z OBSŁUGĄ PRO, MULTIPART I TELEMETRII) ===
 async function uploadFile() {
     if (!selectedFile) return;
 
     let file = selectedFile;
-    const duration = document.querySelector('input[name="duration"]:checked')?.value || '30d';
+    const duration = document.querySelector('input[name="duration"]:checked')?.value || '1d';
     const customSlug = document.getElementById('customSlugInput')?.value.trim() || '';
     const filePassword = document.getElementById('filePasswordInput')?.value.trim() || '';
     const fileNote = document.getElementById('fileNoteInput')?.value.trim() || '';
     const fileMaxDl = document.querySelector('input[name="maxDownloads"]:checked')?.value || '';
+
+    // Weryfikacja konta PRO dla dużych plików i długich okresów
+    const isPro = isProUser();
+    const FREE_LIMIT = 250 * 1024 * 1024; // 250 MB
+
+    if (!isPro && file.size > FREE_LIMIT) {
+        showError(`Plik (${formatBytes(file.size)}) przekracza limit 250 MB dla konta darmowego.`);
+        if (typeof showNotification === 'function') {
+            showNotification('Wysyłanie plików do 10 GB wymaga konta Dropsite PRO!', 'info');
+        }
+        window.openProModal();
+        return;
+    }
+
+    if (!isPro && (duration === '30d' || duration === 'permanent')) {
+        showError('Przechowywanie na 30 dni lub Bezterminowo wymaga konta Dropsite PRO.');
+        if (typeof showNotification === 'function') {
+            showNotification('Wybierz 1 Dzień lub odblokuj konto Dropsite PRO!', 'info');
+        }
+        window.openProModal();
+        return;
+    }
 
     // Obsługa kompresji obrazu przed uploadem
     if (originalImageFile && compressToggleCheckbox?.checked) {
@@ -545,11 +1098,13 @@ async function uploadFile() {
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
 async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, btnTextSpan, onProgressUpdate) {
+    const proKey = getProKey();
     let urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(file.name)}&expiry=${duration}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
     if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
     if (note) urlReq += `&note=${encodeURIComponent(note)}`;
     if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
+    if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
     
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie...';
 
@@ -569,10 +1124,17 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
             if (data.success) {
                 showSuccessScreen(data.finalUrl, data.key, duration);
             } else {
+                if (data.code === 'PRO_REQUIRED') window.openProModal();
                 showError(data.message || 'Błąd serwera.');
             }
         } else {
-            showError('Błąd podczas zapisu na dysku: ' + xhr.status);
+            try {
+                const errData = JSON.parse(xhr.responseText);
+                if (errData.code === 'PRO_REQUIRED') window.openProModal();
+                showError(errData.message || 'Błąd podczas zapisu: ' + xhr.status);
+            } catch {
+                showError('Błąd podczas zapisu na dysku: ' + xhr.status);
+            }
         }
     });
     xhr.addEventListener("error", () => showError('Błąd połączenia podczas wgrywania.'));
@@ -580,21 +1142,28 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
 
     xhr.open("PUT", urlReq, true);
     xhr.setRequestHeader("Content-Type", file.type || 'application/octet-stream');
+    if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
     xhr.send(file);
 }
 
 // === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Niezawodny) ===
 async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, btnTextSpan, onProgressUpdate) {
+    const proKey = getProKey();
     let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
     if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
     if (note) urlReq += `&note=${encodeURIComponent(note)}`;
     if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
+    if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
     
-    const response = await fetch(urlReq);
+    const headers = proKey ? { 'X-Pro-Key': proKey } : {};
+    const response = await fetch(urlReq, { headers });
     const data = await response.json();
 
-    if (!data.success) throw new Error(data.message || "Błąd generowania sesji uploadu");
+    if (!data.success) {
+        if (data.code === 'PRO_REQUIRED') window.openProModal();
+        throw new Error(data.message || "Błąd generowania sesji uploadu");
+    }
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie (0%)...';
 
     const { uploadId, key } = data;
@@ -631,6 +1200,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
             xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
             
             xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
+            if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
             xhr.send(chunk);
         });
 
@@ -647,7 +1217,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
     if (btnTextSpan) btnTextSpan.textContent = 'Składanie pliku...';
     const completeRes = await fetch(`${WORKER_URL}/multipart/complete?key=${encodeURIComponent(key)}&uploadId=${uploadId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(proKey ? { 'X-Pro-Key': proKey } : {}) },
         body: JSON.stringify({ parts })
     });
     const completeData = await completeRes.json();
@@ -667,12 +1237,12 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     // Odtwórz dźwięk sukcesu!
     playSound('success');
 
-    // Generujemy link do podstrony pobierania Dropsite
-    let shareableUrl = finalUrlStr;
-    if (fileKey) {
-        const baseUrl = window.location.origin + window.location.pathname;
-        shareableUrl = `${baseUrl}?f=${encodeURIComponent(fileKey)}`;
-    }
+    // Inteligentny link Smart Embed (z automatycznym podglądem na Discordzie, Telegramie, Messengerze)
+    let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
+    let pageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
+    
+    let shareableUrl = smartShareUrl;
 
     if (finalLink) {
         finalLink.href = shareableUrl;
@@ -685,8 +1255,9 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
             name: selectedFile.name,
             size: selectedFile.size,
             url: shareableUrl,
+            pageUrl: pageUrl,
             directUrl: finalUrlStr,
-            duration: duration || '30d',
+            duration: duration || '1d',
             date: new Date().toISOString()
         });
     }
@@ -704,6 +1275,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         
         successFlow.hidden = false;
         successFlow.style.animation = 'slideInUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        if (window.initDropsiteAds) window.initDropsiteAds();
         
         if (typeof confetti === 'function') {
             confetti({
@@ -730,8 +1302,11 @@ function showError(msg) {
 
 // === LOGIKA DYSKU ===
 async function fetchDiskStats() {
+    let apiSecret = sessionStorage.getItem('adminSecret');
     try {
-        const response = await fetch(`${WORKER_URL}/stats`);
+        const response = await fetch(`${WORKER_URL}/stats`, {
+            headers: apiSecret ? { 'X-Admin-Secret': apiSecret } : {}
+        });
         let data;
         if (response.ok) {
             data = await response.json();
@@ -773,7 +1348,7 @@ function renderDiskStats(data) {
     }
 }
 
-fetchDiskStats();
+// fetchDiskStats(); // przeniesione do fetchModFiles() (tylko dla admina)
 
 // === PANEL MODERACJI (DASHBOARD) ===
 const modModal = document.getElementById('modModal');
@@ -790,10 +1365,29 @@ let activeCategoryFilter = 'all';
 let activeSearchQuery = '';
 let activeSort = 'newest';
 
-openModBtn.addEventListener('click', () => {
-    modModal.hidden = false;
-    fetchModFiles();
-});
+const openUserPanelBtn = document.getElementById('openUserPanelBtn');
+
+if (openModBtn) {
+    openModBtn.addEventListener('click', () => {
+        currentAdminPanelScope = 'all';
+        document.querySelectorAll('.scope-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-scope') === 'all');
+        });
+        modModal.hidden = false;
+        fetchModFiles();
+    });
+}
+
+if (openUserPanelBtn) {
+    openUserPanelBtn.addEventListener('click', () => {
+        currentAdminPanelScope = 'mine';
+        document.querySelectorAll('.scope-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-scope') === 'mine');
+        });
+        modModal.hidden = false;
+        fetchModFiles();
+    });
+}
 
 closeModBtn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -891,50 +1485,170 @@ if (modFilterPills) {
     });
 }
 
+// Obsługa przełącznika zakresu w panelu admina (Wszystkie vs Moje)
+document.addEventListener('click', (e) => {
+    const scopeBtn = e.target.closest('.scope-btn');
+    if (scopeBtn) {
+        const scope = scopeBtn.getAttribute('data-scope');
+        if (scope && (scope === 'all' || scope === 'mine')) {
+            currentAdminPanelScope = scope;
+            document.querySelectorAll('.scope-btn').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-scope') === scope);
+            });
+            fetchModFiles();
+        }
+    }
+});
+
 async function fetchModFiles() {
     refreshModBtn.innerText = 'Ładowanie...';
     
-    let apiSecret = localStorage.getItem('apiSecret');
-    if (!apiSecret) {
-        apiSecret = prompt("Zabezpieczenie serwera: Podaj klucz API do zarządzania plikami (np. 1234):");
-        if (!apiSecret) {
-            refreshModBtn.innerText = 'Odśwież';
-            return;
-        }
-        localStorage.setItem('apiSecret', apiSecret);
+    const titleEl = document.getElementById('modPanelTitle');
+    const subtitleEl = document.getElementById('modPanelSubtitle');
+    const scopeWrap = document.getElementById('adminPanelScopeWrap');
+    const authBox = document.getElementById('adminAuthBox');
+    const contentArea = document.getElementById('modContentArea');
+    
+    const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin';
+    
+    if (scopeWrap) {
+        scopeWrap.style.display = isEffectiveAdmin ? 'flex' : 'none';
+    }
+    
+    if (isEffectiveAdmin) {
+        if (titleEl) titleEl.textContent = '👑 Panel Administratora';
+        if (subtitleEl) subtitleEl.textContent = currentAdminPanelScope === 'all' 
+            ? 'Zarządzanie wszystkimi plikami magazynu Cloudflare R2' 
+            : 'Twoje wgrane pliki administratora';
+    } else {
+        if (titleEl) titleEl.textContent = isProUser() ? '⭐ Panel Plików (PRO)' : '📁 Panel Plików';
+        if (subtitleEl) subtitleEl.textContent = 'Zarządzaj swoimi wgranymi plikami (Tylko Twoje pliki)';
     }
 
-    try {
-        const response = await fetch(`${WORKER_URL}/list`, {
-            headers: {
-                'X-Admin-Secret': apiSecret
-            }
-        });
-        
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('apiSecret');
-            throw new Error('Nieprawidłowy klucz API! Odmowa dostępu.');
+    // Tryb Administratora ze wszystkimi plikami serwera
+    if (isEffectiveAdmin && currentAdminPanelScope === 'all') {
+        let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        if (!apiSecret) {
+            if (authBox) authBox.style.display = 'flex';
+            if (contentArea) contentArea.hidden = true;
+            refreshModBtn.innerText = 'Odśwież';
+            return;
+        } else {
+            if (authBox) authBox.style.display = 'none';
+            if (contentArea) contentArea.hidden = false;
         }
-        
-        if (!response.ok) throw new Error('Błąd pobierania listy plików');
-        
-        const data = await response.json();
-        loadedModFiles = data.files || [];
+
+        try {
+            const response = await fetch(`${WORKER_URL}/list`, {
+                headers: {
+                    'X-Admin-Secret': apiSecret
+                }
+            });
+            
+            if (response.status === 401 || response.status === 403) {
+                sessionStorage.removeItem('adminSecret');
+                if (authBox) authBox.style.display = 'flex';
+                if (contentArea) contentArea.hidden = true;
+                throw new Error('Nieprawidłowe hasło administratora! Domyślne hasło to: 12345678');
+            }
+            
+            if (!response.ok) throw new Error('Błąd pobierania listy plików z serwera.');
+            
+            const data = await response.json();
+            loadedModFiles = (data.files || []).map(f => ({
+                ...f,
+                isGlobalServerFile: true
+            }));
+            updateModStats(loadedModFiles);
+            applyModFiltersAndRender();
+            fetchDiskStats();
+        } catch (e) {
+            if (e.message.includes('Failed to fetch')) {
+                console.error("CORS Error lub brak połączenia z serwerem.", e);
+                showNotification("Błąd połączenia z serwerem Cloudflare", "error");
+            } else {
+                showNotification(e.message, "error");
+            }
+        } finally {
+            refreshModBtn.innerText = 'Odśwież';
+        }
+    } else {
+        // Tryb Użytkownika (Free / PRO) lub Administrator w trybie 'mine' -> Ładujemy TYLKO JEGO WŁASNE PLIKI!
+        if (authBox) authBox.style.display = 'none';
+        if (contentArea) contentArea.hidden = false;
+
+        const history = getLocalHistory();
+        loadedModFiles = history.map(item => {
+            let fileName = item.name || 'plik';
+            if (item.duration && !fileName.includes('/')) {
+                fileName = `${item.duration}/${fileName}`;
+            }
+            return {
+                name: fileName,
+                size: item.size || 0,
+                uploaded: item.date || new Date().toISOString(),
+                duration: item.duration || '1d',
+                url: item.url || item.directUrl,
+                directUrl: item.directUrl || item.url,
+                key: item.key || item.name,
+                isUserLocalFile: true
+            };
+        });
+
         updateModStats(loadedModFiles);
         applyModFiltersAndRender();
-    } catch (e) {
-        alert(e.message);
-    } finally {
         refreshModBtn.innerText = 'Odśwież';
     }
 }
 
+// Obsługa przycisku logowania do Panelu Admina
+const saveAdminSecretBtn = document.getElementById('saveAdminSecretBtn');
+const adminSecretInput = document.getElementById('adminSecretInput');
+
+if (saveAdminSecretBtn) {
+    saveAdminSecretBtn.addEventListener('click', () => {
+        const secret = adminSecretInput ? adminSecretInput.value.trim() : '';
+        if (secret) {
+            sessionStorage.setItem('adminSecret', secret);
+            updateAdminRoleUI();
+            fetchModFiles();
+        }
+    });
+}
+
+if (adminSecretInput) {
+    adminSecretInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (saveAdminSecretBtn) saveAdminSecretBtn.click();
+        }
+    });
+}
+
 // Funkcja pomocnicza do czyszczenia nazwy
 function cleanFileName(filename) {
+    if (!filename) return 'plik';
     let name = filename;
     if (name.includes('/')) name = name.substring(name.indexOf('/') + 1);
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i;
-    if (uuidRegex.test(name)) name = name.substring(37);
+    
+    // Usuń UUID na początku: 83ec6d4f-5aab-e096-f901-123456789abc-name.ext
+    const uuidStartRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[-_.]/i;
+    if (uuidStartRegex.test(name)) name = name.replace(uuidStartRegex, '');
+
+    // Usuń krótki NanoID na początku: aB3x7Q-name.ext
+    const nanoIdRegex = /^[2-9a-zA-Z]{5,10}[-_.]/;
+    if (nanoIdRegex.test(name)) name = name.replace(nanoIdRegex, '');
+    
+    // Usuń timestamp na początku: 1725184920-name.ext
+    const timestampRegex = /^\d{10,13}[-_.]/;
+    if (timestampRegex.test(name)) name = name.replace(timestampRegex, '');
+
+    // Usuń dodany na końcu hash po rozszerzeniu: name.gif.83ec6d4f... -> name.gif
+    const trailingHashRegex = /(\.(png|jpg|jpeg|gif|webp|svg|mp4|webm|pdf|zip|rar|tar|gz|txt|docx|doc|json|mp3))\.[0-9a-f]{6,}/i;
+    if (trailingHashRegex.test(name)) {
+        name = name.replace(trailingHashRegex, '$1');
+    }
+
     return name;
 }
 
@@ -986,7 +1700,7 @@ function applyModFiltersAndRender() {
         filtered = filtered.filter(f => getFileCategory(f.name) === activeCategoryFilter);
     }
 
-    // 2. Wyszukiwarka
+    // 2. Szukanie
     if (activeSearchQuery) {
         filtered = filtered.filter(f => {
             const clean = cleanFileName(f.name).toLowerCase();
@@ -997,7 +1711,7 @@ function applyModFiltersAndRender() {
 
     // 3. Sortowanie
     if (activeSort === 'newest') {
-        filtered.reverse(); // Cloudflare zwraca domyślnie leksykograficznie
+        filtered.reverse(); 
     } else if (activeSort === 'size-desc') {
         filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
     } else if (activeSort === 'size-asc') {
@@ -1020,16 +1734,30 @@ function renderModFilesList(files) {
         const li = document.createElement('li');
         li.className = 'mod-file-item';
         
-        const publicLink = `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${file.name}`;        
+        // Prawdziwy bezpośredni adres pliku do miniatury
+        let directMediaUrl = file.directUrl;
+        if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
+            const rawKey = file.key || file.name;
+            directMediaUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`;
+        }
+        
+        // Link do udostępniania / pobierania
+        const shareableLink = (file.url && file.url.includes('?f=')) ? file.url : directMediaUrl;
+
         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
         const isVideo = /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
         
         let previewHtml = '';
         if (isImage) {
-            previewHtml = `<img src="${publicLink}" class="mod-preview-img" alt="preview" onclick="openImagePreview('${publicLink}')" title="Powiększ zdjęcie">`;
+            previewHtml = `
+                <img src="${directMediaUrl}" class="mod-preview-img" alt="" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" onclick="openImagePreview('${directMediaUrl}')" title="Powiększ zdjęcie">
+                <div class="mod-preview-icon" style="display: none;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                </div>
+            `;
         } else if (isVideo) {
-            previewHtml = `<div style="position: relative; cursor: pointer; width: 46px; height: 46px; flex-shrink: 0;" onclick="openVideoPreview('${publicLink}')" title="Odtwórz wideo">
-                              <video src="${publicLink}#t=0.1" class="mod-preview-img" style="width: 100%; height: 100%; object-fit: cover; background: #000; border-radius: 6px;" muted preload="metadata"></video>
+            previewHtml = `<div style="position: relative; cursor: pointer; width: 46px; height: 46px; flex-shrink: 0;" onclick="openVideoPreview('${directMediaUrl}')" title="Odtwórz wideo">
+                              <video src="${directMediaUrl}#t=0.1" class="mod-preview-img" style="width: 100%; height: 100%; object-fit: cover; background: #000; border-radius: 6px;" muted preload="metadata"></video>
                               <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); border-radius: 6px;">
                                   <span style="font-size: 14px; color: white;">▶</span>
                               </div>
@@ -1064,7 +1792,8 @@ function renderModFilesList(files) {
             'permanent': 'Bezterminowo'
         };
 
-        const expSelectHtml = `
+        const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
+        const expSelectHtml = isEffectiveAdmin ? `
             <div class="custom-expiry-wrap exp-${currentExp}" data-current="${currentExp}" title="Zmień czas przechowywania pliku">
                 <button type="button" class="custom-expiry-trigger" onclick="toggleExpiryDropdown(this, event)">
                     <span class="custom-expiry-label">${expiryLabels[currentExp] || 'Bezterminowo'}</span>
@@ -1088,13 +1817,15 @@ function renderModFilesList(files) {
                     </div>
                 </div>
             </div>
+        ` : `
+            <span class="mod-badge-size" style="color: var(--accent-blue); background: rgba(196, 231, 212, 0.08);">${expiryLabels[currentExp] || '1 Dzień'}</span>
         `;
 
         li.innerHTML = `
             <div class="mod-file-main">
                 ${previewHtml}
                 <div class="mod-file-info">
-                    <a href="${publicLink}" target="_blank" class="mod-file-name" title="${file.name}">${displayName}</a>
+                    <a href="${shareableLink}" target="_blank" class="mod-file-name" title="${file.name}">${displayName}</a>
                     <div class="mod-meta-row">
                         <span class="mod-badge-size">${formatBytes(file.size)}</span>
                         ${expSelectHtml}
@@ -1102,11 +1833,11 @@ function renderModFilesList(files) {
                 </div>
             </div>
             <div class="mod-actions">
-                <button class="btn-copy-mod" onclick="copyDirectLink('${publicLink}')" title="Kopiuj bezpośredni link">
+                <button class="btn-copy-mod" onclick="copyDirectLink('${shareableLink}')" title="Kopiuj link do pobierania">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     <span>Kopiuj</span>
                 </button>
-                <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń trwale plik">
+                <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń plik">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     <span>Usuń</span>
                 </button>
@@ -1120,44 +1851,39 @@ function renderModFilesList(files) {
 window.toggleExpiryDropdown = function(triggerBtn, event) {
     event.stopPropagation();
     const wrap = triggerBtn.closest('.custom-expiry-wrap');
-    const row = wrap.closest('.mod-file-item');
+    if (!wrap) return;
     const menu = wrap.querySelector('.custom-select-menu');
     const isOpen = wrap.classList.contains('open');
-
+    
     closeAllCustomDropdowns();
-
+    
     if (!isOpen) {
         wrap.classList.add('open');
+        if (menu) menu.hidden = false;
+        const row = wrap.closest('.mod-file-item');
         if (row) row.style.zIndex = '50';
-        menu.hidden = false;
     }
 };
 
 // Zmiana terminu wygasania przez własny szklany dropdown
-window.selectExpiryOption = async function(oldKey, newExpiry, optElem) {
-    const wrap = optElem.closest('.custom-expiry-wrap');
-    const trigger = wrap.querySelector('.custom-expiry-trigger');
-    const label = wrap.querySelector('.custom-expiry-label');
-    const menu = wrap.querySelector('.custom-select-menu');
-    
-    const previousValue = wrap.getAttribute('data-current') || (
-        oldKey.startsWith('1d/') ? '1d' :
-        oldKey.startsWith('30d/') ? '30d' :
-        oldKey.startsWith('burn/') ? 'burn' : 'permanent'
-    );
+window.selectExpiryOption = async function(filename, newExpiry, optionElement) {
+    const wrap = optionElement.closest('.custom-expiry-wrap');
+    const label = wrap ? wrap.querySelector('.custom-expiry-label') : null;
+    const trigger = wrap ? wrap.querySelector('.custom-expiry-trigger') : null;
 
     closeAllCustomDropdowns();
-
-    if (previousValue === newExpiry) return;
-
-    let apiSecret = localStorage.getItem('apiSecret');
-    if (!apiSecret) {
-        showNotification('Brak autoryzacji administratora!', 'error');
-        return;
-    }
+    if (wrap.getAttribute('data-current') === newExpiry) return;
 
     wrap.classList.add('loading');
     trigger.disabled = true;
+
+    let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    if (!apiSecret) {
+        showNotification("Brak autoryzacji do zmiany terminu.", "error");
+        wrap.classList.remove('loading');
+        trigger.disabled = false;
+        return;
+    }
 
     try {
         const response = await fetch(`${WORKER_URL}/update-expiry`, {
@@ -1166,48 +1892,37 @@ window.selectExpiryOption = async function(oldKey, newExpiry, optElem) {
                 'Content-Type': 'application/json',
                 'X-Admin-Secret': apiSecret
             },
-            body: JSON.stringify({ key: oldKey, newExpiry: newExpiry })
+            body: JSON.stringify({
+                filename: filename,
+                newExpiry: newExpiry
+            })
         });
 
         if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('apiSecret');
-            throw new Error('Nieprawidłowy klucz API! Odmowa dostępu.');
+            sessionStorage.removeItem('adminSecret');
+            throw new Error('Sesja wygasła. Zaloguj się ponownie.');
         }
 
         const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || 'Błąd aktualizacji terminu');
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Nie udało się zaktualizować terminu');
         }
 
-        const newKey = data.newKey;
         const expiryLabels = {
             '1d': '1 Dzień',
             '30d': '30 Dni',
             'permanent': 'Bezterminowo'
         };
 
+        if (label) label.textContent = expiryLabels[newExpiry] || newExpiry;
         wrap.className = `custom-expiry-wrap exp-${newExpiry}`;
         wrap.setAttribute('data-current', newExpiry);
-        if (label) label.textContent = expiryLabels[newExpiry] || newExpiry;
 
-        menu.querySelectorAll('.custom-select-option').forEach(o => {
-            const isSel = o.getAttribute('data-value') === newExpiry;
-            o.classList.toggle('selected', isSel);
-            o.setAttribute('onclick', `selectExpiryOption('${newKey}', '${o.getAttribute('data-value')}', this)`);
-        });
-
-        // Zaktualizuj plik w pamięci podręcznej modera
-        const fileObj = loadedModFiles.find(f => f.name === oldKey);
-        if (fileObj) {
-            fileObj.name = newKey;
-        }
-        updateModStats(loadedModFiles);
-
-        // Zaktualizuj powiązane linki i przyciski w wierszu
+        const newKey = data.newKey;
         const row = wrap.closest('.mod-file-item');
-        if (row) {
-            const publicLink = `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${newKey}`;
+        if (row && newKey) {
             const fileNameLink = row.querySelector('.mod-file-name');
+            const publicLink = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${newKey}`;
             if (fileNameLink) {
                 fileNameLink.href = publicLink;
                 fileNameLink.title = newKey;
@@ -1262,36 +1977,60 @@ window.handleSafeDelete = async function(btn, filename) {
     btn.disabled = true;
     btn.innerHTML = `<span>Usuwanie...</span>`;
 
-    let apiSecret = localStorage.getItem('apiSecret');
-    if (!apiSecret) {
-        alert("Brak klucza API! Odśwież listę plików, aby się zalogować.");
-        return;
-    }
+    const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
 
-    try {
-        const response = await fetch(`${WORKER_URL}/delete/${filename}`, { 
-            method: 'DELETE',
-            headers: {
-                'X-Admin-Secret': apiSecret
-            }
-        });
-        
-        if (response.status === 401 || response.status === 403) {
-            localStorage.removeItem('apiSecret');
-            alert('Nieprawidłowy klucz API! Odmowa dostępu.');
+    if (isEffectiveAdmin) {
+        let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        if (!apiSecret) {
+            showNotification("Brak autoryzacji! Wpisz hasło administratora.", "error");
+            btn.disabled = false;
+            btn.innerHTML = `<span>Usuń</span>`;
             return;
         }
 
-        if (response.ok) {
-            showNotification('Plik został usunięty', 'success');
-            fetchModFiles(); 
-            fetchDiskStats(); 
-        } else {
-            alert('Błąd podczas usuwania pliku.');
+        try {
+            const response = await fetch(`${WORKER_URL}/delete/${filename}`, { 
+                method: 'DELETE',
+                headers: {
+                    'X-Admin-Secret': apiSecret
+                }
+            });
+            
+            if (response.status === 401 || response.status === 403) {
+                sessionStorage.removeItem('adminSecret');
+                showNotification('Nieprawidłowe hasło administratora!', 'error');
+                return;
+            }
+
+            if (response.ok) {
+                showNotification('Plik został trwale usunięty z serwera', 'success');
+                fetchModFiles(); 
+                fetchDiskStats(); 
+            } else {
+                showNotification('Błąd podczas usuwania pliku.', 'error');
+            }
+        } catch (e) {
+            console.error('Błąd połączenia z serwerem:', e);
+            showNotification('Błąd połączenia z serwerem', 'error');
+        } finally {
+            btn.disabled = false;
         }
-    } catch (e) {
-        console.error('Błąd połączenia z serwerem:', e);
-        alert('Błąd połączenia z serwerem');
+    } else {
+        // Usuwanie z panelu zwykłego użytkownika (usuwa z lokalnej historii)
+        const history = getLocalHistory();
+        const updated = history.filter(h => {
+            const hName = (h.duration && !h.name.includes('/')) ? `${h.duration}/${h.name}` : h.name;
+            return hName !== filename && h.name !== filename && h.url !== filename && h.directUrl !== filename && h.key !== filename;
+        });
+        const storageKey = getHistoryStorageKey();
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+        
+        try {
+            fetch(`${WORKER_URL}/delete/${filename}`, { method: 'DELETE' }).catch(() => {});
+        } catch (_) {}
+
+        showNotification('Plik został usunięty z Twojego panelu', 'success');
+        fetchModFiles();
     }
 };
 
@@ -1585,35 +2324,184 @@ window.openVideoPreview = function(url) {
     previewModal.style.display = 'flex';
 };
 
+// === SYSTEM ZATRZYMYWANIA MULTIMEDIÓW I RESETOWANIA NAWIGACJI (SPA) ===
+function stopAllMediaPlayback() {
+    // 1. Odtwarzacz multimediów w widoku pobierania
+    const dlPreview = document.getElementById('dlPreviewContainer');
+    if (dlPreview) {
+        const mediaElements = dlPreview.querySelectorAll('audio, video');
+        mediaElements.forEach(el => {
+            try {
+                el.pause();
+                el.currentTime = 0;
+                el.src = '';
+                el.load();
+            } catch(e){}
+        });
+        dlPreview.innerHTML = '';
+    }
+
+    // 2. Wszystkie inne elementy audio i wideo na stronie (np. podgląd w dropzone)
+    document.querySelectorAll('audio, video').forEach(el => {
+        try {
+            el.pause();
+            el.currentTime = 0;
+            el.src = '';
+            el.load();
+        } catch(e){}
+    });
+
+    // 3. Zamknij lightbox zdjęcia jeśli jest otwarty
+    const lightboxModal = document.getElementById('dlLightboxModal');
+    if (lightboxModal && lightboxModal.classList.contains('active')) {
+        lightboxModal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+window.stopAllMediaPlayback = stopAllMediaPlayback;
+
+function resetUploadFlow() {
+    selectedFile = null;
+    originalImageFile = null;
+    currentCompressionQuality = 0.82;
+
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone && window._initialDropzoneHTML) {
+        dropzone.innerHTML = window._initialDropzoneHTML;
+        dropzone.style.padding = '';
+        dropzone.hidden = false;
+        if (typeof applyLanguage === 'function') {
+            const currentLang = localStorage.getItem('dropsite_lang') || 'en';
+            applyLanguage(currentLang);
+        }
+    }
+
+    const fileStatusBox = document.getElementById('fileStatusBox');
+    if (fileStatusBox) fileStatusBox.classList.remove('visible');
+
+    const fsTrack = document.getElementById('fsTrack');
+    if (fsTrack) fsTrack.hidden = true;
+
+    const fsTelemetry = document.getElementById('fsTelemetry');
+    if (fsTelemetry) fsTelemetry.hidden = true;
+
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.hidden = false;
+        uploadBtn.classList.remove('loading');
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) {
+            btnTextSpan.textContent = typeof t === 'function' ? t('btn_upload') : 'Upload';
+        }
+    }
+
+    const optionsContainer = document.getElementById('optionsContainer');
+    if (optionsContainer) optionsContainer.hidden = false;
+
+    const imageCompressPanel = document.getElementById('imageCompressPanel');
+    if (imageCompressPanel) imageCompressPanel.hidden = true;
+
+    const customSlugWrap = document.querySelector('.custom-slug-wrap');
+    if (customSlugWrap) customSlugWrap.hidden = false;
+
+    const successFlow = document.getElementById('successFlow');
+    if (successFlow) {
+        successFlow.hidden = true;
+        successFlow.style.animation = '';
+    }
+
+    const statusDiv = document.getElementById('status');
+    if (statusDiv) {
+        statusDiv.innerText = '';
+        statusDiv.style.color = '';
+    }
+}
+window.resetUploadFlow = resetUploadFlow;
+
+function navigateToHome(resetUpload = true) {
+    stopAllMediaPlayback();
+
+    // 1. Wyczyść parametry URL (?f=..., ?file=..., ?pro_success=1 itp.)
+    if (window.location.search || window.location.hash) {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.pushState({}, document.title, cleanUrl);
+    }
+
+    // 2. Zresetuj proces wgrywania pliku
+    if (resetUpload) {
+        resetUploadFlow();
+    }
+
+    // 3. Przełącz widok na stronę główną
+    const navLinks = document.querySelectorAll('.nav-btn');
+    const views = document.querySelectorAll('.view-section');
+
+    navLinks.forEach(nav => {
+        nav.classList.toggle('active', nav.getAttribute('data-target') === 'view-glowna');
+    });
+
+    views.forEach(view => {
+        const isHome = view.id === 'view-glowna';
+        view.hidden = !isHome;
+        view.classList.toggle('active', isHome);
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.navigateToHome = navigateToHome;
+
 // === SYSTEM ZAKŁADEK (SPA NAVIGATION) ===
 document.addEventListener('DOMContentLoaded', () => {
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) {
+        window._initialDropzoneHTML = dropzone.innerHTML;
+    }
+
     const navLinks = document.querySelectorAll('.nav-btn');
     const views = document.querySelectorAll('.view-section');
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // Pobierz ID docelowego widoku
             const targetId = link.getAttribute('data-target');
-            
+
+            // Zawsze zatrzymujemy odtwarzanie multimediów w tle
+            stopAllMediaPlayback();
+
+            if (targetId === 'view-glowna') {
+                navigateToHome(false);
+                return;
+            }
+
+            // Jeśli użytkownik był na widoku pobierania i klika inną zakładkę, czyścimy URL
+            if (window.location.search || window.location.hash) {
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.pushState({}, document.title, cleanUrl);
+            }
+
             // Zdejmij klasę 'active' ze wszystkich linków
             navLinks.forEach(nav => nav.classList.remove('active'));
             // Dodaj klasę 'active' do klikniętego linku
             link.classList.add('active');
-            
+
             // Ukryj wszystkie widoki
             views.forEach(view => {
                 view.hidden = true;
                 view.classList.remove('active');
             });
-            
+
             // Pokaż docelowy widok
             const targetView = document.getElementById(targetId);
             if (targetView) {
                 targetView.hidden = false;
                 targetView.classList.add('active');
             }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
 });
@@ -1801,22 +2689,32 @@ const closeHistoryModal = document.getElementById('closeHistoryModal');
 const userHistoryList = document.getElementById('userHistoryList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
+function getHistoryStorageKey() {
+    const user = auth.currentUser;
+    if (user && user.uid) {
+        return `dropsite_user_history_${user.uid}`;
+    }
+    return 'dropsite_user_history_guest';
+}
+
 function getLocalHistory() {
     try {
-        return JSON.parse(localStorage.getItem('dropsite_user_history') || '[]');
+        const key = getHistoryStorageKey();
+        return JSON.parse(localStorage.getItem(key) || '[]');
     } catch {
         return [];
     }
 }
 
 function saveToUserHistory(item) {
+    const key = getHistoryStorageKey();
     const history = getLocalHistory();
     // Unikamy duplikatów
-    const filtered = history.filter(h => h.url !== item.url);
+    const filtered = history.filter(h => h.url !== item.url && h.name !== item.name);
     filtered.unshift(item);
-    // Zachowaj maksymalnie 20 ostatnich plików
-    if (filtered.length > 20) filtered.pop();
-    localStorage.setItem('dropsite_user_history', JSON.stringify(filtered));
+    // Zachowaj maksymalnie 50 ostatnich plików
+    if (filtered.length > 50) filtered.pop();
+    localStorage.setItem(key, JSON.stringify(filtered));
 }
 
 function renderUserHistory() {
@@ -2022,37 +2920,146 @@ async function initDownloadRouter() {
         } else if (isVideo) {
             dlPreviewContainer.innerHTML = `<video src="${directUrl}" controls autoplay muted playsinline class="dl-preview-media" style="width: 100%; max-height: 280px; background: #000; border-radius: 12px;"></video>`;
         } else if (isAudio) {
+            const extLabel = (cleanName.includes('.') ? cleanName.split('.').pop() : 'AUDIO').toUpperCase();
             dlPreviewContainer.innerHTML = `
-                <div class="dropsite-audio-player" id="dropsiteAudioPlayer">
+                <div class="dropsite-studio-player" id="dropsiteStudioPlayer">
+                    <div class="studio-ambient-glow" id="studioAmbientGlow"></div>
                     <audio id="mainAudioElement" src="${directUrl}" preload="metadata"></audio>
-                    <div class="audio-top-row">
-                        <button type="button" class="audio-play-btn" id="audioPlayBtn" aria-label="Odtwórz lub wstrzymaj">
-                            <svg id="audioPlayIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                            <svg id="audioPauseIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                        </button>
-                        <div class="audio-info-col">
-                            <span class="audio-title">${cleanName}</span>
-                            <span class="audio-time-row" id="audioTimeDisplay">0:00 / --:--</span>
+
+                    <div class="studio-player-card">
+                        <!-- Sekcja górna: Okładka Spotify z płytą winylową + Informacje o utworze -->
+                        <div class="studio-top-section">
+                            <div class="studio-art-box">
+                                <div class="studio-vinyl-disc" id="studioVinylDisc">
+                                    <div class="vinyl-grooves"></div>
+                                    <div class="vinyl-center"></div>
+                                </div>
+                                <div class="studio-cover-wrap">
+                                    <img src="audio-preview.jpg" class="studio-cover-img" alt="${cleanName}" onerror="this.src='favicon.png'">
+                                    <div class="studio-badge-pill">
+                                        <span class="pulse-live-dot"></span>
+                                        <span>STUDIO HD</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="studio-meta-box">
+                                <div class="studio-tags-row">
+                                    <span class="studio-tag hi-res">Hi-Res Audio</span>
+                                    <span class="studio-tag fmt">${extLabel}</span>
+                                    <span class="studio-tag loss">Lossless 320k</span>
+                                </div>
+                                <h3 class="studio-song-title" title="${cleanName}">${cleanName}</h3>
+                                <div class="studio-artist-row">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9 18V5l12-2v13"></path>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <circle cx="18" cy="16" r="3"></circle>
+                                    </svg>
+                                    <span>Dropsite Cloud Stream</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="audio-waveform-bars" id="audioWaveform">
-                            <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+
+                        <!-- 28-słupkowy spektrogram / Korektor częstotliwości -->
+                        <div class="studio-spectrum-container" id="studioSpectrum">
+                            ${Array.from({length: 28}, (_, i) => `<span class="spectrum-bar" style="--bar-i: ${i};"></span>`).join('')}
                         </div>
-                    </div>
-                    <div class="audio-progress-wrap">
-                        <input type="range" id="audioProgressSlider" min="0" max="100" value="0" step="0.1" class="audio-progress-slider" aria-label="Pasek postępu odtwarzania audio">
+
+                        <!-- Pasek osi czasu i suwak -->
+                        <div class="studio-timeline-container">
+                            <span class="studio-time-txt" id="audioTimeCurrent">0:00</span>
+                            <div class="studio-seek-bar-wrap">
+                                <div class="studio-seek-fill" id="studioSeekFill" style="width: 0%;"></div>
+                                <input type="range" id="audioProgressSlider" min="0" max="100" value="0" step="0.1" class="studio-range-input" aria-label="Pasek postępu audio">
+                            </div>
+                            <span class="studio-time-txt total" id="audioTimeTotal">0:00</span>
+                        </div>
+
+                        <!-- Pasek kontrolerów Spotify -->
+                        <div class="studio-controls-panel">
+                            <div class="studio-ctrl-group left">
+                                <button type="button" class="studio-btn-icon" id="ctrlLoopBtn" title="Zapętl utwór">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="17 1 21 5 17 9"></polyline>
+                                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                        <polyline points="7 23 3 19 7 15"></polyline>
+                                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" class="studio-btn-icon" id="ctrlRewindBtn" title="Cofnij o 10 sekund (-10s)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                    </svg>
+                                    <span class="sub-skip">10</span>
+                                </button>
+                            </div>
+
+                            <!-- Główny przycisk Play / Pause Spotify -->
+                            <button type="button" class="studio-master-play-btn" id="audioPlayBtn" aria-label="Odtwórz lub wstrzymaj">
+                                <svg id="audioPlayIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                                    <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                                </svg>
+                                <svg id="audioPauseIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                                    <rect x="6" y="4" width="4" height="16"></rect>
+                                    <rect x="14" y="4" width="4" height="16"></rect>
+                                </svg>
+                            </button>
+
+                            <div class="studio-ctrl-group right">
+                                <button type="button" class="studio-btn-icon" id="ctrlForwardBtn" title="Przewiń o 10 sekund (+10s)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                    </svg>
+                                    <span class="sub-skip">10</span>
+                                </button>
+
+                                <button type="button" class="studio-btn-icon speed-pill" id="ctrlSpeedBtn" title="Prędkość odtwarzania">
+                                    <span id="speedVal">1.0x</span>
+                                </button>
+
+                                <div class="studio-vol-box">
+                                    <button type="button" class="studio-btn-icon" id="ctrlMuteBtn" title="Wycisz / Odcisz">
+                                        <svg id="volIconOn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                        </svg>
+                                        <svg id="volIconOff" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <line x1="23" y1="9" x2="17" y2="15"></line>
+                                            <line x1="17" y1="9" x2="23" y2="15"></line>
+                                        </svg>
+                                    </button>
+                                    <input type="range" id="audioVolSlider" min="0" max="1" value="1" step="0.05" class="studio-vol-input" aria-label="Głośność">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
 
-            // Podpięcie logiki odtwarzacza audio
+            // Podpięcie rozbudowanej logiki odtwarzacza Dropsite Studio
             setTimeout(() => {
                 const audio = document.getElementById('mainAudioElement');
                 const playBtn = document.getElementById('audioPlayBtn');
                 const playIcon = document.getElementById('audioPlayIcon');
                 const pauseIcon = document.getElementById('audioPauseIcon');
-                const timeDisplay = document.getElementById('audioTimeDisplay');
+                const timeCur = document.getElementById('audioTimeCurrent');
+                const timeTot = document.getElementById('audioTimeTotal');
                 const slider = document.getElementById('audioProgressSlider');
-                const playerContainer = document.getElementById('dropsiteAudioPlayer');
+                const seekFill = document.getElementById('studioSeekFill');
+                const playerContainer = document.getElementById('dropsiteStudioPlayer');
+                const loopBtn = document.getElementById('ctrlLoopBtn');
+                const rewindBtn = document.getElementById('ctrlRewindBtn');
+                const forwardBtn = document.getElementById('ctrlForwardBtn');
+                const speedBtn = document.getElementById('ctrlSpeedBtn');
+                const speedVal = document.getElementById('speedVal');
+                const muteBtn = document.getElementById('ctrlMuteBtn');
+                const volIconOn = document.getElementById('volIconOn');
+                const volIconOff = document.getElementById('volIconOff');
+                const volSlider = document.getElementById('audioVolSlider');
 
                 if (!audio || !playBtn) return;
 
@@ -2064,7 +3071,7 @@ async function initDownloadRouter() {
                 };
 
                 audio.addEventListener('loadedmetadata', () => {
-                    if (timeDisplay) timeDisplay.textContent = `0:00 / ${formatTime(audio.duration)}`;
+                    if (timeTot) timeTot.textContent = formatTime(audio.duration);
                 });
 
                 playBtn.addEventListener('click', () => {
@@ -2083,8 +3090,10 @@ async function initDownloadRouter() {
 
                 audio.addEventListener('timeupdate', () => {
                     if (audio.duration && slider) {
-                        slider.value = (audio.currentTime / audio.duration) * 100;
-                        if (timeDisplay) timeDisplay.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+                        const pct = (audio.currentTime / audio.duration) * 100;
+                        slider.value = pct;
+                        if (seekFill) seekFill.style.width = `${pct}%`;
+                        if (timeCur) timeCur.textContent = formatTime(audio.currentTime);
                     }
                 });
 
@@ -2092,15 +3101,86 @@ async function initDownloadRouter() {
                     slider.addEventListener('input', () => {
                         if (audio.duration) {
                             audio.currentTime = (slider.value / 100) * audio.duration;
+                            if (seekFill) seekFill.style.width = `${slider.value}%`;
+                            if (timeCur) timeCur.textContent = formatTime(audio.currentTime);
+                        }
+                    });
+                }
+
+                // Skip -10s / +10s
+                if (rewindBtn) {
+                    rewindBtn.addEventListener('click', () => {
+                        audio.currentTime = Math.max(0, audio.currentTime - 10);
+                    });
+                }
+
+                if (forwardBtn) {
+                    forwardBtn.addEventListener('click', () => {
+                        if (audio.duration) {
+                            audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+                        }
+                    });
+                }
+
+                // Loop Toggle
+                if (loopBtn) {
+                    loopBtn.addEventListener('click', () => {
+                        audio.loop = !audio.loop;
+                        loopBtn.classList.toggle('active', audio.loop);
+                        if (window.showNotification) {
+                            showNotification(audio.loop ? 'Zapętlanie utworu włączone (Loop On)' : 'Zapętlanie wyłączone', 'info');
+                        }
+                    });
+                }
+
+                // Speed Cycle: 1x -> 1.25x -> 1.5x -> 2x -> 1x
+                const speeds = [1.0, 1.25, 1.5, 2.0];
+                let speedIdx = 0;
+                if (speedBtn && speedVal) {
+                    speedBtn.addEventListener('click', () => {
+                        speedIdx = (speedIdx + 1) % speeds.length;
+                        audio.playbackRate = speeds[speedIdx];
+                        speedVal.textContent = `${speeds[speedIdx]}x`;
+                    });
+                }
+
+                // Volume & Mute
+                let previousVol = 1.0;
+                if (volSlider) {
+                    volSlider.addEventListener('input', () => {
+                        audio.volume = parseFloat(volSlider.value);
+                        const isMuted = audio.volume === 0;
+                        if (volIconOn) volIconOn.style.display = isMuted ? 'none' : 'block';
+                        if (volIconOff) volIconOff.style.display = isMuted ? 'block' : 'none';
+                    });
+                }
+
+                if (muteBtn) {
+                    muteBtn.addEventListener('click', () => {
+                        if (audio.volume > 0) {
+                            previousVol = audio.volume;
+                            audio.volume = 0;
+                            if (volSlider) volSlider.value = 0;
+                            if (volIconOn) volIconOn.style.display = 'none';
+                            if (volIconOff) volIconOff.style.display = 'block';
+                        } else {
+                            audio.volume = previousVol || 1.0;
+                            if (volSlider) volSlider.value = audio.volume;
+                            if (volIconOn) volIconOn.style.display = 'block';
+                            if (volIconOff) volIconOff.style.display = 'none';
                         }
                     });
                 }
 
                 audio.addEventListener('ended', () => {
-                    if (playerContainer) playerContainer.classList.remove('playing');
-                    if (playIcon) playIcon.style.display = 'block';
-                    if (pauseIcon) pauseIcon.style.display = 'none';
-                    if (slider) slider.value = 0;
+                    if (!audio.loop) {
+                        if (playerContainer) playerContainer.classList.remove('playing');
+                        if (playIcon) playIcon.style.display = 'block';
+                        if (pauseIcon) pauseIcon.style.display = 'none';
+                        if (slider) slider.value = 0;
+                        if (seekFill) seekFill.style.width = '0%';
+                        if (timeCur) timeCur.textContent = '0:00';
+                    }
                 });
             }, 50);
 
@@ -2128,7 +3208,7 @@ async function initDownloadRouter() {
             return;
         }
 
-        const cleanName = cleanFileName(data.key);
+        const cleanName = data.originalName || data.name || cleanFileName(data.key);
         dlFileName.innerText = cleanName;
         dlFileSize.innerText = `Rozmiar pliku: ${formatBytes(data.size)}`;
 
@@ -2218,15 +3298,28 @@ async function initDownloadRouter() {
             }
 
             renderDownloadPreview(cleanName, data.directUrl);
+            if (window.initDropsiteAds) window.initDropsiteAds();
         }
 
-        // Zwiększ licznik pobrań po kliknięciu
+        // Zwiększ licznik pobrań po kliknięciu i obsłuż samozniszczenie
         dlDownloadBtn.addEventListener('click', () => {
             playSound('drop');
             fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=download`, { method: 'POST' }).catch(()=>{});
             if (dlDownloadCount) {
                 const current = parseInt(dlDownloadCount.textContent || '0', 10);
                 dlDownloadCount.textContent = current + 1;
+            }
+
+            if (data.isBurn) {
+                setTimeout(() => {
+                    const btnText = dlDownloadBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = '🔥 Plik pobrany i zniszczony z serwera';
+                    dlDownloadBtn.style.pointerEvents = 'none';
+                    dlDownloadBtn.style.background = 'rgba(255, 68, 57, 0.2)';
+                    dlDownloadBtn.style.borderColor = '#FF4439';
+                    dlDownloadBtn.style.color = '#FF8E72';
+                    showNotification('Plik został pomyślnie pobrany i natychmiast bezpowrotnie usunięty z serwera!', 'info');
+                }, 800);
             }
         });
 

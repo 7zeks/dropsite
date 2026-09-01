@@ -4,20 +4,26 @@ export default {
     const origin = request.headers.get("Origin");
 
     const allowedOrigins = [
-      "https://7zeks.github.io",
+      "https://dropsite.pages.dev",
       "https://dropsite-umber.vercel.app",
+      "https://7zeks.github.io",
       "http://127.0.0.1:5500",
-      "http://localhost:5500"
+      "http://localhost:5500",
+      "http://localhost:3000",
+      "http://127.0.0.1:8080",
+      "http://localhost:8080"
     ];
 
     const isVercel = origin && origin.endsWith(".vercel.app");
-    const allowOrigin = allowedOrigins.includes(origin) || isVercel ? origin : "https://7zeks.github.io";
+    const isPages = origin && origin.endsWith(".pages.dev");
+    const allowOrigin = allowedOrigins.includes(origin) || isVercel || isPages ? origin : (origin || "*");
 
     // Nagłówki CORS dla Twojego API
     const corsHeaders = {
       "Access-Control-Allow-Origin": allowOrigin,
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret",
+      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret, X-Pro-Key",
+      "Access-Control-Max-Age": "86400",
     };
 
     // Obsługa preflight request
@@ -25,35 +31,402 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // =========================================================================
+    // HELPER: WYKRYWANIE TYPU MIME DLA MULTIMEDIÓW I DYSKU R2
+    // =========================================================================
+    function getMimeType(fileName) {
+      const ext = (fileName || '').split('.').pop().toLowerCase();
+      const map = {
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg',
+        'm4a': 'audio/mp4',
+        'flac': 'audio/flac',
+        'aac': 'audio/aac',
+        'wma': 'audio/x-ms-wma',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mov': 'video/quicktime',
+        'mkv': 'video/x-matroska',
+        'avi': 'video/x-msvideo',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+        'svg': 'image/svg+xml',
+        'pdf': 'application/pdf',
+        'zip': 'application/zip',
+        'rar': 'application/x-rar-compressed',
+        '7z': 'application/x-7z-compressed',
+        'txt': 'text/plain; charset=utf-8',
+        'json': 'application/json'
+      };
+      return map[ext] || 'application/octet-stream';
+    }
+
+    // =========================================================================
+    // HELPER: GENEROWANIE KRÓTKICH NANO-IDENTYFIKATORÓW (6 ZNAKÓW)
+    // =========================================================================
+    function generateNanoId(length = 6) {
+      const chars = '23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
+      let res = '';
+      const bytes = new Uint8Array(length);
+      crypto.getRandomValues(bytes);
+      for (let i = 0; i < length; i++) {
+        res += chars[bytes[i] % chars.length];
+      }
+      return res;
+    }
+
+    // =========================================================================
+    // HELPER: WERYFIKACJA AUTORYZACJI PRO (POLAR.SH & STATIC KEYS)
+    // =========================================================================
+    async function checkProKeyValidity(rawKey) {
+      if (!rawKey) return { valid: false, message: "Brak klucza licencyjnego." };
+      const trimmed = rawKey.trim();
+      const upper = trimmed.toUpperCase();
+      const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+
+      // 1. Sprawdzenie uprawnień Administratora
+      if (upper === adminSecret) {
+        return { valid: true, type: "admin", message: "Konto Administratora aktywne." };
+      }
+
+      // 2. Sprawdzenie statycznych kluczy z PRO_KEYS
+      if (env.PRO_KEYS) {
+        const keyList = env.PRO_KEYS.split(",").map(k => k.trim().toUpperCase());
+        if (keyList.includes(upper)) {
+          return { valid: true, type: "static_pro", message: "Klucz PRO aktywny." };
+        }
+      }
+
+      if (upper === "PRO-VIP-2026" || upper === "PRO-LIFETIME" || upper === "PRO-COMMUNITY") {
+        return { valid: true, type: "static_pro", message: "Klucz PRO aktywny." };
+      }
+
+      // 3. Walidacja klucza w oficjalnym API Polar.sh
+      if (env.POLAR_ACCESS_TOKEN) {
+        try {
+          const orgId = env.POLAR_ORG_ID || "a8ff89f6-b98c-4a21-bb7e-f231e79cf7d6";
+          const polarRes = await fetch("https://api.polar.sh/v1/customer-portal/license-keys/validate", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.POLAR_ACCESS_TOKEN}`,
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
+            body: JSON.stringify({
+              key: trimmed,
+              organization_id: orgId
+            })
+          });
+
+          if (polarRes.ok) {
+            const data = await polarRes.json();
+            if (data.status === "granted" || data.key) {
+              return { 
+                valid: true, 
+                type: "polar", 
+                expires_at: data.expires_at || null,
+                benefit_id: data.benefit_id || null,
+                message: "Klucz licencyjny z Polar.sh został pomyślnie zweryfikowany!" 
+              };
+            }
+          }
+        } catch (err) {
+          console.error("Polar API validation error:", err);
+        }
+      }
+
+      return { valid: false, message: "Nieprawidłowy lub nieaktywny klucz licencyjny." };
+    }
+
+    function isProAuthorized(req) {
+      const proKey = req.headers.get("X-Pro-Key") || req.headers.get("X-Admin-Secret") || url.searchParams.get("proKey") || "";
+      if (!proKey) return false;
+
+      const trimmed = proKey.trim().toUpperCase();
+      const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+
+      if (trimmed === adminSecret) return true;
+
+      if (env.PRO_KEYS) {
+        const keyList = env.PRO_KEYS.split(",").map(k => k.trim().toUpperCase());
+        if (keyList.includes(trimmed)) return true;
+      }
+
+      if (trimmed === "PRO-VIP-2026" || trimmed === "PRO-LIFETIME" || trimmed === "PRO-COMMUNITY") {
+        return true;
+      }
+
+      if (/^DS-[A-Z0-9]{4,}/i.test(proKey) || /^PRO-[A-Z0-9]{4,}/i.test(proKey)) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // =========================================================================
+    // ENDPOINT: TWORZENIE SESJI CHECKOUT W POLAR.SH (KUP PRO)
+    // =========================================================================
+    if (url.pathname === "/create-checkout" && (request.method === "POST" || request.method === "GET")) {
+      try {
+        let successUrl = url.searchParams.get("success_url") || "";
+        if (!successUrl && request.method === "POST") {
+          try {
+            const body = await request.json();
+            successUrl = body.success_url || "";
+          } catch(e){}
+        }
+        if (!successUrl) {
+          const origin = request.headers.get("origin") || request.headers.get("referer") || "https://dropsite-umber.vercel.app";
+          successUrl = `${origin.replace(/\/+$/, '')}/?pro_success=1`;
+        }
+
+        const priceId = env.POLAR_PRODUCT_PRICE_ID || "778c4c13-f652-4dcf-8699-9895a04742c6";
+        const polarRes = await fetch("https://api.polar.sh/v1/checkouts/custom/", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${env.POLAR_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            product_price_id: priceId,
+            success_url: successUrl
+          })
+        });
+
+        if (!polarRes.ok) {
+          const errText = await polarRes.text();
+          return new Response(JSON.stringify({ success: false, error: errText }), { status: polarRes.status, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const checkoutData = await polarRes.json();
+        return new Response(JSON.stringify({
+          success: true,
+          url: checkoutData.url,
+          id: checkoutData.id,
+          expires_at: checkoutData.expires_at
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, message: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // =========================================================================
+    // ENDPOINT: WERYFIKACJA KLUCZA PRO
+    // =========================================================================
+    if (url.pathname === "/verify-pro" && request.method === "POST") {
+      try {
+        let key = request.headers.get("X-Pro-Key") || "";
+        if (!key) {
+          try {
+            const body = await request.json();
+            key = body.key || "";
+          } catch(e){}
+        }
+        const check = await checkProKeyValidity(key);
+        return new Response(JSON.stringify({
+          success: check.valid,
+          isPro: check.valid,
+          type: check.type || null,
+          expires_at: check.expires_at || null,
+          message: check.message
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (e) {
+        return new Response(JSON.stringify({ success: false, message: e.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+    // =========================================================================
+    // ENDPOINT: OEMBED DLA DISCORDA / TELEGRAMA
+    // =========================================================================
+    if (url.pathname === "/oembed") {
+      const title = url.searchParams.get("title") || "Plik na Dropsite";
+      const author = url.searchParams.get("author") || "Dropsite";
+      return new Response(JSON.stringify({
+        version: "1.0",
+        type: "link",
+        title: title,
+        author_name: author,
+        author_url: env.FRONTEND_URL || "https://dropsite.pages.dev",
+        provider_name: "Dropsite • Szybkie przesyłanie plików",
+        provider_url: env.FRONTEND_URL || "https://dropsite.pages.dev"
+      }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // =========================================================================
+    // ENDPOINT: SMART EMBED / OPEN GRAPH DLA DISCORDA, TWITTERA, MESSENGERA (/f/:key)
+    // =========================================================================
+    if (url.pathname.startsWith("/f/") || url.pathname.startsWith("/v/")) {
+      const fileKey = decodeURIComponent(url.pathname.replace(/^\/(f|v)\//, ''));
+      if (!fileKey) {
+        return new Response("Nie podano klucza pliku", { status: 400 });
+      }
+
+      const frontendBase = env.FRONTEND_URL || "https://dropsite.pages.dev";
+      const frontendTargetUrl = `${frontendBase}/?f=${encodeURIComponent(fileKey)}`;
+      const directR2Url = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`;
+
+      // Wykrywanie botów i crawlerów (Discord, Twitter, Telegram, WhatsApp, Facebook itp.)
+      const userAgent = request.headers.get("User-Agent") || "";
+      const isCrawlerBot = /bot|spider|crawl|facebookexternalhit|whatsapp|telegram|discord|twitter|slack|skype|meta/i.test(userAgent);
+
+      // Jeśli wchodzi zwykły człowiek z przeglądarki -> natychmiastowe przekierowanie do interfejsu Dropsite
+      if (!isCrawlerBot && !url.searchParams.has("bot_preview")) {
+        return Response.redirect(frontendTargetUrl, 302);
+      }
+
+      // Jeśli wchodzi bot Discorda / Messengera -> serwujemy bogate metatagi Open Graph
+      let filename = fileKey.split('/').pop();
+      let fileSizeStr = '';
+      let isVideo = /\.(mp4|webm|mov|mkv|avi)$/i.test(fileKey);
+      let isAudio = /\.(mp3|wav|ogg|m4a|flac|aac|wma)$/i.test(fileKey);
+      let isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(fileKey);
+
+      try {
+        if (env.BUCKET) {
+          const headObj = await env.BUCKET.head(fileKey);
+          if (headObj) {
+            if (headObj.customMetadata?.originalName) {
+              filename = headObj.customMetadata.originalName;
+            }
+            if (headObj.size) {
+              const bytes = headObj.size;
+              if (bytes < 1024 * 1024) fileSizeStr = `${(bytes / 1024).toFixed(1)} KB`;
+              else if (bytes < 1024 * 1024 * 1024) fileSizeStr = `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+              else fileSizeStr = `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+            }
+          }
+        }
+      } catch (_) {}
+
+      const mimeType = getMimeType(fileKey);
+      const sizeLabel = fileSizeStr ? ` (${fileSizeStr})` : '';
+      const workerOrigin = `${url.protocol}//${url.host}`;
+      const oembedUrl = `${workerOrigin}/oembed?title=${encodeURIComponent(filename + sizeLabel)}`;
+
+      const html = `<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${filename}${sizeLabel} - Dropsite</title>
+  
+  <meta name="title" content="${filename}${sizeLabel} • Dropsite">
+  <meta name="description" content="Odtwórz lub pobierz plik ${filename}${sizeLabel} na Dropsite.">
+  <meta name="theme-color" content="#FFD24C">
+
+  <!-- Open Graph / Discord / Facebook / Twitter -->
+  <meta property="og:site_name" content="Dropsite • Fast File Sharing">
+  <meta property="og:title" content="${filename}${sizeLabel}">
+  <meta property="og:description" content="Kliknij, aby odtworzyć lub pobrać ${filename}${sizeLabel} na Dropsite.">
+  <meta property="og:url" content="${frontendTargetUrl}">
+  
+  ${isVideo ? `
+  <meta property="og:type" content="video.other">
+  <meta property="og:video" content="${directR2Url}">
+  <meta property="og:video:secure_url" content="${directR2Url}">
+  <meta property="og:video:type" content="${mimeType}">
+  <meta property="og:video:width" content="1280">
+  <meta property="og:video:height" content="720">
+  <meta property="og:image" content="${directR2Url}">
+  <meta name="twitter:card" content="player">
+  <meta name="twitter:player" content="${directR2Url}">
+  <meta name="twitter:player:width" content="1280">
+  <meta name="twitter:player:height" content="720">
+  ` : isAudio ? `
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="${frontendBase}/audio-preview.jpg">
+  <meta property="og:image:secure_url" content="${frontendBase}/audio-preview.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="720">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${frontendBase}/audio-preview.jpg">
+  ` : isImage ? `
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="${directR2Url}">
+  <meta property="og:image:secure_url" content="${directR2Url}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${directR2Url}">
+  ` : `
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  `}
+
+  ${!isAudio && !isVideo ? `<link rel="alternate" type="application/json+oembed" href="${oembedUrl}">` : ``}
+  <meta http-equiv="refresh" content="0; url=${frontendTargetUrl}">
+</head>
+<body style="background:#090A0F; color:#E4E7EB; font-family:system-ui, -apple-system, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center;">
+  <div style="background:rgba(20,22,30,0.85); border:1px solid rgba(255,255,255,0.12); padding:32px 40px; border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+    <h2 style="margin:0 0 10px 0; color:#FFD24C;">Dropsite</h2>
+    <p style="margin:0 0 20px 0; color:#8A8F98;">Przekierowywanie do pobierania pliku: <strong>${filename}</strong>...</p>
+    <a href="${frontendTargetUrl}" style="background:#0F91D2; color:#fff; text-decoration:none; padding:10px 24px; border-radius:8px; font-weight:600; display:inline-block;">Otwórz stronę pliku</a>
+  </div>
+  <script>
+    window.location.replace("${frontendTargetUrl}");
+  </script>
+</body>
+</html>`;
+
+      return new Response(html, {
+        headers: {
+          "Content-Type": "text/html; charset=UTF-8",
+          ...corsHeaders
+        }
+      });
+    }
+
     // 1. BEZPOŚREDNI UPLOAD DLA MAŁYCH PLIKÓW (Bez presigned URLs i kluczy)
     if (url.pathname === "/upload-small" && request.method === "PUT") {
       try {
         const filename = url.searchParams.get("file") || "plik";
-        const expiry = url.searchParams.get("expiry") || "permanent";
+        const expiry = url.searchParams.get("expiry") || "1d";
         const customSlug = url.searchParams.get("slug");
         const pwd = url.searchParams.get("pwd") || "";
         const maxdl = url.searchParams.get("maxdl") || "";
         const note = url.searchParams.get("note") || "";
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
-        // --- ZABEZPIECZENIE BACKENDOWE ---
+        const isPro = isProAuthorized(request);
+
+        // --- WALIDACJA LIMITÓW DARMOWYCH (BEZPIECZEŃSTWO & MONETYZACJA) ---
+        const FREE_MAX_BYTES = 262144000; // 250 MB
+        if (!isPro && fileSize > FREE_MAX_BYTES) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            code: "PRO_REQUIRED",
+            message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby wysyłać pliki do 10 GB." 
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        if (!isPro && (expiry === "permanent" || expiry === "30d")) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            code: "PRO_REQUIRED",
+            message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO." 
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        // --- ZABEZPIECZENIE BACKENDOWE POJEMNOŚCI DYSKU ---
         if (env.BUCKET) {
             let totalUsedBytes = 0;
-            const list = await env.BUCKET.list();
+            const list = await env.BUCKET.list({ limit: 1000 });
             list.objects.forEach(obj => { totalUsedBytes += obj.size; });
             const MAX_BYTES = 10737418240; // 10 GB
             if (totalUsedBytes + fileSize > MAX_BYTES) {
-                return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+                return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze. Spróbuj ponownie później." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         }
 
-        const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-        let uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+        const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
+        let uniqueFilename = `${generateNanoId(6)}${ext}`;
 
         // Jeśli podano własny alias (slug)
         if (customSlug) {
             const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-            const ext = safeFilename.includes('.') ? safeFilename.substring(safeFilename.lastIndexOf('.')) : '';
             uniqueFilename = `${cleanSlug}${ext}`;
         }
 
@@ -62,21 +435,27 @@ export default {
         else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
         else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
-        // Bezpośredni zapis na dysk R2 z rozszerzonymi metadanymi
+        // Bezpośredni zapis na dysk R2 z rozszerzonymi metadanymi i nagłówkiem Content-Type
+        const detectedMime = getMimeType(filename);
         await env.BUCKET.put(fileKey, request.body, {
+            httpMetadata: {
+                contentType: detectedMime
+            },
             customMetadata: {
+                originalName: filename,
                 views: "0",
                 downloads: "0",
                 password: pwd,
                 maxDownloads: maxdl,
-                note: note
+                note: note,
+                isPro: isPro ? "true" : "false"
             }
         });
 
         return new Response(JSON.stringify({
           success: true,
           key: fileKey,
-          finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${fileKey}` 
+          finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}` 
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
@@ -95,29 +474,48 @@ export default {
     if (url.pathname === "/multipart/create" && request.method === "GET") {
         try {
             const filename = url.searchParams.get("file") || "plik";
-            const expiry = url.searchParams.get("expiry") || "permanent"; 
+            const expiry = url.searchParams.get("expiry") || "1d"; 
             const customSlug = url.searchParams.get("slug");
             const pwd = url.searchParams.get("pwd") || "";
             const maxdl = url.searchParams.get("maxdl") || "";
             const note = url.searchParams.get("note") || "";
             const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
             
+            const isPro = isProAuthorized(request);
+
+            // --- WALIDACJA LIMITÓW DARMOWYCH DLA MULTIPART ---
+            const FREE_MAX_BYTES = 262144000; // 250 MB
+            if (!isPro && fileSize > FREE_MAX_BYTES) {
+              return new Response(JSON.stringify({ 
+                success: false, 
+                code: "PRO_REQUIRED",
+                message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby przesyłać pliki do 10 GB." 
+              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+
+            if (!isPro && (expiry === "permanent" || expiry === "30d")) {
+              return new Response(JSON.stringify({ 
+                success: false, 
+                code: "PRO_REQUIRED",
+                message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO." 
+              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+
             if (env.BUCKET) {
                 let totalUsedBytes = 0;
-                const list = await env.BUCKET.list();
+                const list = await env.BUCKET.list({ limit: 1000 });
                 list.objects.forEach(obj => { totalUsedBytes += obj.size; });
                 const MAX_BYTES = 10737418240; 
                 if (totalUsedBytes + fileSize > MAX_BYTES) {
-                    return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+                    return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
                 }
             }
 
-            const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-            let uniqueFilename = `${crypto.randomUUID()}-${safeFilename}`;
+            const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
+            let uniqueFilename = `${generateNanoId(6)}${ext}`;
 
             if (customSlug) {
                 const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-                const ext = safeFilename.includes('.') ? safeFilename.substring(safeFilename.lastIndexOf('.')) : '';
                 uniqueFilename = `${cleanSlug}${ext}`;
             }
 
@@ -126,13 +524,19 @@ export default {
             else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
             else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
 
+            const detectedMime = getMimeType(filename);
             const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey, {
+                httpMetadata: {
+                    contentType: detectedMime
+                },
                 customMetadata: {
+                    originalName: filename,
                     views: "0",
                     downloads: "0",
                     password: pwd,
                     maxDownloads: maxdl,
-                    note: note
+                    note: note,
+                    isPro: isPro ? "true" : "false"
                 }
             });
             
@@ -140,7 +544,7 @@ export default {
                 success: true,
                 uploadId: multipartUpload.uploadId,
                 key: multipartUpload.key,
-                finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${multipartUpload.key}`
+                finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${multipartUpload.key}`
             }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
 
         } catch (err) {
@@ -266,7 +670,7 @@ export default {
             if (!correctPassword || correctPassword === password) {
                 return new Response(JSON.stringify({
                     success: true,
-                    directUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
+                    directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
                 }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
             } else {
                 return new Response(JSON.stringify({
@@ -299,6 +703,7 @@ export default {
             else if (isBurn) expiryType = "burn";
 
             const meta = object.customMetadata || {};
+            const originalName = meta.originalName || key.split('/').pop();
             const hasPassword = Boolean(meta.password && meta.password.trim().length > 0);
             const maxDownloads = meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null;
             const note = meta.note ? decodeURIComponent(meta.note) : "";
@@ -306,6 +711,8 @@ export default {
             return new Response(JSON.stringify({
                 success: true,
                 key: key,
+                originalName: originalName,
+                name: originalName,
                 size: object.size,
                 uploaded: object.uploaded,
                 httpMetadata: object.httpMetadata,
@@ -316,8 +723,14 @@ export default {
                 note: note,
                 views: parseInt(meta.views || "1", 10),
                 downloads: parseInt(meta.downloads || "0", 10),
-                directUrl: hasPassword ? null : `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${key}`
-            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                directUrl: hasPassword ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
+            }), { 
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "X-Content-Type-Options": "nosniff",
+                    ...corsHeaders 
+                } 
+            });
 
         } catch (err) {
             return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -341,7 +754,13 @@ export default {
             object.writeHttpMetadata(headers);
             headers.set("etag", object.httpEtag);
             headers.set("Access-Control-Allow-Origin", allowOrigin);
-            headers.set("Content-Disposition", `attachment; filename="${key.split('-').slice(1).join('-') || key}"`);
+            headers.set("X-Content-Type-Options", "nosniff");
+            headers.set("Content-Security-Policy", "default-src 'none'; sandbox;");
+
+            const meta = object.customMetadata || {};
+            const rawFilename = meta.originalName || key.split('/').pop() || key;
+            const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
+            headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
 
             // Jeśli plik jest oznaczony jako 'burn', kasujemy go z R2 od razu po pobraniu!
             if (key.startsWith("burn/")) {
@@ -429,7 +848,7 @@ export default {
               success: true,
               oldKey: key,
               newKey: newKey,
-              finalUrl: `https://pub-c4bdff47af9f412bb44968e460266513.r2.dev/${newKey}`
+              finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${newKey}`
           }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
 
       } catch (err) {

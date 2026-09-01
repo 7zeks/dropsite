@@ -137,3 +137,44 @@
 .success-tips strong { 
     color: #FFFFFF; 
 }
+
+/* Przycisk: Prześlij kolejny plik */
+.btn-outline-another {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #C4E7D4;
+    border: 1px dashed rgba(196, 231, 212, 0.35);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    margin-top: 4px;
+}
+
+.btn-outline-another svg {
+    transition: transform 0.3s ease;
+}
+
+.btn-outline-another:hover {
+    background: rgba(196, 231, 212, 0.12);
+    border-color: #C4E7D4;
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(196, 231, 212, 0.25);
+    transform: translateY(-1px);
+}
+
+.btn-outline-another:hover svg {
+    transform: rotate(-45deg);
+}
+
+.btn-outline-another:active {
+    transform: translateY(0);
+}

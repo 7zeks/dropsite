@@ -280,7 +280,10 @@ input[type='file'] {
 }
 
 /* --- Options --- */
-.options-container { margin-bottom: 28px; }
+.options-container { 
+    margin-top: 18px; 
+    margin-bottom: 24px; 
+}
 
 .options-label {
     font-size: 13px;
@@ -290,48 +293,154 @@ input[type='file'] {
 }
 
 .options-radios {
-    display: flex;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 4px;
     border-radius: var(--radius-md);
     border: 1px solid var(--panel-border);
 }
 
-.option-item { flex: 1; position: relative; cursor: pointer; }
-.option-item input { position: absolute; opacity: 0; cursor: pointer; }
-.option-item span {
-    display: block;
-    text-align: center;
-    padding: 10px 4px;
-    font-size: 13px;
+.option-item {
+    position: relative;
+    cursor: pointer;
+    margin: 0;
+    display: flex;
+}
+
+.option-item input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.option-item > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    padding: 9px 4px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-muted);
     border-radius: 8px;
     transition: var(--transition-smooth);
+    white-space: nowrap;
+    user-select: none;
 }
 
-.option-item input:checked + span {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-main);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.option-item > input:checked + span {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.option-item:hover input:not(:checked) + span {
+.option-item-burn {
+    position: relative;
+    overflow: visible;
+}
+
+.option-item-burn > input:checked + span {
+    background: linear-gradient(135deg, rgba(255, 68, 57, 0.28) 0%, rgba(255, 140, 0, 0.22) 100%) !important;
+    color: #FF8E72 !important;
+    border: 1px solid rgba(255, 68, 57, 0.45);
+    box-shadow: 0 0 14px rgba(255, 68, 57, 0.35) !important;
+}
+
+.burn-icon-svg {
+    stroke: #FF5A36;
+    fill: rgba(255, 90, 54, 0.25);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 3px rgba(255, 90, 54, 0.4));
+}
+
+.option-item-burn:hover .burn-icon-svg {
+    transform: scale(1.18);
+    stroke: #FF7A00;
+    fill: rgba(255, 122, 0, 0.4);
+    filter: drop-shadow(0 0 8px rgba(255, 90, 54, 0.8));
+}
+
+.option-item-burn input:checked + span .burn-icon-svg {
+    stroke: #FFA07A;
+    fill: rgba(255, 140, 0, 0.5);
+    filter: drop-shadow(0 0 10px rgba(255, 68, 57, 0.9));
+    animation: flameFlicker 1.8s infinite alternate ease-in-out;
+}
+
+@keyframes flameFlicker {
+    0% { transform: scale(1) rotate(-3deg); filter: drop-shadow(0 0 6px rgba(255, 68, 57, 0.7)); }
+    50% { transform: scale(1.12) rotate(3deg); filter: drop-shadow(0 0 14px rgba(255, 120, 0, 1)); }
+    100% { transform: scale(1.02) rotate(-1.5deg); filter: drop-shadow(0 0 9px rgba(255, 68, 57, 0.8)); }
+}
+
+.option-item-burn.ignite-anim > span {
+    animation: fireButtonBurst 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes fireButtonBurst {
+    0% {
+        transform: scale(0.94);
+        box-shadow: 0 0 0 rgba(255, 68, 57, 0);
+    }
+    35% {
+        transform: scale(1.08);
+        box-shadow: 0 0 26px rgba(255, 68, 57, 0.8), 0 0 45px rgba(255, 140, 0, 0.5);
+        background: linear-gradient(135deg, rgba(255, 68, 57, 0.5) 0%, rgba(255, 140, 0, 0.4) 100%) !important;
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 14px rgba(255, 68, 57, 0.35);
+    }
+}
+
+.burn-fire-spark {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    z-index: 999;
+    will-change: transform, opacity;
+    animation: sparkFly 0.8s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes sparkFly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1.2);
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx, 0px), var(--dy, -45px)) scale(0);
+    }
+}
+
+.option-item:hover > input:not(:checked) + span {
     color: var(--text-main);
     background: rgba(255, 255, 255, 0.05);
 }
 
 @media (max-width: 600px) {
     .options-radios {
-        display: grid;
         grid-template-columns: repeat(2, 1fr);
+    }
+    .option-item > span {
+        font-size: 11.5px;
+        padding: 8px 4px;
     }
 }
 
 /* --- Główny Przycisk --- */
 .btn-primary {
     box-sizing: border-box;
+    margin-top: 18px;
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
     color: #090A0F;
     border: none;
