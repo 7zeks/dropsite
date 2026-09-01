@@ -263,6 +263,36 @@ auth.onAuthStateChanged(async user => {
             loginBtn.classList.add('logged-in');
         }
 
+        // Automatyczna aktywacja oczekującego klucza po zalogowaniu
+        const pendingKey = (sessionStorage.getItem('pending_pro_key') || '').trim();
+        if (pendingKey) {
+            sessionStorage.removeItem('pending_pro_key');
+            try {
+                const autoRes = await fetch(`${WORKER_URL}/verify-pro`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Pro-Key': pendingKey,
+                        'X-User-Email': user.email || '',
+                        'X-User-Uid': user.uid || ''
+                    },
+                    body: JSON.stringify({ key: pendingKey, email: user.email, uid: user.uid })
+                });
+                const autoData = await autoRes.json();
+                if (autoData.success && autoData.isPro) {
+                    setProKey(pendingKey);
+                    if (typeof showNotification === 'function') {
+                        showNotification(autoData.message || `Sukces! Konto Dropsite PRO zostało przypisane do ${user.email}.`, 'success');
+                    }
+                    playSound('success');
+                } else {
+                    if (typeof showNotification === 'function') {
+                        showNotification(autoData.message || 'Nie udało się przypisać klucza.', 'error');
+                    }
+                }
+            } catch(e) {}
+        }
+
         // Weryfikacja czy zapisany klucz PRO w pamięci przeglądarki należy do tego zalogowanego konta
         const storedKey = (localStorage.getItem('dropsite_pro_key') || '').trim();
         if (storedKey && !isActualAdminUser()) {
@@ -445,12 +475,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Wymóg zalogowania: Klucz PRO musi być trwale powiązany z kontem!
             const currentUser = auth.currentUser;
             if (!currentUser) {
+                sessionStorage.setItem('pending_pro_key', keyVal);
                 if (statusText) {
                     statusText.className = 'pro-key-status-text error';
-                    statusText.textContent = 'Musisz być zalogowany, aby przypisać klucz PRO do swojego konta.';
+                    statusText.innerHTML = 'Musisz być zalogowany, aby przypisać klucz PRO.<br><button type="button" onclick="document.getElementById(\'loginModalWrap\').removeAttribute(\'hidden\')" style="margin-top:6px; background:var(--accent-blue); border:none; color:#fff; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; font-weight:600;">👉 Kliknij tutaj, aby się zalogować</button>';
                 }
                 if (typeof showNotification === 'function') {
-                    showNotification('Zaloguj się lub załóż darmowe konto, aby aktywować klucz PRO.', 'info');
+                    showNotification('Zaloguj się lub utwórz darmowe konto, aby aktywować klucz PRO.', 'info');
                 }
                 if (loginModalWrap) {
                     loginModalWrap.removeAttribute('hidden');
