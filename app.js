@@ -273,14 +273,14 @@ auth.onAuthStateChanged(async user => {
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Pro-Key': pendingKey,
-                        'X-User-Email': user.email || '',
-                        'X-User-Uid': user.uid || ''
+                        'X-User-Email': user.email || ''
                     },
-                    body: JSON.stringify({ key: pendingKey, email: user.email, uid: user.uid })
+                    body: JSON.stringify({ key: pendingKey, email: user.email })
                 });
                 const autoData = await autoRes.json();
                 if (autoData.success && autoData.isPro) {
                     setProKey(pendingKey);
+                    localStorage.setItem(`dropsite_pro_key_${user.uid}`, pendingKey);
                     if (typeof showNotification === 'function') {
                         showNotification(autoData.message || `Sukces! Konto Dropsite PRO zostało przypisane do ${user.email}.`, 'success');
                     }
@@ -293,25 +293,32 @@ auth.onAuthStateChanged(async user => {
             } catch(e) {}
         }
 
-        // Weryfikacja czy zapisany klucz PRO w pamięci przeglądarki należy do tego zalogowanego konta
-        const storedKey = (localStorage.getItem('dropsite_pro_key') || '').trim();
-        if (storedKey && !isActualAdminUser()) {
+        // Weryfikacja czy ten konkretny użytkownik ma aktywny klucz PRO przypisany do swojego konta
+        const userStoredKey = (localStorage.getItem(`dropsite_pro_key_${user.uid}`) || localStorage.getItem('dropsite_pro_key') || '').trim();
+        if (userStoredKey && !isActualAdminUser()) {
             try {
                 const vRes = await fetch(`${WORKER_URL}/verify-pro`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Pro-Key': storedKey,
-                        'X-User-Email': user.email || '',
-                        'X-User-Uid': user.uid || ''
+                        'X-Pro-Key': userStoredKey,
+                        'X-User-Email': user.email || ''
                     },
-                    body: JSON.stringify({ key: storedKey, email: user.email, uid: user.uid })
+                    body: JSON.stringify({ key: userStoredKey, email: user.email })
                 });
                 const vData = await vRes.json();
-                if (!vData.success || !vData.isPro) {
+                if (vData.success && vData.isPro) {
+                    setProKey(userStoredKey);
+                    localStorage.setItem(`dropsite_pro_key_${user.uid}`, userStoredKey);
+                } else {
                     setProKey('');
+                    localStorage.removeItem(`dropsite_pro_key_${user.uid}`);
                 }
-            } catch(e) {}
+            } catch(e) {
+                setProKey('');
+            }
+        } else if (!isActualAdminUser()) {
+            setProKey('');
         }
     } else {
         document.body.classList.remove('is-user-logged');
@@ -478,6 +485,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!auth.currentUser) {
+                sessionStorage.setItem('pending_pro_key', keyVal);
+                if (statusText) {
+                    statusText.className = 'pro-key-status-text error';
+                    statusText.textContent = 'Zaloguj się, aby powiązać ten klucz ze swoim kontem.';
+                }
+                if (loginModalWrap) loginModalWrap.removeAttribute('hidden');
+                return;
+            }
+
             activateProKeyBtn.disabled = true;
             if (statusText) {
                 statusText.className = 'pro-key-status-text';
@@ -489,14 +506,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Pro-Key': keyVal
+                        'X-Pro-Key': keyVal,
+                        'X-User-Email': auth.currentUser.email || ''
                     },
-                    body: JSON.stringify({ key: keyVal })
+                    body: JSON.stringify({ key: keyVal, email: auth.currentUser.email || '' })
                 });
                 const data = await res.json();
 
                 if (data.success && data.isPro) {
                     setProKey(keyVal);
+                    localStorage.setItem(`dropsite_pro_key_${auth.currentUser.uid}`, keyVal);
                     if (statusText) {
                         statusText.className = 'pro-key-status-text success';
                         statusText.textContent = 'Sukces! Konto Dropsite PRO zostało aktywowane.';
@@ -526,6 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deactivateProKeyBtn) {
         deactivateProKeyBtn.addEventListener('click', () => {
             setProKey('');
+            if (auth.currentUser) {
+                localStorage.removeItem(`dropsite_pro_key_${auth.currentUser.uid}`);
+            }
             const statusText = document.getElementById('proKeyStatus');
             if (statusText) {
                 statusText.className = 'pro-key-status-text';

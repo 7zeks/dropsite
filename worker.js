@@ -78,8 +78,15 @@ export default {
       }
       return res;
     }
+    // Helper do maskowania adresu e-mail: jan@gmail.com -> j***n@gmail.com
+    function maskEmail(email) {
+      if (!email || !email.includes("@")) return "innego użytkownika";
+      const [name, domain] = email.split("@");
+      if (name.length <= 2) return name[0] + "***@" + domain;
+      return name[0] + "***" + name[name.length - 1] + "@" + domain;
+    }
 
-    async function checkProKeyValidity(rawKey) {
+    async function checkProKeyValidity(rawKey, userEmail = "") {
       if (!rawKey) return { valid: false, message: "Brak klucza licencyjnego." };
       const trimmed = rawKey.trim();
       const upper = trimmed.toUpperCase();
@@ -102,7 +109,50 @@ export default {
         return { valid: true, type: "static_pro", message: "Klucz PRO aktywny." };
       }
 
-      // 3. Walidacja w Polar.sh
+      const cleanEmail = (userEmail || "").toLowerCase().trim();
+
+      // 3. Sprawdzenie przypisania klucza do konta w R2 (_licenses/)
+      const licenseStorageKey = `_licenses/${trimmed.replace(/[^a-zA-Z0-9-]/g, '_')}.json`;
+      if (env.BUCKET) {
+        try {
+          const existingBinding = await env.BUCKET.get(licenseStorageKey);
+          if (existingBinding) {
+            const bindingData = await existingBinding.json();
+            const boundEmail = (bindingData.ownerEmail || "").toLowerCase().trim();
+
+            if (boundEmail) {
+              if (!cleanEmail) {
+                return {
+                  valid: false,
+                  requireLogin: true,
+                  message: `Zaloguj się na konto (${maskEmail(boundEmail)}), aby używać tego klucza.`
+                };
+              }
+              if (boundEmail === cleanEmail) {
+                return {
+                  valid: true,
+                  type: "bound_pro",
+                  ownerEmail: boundEmail,
+                  message: "Konto Dropsite PRO jest aktywne!"
+                };
+              } else {
+                return {
+                  valid: false,
+                  isPro: false,
+                  message: `Ten klucz jest już przypisany do innego konta (${maskEmail(boundEmail)}).`
+                };
+              }
+            }
+          }
+        } catch(storageErr) {
+          console.error("R2 license binding check error:", storageErr);
+        }
+      }
+
+      // 4. Walidacja nowego klucza w Polar.sh
+      let isValidFromPolar = false;
+      let expiresAt = null;
+
       try {
         const orgId = env.POLAR_ORG_ID || "a8ff89f6-b98c-4a21-bb7e-f231e79cf7d6";
         const polarRes = await fetch("https://api.polar.sh/v1/customer-portal/license-keys/validate", {
@@ -120,24 +170,40 @@ export default {
         if (polarRes.ok) {
           const data = await polarRes.json();
           if (data.status === "granted" || data.id || data.key) {
-            return {
-              valid: true,
-              type: "polar",
-              expires_at: data.expires_at || null,
-              benefit_id: data.benefit_id || null,
-              message: "Klucz licencyjny z Polar.sh został pomyślnie zweryfikowany!"
-            };
+            isValidFromPolar = true;
+            expiresAt = data.expires_at || null;
           }
         }
       } catch (err) {
         console.error("Polar API validation error:", err);
       }
 
-      // 4. Format DS- lub PRO- (wystawiony przez Polar)
-      if (/^DS-[A-Z0-9-]{4,}/i.test(trimmed) || /^PRO-[A-Z0-9-]{4,}/i.test(trimmed)) {
+      // 5. Format DS- lub PRO-
+      if (!isValidFromPolar && (/^DS-[A-Z0-9-]{4,}/i.test(trimmed) || /^PRO-[A-Z0-9-]{4,}/i.test(trimmed))) {
+        isValidFromPolar = true;
+      }
+
+      if (isValidFromPolar) {
+        // Jeśli użytkownik jest zalogowany, przypisujemy klucz do jego konta na stałe
+        if (cleanEmail && env.BUCKET) {
+          try {
+            await env.BUCKET.put(licenseStorageKey, JSON.stringify({
+              key: trimmed,
+              ownerEmail: cleanEmail,
+              activatedAt: new Date().toISOString(),
+              expiresAt: expiresAt
+            }), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          } catch (saveErr) {
+            console.error("Error saving license binding:", saveErr);
+          }
+        }
+
         return {
           valid: true,
           type: "polar_verified",
+          ownerEmail: cleanEmail || null,
           message: "Klucz Dropsite PRO został pomyślnie aktywowany!"
         };
       }
@@ -171,23 +237,25 @@ export default {
     }
 
     // =========================================================================
-    // ENDPOINT: TWORZENIE SESJI CHECKOUT W POLAR.SH (KUP PRO)
+    // ENDPOINT: PŁATNOŚCI POLAR.SH - TWORZENIE SESJI CHECKOUT (/create-checkout)
     // =========================================================================
-    if (url.pathname === "/create-checkout" && (request.method === "POST" || request.method === "GET")) {
+    if (url.pathname === "/create-checkout" && request.method === "POST") {
       try {
-        let successUrl = url.searchParams.get("success_url") || "";
-        if (!successUrl && request.method === "POST") {
-          try {
-            const body = await request.json();
-            successUrl = body.success_url || "";
-          } catch(e){}
-        }
-        if (!successUrl) {
-          const origin = request.headers.get("origin") || request.headers.get("referer") || "https://dropsite-umber.vercel.app";
-          successUrl = `${origin.replace(/\/+$/, '')}/?pro_success=1`;
+        if (!env.POLAR_ACCESS_TOKEN) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "Brak skonfigurowanego tokenu POLAR_ACCESS_TOKEN w Cloudflare Workers." 
+          }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
+        let body = {};
+        try {
+          body = await request.json();
+        } catch(e){}
+
+        const successUrl = body.success_url || `${env.FRONTEND_URL || "https://dropsite.pages.dev"}/?pro_success=1`;
         const priceId = env.POLAR_PRODUCT_PRICE_ID || "778c4c13-f652-4dcf-8699-9895a04742c6";
+
         const polarRes = await fetch("https://api.polar.sh/v1/checkouts/custom/", {
           method: "POST",
           headers: {
@@ -224,15 +292,21 @@ export default {
     if (url.pathname === "/verify-pro" && request.method === "POST") {
       try {
         let key = request.headers.get("X-Pro-Key") || "";
+        let email = request.headers.get("X-User-Email") || "";
         try {
           const body = await request.json();
-          if (body && body.key) key = body.key;
+          if (body) {
+            key = body.key || key;
+            email = body.email || email;
+          }
         } catch(e){}
 
-        const check = await checkProKeyValidity(key);
+        const check = await checkProKeyValidity(key, email);
         return new Response(JSON.stringify({
           success: check.valid,
           isPro: check.valid,
+          requireLogin: check.requireLogin || false,
+          ownerEmail: check.ownerEmail || null,
           type: check.type || null,
           expires_at: check.expires_at || null,
           message: check.message
