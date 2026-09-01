@@ -337,7 +337,10 @@ export default {
   <meta name="twitter:player:width" content="1280">
   <meta name="twitter:player:height" content="720">
   ` : isAudio ? `
-  <meta property="og:type" content="article">
+  <meta property="og:type" content="music.song">
+  <meta property="og:audio" content="${directR2Url}">
+  <meta property="og:audio:secure_url" content="${directR2Url}">
+  <meta property="og:audio:type" content="${mimeType}">
   <meta property="og:image" content="${frontendBase}/audio-preview.jpg">
   <meta property="og:image:secure_url" content="${frontendBase}/audio-preview.jpg">
   <meta property="og:image:type" content="image/jpeg">
