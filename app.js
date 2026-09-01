@@ -373,11 +373,6 @@ function updateProUI() {
 
     if (proPurchaseOptions) proPurchaseOptions.style.display = isPro ? 'none' : 'block';
     if (proActivationBox) proActivationBox.style.display = isPro ? 'none' : 'block';
-
-    const proEmailInput = document.getElementById('proEmailInput');
-    if (proEmailInput && auth.currentUser && auth.currentUser.email) {
-        proEmailInput.value = auth.currentUser.email;
-    }
     
     if (proActiveBox) {
         proActiveBox.hidden = !isPro;
@@ -469,9 +464,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = document.getElementById('proKeyStatus');
             const keyVal = input ? input.value.trim() : '';
 
-            const emailInput = document.getElementById('proEmailInput');
-            const userEmail = (emailInput && emailInput.value.trim()) || (auth.currentUser && auth.currentUser.email) || '';
-
             if (!keyVal) {
                 if (statusText) {
                     statusText.className = 'pro-key-status-text error';
@@ -480,19 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (!userEmail || !userEmail.includes('@')) {
-                if (statusText) {
-                    statusText.className = 'pro-key-status-text error';
-                    statusText.textContent = 'Wpisz swój adres e-mail, do którego ma być przypisana licencja.';
-                }
-                if (emailInput) emailInput.focus();
-                return;
-            }
-
             activateProKeyBtn.disabled = true;
             if (statusText) {
                 statusText.className = 'pro-key-status-text';
-                statusText.textContent = 'Weryfikacja i przypisywanie klucza do konta...';
+                statusText.textContent = 'Weryfikacja klucza...';
             }
 
             try {
@@ -500,30 +483,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Pro-Key': keyVal,
-                        'X-User-Email': userEmail,
-                        'X-User-Uid': (auth.currentUser ? auth.currentUser.uid : '')
+                        'X-Pro-Key': keyVal
                     },
-                    body: JSON.stringify({
-                        key: keyVal,
-                        email: userEmail,
-                        uid: (auth.currentUser ? auth.currentUser.uid : '')
-                    })
+                    body: JSON.stringify({ key: keyVal })
                 });
                 const data = await res.json();
 
                 if (data.success && data.isPro) {
                     setProKey(keyVal);
-                    localStorage.setItem('dropsite_pro_email', userEmail);
                     if (statusText) {
                         statusText.className = 'pro-key-status-text success';
-                        statusText.textContent = data.message || `Sukces! Konto Dropsite PRO zostało aktywowane dla ${userEmail}.`;
+                        statusText.textContent = 'Sukces! Konto Dropsite PRO zostało aktywowane.';
                     }
                     playSound('success');
                     if (typeof showNotification === 'function') {
-                        showNotification(data.message || 'Konto Dropsite PRO jest teraz aktywne!', 'success');
+                        showNotification('Konto Dropsite PRO jest teraz aktywne!', 'success');
                     }
-                    setTimeout(() => window.closeProModal(), 1500);
+                    setTimeout(() => window.closeProModal(), 1200);
                 } else {
                     if (statusText) {
                         statusText.className = 'pro-key-status-text error';
