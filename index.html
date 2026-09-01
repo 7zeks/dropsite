@@ -1224,6 +1224,10 @@
 
             <!-- Aktywacja klucza licencyjnego -->
             <div class="pro-activation-box">
+                <div id="proAccountNotice" style="margin-bottom: 10px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                    <span id="proAccountStatusText">Zaloguj się, aby przypisać klucz do swojego konta</span>
+                    <button type="button" id="proQuickLoginBtn" onclick="document.getElementById('loginModalWrap').removeAttribute('hidden')" style="background: none; border: none; color: var(--accent-blue); font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">Zaloguj się</button>
+                </div>
                 <label for="proKeyInput" class="pro-key-label" data-i18n="pro_key_label">PRO License Key:</label>
                 <div class="pro-key-input-row">
                     <input type="text" id="proKeyInput" placeholder="e.g. PRO-8A9F-2K4L" data-i18n-placeholder="pro_key_placeholder"

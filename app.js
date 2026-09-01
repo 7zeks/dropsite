@@ -373,6 +373,19 @@ function updateProUI() {
 
     if (proPurchaseOptions) proPurchaseOptions.style.display = isPro ? 'none' : 'block';
     if (proActivationBox) proActivationBox.style.display = isPro ? 'none' : 'block';
+
+    const proAccountNotice = document.getElementById('proAccountNotice');
+    const proAccountStatusText = document.getElementById('proAccountStatusText');
+    const proQuickLoginBtn = document.getElementById('proQuickLoginBtn');
+    if (proAccountStatusText && proQuickLoginBtn) {
+        if (auth.currentUser) {
+            proAccountStatusText.innerHTML = `Aktywujesz dla: <strong style="color:var(--text-main); font-weight:600;">${auth.currentUser.email || auth.currentUser.displayName || 'Twojego konta'}</strong>`;
+            proQuickLoginBtn.style.display = 'none';
+        } else {
+            proAccountStatusText.textContent = 'Zaloguj się, aby przypisać klucz do swojego profilu:';
+            proQuickLoginBtn.style.display = 'inline';
+        }
+    }
     
     if (proActiveBox) {
         proActiveBox.hidden = !isPro;
