@@ -430,6 +430,10 @@ function updateProUI() {
         const cleanHost = window.location.host.replace(/:\d+$/, '');
         slugPrefixLabel.textContent = (cleanHost || 'dropsite') + '/';
     }
+
+    if (window.initDropsiteAds) {
+        window.initDropsiteAds();
+    }
 }
 
 window.openProModal = function() {

@@ -3529,8 +3529,29 @@ body.is-pro .dl-promo-card {
     margin-bottom: 6px;
 }
 
+/* Zabezpieczenie układu i tła strony przed inwazyjnymi reklamami */
+.ad-container {
+    width: 100%;
+    max-width: 520px;
+    margin: 14px 0;
+    overflow: hidden;
+    border-radius: 16px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+}
+
+ins.adsbygoogle {
+    background: transparent !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
 .ad-content {
     min-height: 48px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3541,28 +3562,30 @@ body.is-pro .dl-promo-card {
     display: none !important;
 }
 
-/* Nowoczesny Luksusowy Baner Reklamowy i Afiliacyjny Dropsite */
+/* Nowoczesny Luksusowy Baner Reklamowy i Afiliacyjny Dropsite (Z Auto-Rotacją) */
 .dropsite-ad-banner {
     width: 100%;
-    background: linear-gradient(165deg, rgba(22, 27, 38, 0.85) 0%, rgba(12, 15, 22, 0.95) 100%);
+    background: linear-gradient(165deg, rgba(22, 27, 38, 0.88) 0%, rgba(12, 15, 22, 0.96) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-top: 1px solid rgba(196, 231, 212, 0.25);
+    border-top: 1px solid rgba(196, 231, 212, 0.28);
     border-radius: 16px;
-    padding: 14px 18px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    padding: 14px 18px 12px 18px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     display: flex;
     flex-direction: column;
     gap: 10px;
     box-sizing: border-box;
     text-align: left;
     transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
 }
 
 .dropsite-ad-banner:hover {
-    border-color: rgba(196, 231, 212, 0.4);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(196, 231, 212, 0.1);
+    border-color: rgba(196, 231, 212, 0.45);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6), 0 0 20px rgba(196, 231, 212, 0.12);
     transform: translateY(-1px);
 }
 
@@ -3602,6 +3625,12 @@ body.is-pro .dl-promo-card {
     display: flex;
     align-items: center;
     gap: 14px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.ad-banner-body.ad-animating {
+    opacity: 0;
+    transform: translateX(8px);
 }
 
 .ad-icon-box {
@@ -3613,6 +3642,11 @@ body.is-pro .dl-promo-card {
     justify-content: center;
     flex-shrink: 0;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease;
+}
+
+.dropsite-ad-banner:hover .ad-icon-box {
+    transform: scale(1.06);
 }
 
 .ad-info-text {
@@ -3664,6 +3698,60 @@ body.is-pro .dl-promo-card {
     color: #0A0C10;
 }
 
+/* Pasek wskaźników rotatora (Kropki & Strzałki) */
+.ad-rotator-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ad-dots-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ad-dot-pill {
+    width: 6px;
+    height: 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ad-dot-pill.active {
+    width: 18px;
+    background: #C4E7D4;
+    box-shadow: 0 0 8px rgba(196, 231, 212, 0.6);
+}
+
+.ad-arrow-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ad-arrow-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.ad-arrow-btn:hover {
+    color: #C4E7D4;
+    background: rgba(255, 255, 255, 0.08);
+}
+
 /* CAŁKOWITE WYŁĄCZENIE REKLAM DLA UŻYTKOWNIKÓW PRO I ADMINA */
 body.is-pro .ad-container,
 body.is-admin .ad-container {
@@ -3678,8 +3766,6 @@ body.is-admin .ad-container {
     }
     .btn-ad-action {
         width: 100%;
-        text-align: center;
-    }
 }
 
 /* === PRZYCISKI I WIDOKI DOKUMENTÓW PRAWNYCH === */

@@ -261,7 +261,7 @@ export default {
             priceId = env.POLAR_SUB_PRICE_ID || env.POLAR_PRODUCT_PRICE_ID || "778c4c13-f652-4dcf-8699-9895a04742c6";
           } else {
             // ID Produktu jednorazowego (BLIK 30 Dni)
-            priceId = env.POLAR_ONE_TIME_PRICE_ID || "680b4c00-0b31-4d6d-8a45-90d31c894c9a";
+            priceId = env.POLAR_ONE_TIME_PRICE_ID || "d5e2fd68-69f1-49a4-8d9f-812df33d29ea";
           }
         }
 
