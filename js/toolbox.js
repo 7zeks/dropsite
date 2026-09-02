@@ -462,9 +462,10 @@
         }
     }
 
-    function addNewAnnotationAt(type, x, y) {
+    function addNewAnnotationAt(type, x, y, subType, customLabel) {
         const id = 'ann_' + (studioNextId++);
         let annot = null;
+        const curDate = new Date().toLocaleDateString('pl-PL');
 
         if (type === 'text') {
             annot = {
@@ -473,12 +474,12 @@
                 type: 'text',
                 x,
                 y,
-                text: 'Nowy tekst...',
+                text: 'Kliknij dwukrotnie, aby edytować...',
                 fontSize: 16,
-                color: '#FF4439',
-                bold: true,
-                width: 140,
-                height: 30
+                color: '#000000',
+                bold: false,
+                width: 210,
+                height: 32
             };
         } else if (type === 'highlight') {
             annot = {
@@ -488,7 +489,7 @@
                 x,
                 y,
                 color: '#FFEB3B',
-                width: 130,
+                width: 140,
                 height: 24
             };
         } else if (type === 'censor') {
@@ -503,16 +504,51 @@
                 height: 24
             };
         } else if (type === 'stamp') {
+            let label = 'ZATWIERDZONO';
+            let color = '#16A34A';
+            let width = 175;
+            let height = 48;
+            const chosenType = subType || 'approved';
+
+            if (chosenType === 'paid') {
+                label = 'OPŁACONO';
+                color = '#0284C7';
+                width = 170;
+                height = 46;
+            } else if (chosenType === 'confidential') {
+                label = 'ŚCIŚLE POUFNE';
+                color = '#DC2626';
+                width = 180;
+                height = 46;
+            } else if (chosenType === 'copy') {
+                label = 'ZA ZGODNOŚĆ Z ORYGINAŁEM';
+                color = '#4338CA';
+                width = 185;
+                height = 46;
+            } else if (chosenType === 'urgent') {
+                label = 'PILNE / WAŻNE';
+                color = '#D97706';
+                width = 165;
+                height = 42;
+            } else if (chosenType === 'custom') {
+                label = customLabel || 'PIECZĘĆ';
+                color = '#8B5CF6';
+                width = 165;
+                height = 44;
+            }
+
             annot = {
                 id,
                 page: studioCurrentPage,
                 type: 'stamp',
+                subType: chosenType,
                 x,
                 y,
-                label: 'ZATWIERDZONO',
-                color: '#FF4439',
-                width: 160,
-                height: 40
+                label,
+                color,
+                date: curDate,
+                width,
+                height
             };
         } else if (type === 'link') {
             annot = {
@@ -552,7 +588,7 @@
             wrap.style.height = `${item.height}px`;
             wrap.dataset.id = item.id;
 
-            // Przycisk usuwania
+            // Przycisk usuwania w rogu
             const delBtn = document.createElement('button');
             delBtn.type = 'button';
             delBtn.className = 'pdf-item-del-btn';
@@ -572,6 +608,14 @@
                 textEl.style.color = item.color;
                 textEl.style.fontWeight = item.bold ? '700' : '400';
                 textEl.textContent = item.text;
+                textEl.title = 'Kliknij dwukrotnie, aby edytować tekst na arkuszu';
+
+                // Bezpośrednia edycja tekstu w dokumencie (In-place editing)
+                textEl.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    startInlineTextEditing(item, textEl);
+                });
+
                 wrap.appendChild(textEl);
             } else if (item.type === 'sig') {
                 const sigBox = document.createElement('div');
@@ -599,12 +643,50 @@
                 wrap.appendChild(cs);
             } else if (item.type === 'stamp') {
                 const st = document.createElement('div');
-                st.className = 'pdf-item-stamp';
+                const subType = item.subType || (
+                    item.label.includes('ZATWIERDZ') ? 'approved' :
+                    item.label.includes('OPŁA') ? 'paid' :
+                    item.label.includes('POUFN') ? 'confidential' :
+                    item.label.includes('KOPIA') || item.label.includes('ZGODN') ? 'copy' :
+                    item.label.includes('PILN') ? 'urgent' : 'custom'
+                );
+                st.className = `pdf-item-stamp stamp-type-${subType}`;
                 st.style.width = '100%';
                 st.style.height = '100%';
-                st.style.borderColor = item.color || '#FF4439';
-                st.style.color = item.color || '#FF4439';
-                st.textContent = item.label || 'ZATWIERDZONO';
+
+                const curDate = item.date || new Date().toLocaleDateString('pl-PL');
+
+                if (subType === 'approved') {
+                    st.innerHTML = `
+                        <span class="stamp-title">✓ ${item.label || 'ZATWIERDZONO'}</span>
+                        <span class="stamp-sub">DATA: ${curDate} &nbsp;|&nbsp; PODPIS: ............</span>
+                    `;
+                } else if (subType === 'paid') {
+                    st.innerHTML = `
+                        <span class="stamp-title">★ ${item.label || 'OPŁACONO'} ★</span>
+                        <span class="stamp-sub">METODA: PRZELEW / KARTA &nbsp;•&nbsp; ${curDate}</span>
+                    `;
+                } else if (subType === 'confidential') {
+                    st.innerHTML = `
+                        <span class="stamp-title">★ ★ ★ ${item.label || 'ŚCIŚLE POUFNE'} ★ ★ ★</span>
+                        <span class="stamp-sub">NIE KOPIOWAĆ • DOKUMENT POUFNY</span>
+                    `;
+                } else if (subType === 'copy') {
+                    st.innerHTML = `
+                        <span class="stamp-title">${item.label || 'ZA ZGODNOŚĆ Z ORYGINAŁEM'}</span>
+                        <span class="stamp-sub">STWIERDZAM ZGODNOŚĆ • ${curDate}</span>
+                    `;
+                } else if (subType === 'urgent') {
+                    st.innerHTML = `
+                        <span class="stamp-title">⚡ ${item.label || 'PILNE / WAŻNE'} ⚡</span>
+                        <span class="stamp-sub">DO NATYCHMIASTOWEJ REALIZACJI</span>
+                    `;
+                } else {
+                    st.innerHTML = `
+                        <span class="stamp-title">${item.label || 'PIECZĘĆ'}</span>
+                        <span class="stamp-sub">${curDate}</span>
+                    `;
+                }
                 wrap.appendChild(st);
             } else if (item.type === 'link') {
                 const lk = document.createElement('div');
@@ -620,6 +702,305 @@
 
             overlayLayer.appendChild(wrap);
         });
+
+        // Wyświetl pływające menu akcji (Pill Toolbar ze zdjęcia) dla wybranego elementu
+        renderFloatingToolbar();
+    }
+
+    // Bezpośrednia edycja tekstu w dokumencie (In-place text editing)
+    function startInlineTextEditing(item, textEl) {
+        textEl.contentEditable = 'true';
+        textEl.focus();
+
+        try {
+            const range = document.createRange();
+            range.selectNodeContents(textEl);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } catch (_) {}
+
+        let finished = false;
+        function finishEdit() {
+            if (finished) return;
+            finished = true;
+            textEl.contentEditable = 'false';
+            const val = textEl.innerText.trim();
+            if (val) {
+                item.text = val;
+            }
+            renderPageAnnotations();
+            updateStudioPropertyBar();
+        }
+
+        textEl.addEventListener('blur', finishEdit, { once: true });
+        textEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                textEl.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                textEl.innerText = item.text;
+                textEl.blur();
+            }
+        });
+    }
+
+    // Pływający pasek akcji (Pill Toolbar zgodny ze zdjęciem)
+    function renderFloatingToolbar() {
+        const overlayLayer = document.getElementById('pdfOverlayLayer');
+        if (!overlayLayer) return;
+
+        let pill = document.getElementById('studioFloatPill');
+        if (!pill) {
+            pill = document.createElement('div');
+            pill.id = 'studioFloatPill';
+            pill.className = 'studio-float-pill';
+            overlayLayer.appendChild(pill);
+        }
+
+        const selectedItem = studioAnnotations.find(a => a.id === studioSelectedId);
+        if (!selectedItem) {
+            pill.style.display = 'none';
+            return;
+        }
+
+        // Ustalenie pozycji pill menu obok zaznaczonego elementu
+        const overlayW = overlayLayer.clientWidth;
+        const overlayH = overlayLayer.clientHeight;
+
+        let left = selectedItem.x + selectedItem.width + 12;
+        let isLeft = false;
+        if (left + 48 > overlayW) {
+            left = Math.max(8, selectedItem.x - 48);
+            isLeft = true;
+        }
+        let top = Math.max(12, Math.min(overlayH - 145, selectedItem.y + (selectedItem.height / 2) - 60));
+
+        pill.style.left = `${left}px`;
+        pill.style.top = `${top}px`;
+        pill.style.display = 'flex';
+
+        // Wygenerowanie przycisków wewnątrz pill menu
+        pill.innerHTML = `
+            <!-- Ikona 1: Rozmiar / Skalowanie (↕ ze zdjęcia) -->
+            <button type="button" class="float-pill-btn" id="btnFloatSize" title="Zmień rozmiar / format">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="3" x2="20" y2="3"></line>
+                    <polyline points="9 8 12 5 15 8"></polyline>
+                    <line x1="12" y1="6" x2="12" y2="18"></line>
+                    <polyline points="9 16 12 19 15 16"></polyline>
+                    <line x1="4" y1="21" x2="20" y2="21"></line>
+                </svg>
+            </button>
+            <!-- Ikona 2: Suwaki / Kolory / Styl (suwaki ze zdjęcia) -->
+            <button type="button" class="float-pill-btn" id="btnFloatStyle" title="Kolor i stylistyka">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <circle cx="8" cy="6" r="2.5" fill="currentColor"></circle>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <circle cx="16" cy="12" r="2.5" fill="currentColor"></circle>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                    <circle cx="10" cy="18" r="2.5" fill="currentColor"></circle>
+                </svg>
+            </button>
+            <!-- Ikona 3: Edycja dokumentu / tekstu (dokument z plusem/ołówkiem ze zdjęcia) -->
+            <button type="button" class="float-pill-btn" id="btnFloatEdit" title="Edytuj tekst w dokumencie">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="8" y1="13" x2="14" y2="13"></line>
+                    <line x1="8" y1="17" x2="12" y2="17"></line>
+                    <line x1="18" y1="13" x2="18" y2="17"></line>
+                    <line x1="16" y1="15" x2="20" y2="15"></line>
+                </svg>
+            </button>
+            <!-- Ikona 4: Usuń element -->
+            <button type="button" class="float-pill-btn btn-float-del" id="btnFloatDelete" title="Usuń ten element">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+
+            <!-- Podręczny popover -->
+            <div id="studioFloatPopover" class="studio-float-popover ${isLeft ? 'float-popover-left' : ''}" style="display: none;"></div>
+        `;
+
+        const popover = pill.querySelector('#studioFloatPopover');
+        let activeMenu = null;
+
+        function closePopover() {
+            if (popover) {
+                popover.style.display = 'none';
+                popover.innerHTML = '';
+            }
+            activeMenu = null;
+            pill.querySelectorAll('.float-pill-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        // 1. Rozmiar / Skala
+        const btnSize = pill.querySelector('#btnFloatSize');
+        btnSize.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeMenu === 'size') {
+                closePopover();
+                return;
+            }
+            activeMenu = 'size';
+            pill.querySelectorAll('.float-pill-btn').forEach(b => b.classList.remove('active'));
+            btnSize.classList.add('active');
+
+            if (selectedItem.type === 'text') {
+                popover.innerHTML = `
+                    <button type="button" class="float-mini-btn" id="fBtnDecFont" title="Mniejszy font">−</button>
+                    <span class="float-size-badge" id="fBadgeFont">${selectedItem.fontSize} pt</span>
+                    <button type="button" class="float-mini-btn" id="fBtnIncFont" title="Większy font">+</button>
+                    <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
+                    <button type="button" class="float-mini-btn" data-fz="14">14</button>
+                    <button type="button" class="float-mini-btn" data-fz="18">18</button>
+                    <button type="button" class="float-mini-btn" data-fz="24">24</button>
+                    <button type="button" class="float-mini-btn" data-fz="32">32</button>
+                `;
+                popover.querySelector('#fBtnDecFont').addEventListener('click', () => {
+                    selectedItem.fontSize = Math.max(8, selectedItem.fontSize - 2);
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                });
+                popover.querySelector('#fBtnIncFont').addEventListener('click', () => {
+                    selectedItem.fontSize = Math.min(72, selectedItem.fontSize + 2);
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                });
+                popover.querySelectorAll('[data-fz]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        selectedItem.fontSize = parseInt(btn.getAttribute('data-fz'), 10);
+                        renderPageAnnotations();
+                        updateStudioPropertyBar();
+                        renderFloatingToolbar();
+                    });
+                });
+            } else if (selectedItem.type === 'stamp' || selectedItem.type === 'sig') {
+                popover.innerHTML = `
+                    <button type="button" class="float-mini-btn" id="fBtnDecScale" title="Zmniejsz">−</button>
+                    <span class="float-size-badge">Rozmiar</span>
+                    <button type="button" class="float-mini-btn" id="fBtnIncScale" title="Zwiększ">+</button>
+                `;
+                popover.querySelector('#fBtnDecScale').addEventListener('click', () => {
+                    selectedItem.width = Math.max(80, Math.round(selectedItem.width * 0.9));
+                    selectedItem.height = Math.max(25, Math.round(selectedItem.height * 0.9));
+                    renderPageAnnotations();
+                    renderFloatingToolbar();
+                });
+                popover.querySelector('#fBtnIncScale').addEventListener('click', () => {
+                    selectedItem.width = Math.min(400, Math.round(selectedItem.width * 1.1));
+                    selectedItem.height = Math.min(200, Math.round(selectedItem.height * 1.1));
+                    renderPageAnnotations();
+                    renderFloatingToolbar();
+                });
+            } else {
+                popover.innerHTML = `
+                    <button type="button" class="float-mini-btn" id="fBtnDecWidth">−</button>
+                    <span class="float-size-badge">${selectedItem.width} px</span>
+                    <button type="button" class="float-mini-btn" id="fBtnIncWidth">+</button>
+                `;
+                popover.querySelector('#fBtnDecWidth').addEventListener('click', () => {
+                    selectedItem.width = Math.max(40, selectedItem.width - 20);
+                    renderPageAnnotations();
+                    renderFloatingToolbar();
+                });
+                popover.querySelector('#fBtnIncWidth').addEventListener('click', () => {
+                    selectedItem.width = Math.min(450, selectedItem.width + 20);
+                    renderPageAnnotations();
+                    renderFloatingToolbar();
+                });
+            }
+            popover.style.display = 'flex';
+        });
+
+        // 2. Styl / Kolory
+        const btnStyle = pill.querySelector('#btnFloatStyle');
+        btnStyle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeMenu === 'style') {
+                closePopover();
+                return;
+            }
+            activeMenu = 'style';
+            pill.querySelectorAll('.float-pill-btn').forEach(b => b.classList.remove('active'));
+            btnStyle.classList.add('active');
+
+            const colors = selectedItem.type === 'stamp'
+                ? ['#16A34A', '#0284C7', '#DC2626', '#4338CA', '#D97706', '#000000']
+                : ['#000000', '#FF4439', '#0F91D2', '#10B981', '#8B5CF6', '#F59E0B'];
+
+            let swatchesHtml = colors.map(c => `
+                <button type="button" class="float-color-pill ${selectedItem.color === c ? 'active' : ''}" style="background: ${c};" data-color="${c}"></button>
+            `).join('');
+
+            let boldBtnHtml = selectedItem.type === 'text' ? `
+                <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 4px;"></div>
+                <button type="button" class="float-mini-btn ${selectedItem.bold ? 'active' : ''}" id="fBtnBold" style="${selectedItem.bold ? 'background: #0F91D2;' : ''} font-weight: 900;">B</button>
+            ` : '';
+
+            popover.innerHTML = swatchesHtml + boldBtnHtml;
+
+            popover.querySelectorAll('.float-color-pill').forEach(pillBtn => {
+                pillBtn.addEventListener('click', () => {
+                    selectedItem.color = pillBtn.getAttribute('data-color');
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                });
+            });
+
+            if (selectedItem.type === 'text') {
+                popover.querySelector('#fBtnBold')?.addEventListener('click', () => {
+                    selectedItem.bold = !selectedItem.bold;
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                });
+            }
+
+            popover.style.display = 'flex';
+        });
+
+        // 3. Edycja Tekstu (dokument z plusem)
+        const btnEdit = pill.querySelector('#btnFloatEdit');
+        btnEdit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedItem.type === 'text') {
+                const targetWrap = document.querySelector(`.pdf-item-wrap[data-id="${selectedItem.id}"]`);
+                const textEl = targetWrap?.querySelector('.pdf-item-text');
+                if (textEl) {
+                    startInlineTextEditing(selectedItem, textEl);
+                }
+            } else if (selectedItem.type === 'stamp') {
+                const newLabel = prompt('Wpisz nowy tekst dla tej pieczęci:', selectedItem.label || '');
+                if (newLabel !== null && newLabel.trim()) {
+                    selectedItem.label = newLabel.trim();
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                }
+            } else if (selectedItem.type === 'link') {
+                const newUrl = prompt('Podaj adres URL odnośnika:', selectedItem.url || 'https://');
+                if (newUrl !== null && newUrl.trim()) {
+                    selectedItem.url = newUrl.trim();
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                }
+            }
+        });
+
+        // 4. Usuwanie elementu
+        const btnDel = pill.querySelector('#btnFloatDelete');
+        btnDel.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeAnnotation(selectedItem.id);
+        });
     }
 
     function attachDragHandlers(el, item) {
@@ -630,12 +1011,13 @@
         let initialY = 0;
 
         el.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.pdf-item-del-btn')) return;
+            if (e.target.closest('.pdf-item-del-btn') || e.target.isContentEditable) return;
             e.stopPropagation();
 
             studioSelectedId = item.id;
             updateSelectedUI();
             updateStudioPropertyBar();
+            renderFloatingToolbar();
 
             isDragging = true;
             el.setPointerCapture(e.pointerId);
@@ -659,12 +1041,16 @@
 
             el.style.left = `${item.x}px`;
             el.style.top = `${item.y}px`;
+
+            // Pływające menu podąża za elementem
+            renderFloatingToolbar();
         });
 
         el.addEventListener('pointerup', (e) => {
             if (isDragging) {
                 isDragging = false;
                 try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+                renderFloatingToolbar();
             }
         });
     }
@@ -679,6 +1065,7 @@
         if (studioSelectedId === id) studioSelectedId = null;
         renderPageAnnotations();
         updateStudioPropertyBar();
+        renderFloatingToolbar();
         if (window.playSound) window.playSound('pop');
     }
 
@@ -709,10 +1096,11 @@
                     <div class="prop-group">
                         <span class="prop-label">Kolor:</span>
                         <div class="prop-colors">
-                            <button type="button" class="prop-color-pill ${selectedItem.color === '#FF4439' ? 'active' : ''}" style="background: #FF4439;" data-c="#FF4439"></button>
                             <button type="button" class="prop-color-pill ${selectedItem.color === '#000000' ? 'active' : ''}" style="background: #000000;" data-c="#000000"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#FF4439' ? 'active' : ''}" style="background: #FF4439;" data-c="#FF4439"></button>
                             <button type="button" class="prop-color-pill ${selectedItem.color === '#0F91D2' ? 'active' : ''}" style="background: #0F91D2;" data-c="#0F91D2"></button>
                             <button type="button" class="prop-color-pill ${selectedItem.color === '#10B981' ? 'active' : ''}" style="background: #10B981;" data-c="#10B981"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#8B5CF6' ? 'active' : ''}" style="background: #8B5CF6;" data-c="#8B5CF6"></button>
                         </div>
                     </div>
                     <button type="button" class="prop-btn-del" id="propBtnDelete">🗑️ Usuń</button>
@@ -814,26 +1202,32 @@
 
         // Domyślny pasek dla aktywnego narzędzia, gdy żaden element nie jest zaznaczony
         if (studioActiveTool === 'text') {
-            bar.innerHTML = `<span class="prop-label">✍️ Kliknij w dowolnym miejscu dokumentu, aby wstawić napis. Możesz go potem swobodnie przesuwać!</span>`;
+            bar.innerHTML = `<span class="prop-label">✍️ Kliknij w dowolnym miejscu, aby wstawić napis. Możesz edytować go podwójnym kliknięciem lub pływającym menu!</span>`;
         } else if (studioActiveTool === 'highlight') {
             bar.innerHTML = `<span class="prop-label">🖍️ Kliknij na dokumencie, aby umieścić pasek zakreślacza.</span>`;
         } else if (studioActiveTool === 'censor') {
             bar.innerHTML = `<span class="prop-label">⬛ Kliknij na dokumencie, aby trwale zakryć poufne dane (PESEL, kwotę, nazwisko).</span>`;
         } else if (studioActiveTool === 'stamp') {
             bar.innerHTML = `
-                <span class="prop-label">Wybierz gotową pieczęć do wstawienia:</span>
-                <button type="button" class="prop-btn-stamp" data-st="ZATWIERDZONO" style="border-color:#16A34A; color:#4ADE80;">✓ ZATWIERDZONO</button>
-                <button type="button" class="prop-btn-stamp" data-st="OPŁACONO" style="border-color:#0284C7; color:#38BDF8;">💳 OPŁACONO</button>
-                <button type="button" class="prop-btn-stamp" data-st="POUFNE" style="border-color:#DC2626; color:#F87171;">🔒 POUFNE</button>
-                <button type="button" class="prop-btn-stamp" data-st="KOPIA" style="border-color:#D97706; color:#FBBF24;">📄 KOPIA</button>
+                <span class="prop-label">Wybierz wzór pieczęci do wstawienia:</span>
+                <button type="button" class="prop-btn-stamp" data-st="approved" style="border-color:#16A34A; color:#4ADE80; background:rgba(22,163,74,0.12);">✓ ZATWIERDZONO</button>
+                <button type="button" class="prop-btn-stamp" data-st="paid" style="border-color:#0284C7; color:#38BDF8; background:rgba(2,132,199,0.12);">💳 OPŁACONO</button>
+                <button type="button" class="prop-btn-stamp" data-st="confidential" style="border-color:#DC2626; color:#F87171; background:rgba(220,38,38,0.12);">🔒 ŚCIŚLE POUFNE</button>
+                <button type="button" class="prop-btn-stamp" data-st="copy" style="border-color:#4338CA; color:#818CF8; background:rgba(67,56,202,0.12);">📄 ZA ZGODNOŚĆ</button>
+                <button type="button" class="prop-btn-stamp" data-st="urgent" style="border-color:#D97706; color:#FBBF24; background:rgba(217,119,6,0.12);">⚡ PILNE!</button>
+                <button type="button" class="prop-btn-stamp" data-st="custom" style="border-color:#8B5CF6; color:#C084FC; background:rgba(139,92,246,0.12);">✏️ WŁASNA...</button>
             `;
             bar.querySelectorAll('.prop-btn-stamp').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const label = btn.getAttribute('data-st');
-                    addNewAnnotationAt('stamp', 80, 80);
-                    const last = studioAnnotations[studioAnnotations.length - 1];
-                    if (last) last.label = label;
-                    renderPageAnnotations();
+                    const st = btn.getAttribute('data-st');
+                    if (st === 'custom') {
+                        const customText = prompt('Wpisz tekst Twojej pieczęci (np. ANULOWANO, WPŁYNĘŁO, FAKTURA):', 'FAKTURA ZAPŁACONA');
+                        if (customText && customText.trim()) {
+                            addNewAnnotationAt('stamp', 80, 80, 'custom', customText.trim());
+                        }
+                    } else {
+                        addNewAnnotationAt('stamp', 80, 80, st);
+                    }
                 });
             });
         } else if (studioActiveTool === 'link') {
@@ -1017,38 +1411,181 @@
         };
     }
 
-    function createStampPngDataUrl(label, color) {
+    function createStampPngDataUrl(item) {
         const canvas = document.createElement('canvas');
         const dpr = 3;
-        const fontSpec = `800 ${15 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif`;
-        const ctx = canvas.getContext('2d');
-        ctx.font = fontSpec;
-        const metrics = ctx.measureText(label);
-        const w = Math.ceil(metrics.width + 36 * dpr);
-        const h = Math.ceil(38 * dpr);
+        const subType = item.subType || (
+            item.label.includes('ZATWIERDZ') ? 'approved' :
+            item.label.includes('OPŁA') ? 'paid' :
+            item.label.includes('POUFN') ? 'confidential' :
+            item.label.includes('KOPIA') || item.label.includes('ZGODN') ? 'copy' :
+            item.label.includes('PILN') ? 'urgent' : 'custom'
+        );
+        const color = item.color || (
+            subType === 'approved' ? '#16A34A' :
+            subType === 'paid' ? '#0284C7' :
+            subType === 'confidential' ? '#DC2626' :
+            subType === 'copy' ? '#4338CA' :
+            subType === 'urgent' ? '#D97706' : '#8B5CF6'
+        );
+        const curDate = item.date || new Date().toLocaleDateString('pl-PL');
 
+        const w = Math.ceil((item.width || 175) * dpr);
+        const h = Math.ceil((item.height || 48) * dpr);
         canvas.width = w;
         canvas.height = h;
 
         const c = canvas.getContext('2d');
-        // Tło
-        c.fillStyle = color || '#FF4439';
-        c.globalAlpha = 0.08;
-        c.fillRect(0, 0, w, h);
 
-        // Ramka przerywana
-        c.globalAlpha = 1.0;
-        c.strokeStyle = color || '#FF4439';
-        c.lineWidth = 2 * dpr;
-        c.setLineDash([5 * dpr, 3 * dpr]);
-        c.strokeRect(1.5 * dpr, 1.5 * dpr, w - 3 * dpr, h - 3 * dpr);
+        if (subType === 'approved') {
+            // Tło
+            c.fillStyle = color;
+            c.globalAlpha = 0.07;
+            c.beginPath();
+            if (c.roundRect) c.roundRect(0, 0, w, h, 8 * dpr);
+            else c.rect(0, 0, w, h);
+            c.fill();
 
-        // Tekst
-        c.fillStyle = color || '#FF4439';
-        c.font = fontSpec;
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        c.fillText(label, w / 2, h / 2);
+            // Podwójna obwódka
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 2.5 * dpr;
+            c.beginPath();
+            if (c.roundRect) c.roundRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr, 7 * dpr);
+            else c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+            c.stroke();
+
+            c.lineWidth = 1 * dpr;
+            c.beginPath();
+            if (c.roundRect) c.roundRect(5 * dpr, 5 * dpr, w - 10 * dpr, h - 10 * dpr, 5 * dpr);
+            else c.strokeRect(5 * dpr, 5 * dpr, w - 10 * dpr, h - 10 * dpr);
+            c.stroke();
+
+            // Tekst
+            c.fillStyle = color;
+            c.font = `900 ${14 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText('✓ ' + (item.label || 'ZATWIERDZONO'), w / 2, h * 0.38);
+
+            c.font = `600 ${8.5 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText(`DATA: ${curDate}   PODPIS: ............`, w / 2, h * 0.72);
+
+        } else if (subType === 'paid') {
+            // Tło
+            c.fillStyle = color;
+            c.globalAlpha = 0.07;
+            c.fillRect(0, 0, w, h);
+
+            // Podwójna ramka kasowa
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 2.5 * dpr;
+            c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+
+            c.lineWidth = 1 * dpr;
+            c.strokeRect(5 * dpr, 5 * dpr, w - 10 * dpr, h - 10 * dpr);
+
+            // Tekst
+            c.fillStyle = color;
+            c.font = `900 ${14 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText('★ ' + (item.label || 'OPŁACONO') + ' ★', w / 2, h * 0.38);
+
+            c.font = `700 ${8 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText(`METODA: PRZELEW / KARTA  •  ${curDate}`, w / 2, h * 0.72);
+
+        } else if (subType === 'confidential') {
+            // Tło
+            c.fillStyle = color;
+            c.globalAlpha = 0.08;
+            c.fillRect(0, 0, w, h);
+
+            // Gruba ramka z wewnętrzną linią
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 3 * dpr;
+            c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+
+            c.lineWidth = 1 * dpr;
+            c.strokeRect(5.5 * dpr, 5.5 * dpr, w - 11 * dpr, h - 11 * dpr);
+
+            // Tekst
+            c.fillStyle = color;
+            c.font = `900 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText('★ ★ ★ ' + (item.label || 'ŚCIŚLE POUFNE') + ' ★ ★ ★', w / 2, h * 0.38);
+
+            c.font = `800 ${7.5 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText('NIE KOPIOWAĆ • DOKUMENT POUFNY', w / 2, h * 0.72);
+
+        } else if (subType === 'copy') {
+            // Tło
+            c.fillStyle = color;
+            c.globalAlpha = 0.07;
+            c.fillRect(0, 0, w, h);
+
+            // Ramka przerywana
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 2 * dpr;
+            c.setLineDash([5 * dpr, 3 * dpr]);
+            c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+
+            // Tekst
+            c.fillStyle = color;
+            c.font = `800 ${11 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText(item.label || 'ZA ZGODNOŚĆ Z ORYGINAŁEM', w / 2, h * 0.38);
+
+            c.font = `600 ${8 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText(`STWIERDZAM ZGODNOŚĆ • ${curDate}`, w / 2, h * 0.72);
+
+        } else if (subType === 'urgent') {
+            // Tło
+            c.fillStyle = color;
+            c.globalAlpha = 0.09;
+            c.fillRect(0, 0, w, h);
+
+            // Ramka
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 2.5 * dpr;
+            c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+
+            // Tekst
+            c.fillStyle = color;
+            c.font = `900 ${12.5 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText('⚡ ' + (item.label || 'PILNE / WAŻNE') + ' ⚡', w / 2, h * 0.38);
+
+            c.font = `700 ${8 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText('DO NATYCHMIASTOWEJ REALIZACJI', w / 2, h * 0.72);
+
+        } else {
+            // Własna pieczęć
+            c.fillStyle = color;
+            c.globalAlpha = 0.08;
+            c.fillRect(0, 0, w, h);
+
+            c.globalAlpha = 1.0;
+            c.strokeStyle = color;
+            c.lineWidth = 2 * dpr;
+            c.strokeRect(2 * dpr, 2 * dpr, w - 4 * dpr, h - 4 * dpr);
+
+            c.fillStyle = color;
+            c.font = `900 ${13 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillText(item.label || 'PIECZĘĆ', w / 2, h * 0.4);
+
+            c.font = `600 ${8 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+            c.fillText(curDate, w / 2, h * 0.75);
+        }
 
         return {
             dataUrl: canvas.toDataURL('image/png'),
@@ -1164,7 +1701,7 @@
                             opacity: 1.0
                         });
                     } else if (item.type === 'stamp') {
-                        const stampGen = createStampPngDataUrl(item.label || 'ZATWIERDZONO', item.color || '#FF4439');
+                        const stampGen = createStampPngDataUrl(item);
                         const pngBytes = base64ToUint8Array(stampGen.dataUrl.split(',')[1]);
                         const pngImg = await pdfDoc.embedPng(pngBytes);
                         page.drawImage(pngImg, {
