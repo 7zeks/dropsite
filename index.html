@@ -186,6 +186,7 @@
     <div class="nav-right">
         <ul class="nav-links">
             <li><a href="#" class="nav-btn active" data-target="view-glowna" data-i18n="nav_home">Home</a></li>
+            <li><a href="#" class="nav-btn" data-target="view-narzedzia" data-i18n="nav_tools">Tools</a></li>
             <li><a href="#" class="nav-btn" data-target="view-funkcje" data-i18n="nav_features">Features</a></li>
             <li><a href="#" class="nav-btn" data-target="view-cennik" data-i18n="nav_pricing">Pricing</a></li>
             <li><a href="#" class="nav-btn" data-target="view-kontakt" data-i18n="nav_contact">Contact</a></li>
@@ -637,6 +638,271 @@
 
                 <!-- SLOT SPONSORSKI NA STRONIE GŁÓWNEJ (100% ADBLOCK PROOF & AUTO-ROTACJA) -->
                 <div class="ad-container ad-slot-home" id="homeAdSlot" style="margin-top: 18px;"></div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- WIDOK: ZESTAW NARZĘDZI DROPSITE (PDF & MEDIA TOOLBOX) -->
+        <!-- ======================================================== -->
+        <div id="view-narzedzia" class="view-section" hidden>
+            <div class="main-wrapper">
+                <div class="upload-container info-panel toolbox-container">
+                    <header class="upload-header">
+                        <div class="toolbox-header-badge">
+                            <span class="pro-sparkle">🛠️</span>
+                            <span>Dropsite Toolkit &bull; 100% Client-Side Privacy</span>
+                        </div>
+                        <h1 data-i18n="toolbox_title">Zestaw Narzędzi Dropsite</h1>
+                        <p data-i18n="toolbox_subtitle">Błyskawiczne narzędzia PDF i konwerter formatów w pamięci Twojej przeglądarki (100% prywatności)</p>
+                    </header>
+
+                    <!-- Pasek zakładek narzędzi -->
+                    <div class="toolbox-nav-bar">
+                        <button type="button" class="toolbox-tab-btn active" data-tool="merge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            <span data-i18n="tool_tab_merge">Łączenie PDF</span>
+                        </button>
+                        <button type="button" class="toolbox-tab-btn" data-tool="edit">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            <span data-i18n="tool_tab_edit">Edytor PDF (Napis & Link)</span>
+                        </button>
+                        <button type="button" class="toolbox-tab-btn" data-tool="convert">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            <span data-i18n="tool_tab_convert">Konwerter Formatów</span>
+                        </button>
+                    </div>
+
+                    <!-- PANEL 1: ŁĄCZENIE PDF -->
+                    <div id="toolPanel_merge" class="tool-panel" style="display: block;">
+                        <div class="tool-card-box">
+                            <div class="tool-dropzone" id="mergeDropzone">
+                                <input type="file" id="mergeFileInput" multiple accept=".pdf,application/pdf" style="display: none;">
+                                <div class="tool-drop-icon">
+                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <strong class="tool-drop-title" data-i18n="tool_merge_drop_title">Wybierz lub upuść pliki PDF</strong>
+                                <span class="tool-drop-sub" data-i18n="tool_merge_drop_sub">Ułóż kolejność strzałkami, a następnie połącz w jeden spójny plik</span>
+                            </div>
+
+                            <div class="tool-file-manager">
+                                <div class="tool-manager-header">
+                                    <span>Kolejność scalania dokumentów</span>
+                                    <span class="badge-count" id="mergeFilesCount">0 plików</span>
+                                </div>
+                                <div class="tool-file-list" id="mergeFileList">
+                                    <div class="tool-empty-placeholder">Brak dodanych plików. Upuść minimum 2 pliki PDF, aby je połączyć.</div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-primary tool-action-btn" id="btnExecuteMerge" disabled>
+                                <span class="btn-text" data-i18n="tool_btn_merge_action">Połącz w 1 plik PDF</span>
+                            </button>
+
+                            <div id="mergeResultBox" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 2: EDYTOR PDF (NAPIS & LINK) -->
+                    <div id="toolPanel_edit" class="tool-panel" style="display: none;">
+                        <div class="tool-card-box">
+                            <div class="tool-dropzone" id="editDropzone">
+                                <input type="file" id="editFileInput" accept=".pdf,application/pdf" style="display: none;">
+                                <div class="tool-drop-icon">
+                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </div>
+                                <strong class="tool-drop-title" data-i18n="tool_edit_drop_title">Wybierz lub upuść dokument PDF</strong>
+                                <span class="tool-drop-sub" data-i18n="tool_edit_drop_sub">Wstaw własny napis, pieczątkę, podpis lub klikalny link w dowolnym miejscu</span>
+                            </div>
+
+                            <!-- Obszar roboczy po wczytaniu PDF -->
+                            <div id="editWorkspace" style="display: none;">
+                                <div class="edit-doc-bar">
+                                    <div class="edit-doc-left">
+                                        <span class="tool-pdf-icon-mini">📄</span>
+                                        <strong id="editLoadedFileName">dokument.pdf</strong>
+                                    </div>
+                                    <button type="button" class="btn-sm-ghost" onclick="document.getElementById('editFileInput').click()">Zmień plik</button>
+                                </div>
+
+                                <div class="edit-mode-selector">
+                                    <label class="edit-mode-pill">
+                                        <input type="radio" name="editModeChoice" value="text" checked>
+                                        <span>✍️ Dodaj Napis / Podpis</span>
+                                    </label>
+                                    <label class="edit-mode-pill">
+                                        <input type="radio" name="editModeChoice" value="link">
+                                        <span>🔗 Dodaj Klikalny Link</span>
+                                    </label>
+                                </div>
+
+                                <!-- Kontrolki tekstu -->
+                                <div id="editTextControls" class="edit-controls-subpanel">
+                                    <div class="form-group">
+                                        <label>Treść napisu / pieczątki:</label>
+                                        <input type="text" id="editTextInput" class="tool-input" placeholder="np. Zatwierdzono, Podpis, Data, Poufne..." value="Zatwierdzono do publikacji">
+                                    </div>
+                                    <div class="edit-inline-row">
+                                        <div class="form-group">
+                                            <label>Rozmiar czcionki:</label>
+                                            <select id="editFontSizeSelect" class="tool-select">
+                                                <option value="12">12 pt (Drobny druk)</option>
+                                                <option value="16" selected>16 pt (Standardowy)</option>
+                                                <option value="20">20 pt (Podpis)</option>
+                                                <option value="26">26 pt (Nagłówek)</option>
+                                                <option value="34">34 pt (Pieczęć / Duży)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Kolor napisu:</label>
+                                            <div class="edit-color-palette">
+                                                <label class="color-dot" style="background: #FF4439;" title="Czerwony">
+                                                    <input type="radio" name="editTextColor" value="#FF4439" checked>
+                                                    <span class="dot-check"></span>
+                                                </label>
+                                                <label class="color-dot" style="background: #000000;" title="Czarny">
+                                                    <input type="radio" name="editTextColor" value="#000000">
+                                                    <span class="dot-check"></span>
+                                                </label>
+                                                <label class="color-dot" style="background: #0F91D2;" title="Niebieski">
+                                                    <input type="radio" name="editTextColor" value="#0F91D2">
+                                                    <span class="dot-check"></span>
+                                                </label>
+                                                <label class="color-dot" style="background: #D4AF37;" title="Złoty">
+                                                    <input type="radio" name="editTextColor" value="#D4AF37">
+                                                    <span class="dot-check"></span>
+                                                </label>
+                                                <label class="color-dot" style="background: #FFFFFF;" title="Biały">
+                                                    <input type="radio" name="editTextColor" value="#FFFFFF">
+                                                    <span class="dot-check"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Kontrolki linku -->
+                                <div id="editLinkControls" class="edit-controls-subpanel" style="display: none;">
+                                    <div class="form-group">
+                                        <label>Adres docelowy linku (URL):</label>
+                                        <input type="url" id="editLinkUrlInput" class="tool-input" placeholder="https://twojastrona.pl" value="https://dropsite.pages.dev">
+                                        <span class="tool-hint">Kliknięcie w zaznaczone miejsce w gotowym PDF otworzy tę stronę w przeglądarce odbiorcy.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Selektor strony i podgląd kliknięcia -->
+                                <div class="edit-preview-box-wrap">
+                                    <div class="edit-page-nav">
+                                        <button type="button" class="btn-sm-nav" id="btnEditPrevPage" disabled>&larr; Poprzednia</button>
+                                        <strong id="editPageNumberLabel">Strona 1 z 1</strong>
+                                        <button type="button" class="btn-sm-nav" id="btnEditNextPage" disabled>Następna &rarr;</button>
+                                    </div>
+                                    <span class="edit-preview-hint">👇 Kliknij w wybranym miejscu na arkuszu dokumentu, aby ustawić pozycję:</span>
+
+                                    <div class="edit-page-sheet" id="editPageVisualPreview">
+                                        <div class="edit-visual-pin pin-mode-text" id="editVisualPin" style="left: 50%; top: 50%;">
+                                            <span class="pin-target-cross"></span>
+                                            <span class="pin-label-text" id="editVisualPinText">Zatwierdzono do publikacji</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn-primary tool-action-btn" id="btnExecuteEdit" style="margin-top: 20px;">
+                                    <span class="btn-text" data-i18n="tool_btn_apply_edit">Zastosuj i Wyeksportuj PDF</span>
+                                </button>
+
+                                <div id="editResultBox" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 3: KONWERTER FORMATÓW -->
+                    <div id="toolPanel_convert" class="tool-panel" style="display: none;">
+                        <div class="tool-card-box">
+                            <div class="tool-dropzone" id="convertDropzone">
+                                <input type="file" id="convertFileInput" accept="image/*,.pdf" style="display: none;">
+                                <div class="tool-drop-icon">
+                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <polyline points="1 20 1 14 7 14"></polyline>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                    </svg>
+                                </div>
+                                <strong class="tool-drop-title" data-i18n="tool_convert_drop_title">Wybierz lub upuść obraz lub plik</strong>
+                                <span class="tool-drop-sub" data-i18n="tool_convert_drop_sub">Błyskawiczna konwersja między PNG, JPG, WebP lub Zdjęcie do PDF</span>
+                            </div>
+
+                            <div id="convertFileInfo" class="tool-loaded-file" style="display: none;">
+                                <div class="tool-file-left">
+                                    <span class="tool-file-icon">🖼️</span>
+                                    <div>
+                                        <strong id="convertFileName">zdjecie.png</strong>
+                                        <span id="convertFileSize">1.2 MB</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-sm-ghost" onclick="document.getElementById('convertFileInput').click()">Zmień plik</button>
+                            </div>
+
+                            <div class="convert-options-grid">
+                                <div class="form-group">
+                                    <label>Format docelowy konwersji:</label>
+                                    <div class="format-chips-group">
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertTargetFormat" value="image/png" checked>
+                                            <span>PNG (Bezstratny)</span>
+                                        </label>
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertTargetFormat" value="image/jpeg">
+                                            <span>JPG (Lekki)</span>
+                                        </label>
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertTargetFormat" value="image/webp">
+                                            <span>WebP (Nowoczesny)</span>
+                                        </label>
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertTargetFormat" value="application/pdf">
+                                            <span>Dokument PDF (A4)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" id="convertQualityWrap">
+                                    <div class="form-row-between">
+                                        <label>Jakość kompresji:</label>
+                                        <strong id="convertQualityValLabel">85%</strong>
+                                    </div>
+                                    <input type="range" id="convertQualitySlider" min="50" max="100" value="85" class="tool-range-slider"
+                                        oninput="document.getElementById('convertQualityValLabel').textContent = this.value + '%'">
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-primary tool-action-btn" id="btnExecuteConvert" disabled>
+                                <span class="btn-text" data-i18n="tool_btn_convert_action">Konwertuj plik</span>
+                            </button>
+
+                            <div id="convertResultBox" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1696,6 +1962,8 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="js/pdf-lib.min.js"></script>
+    <script src="js/toolbox.js"></script>
     <script src="js/ads-engine.js"></script>
     <script src="app.js"></script>
 </body>

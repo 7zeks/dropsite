@@ -1225,6 +1225,18 @@ document.addEventListener('change', (e) => {
     }
 });
 
+// Integracja z Zestawem Narzędzi (Toolbox): automatyczne załadowanie przetworzonego pliku do formularza uploadu
+window.setFileFromToolbox = function (fileBlob, fileName) {
+    const file = new File([fileBlob], fileName, { type: fileBlob.type || 'application/octet-stream' });
+    updateSelectedFile([file]);
+    const homeNav = document.querySelector('[data-target="view-glowna"]');
+    if (homeNav) homeNav.click();
+    if (typeof playSound === 'function') playSound('success');
+    if (typeof showNotification === 'function') {
+        showNotification(`Plik ${fileName} został załadowany do wysyłki!`, 'success');
+    }
+};
+
 // === KRYPTOGRAFIA WOJSKOWA AES-GCM (ZERO-KNOWLEDGE BROWSER ENCRYPTION) ===
 async function generateAESKey() {
     return await window.crypto.subtle.generateKey(

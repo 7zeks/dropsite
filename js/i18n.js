@@ -7,6 +7,7 @@ const translations = {
     en: {
         // Navigation & Dock
         "nav_home": "Home",
+        "nav_tools": "Tools",
         "nav_features": "Features",
         "nav_pricing": "Pricing",
         "nav_contact": "Contact",
@@ -20,6 +21,24 @@ const translations = {
         "nav_admin_panel": "Admin Panel",
         "dock_my_files": "My Files",
         "dock_login": "Login",
+
+        // Toolbox
+        "toolbox_title": "Dropsite Toolbox",
+        "toolbox_subtitle": "Instant client-side PDF tools & media converter (100% private in browser RAM)",
+        "tool_tab_merge": "Merge PDF",
+        "tool_tab_edit": "PDF Editor (Text & Link)",
+        "tool_tab_convert": "Format Converter",
+        "tool_merge_drop_title": "Select or drop multiple PDF files",
+        "tool_merge_drop_sub": "Rearrange order with arrows, then combine into one file",
+        "tool_btn_merge_action": "Merge into 1 PDF",
+        "tool_edit_drop_title": "Select or drop a PDF document",
+        "tool_edit_drop_sub": "Add custom text, stamps, signature, or clickable hyperlinks",
+        "tool_btn_apply_edit": "Apply & Export PDF",
+        "tool_convert_drop_title": "Select or drop an image or file",
+        "tool_convert_drop_sub": "Instant conversion between JPG, PNG, WebP or Image to PDF",
+        "tool_btn_convert_action": "Convert File",
+        "tool_btn_download": "Download File",
+        "tool_btn_send_dropsite": "Send via Dropsite",
         
         // Hero / Value Props
         "hero_title": "Secure Cloud File Transfer",
@@ -212,19 +231,38 @@ const translations = {
     pl: {
         // Navigation & Dock
         "nav_home": "Główna",
+        "nav_tools": "Narzędzia",
         "nav_features": "Funkcje",
         "nav_pricing": "Cennik",
         "nav_contact": "Kontakt",
         "nav_pro": "Dropsite PRO",
         "nav_history": "Historia",
         "nav_sound_title": "Dźwięki interfejsu (Włącz/Wyłącz)",
-        "nav_history_title": "Historia Twoich wgranych plików",
-        "nav_login": "Logowanie / Profil",
+        "nav_history_title": "Historia Twoich transferów",
+        "nav_login": "Logowanie / Rejestracja",
         "nav_my_files": "Moje Pliki",
-        "nav_my_files_pro": "⭐ Moje Pliki (PRO)",
-        "nav_admin_panel": "👑 Panel Admina",
+        "nav_my_files_pro": "Moje Pliki (PRO)",
+        "nav_admin_panel": "Panel Admina",
         "dock_my_files": "Moje Pliki",
-        "dock_login": "Logowanie",
+        "dock_login": "Zaloguj",
+
+        // Toolbox
+        "toolbox_title": "Zestaw Narzędzi Dropsite",
+        "toolbox_subtitle": "Błyskawiczne narzędzia PDF i konwerter formatów w pamięci Twojej przeglądarki (100% prywatności)",
+        "tool_tab_merge": "Łączenie PDF",
+        "tool_tab_edit": "Edytor PDF (Napis & Link)",
+        "tool_tab_convert": "Konwerter Formatów",
+        "tool_merge_drop_title": "Wybierz lub upuść pliki PDF",
+        "tool_merge_drop_sub": "Ułóż kolejność strzałkami, a następnie połącz w jeden spójny plik",
+        "tool_btn_merge_action": "Połącz w 1 plik PDF",
+        "tool_edit_drop_title": "Wybierz lub upuść dokument PDF",
+        "tool_edit_drop_sub": "Wstaw własny napis, pieczątkę, podpis lub klikalny link w dowolnym miejscu",
+        "tool_btn_apply_edit": "Zastosuj i Wyeksportuj PDF",
+        "tool_convert_drop_title": "Wybierz lub upuść obraz lub plik",
+        "tool_convert_drop_sub": "Błyskawiczna konwersja między PNG, JPG, WebP lub Zdjęcie do PDF",
+        "tool_btn_convert_action": "Konwertuj plik",
+        "tool_btn_download": "Pobierz plik",
+        "tool_btn_send_dropsite": "Wyślij przez Dropsite",
         
         // Hero / Value Props
         "hero_title": "Bezpieczne przechowywanie plików",
