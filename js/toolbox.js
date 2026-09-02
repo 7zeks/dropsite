@@ -977,6 +977,114 @@
         }
     }
 
+    // Pomocnicze funkcje do generowania krystalicznie czystych grafik PNG z tekstem / pieczęciami
+    // Dzięki temu obsługiwane są WSZYSTKIE polskie znaki diakrytyczne (Ł, ą, ć, ę, ń, ó, ś, ź, ż) bez błędów WinAnsi!
+    function base64ToUint8Array(base64) {
+        const raw = atob(base64);
+        const len = raw.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = raw.charCodeAt(i);
+        }
+        return bytes;
+    }
+
+    function createTextPngDataUrl(text, fontSize, color, isBold) {
+        const canvas = document.createElement('canvas');
+        const dpr = 3; // 300+ DPI jakość wektorowa do druku
+        const fontSpec = `${isBold ? '700' : '500'} ${Math.round(fontSize * dpr)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
+        const ctx = canvas.getContext('2d');
+        ctx.font = fontSpec;
+        const metrics = ctx.measureText(text || ' ');
+        const padX = Math.round(6 * dpr);
+        const padY = Math.round(2 * dpr);
+        const textW = Math.ceil(metrics.width);
+        const textH = Math.ceil(fontSize * dpr * 1.3);
+
+        canvas.width = Math.max(10, textW + padX * 2);
+        canvas.height = Math.max(10, textH + padY * 2);
+
+        const c2 = canvas.getContext('2d');
+        c2.font = fontSpec;
+        c2.fillStyle = color || '#FF4439';
+        c2.textBaseline = 'top';
+        c2.fillText(text || ' ', padX, padY);
+
+        return {
+            dataUrl: canvas.toDataURL('image/png'),
+            cssWidth: canvas.width / dpr,
+            cssHeight: canvas.height / dpr
+        };
+    }
+
+    function createStampPngDataUrl(label, color) {
+        const canvas = document.createElement('canvas');
+        const dpr = 3;
+        const fontSpec = `800 ${15 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif`;
+        const ctx = canvas.getContext('2d');
+        ctx.font = fontSpec;
+        const metrics = ctx.measureText(label);
+        const w = Math.ceil(metrics.width + 36 * dpr);
+        const h = Math.ceil(38 * dpr);
+
+        canvas.width = w;
+        canvas.height = h;
+
+        const c = canvas.getContext('2d');
+        // Tło
+        c.fillStyle = color || '#FF4439';
+        c.globalAlpha = 0.08;
+        c.fillRect(0, 0, w, h);
+
+        // Ramka przerywana
+        c.globalAlpha = 1.0;
+        c.strokeStyle = color || '#FF4439';
+        c.lineWidth = 2 * dpr;
+        c.setLineDash([5 * dpr, 3 * dpr]);
+        c.strokeRect(1.5 * dpr, 1.5 * dpr, w - 3 * dpr, h - 3 * dpr);
+
+        // Tekst
+        c.fillStyle = color || '#FF4439';
+        c.font = fontSpec;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(label, w / 2, h / 2);
+
+        return {
+            dataUrl: canvas.toDataURL('image/png'),
+            cssWidth: w / dpr,
+            cssHeight: h / dpr
+        };
+    }
+
+    function createLinkBadgePngDataUrl(url) {
+        const canvas = document.createElement('canvas');
+        const dpr = 3;
+        const fontSpec = `600 ${11 * dpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        const ctx = canvas.getContext('2d');
+        ctx.font = fontSpec;
+        const label = '🔗 ' + url;
+        const metrics = ctx.measureText(label);
+        const w = Math.ceil(metrics.width + 16 * dpr);
+        const h = Math.ceil(24 * dpr);
+
+        canvas.width = w;
+        canvas.height = h;
+
+        const c = canvas.getContext('2d');
+        c.fillStyle = '#0F91D2';
+        c.font = fontSpec;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(label, w / 2, h / 2);
+
+        return {
+            dataUrl: canvas.toDataURL('image/png'),
+            cssWidth: w / dpr,
+            cssHeight: h / dpr
+        };
+    }
+
     // ==========================================
     // EKSPORT ZMODYFIKOWANEGO PDF (PDF-LIB)
     // ==========================================
@@ -992,10 +1100,6 @@
         try {
             const pdfDoc = await PDFLib.PDFDocument.load(studioBytes);
             const total = pdfDoc.getPageCount();
-
-            // Fonty dla tekstu
-            const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-            const fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
 
             const overlay = document.getElementById('pdfOverlayLayer');
             const overlayW = overlay ? overlay.clientWidth : 595;
@@ -1028,13 +1132,16 @@
                     const targetH = item.height * scaleY;
 
                     if (item.type === 'text') {
-                        const rgb = hexToRgb01(item.color || '#FF4439');
-                        page.drawText(item.text, {
+                        const textGen = createTextPngDataUrl(item.text, item.fontSize, item.color, item.bold);
+                        const pngBytes = base64ToUint8Array(textGen.dataUrl.split(',')[1]);
+                        const pngImg = await pdfDoc.embedPng(pngBytes);
+                        const actualW = textGen.cssWidth * scaleX;
+                        const actualH = textGen.cssHeight * scaleY;
+                        page.drawImage(pngImg, {
                             x: targetX,
-                            y: targetY + 2,
-                            size: Math.max(8, item.fontSize * scaleY * 0.95),
-                            font: item.bold ? fontBold : fontRegular,
-                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b)
+                            y: Math.max(0, pdfH - (item.y * scaleY) - actualH),
+                            width: actualW,
+                            height: actualH
                         });
                     } else if (item.type === 'highlight') {
                         const rgb = hexToRgb01(item.color || '#FFEB3B');
@@ -1057,27 +1164,17 @@
                             opacity: 1.0
                         });
                     } else if (item.type === 'stamp') {
-                        const rgb = hexToRgb01(item.color || '#FF4439');
-                        page.drawRectangle({
+                        const stampGen = createStampPngDataUrl(item.label || 'ZATWIERDZONO', item.color || '#FF4439');
+                        const pngBytes = base64ToUint8Array(stampGen.dataUrl.split(',')[1]);
+                        const pngImg = await pdfDoc.embedPng(pngBytes);
+                        page.drawImage(pngImg, {
                             x: targetX,
                             y: targetY,
                             width: targetW,
-                            height: targetH,
-                            borderColor: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
-                            borderWidth: 2,
-                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
-                            opacity: 0.08
-                        });
-                        page.drawText(item.label || 'ZATWIERDZONO', {
-                            x: targetX + 12,
-                            y: targetY + (targetH / 2) - 5,
-                            size: 13 * scaleY,
-                            font: fontBold,
-                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b)
+                            height: targetH
                         });
                     } else if (item.type === 'sig' && item.dataUrl) {
-                        const pngBase64 = item.dataUrl.split(',')[1];
-                        const pngBytes = Uint8Array.from(atob(pngBase64), c => c.charCodeAt(0));
+                        const pngBytes = base64ToUint8Array(item.dataUrl.split(',')[1]);
                         const pngImage = await pdfDoc.embedPng(pngBytes);
                         page.drawImage(pngImage, {
                             x: targetX,
@@ -1104,12 +1201,16 @@
                         const linkRef = pdfDoc.context.register(linkAnnot);
                         page.node.addAnnot(linkRef);
 
-                        page.drawText(linkUrl, {
-                            x: targetX + 4,
-                            y: targetY + 4,
-                            size: 9 * scaleY,
-                            font: fontRegular,
-                            color: PDFLib.rgb(0.06, 0.57, 0.82)
+                        const linkBadge = createLinkBadgePngDataUrl(linkUrl);
+                        const pngBytes = base64ToUint8Array(linkBadge.dataUrl.split(',')[1]);
+                        const pngImg = await pdfDoc.embedPng(pngBytes);
+                        const linkW = Math.min(targetW, linkBadge.cssWidth * scaleX);
+                        const linkH = Math.min(targetH, linkBadge.cssHeight * scaleY);
+                        page.drawImage(pngImg, {
+                            x: targetX,
+                            y: targetY,
+                            width: linkW,
+                            height: linkH
                         });
                     }
                 }
