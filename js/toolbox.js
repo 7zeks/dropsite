@@ -316,7 +316,10 @@
             btnPrevPage.addEventListener('click', () => {
                 if (studioCurrentPage > 1) {
                     studioCurrentPage--;
+                    studioSelectedId = null;
                     renderCurrentPdfPage();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
                 }
             });
         }
@@ -324,10 +327,58 @@
             btnNextPage.addEventListener('click', () => {
                 if (studioCurrentPage < studioTotalPages) {
                     studioCurrentPage++;
+                    studioSelectedId = null;
                     renderCurrentPdfPage();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
                 }
             });
         }
+
+        // Kliknięcie w ciemne tło poza arkuszem odznacza element
+        const stage = document.getElementById('studioViewportStage');
+        if (stage) {
+            stage.addEventListener('click', (e) => {
+                if (!e.target.closest('#studioSheetWrap') && !e.target.closest('.studio-float-pill')) {
+                    if (studioSelectedId) {
+                        studioSelectedId = null;
+                        updateSelectedUI();
+                        updateStudioPropertyBar();
+                        renderFloatingToolbar();
+                    }
+                }
+            });
+        }
+
+        // Skróty klawiszowe (Delete/Backspace = usuń, Esc = odznacz, Strzałki = precyzyjne przesuwanie)
+        window.addEventListener('keydown', (e) => {
+            if (!studioSelectedId) return;
+            const activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+                return;
+            }
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                removeAnnotation(studioSelectedId);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                studioSelectedId = null;
+                updateSelectedUI();
+                updateStudioPropertyBar();
+                renderFloatingToolbar();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                const item = studioAnnotations.find(a => a.id === studioSelectedId);
+                if (!item) return;
+                e.preventDefault();
+                const step = e.shiftKey ? 10 : 2;
+                if (e.key === 'ArrowLeft') item.x = Math.max(0, item.x - step);
+                if (e.key === 'ArrowRight') item.x = item.x + step;
+                if (e.key === 'ArrowUp') item.y = Math.max(0, item.y - step);
+                if (e.key === 'ArrowDown') item.y = item.y + step;
+                renderPageAnnotations();
+            }
+        });
 
         // Obracanie stron
         if (btnRotateLeft) {
@@ -656,6 +707,9 @@
         }
 
         if (annot) {
+            const overlayLayer = document.getElementById('pdfOverlayLayer');
+            annot.pageOverlayW = overlayLayer ? overlayLayer.clientWidth : 595;
+            annot.pageOverlayH = overlayLayer ? overlayLayer.clientHeight : 842;
             studioAnnotations.push(annot);
             studioSelectedId = id;
             renderPageAnnotations();
@@ -1142,6 +1196,11 @@
             if (isDragging) {
                 isDragging = false;
                 try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+                const overlay = document.getElementById('pdfOverlayLayer');
+                if (overlay) {
+                    item.pageOverlayW = overlay.clientWidth;
+                    item.pageOverlayH = overlay.clientHeight;
+                }
                 renderFloatingToolbar();
             }
         });
@@ -1747,14 +1806,14 @@
                     page.setRotation(PDFLib.degrees((currentRot + extraRot) % 360));
                 }
 
-                // 2. Skalowanie współrzędnych ekranu do punktów PDF
-                const scaleX = pdfW / overlayW;
-                const scaleY = pdfH / overlayH;
-
-                // 3. Rysowanie adnotacji
+                // 2. Rysowanie adnotacji ze skalowaniem do punktów PDF
                 const pageAnnots = studioAnnotations.filter(a => a.page === p);
                 for (let i = 0; i < pageAnnots.length; i++) {
                     const item = pageAnnots[i];
+                    const baseOverlayW = item.pageOverlayW || overlayW;
+                    const baseOverlayH = item.pageOverlayH || overlayH;
+                    const scaleX = pdfW / baseOverlayW;
+                    const scaleY = pdfH / baseOverlayH;
                     const targetX = Math.max(0, item.x * scaleX);
                     const targetY = Math.max(0, pdfH - (item.y + item.height) * scaleY);
                     const targetW = item.width * scaleX;
