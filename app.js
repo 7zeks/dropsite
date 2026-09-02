@@ -978,6 +978,49 @@ async function scanFilesAndFolders(dataTransfer) {
     return dataTransfer.files;
 }
 
+// Pomocnik ikon dla podglądu plików
+function getMiniFileSvg(name) {
+    const lower = (name || '').toLowerCase();
+    if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(lower)) {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+    }
+    if (/\.(mp4|webm|mov|mkv|avi)$/i.test(lower)) {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`;
+    }
+    if (/\.(mp3|wav|ogg|flac|m4a)$/i.test(lower)) {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+    }
+    if (lower.endsWith('.pdf')) {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+    }
+    if (/\.(zip|rar|7z|tar|gz)$/i.test(lower)) {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`;
+    }
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+}
+
+// Globalna funkcja pobierania pojedynczego pliku z rozpakowanego w pamięci archiwum
+window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
+    const path = decodeURIComponent(encodedPath);
+    const filename = decodeURIComponent(encodedFilename);
+    if (!window._activeUnzippedArchive || !window._activeUnzippedArchive[path]) {
+        if (typeof showNotification === 'function') showNotification('Błąd odczytu pliku z archiwum', 'error');
+        return;
+    }
+    const bytes = window._activeUnzippedArchive[path];
+    const blob = new Blob([bytes], { type: 'application/octet-stream' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    if (typeof playSound === 'function') playSound('pop');
+    if (typeof showNotification === 'function') showNotification(`Pobrano plik: ${filename}`, 'success');
+};
+
 // === WYBÓR PLIKU I DUŻY PODGLĄD ===
 async function updateSelectedFile(filesList) {
     if (!filesList || filesList.length === 0) return;
@@ -991,13 +1034,55 @@ async function updateSelectedFile(filesList) {
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) btnTextSpan.textContent = 'Pakowanie ZIP...';
         
+        let bundleName = `Paczka_${filesList.length}_plikow.zip`;
+        if (filesList[0]?.fullRelativePath?.includes('/')) {
+            const topDir = filesList[0].fullRelativePath.split('/')[0];
+            if (topDir) bundleName = `${topDir}.zip`;
+        }
+
+        let totalRawSize = 0;
+        for (let i = 0; i < filesList.length; i++) totalRawSize += filesList[i].size || 0;
+
         fileStatusBox.classList.add('visible'); 
         fsTrack.hidden = false; 
         fsProgressBar.style.width = '100%';
-        fsName.textContent = `Paczka_folder.zip (${filesList.length} el.)`;
-        fsSizeOrProgress.innerText = 'Trwa pakowanie, proszę czekać...';
-        
-        dropzone.innerHTML = `<div style="padding: 30px; text-align: center;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center;">Pakowanie ${filesList.length} plików do ZIP...</div>`;
+        fsName.textContent = bundleName;
+        fsSizeOrProgress.innerText = `Kompresja ${filesList.length} plików (${formatBytes(totalRawSize)})...`;
+
+        const fileItemsHtml = Array.from(filesList).slice(0, 15).map(f => {
+            const relName = f.fullRelativePath || f.name;
+            return `
+                <div class="mf-file-row">
+                    <div class="mf-file-left">
+                        <span class="mf-file-icon">${getMiniFileSvg(relName)}</span>
+                        <span class="mf-file-name" title="${relName}">${relName}</span>
+                    </div>
+                    <div class="mf-file-right">
+                        <span class="mf-size-badge">${formatBytes(f.size || 0)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const extraCount = filesList.length > 15 ? `<div style="text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px;">... i jeszcze ${filesList.length - 15} plików</div>` : '';
+
+        dropzone.innerHTML = `
+            <div class="multifile-upload-preview">
+                <div class="mf-header">
+                    <div class="mf-folder-icon-box">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    </div>
+                    <div class="mf-title-box">
+                        <strong class="mf-bundle-title">${bundleName}</strong>
+                        <span class="mf-bundle-sub">${filesList.length} plików &bull; ${formatBytes(totalRawSize)}</span>
+                    </div>
+                </div>
+                <div class="mf-list-scroll">
+                    ${fileItemsHtml}
+                    ${extraCount}
+                </div>
+            </div>
+        `;
         dropzone.style.padding = "10px";
 
         setTimeout(async () => {
@@ -1016,19 +1101,19 @@ async function updateSelectedFile(filesList) {
                     });
                 });
                 
-                selectedFile = new File([zippedData], `Dropsite_Paczka_${Date.now()}.zip`, { type: 'application/zip' });
+                selectedFile = new File([zippedData], bundleName, { type: 'application/zip' });
                 
                 fsTrack.hidden = true; 
                 fsProgressBar.style.width = '0%';
-                fsSizeOrProgress.innerText = formatBytes(selectedFile.size);
+                fsSizeOrProgress.innerText = `${formatBytes(selectedFile.size)} (spakowano z ${formatBytes(totalRawSize)})`;
                 if (btnTextSpan) btnTextSpan.textContent = 'Upload';
                 uploadBtn.disabled = false;
                 
             } catch (e) {
-                showError("Błąd pakowania plików");
+                showError("Błąd pakowania plików do ZIP");
             }
         }, 100);
-        
+        return;
     } else {
         selectedFile = filesList[0];
         const file = selectedFile;
@@ -3120,7 +3205,77 @@ async function initDownloadRouter() {
         } else if (isPdf) {
             dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
         } else if (isArchive) {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg></div>';
+            dlPreviewContainer.innerHTML = `
+                <div class="archive-explorer-box" id="archiveExplorerBox">
+                    <div class="archive-explorer-header">
+                        <div class="archive-icon-box">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                        </div>
+                        <div class="archive-title-box">
+                            <strong class="archive-bundle-title">${cleanName}</strong>
+                            <span class="archive-bundle-sub" id="archiveSubLabel">Odczytywanie zawartości archiwum...</span>
+                        </div>
+                    </div>
+                    <div class="archive-file-list" id="archiveFileList">
+                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">
+                            <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #C4E7D4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
+                            Odczyt spisu plików w paczce...
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Jeśli biblioteka fflate jest dostępna, wczytaj zawartość ZIP w tle
+            if (typeof fflate !== 'undefined' && directUrl) {
+                fetch(directUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error('Fetch failed');
+                        return res.arrayBuffer();
+                    })
+                    .then(buf => {
+                        const uint8 = new Uint8Array(buf);
+                        fflate.unzip(uint8, (err, unzipped) => {
+                            const listEl = document.getElementById('archiveFileList');
+                            const subLabel = document.getElementById('archiveSubLabel');
+                            if (err || !unzipped || !listEl) {
+                                if (subLabel) subLabel.textContent = 'Kliknij poniżej, aby pobrać całe archiwum';
+                                if (listEl) listEl.innerHTML = '<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Archiwum gotowe do pobrania całości</div>';
+                                return;
+                            }
+
+                            const fileEntries = Object.keys(unzipped).filter(k => !k.endsWith('/') && unzipped[k].length > 0);
+                            if (subLabel) subLabel.textContent = `Zawiera ${fileEntries.length} ${fileEntries.length === 1 ? 'plik' : 'plików'}`;
+
+                            window._activeUnzippedArchive = unzipped;
+
+                            listEl.innerHTML = fileEntries.map(path => {
+                                const size = unzipped[path].length;
+                                const filename = path.split('/').pop() || path;
+                                return `
+                                    <div class="archive-file-row">
+                                        <div class="archive-file-left">
+                                            <span class="archive-file-icon">${getMiniFileSvg(filename)}</span>
+                                            <span class="archive-file-name" title="${path}">${path}</span>
+                                        </div>
+                                        <div class="archive-file-right">
+                                            <span class="archive-size-badge">${formatBytes(size)}</span>
+                                            <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                Pobierz
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        });
+                    })
+                    .catch(() => {
+                        const subLabel = document.getElementById('archiveSubLabel');
+                        const listEl = document.getElementById('archiveFileList');
+                        if (subLabel) subLabel.textContent = 'Kliknij poniżej, aby pobrać całe archiwum';
+                        if (listEl) listEl.innerHTML = '<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Archiwum gotowe do bezpośredniego pobrania</div>';
+                    });
+            }
         } else {
             dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>';
         }
