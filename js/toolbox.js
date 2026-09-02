@@ -433,6 +433,7 @@
                 const cur = studioPageRotations[studioCurrentPage] || 0;
                 studioPageRotations[studioCurrentPage] = (cur + 270) % 360;
                 renderCurrentPdfPage();
+                updateThumbnailCard(studioCurrentPage);
             });
         }
         if (btnRotateRight) {
@@ -440,6 +441,7 @@
                 const cur = studioPageRotations[studioCurrentPage] || 0;
                 studioPageRotations[studioCurrentPage] = (cur + 90) % 360;
                 renderCurrentPdfPage();
+                updateThumbnailCard(studioCurrentPage);
             });
         }
 
@@ -1691,15 +1693,15 @@
 
             const cx = w / 2;
             const cy = h / 2;
-            const radius = Math.min(cx, cy) - 10;
+            const radius = Math.min(cx, cy) - 8;
 
-            // Zewnętrzne koło
+            // Zewnętrzne grubsze koło
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Wewnętrzny okrąg
+            // Wewnętrzny cienki okrąg
             ctx.lineWidth = 1.2;
             ctx.beginPath();
             ctx.arc(cx, cy, radius - 6, 0, Math.PI * 2);
@@ -1714,21 +1716,23 @@
             ctx.setLineDash([]);
 
             // Tekst na okręgu u góry (Nazwa firmy)
+            // Kąty u góry: od lewej (-0.82*PI) do prawej (-0.18*PI) ze szczytem w 12:00 (-0.5*PI)
             const topText = (data.name || 'DROPSITE TECH SP. Z O.O.').toUpperCase();
-            drawCurvedText(ctx, topText, cx, cy, radius - 15, Math.PI * 0.85, Math.PI * 0.15, false);
+            drawCurvedText(ctx, topText, cx, cy, radius - 15, -Math.PI * 0.82, -Math.PI * 0.18, false);
 
             // Tekst na okręgu na dole (Adres lub Kontakt)
+            // Kąty u dołu: od lewej (0.82*PI) do prawej (0.18*PI) ze środkiem w 6:00 (0.5*PI)
             const bottomText = (data.address || data.contact || 'POLSKA').toUpperCase();
-            drawCurvedText(ctx, bottomText, cx, cy, radius - 15, Math.PI * 1.15, Math.PI * 1.85, true);
+            drawCurvedText(ctx, bottomText, cx, cy, radius - 15, Math.PI * 0.82, Math.PI * 0.18, true);
 
             // Środek pieczęci: Gwiazdki i NIP
             ctx.font = 'bold 12px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('★ ★ ★', cx, cy - 8);
+            ctx.fillText('★ ★ ★', cx, cy - 10);
             if (data.nip) {
                 ctx.font = 'bold 10px sans-serif';
-                ctx.fillText(data.nip.trim(), cx, cy + 10, radius * 1.2);
+                ctx.fillText(data.nip.trim(), cx, cy + 9, radius * 1.2);
             }
 
             ctx.restore();
@@ -1779,6 +1783,13 @@
         let curColor = '#1E40AF';
 
         function updatePreview() {
+            if (curShape === 'circle') {
+                canvas.width = 240;
+                canvas.height = 240;
+            } else {
+                canvas.width = 340;
+                canvas.height = 150;
+            }
             renderCompanyStampToCanvas(canvas, {
                 shape: curShape,
                 color: curColor,
@@ -1868,6 +1879,13 @@
                 const inContact = document.getElementById('cStampContact');
                 const shape = document.querySelector('.stamp-shape-btn.active')?.dataset.shape || 'rect';
                 const color = document.querySelector('.company-color-choice.active')?.dataset.color || '#1E40AF';
+                if (shape === 'circle') {
+                    canvas.width = 240;
+                    canvas.height = 240;
+                } else {
+                    canvas.width = 340;
+                    canvas.height = 150;
+                }
                 renderCompanyStampToCanvas(canvas, {
                     shape,
                     color,
@@ -2045,6 +2063,24 @@
     // -------------------------------------------------------------
     // BOCZNY PANEL MINIATUREK STRON (THUMBNAILS)
     // -------------------------------------------------------------
+    async function updateThumbnailCard(p) {
+        const canvas = document.getElementById(`thumbCanvas_${p}`);
+        if (!canvas || !studioPdfJsDoc) return;
+        try {
+            const pdfPage = await studioPdfJsDoc.getPage(p);
+            const rot = (pdfPage.rotate + (studioPageRotations[p] || 0)) % 360;
+            const unscaled = pdfPage.getViewport({ scale: 1.0, rotation: rot });
+            const thumbScale = Math.min(130 / unscaled.width, 170 / unscaled.height);
+            const viewport = pdfPage.getViewport({ scale: thumbScale, rotation: rot });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+        } catch (e) {
+            console.warn(`Błąd odświeżania miniatury strony ${p}:`, e);
+        }
+    }
+
     async function renderThumbnailsDrawer() {
         const list = document.getElementById('studioThumbsList');
         const countLabel = document.getElementById('thumbsCountLabel');

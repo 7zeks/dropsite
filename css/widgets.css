@@ -5740,10 +5740,11 @@ body.is-admin .ad-container {
 
 /* 3. BOCZNY PANEL MINIATUREK STRON (THUMBNAILS DRAWER) */
 .studio-thumbs-drawer {
-    position: absolute;
+    position: sticky;
     top: 0;
     left: 0;
-    bottom: 0;
+    align-self: stretch;
+    min-height: 100%;
     width: 220px;
     background: rgba(11, 15, 25, 0.95);
     backdrop-filter: blur(16px);
@@ -5753,6 +5754,8 @@ body.is-admin .ad-container {
     flex-direction: column;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
     animation: slideInThumbs 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+    margin-right: 16px;
 }
 
 @keyframes slideInThumbs {
