@@ -584,11 +584,11 @@
                 </div>
                 <p class="tool-result-status">${statusMsg}</p>
                 <div class="tool-result-actions">
-                    <button type="button" class="btn-primary btn-tool-dl" id="${containerId}_dlBtn">
+                    <button type="button" class="btn-tool-dl" id="${containerId}_dlBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         <span class="btn-text">Pobierz plik</span>
                     </button>
-                    <button type="button" class="btn-secondary btn-tool-send" id="${containerId}_sendBtn">
+                    <button type="button" class="btn-tool-send" id="${containerId}_sendBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         <span class="btn-text">Wyślij przez Dropsite</span>
                     </button>
