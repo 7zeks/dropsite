@@ -6,3 +6,5 @@ Allow: /
 
 User-agent: Googlebot
 Allow: /
+
+Sitemap: https://dropsite.pages.dev/sitemap.xml
