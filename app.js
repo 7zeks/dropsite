@@ -967,39 +967,72 @@ if (advToggleBtn && customAdvBox) {
     });
 }
 
-// === REKURSYWNY ODCZYT FOLDERÓW Z DROPZONE ===
+// === REKURSYWNY ODCZYT FOLDERÓW Z DROPZONE (FAIL-SAFE) ===
 async function scanFilesAndFolders(dataTransfer) {
-    const items = dataTransfer.items;
-    if (!items || items.length === 0) return dataTransfer.files;
+    if (!dataTransfer) return [];
+    
+    // Jeśli brak items, zwróć od razu files
+    if (!dataTransfer.items || dataTransfer.items.length === 0) {
+        return dataTransfer.files ? Array.from(dataTransfer.files) : [];
+    }
 
-    const filesArray = [];
-    async function traverseFileTree(item, path = '') {
-        if (item.isFile) {
-            const file = await new Promise((resolve) => item.file(resolve));
-            file.fullRelativePath = path + file.name;
-            filesArray.push(file);
-        } else if (item.isDirectory) {
-            const dirReader = item.createReader();
-            const entries = await new Promise((resolve) => dirReader.readEntries(resolve));
-            for (const entry of entries) {
-                await traverseFileTree(entry, path + item.name + '/');
+    try {
+        const filesArray = [];
+        const promises = [];
+
+        async function traverseFileTree(item, path = '') {
+            if (!item) return;
+            if (item.isFile) {
+                const file = await new Promise((resolve) => {
+                    item.file(
+                        (f) => resolve(f),
+                        () => resolve(null)
+                    );
+                });
+                if (file) {
+                    file.fullRelativePath = path + file.name;
+                    filesArray.push(file);
+                }
+            } else if (item.isDirectory) {
+                const dirReader = item.createReader();
+                const entries = await new Promise((resolve) => {
+                    dirReader.readEntries(
+                        (res) => resolve(res),
+                        () => resolve([])
+                    );
+                });
+                if (entries && entries.length > 0) {
+                    for (const entry of entries) {
+                        await traverseFileTree(entry, path + item.name + '/');
+                    }
+                }
             }
         }
-    }
 
-    const promises = [];
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null;
-        if (item) {
-            promises.push(traverseFileTree(item));
+        for (let i = 0; i < dataTransfer.items.length; i++) {
+            const dItem = dataTransfer.items[i];
+            if (dItem.kind !== 'file') continue;
+            const entry = dItem.webkitGetAsEntry ? dItem.webkitGetAsEntry() : null;
+            if (entry) {
+                promises.push(traverseFileTree(entry));
+            } else if (dItem.getAsFile) {
+                const f = dItem.getAsFile();
+                if (f) filesArray.push(f);
+            }
         }
+
+        if (promises.length > 0) {
+            await Promise.race([
+                Promise.all(promises),
+                new Promise((resolve) => setTimeout(resolve, 800))
+            ]);
+            if (filesArray.length > 0) return filesArray;
+        }
+    } catch (err) {
+        console.warn('Scan folders warning:', err);
     }
 
-    if (promises.length > 0) {
-        await Promise.all(promises);
-        if (filesArray.length > 0) return filesArray;
-    }
-    return dataTransfer.files;
+    return dataTransfer.files ? Array.from(dataTransfer.files) : [];
 }
 
 // Pomocnik ikon dla podglądu plików
@@ -1184,6 +1217,7 @@ async function updateSelectedFile(filesList) {
 }
 
 // === DRAG & DROP (CINEMATIC) ===
+// === DRAG & DROP (CINEMATIC & CONTEXT-AWARE) ===
 const globalDragOverlay = document.getElementById('globalDragOverlay');
 let dragCounter = 0;
 
@@ -1200,22 +1234,65 @@ window.addEventListener('dragenter', (e) => {
 
 window.addEventListener('dragleave', (e) => {
     dragCounter--;
-    if (dragCounter === 0 && globalDragOverlay) {
+    if (dragCounter <= 0 && globalDragOverlay) {
+        dragCounter = 0;
         globalDragOverlay.classList.remove('active');
     }
 });
 
 window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     dragCounter = 0;
     if (globalDragOverlay) globalDragOverlay.classList.remove('active');
     
     if (e.dataTransfer) {
         const scannedFiles = await scanFilesAndFolders(e.dataTransfer);
-        if (scannedFiles && scannedFiles.length > 0) {
-            updateSelectedFile(scannedFiles);
+        if (!scannedFiles || scannedFiles.length === 0) return;
+
+        // 1. Sprawdź czy użytkownik jest obecnie w widoku Narzędzi (Toolbox)
+        const toolboxView = document.getElementById('view-narzedzia');
+        if (toolboxView && !toolboxView.hidden && window.handleToolboxDrop) {
+            window.handleToolboxDrop(scannedFiles);
+            return;
         }
+
+        // 2. Domyślnie: główny formularz wysyłki Dropsite
+        const homeView = document.getElementById('view-glowna');
+        if (homeView && homeView.hidden && window.navigateToHome) {
+            window.navigateToHome();
+        }
+
+        if (dropzone) dropzone.hidden = false;
+        if (optionsContainer) optionsContainer.hidden = false;
+        if (uploadBtn) uploadBtn.hidden = false;
+        if (successFlow) successFlow.hidden = true;
+
+        updateSelectedFile(scannedFiles);
     }
 });
+
+// Bezpośredni dropzone na stronie głównej
+if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+    });
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('drag-over');
+    });
+    dropzone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('drag-over');
+        dragCounter = 0;
+        if (globalDragOverlay) globalDragOverlay.classList.remove('active');
+        if (e.dataTransfer) {
+            const scanned = await scanFilesAndFolders(e.dataTransfer);
+            if (scanned && scanned.length > 0) updateSelectedFile(scanned);
+        }
+    });
+}
 
 document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'fileInput') {

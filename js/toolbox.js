@@ -701,7 +701,21 @@
         const k = 1024;
         const dm = decimals < 0 ? 0 : decimals;
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
+
+    // Globalny odbiornik upuszczonych plików dla Zestawu Narzędzi (Toolbox)
+    window.handleToolboxDrop = function (files) {
+        if (!files || files.length === 0) return;
+        const fileList = Array.from(files);
+
+        if (activeTool === 'merge') {
+            handleMergeFilesSelected(fileList);
+        } else if (activeTool === 'edit') {
+            const pdf = fileList.find(f => f.name.toLowerCase().endsWith('.pdf')) || fileList[0];
+            loadEditPdfFile(pdf);
+        } else if (activeTool === 'convert') {
+            loadConvertFile(fileList[0]);
+        }
+    };
 })();
