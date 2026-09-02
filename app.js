@@ -1225,6 +1225,66 @@ document.addEventListener('change', (e) => {
     }
 });
 
+// === KRYPTOGRAFIA WOJSKOWA AES-GCM (ZERO-KNOWLEDGE BROWSER ENCRYPTION) ===
+async function generateAESKey() {
+    return await window.crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function exportKeyBase64(key) {
+    const raw = await window.crypto.subtle.exportKey('raw', key);
+    const bytes = new Uint8Array(raw);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function importKeyBase64(b64) {
+    let base64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) base64 += '=';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return await window.crypto.subtle.importKey(
+        'raw',
+        bytes,
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+    );
+}
+
+async function encryptBufferAESGCM(arrayBuffer, key) {
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await window.crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        arrayBuffer
+    );
+    const combined = new Uint8Array(iv.byteLength + encrypted.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(encrypted), iv.byteLength);
+    return combined.buffer;
+}
+
+async function decryptBufferAESGCM(combinedBuffer, key) {
+    const combined = new Uint8Array(combinedBuffer);
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+    return await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        data
+    );
+}
+
 // === NOWY SYSTEM WGRYWANIA (Z OBSŁUGĄ PRO, MULTIPART I TELEMETRII) ===
 async function uploadFile() {
     if (!selectedFile) return;
@@ -1235,6 +1295,8 @@ async function uploadFile() {
     const filePassword = document.getElementById('filePasswordInput')?.value.trim() || '';
     const fileNote = document.getElementById('fileNoteInput')?.value.trim() || '';
     const fileMaxDl = document.querySelector('input[name="maxDownloads"]:checked')?.value || '';
+    const creatorBrand = document.getElementById('creatorBrandInput')?.value.trim() || '';
+    const isZeroKnowledgeEncrypted = document.getElementById('encryptZeroKnowledgeCheckbox')?.checked;
 
     // Weryfikacja konta PRO dla dużych plików i długich okresów
     const isPro = isProUser();
@@ -1258,8 +1320,50 @@ async function uploadFile() {
         return;
     }
 
+    if (!isPro && creatorBrand) {
+        showError('Własny branding i podpis twórcy na stronie pobierania wymaga konta Dropsite PRO.');
+        if (typeof showNotification === 'function') {
+            showNotification('Odblokuj Dropsite PRO, aby dodać własną markę do plików!', 'info');
+        }
+        window.openProModal();
+        return;
+    }
+
+    if (!isPro && isZeroKnowledgeEncrypted) {
+        showError('Pancerne szyfrowanie AES-256 (Zero-Knowledge) wymaga konta Dropsite PRO.');
+        if (typeof showNotification === 'function') {
+            showNotification('Odblokuj Dropsite PRO, aby korzystać z szyfrowania AES-256!', 'info');
+        }
+        window.openProModal();
+        return;
+    }
+
+    // Zapisz parametry transferu do sesji sukcesu
+    window._activeCreatorBrand = isPro && creatorBrand ? creatorBrand : '';
+    window._activeEncryptionKeyB64 = '';
+
+    // Szyfrowanie pliku w pamięci RAM przed uploadem (Zero-Knowledge)
+    if (isPro && isZeroKnowledgeEncrypted) {
+        uploadBtn.disabled = true;
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) btnTextSpan.textContent = 'Szyfrowanie AES-256 w RAM...';
+        try {
+            const aesKey = await generateAESKey();
+            window._activeEncryptionKeyB64 = await exportKeyBase64(aesKey);
+            const rawBuffer = await file.arrayBuffer();
+            const encryptedBuffer = await encryptBufferAESGCM(rawBuffer, aesKey);
+            file = new File([encryptedBuffer], file.name, { type: 'application/octet-stream' });
+            selectedFile = file;
+        } catch (encErr) {
+            console.error('Encryption failed:', encErr);
+            showError('Nie udało się zaszyfrować pliku: ' + encErr.message);
+            uploadBtn.disabled = false;
+            return;
+        }
+    }
+
     // Obsługa kompresji obrazu przed uploadem
-    if (originalImageFile && compressToggleCheckbox?.checked) {
+    if (originalImageFile && compressToggleCheckbox?.checked && !isZeroKnowledgeEncrypted) {
         uploadBtn.disabled = true;
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) btnTextSpan.textContent = 'Kompresja grafiki...';
@@ -1459,6 +1563,18 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
     let pageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
     
+    // Dołącz branding twórcy do linku jeśli został podany
+    if (window._activeCreatorBrand) {
+        pageUrl += `&brand=${encodeURIComponent(window._activeCreatorBrand)}`;
+        smartShareUrl += `&brand=${encodeURIComponent(window._activeCreatorBrand)}`;
+    }
+
+    // Dołącz klucz deszyfrujący AES-256 do hasha (Zero-Knowledge: hash nigdy nie trafia na serwer!)
+    if (window._activeEncryptionKeyB64) {
+        pageUrl += `#enc=${window._activeEncryptionKeyB64}`;
+        smartShareUrl += `#enc=${window._activeEncryptionKeyB64}`;
+    }
+
     let shareableUrl = smartShareUrl;
 
     if (finalLink) {
@@ -1470,6 +1586,28 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
             e.preventDefault();
             window.location.href = pageUrl;
         };
+    }
+
+    // Obsługa bezpośredniego linku do streamingu wideo/audio (Direct Stream)
+    const btnCopyStreamLink = document.getElementById('btnCopyStreamLink');
+    if (btnCopyStreamLink) {
+        const isMedia = selectedFile && /\.(mp4|webm|mov|m4v|mp3|wav|flac|ogg|m4a)$/i.test(selectedFile.name);
+        if (isMedia && finalUrlStr) {
+            btnCopyStreamLink.style.display = 'inline-flex';
+            btnCopyStreamLink.onclick = (e) => {
+                e.preventDefault();
+                navigator.clipboard.writeText(finalUrlStr).then(() => {
+                    playSound('click');
+                    if (typeof showNotification === 'function') {
+                        showNotification('🎬 Skopiowano bezpośredni link do odtwarzania wideo/audio (Direct Stream)!', 'success');
+                    }
+                }).catch(() => {
+                    prompt('Skopiuj Direct Stream URL:', finalUrlStr);
+                });
+            };
+        } else {
+            btnCopyStreamLink.style.display = 'none';
+        }
     }
 
     // Zapisujemy w lokalnej historii użytkownika
@@ -3327,6 +3465,30 @@ async function initDownloadRouter() {
         if (dlViewCount) dlViewCount.textContent = (data.views || 1);
         if (dlDownloadCount) dlDownloadCount.textContent = (data.downloads || 0);
 
+        // Obsługa brandingu twórcy (PRO)
+        const urlParams = new URLSearchParams(window.location.search);
+        const brandParam = urlParams.get('brand') || data.brand;
+        if (brandParam) {
+            const dlCreatorBrandBanner = document.getElementById('dlCreatorBrandBanner');
+            const dlCreatorBrandName = document.getElementById('dlCreatorBrandName');
+            if (dlCreatorBrandBanner && dlCreatorBrandName) {
+                dlCreatorBrandName.textContent = decodeURIComponent(brandParam);
+                dlCreatorBrandBanner.hidden = false;
+                dlCreatorBrandBanner.style.display = 'flex';
+            }
+        }
+
+        // Obsługa tarczy pancernego szyfrowania AES-256 (Zero-Knowledge)
+        const hashMatch = window.location.hash.match(/enc=([A-Za-z0-9_-]+)/);
+        const encKeyB64 = hashMatch ? hashMatch[1] : null;
+        if (encKeyB64) {
+            const dlVaultSecurityBadge = document.getElementById('dlVaultSecurityBadge');
+            if (dlVaultSecurityBadge) {
+                dlVaultSecurityBadge.hidden = false;
+                dlVaultSecurityBadge.style.display = 'inline-flex';
+            }
+        }
+
         // Notatka od nadawcy
         if (data.note && dlNoteBox && dlNoteText) {
             dlNoteText.textContent = data.note;
@@ -3411,6 +3573,58 @@ async function initDownloadRouter() {
 
             renderDownloadPreview(cleanName, data.directUrl);
             if (window.initDropsiteAds) window.initDropsiteAds();
+        }
+
+        // Jeśli plik jest zaszyfrowany AES-256 (Zero-Knowledge), odszyfruj w locie w RAM
+        if (encKeyB64) {
+            dlDownloadBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const textSpan = dlDownloadBtn.querySelector('.btn-text');
+                const origText = textSpan ? textSpan.textContent : 'Pobierz';
+                if (textSpan) textSpan.textContent = 'Odszyfrowywanie AES-256...';
+                dlDownloadBtn.style.pointerEvents = 'none';
+
+                try {
+                    const downloadUrl = data.isBurn ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}` : data.directUrl;
+                    const fRes = await fetch(downloadUrl);
+                    if (!fRes.ok) throw new Error('Błąd pobierania zaszyfrowanych danych.');
+                    const encData = await fRes.arrayBuffer();
+
+                    const cryptoKey = await importKeyBase64(encKeyB64);
+                    const decData = await decryptBufferAESGCM(encData, cryptoKey);
+
+                    const blob = new Blob([decData], { type: 'application/octet-stream' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = cleanName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+                    playSound('drop');
+                    if (typeof showNotification === 'function') {
+                        showNotification('🛡️ Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
+                    }
+                    if (textSpan) textSpan.textContent = origText;
+                    
+                    fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=download`, { method: 'POST' }).catch(()=>{});
+                    if (dlDownloadCount) {
+                        const current = parseInt(dlDownloadCount.textContent || '0', 10);
+                        dlDownloadCount.textContent = current + 1;
+                    }
+                } catch (err) {
+                    console.error('Decryption failed:', err);
+                    if (typeof showNotification === 'function') {
+                        showNotification('Nie udało się odszyfrować pliku. Upewnij się, że link zawiera klucz #enc=...', 'error');
+                    }
+                    if (textSpan) textSpan.textContent = 'Błąd odszyfrowania';
+                } finally {
+                    dlDownloadBtn.style.pointerEvents = 'auto';
+                }
+            });
         }
 
         // Zwiększ licznik pobrań po kliknięciu i obsłuż samozniszczenie

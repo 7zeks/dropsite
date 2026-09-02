@@ -490,6 +490,40 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <!-- BRANDING TWÓRCY (PRO) -->
+                            <div class="adv-field">
+                                <label class="adv-label" for="creatorBrandInput">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                    </svg>
+                                    <span data-i18n="adv_creator_brand_label">Your Brand / Creator Signature (Dropsite PRO):</span>
+                                    <span class="badge-pro-pill" style="margin-left: 6px;">PRO</span>
+                                </label>
+                                <input type="text" id="creatorBrandInput"
+                                    placeholder="e.g. Lumina Film Studio or John Doe" data-i18n-placeholder="adv_creator_brand_placeholder"
+                                    class="dropsite-input adv-input" maxlength="60">
+                            </div>
+
+                            <!-- PANCERNE SZYFROWANIE ZERO-KNOWLEDGE (AES-256) -->
+                            <div class="adv-field">
+                                <label class="custom-switch-label" for="encryptZeroKnowledgeCheckbox" style="margin-top: 4px; cursor: pointer;">
+                                    <div class="custom-switch">
+                                        <input type="checkbox" id="encryptZeroKnowledgeCheckbox">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                    <span class="switch-text" style="display: flex; align-items: center; gap: 6px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                        <span data-i18n="adv_encryption_toggle">Military AES-256 Encryption (Zero-Knowledge Vault)</span>
+                                        <span class="badge-pro-pill">PRO</span>
+                                    </span>
+                                </label>
+                                <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 38px;" data-i18n="adv_encryption_hint">File will be encrypted in your browser before upload. Key lives only in your link.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -566,6 +600,13 @@
                                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                                 </svg>
                                 <span data-i18n="btn_share">Share</span>
+                            </button>
+                            <button type="button" class="btn-secondary btn-stream-link" id="btnCopyStreamLink" style="display: none;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A78BFA"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                <span data-i18n="btn_copy_stream">Direct Stream</span>
                             </button>
                         </div>
                         <button type="button" class="btn-outline-another" onclick="if(window.resetUploadFlow){ window.resetUploadFlow(); } else { resetUploadFlow(); }">
@@ -685,19 +726,27 @@
                                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
                                         stroke-width="2.5">
                                         <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg> <span data-i18n="plan_pro_f1">Large files up to 10 GB</span></li>
+                                    </svg> <span data-i18n="pro_modal_f1">Large files up to 10 GB (4K video, folders, archives)</span></li>
                                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
                                         stroke-width="2.5">
                                         <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg> <span data-i18n="plan_pro_f2">Permanent & 30-Day storage</span></li>
+                                    </svg> <span data-i18n="pro_modal_f2">Custom Creator Branding (Your name on download page)</span></li>
                                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
                                         stroke-width="2.5">
                                         <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg> <span data-i18n="plan_pro_f3">Custom link aliases</span></li>
+                                    </svg> <span data-i18n="pro_modal_f3">Military AES-256 Encryption (Zero-Knowledge Vault)</span></li>
                                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
                                         stroke-width="2.5">
                                         <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg> <span data-i18n="plan_pro_f4">Priority transfer & unlimited downloads</span></li>
+                                    </svg> <span data-i18n="pro_modal_f4">Instant Video & Audio Streaming (play without download)</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="pro_modal_f5">Storage up to 30 Days or Permanent (no rush)</span></li>
+                                <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39"
+                                        stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg> <span data-i18n="pro_modal_f6">100% Ad-Free Experience (clean link for clients)</span></li>
                             </ul>
                             <button class="btn-primary btn-pro-action" onclick="window.openProModal()">
                                 <span class="btn-text" data-i18n="plan_pro_action">Unlock PRO / Enter Key</span>
@@ -838,6 +887,23 @@
         <div id="view-download" class="view-section" hidden>
             <div class="main-wrapper">
                 <div class="upload-container download-card">
+                    <!-- BRANDING TWÓRCY (PRO) -->
+                    <div id="dlCreatorBrandBanner" class="creator-branding-banner" hidden style="display: none;">
+                        <div class="brand-avatar-icon">✦</div>
+                        <div class="brand-meta">
+                            <span class="brand-label" data-i18n="dl_creator_brand_title">Materials crafted by</span>
+                            <strong id="dlCreatorBrandName" class="brand-title"></strong>
+                        </div>
+                    </div>
+
+                    <!-- TARCZA SZYFROWANIA AES-256 (ZERO-KNOWLEDGE) -->
+                    <div id="dlVaultSecurityBadge" class="vault-security-badge" hidden style="display: none;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span data-i18n="dl_vault_badge">Ultra-secure transfer protected by end-to-end encryption (AES-256-GCM)</span>
+                    </div>
+
                     <header class="upload-header" style="text-align: center;">
                         <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
                         <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;" data-i18n="dl_loading_title">Loading file info...</h1>
@@ -1418,25 +1484,37 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="pro_modal_f1">Upload files up to <strong>10 GB</strong> (no 250 MB limit)</span>
+                    <span data-i18n="pro_modal_f1">Large files up to <strong>10 GB</strong> (4K video, folders, archives)</span>
                 </div>
                 <div class="pro-feature-item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="pro_modal_f2">Storage duration: <strong>Permanent</strong> or 30 Days</span>
+                    <span data-i18n="pro_modal_f2">Custom Creator Branding (Your name on download page)</span>
                 </div>
                 <div class="pro-feature-item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="pro_modal_f3">Custom link aliases (e.g. <code>dropsite/my-alias</code>)</span>
+                    <span data-i18n="pro_modal_f3">Military AES-256 Encryption (Zero-Knowledge Vault)</span>
                 </div>
                 <div class="pro-feature-item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span data-i18n="pro_modal_f4">Priority upload pipeline & unlimited downloads</span>
+                    <span data-i18n="pro_modal_f4">Instant Video & Audio Streaming (play without download)</span>
+                </div>
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f5">Storage up to 30 Days or Permanent (no rush)</span>
+                </div>
+                <div class="pro-feature-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span data-i18n="pro_modal_f6">100% Ad-Free Experience (clean link for clients)</span>
                 </div>
             </div>
 
