@@ -584,22 +584,48 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Obsługa zakupu subskrypcji kartą
+    // Obsługa zakupu subskrypcji przez Polar.sh
+    async function startPolarCheckout(planType, buttonElement) {
+        if (isProUser()) {
+            if (typeof showNotification === 'function') {
+                showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
+            }
+            return;
+        }
+
+        const btnText = buttonElement ? buttonElement.querySelector('.btn-text') : null;
+        const origText = btnText ? btnText.textContent : 'Włącz subskrypcję z karty (14.99 zł/mc)';
+        if (btnText) btnText.textContent = 'Przekierowanie do Polar.sh...';
+        if (buttonElement) buttonElement.style.pointerEvents = 'none';
+
+        try {
+            const res = await fetch(`${WORKER_URL}/create-checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    plan_type: planType,
+                    success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.url) {
+                window.location.href = data.url;
+            } else {
+                // Bezpośrednie przekierowanie do sklepu Polar Dropsite
+                window.location.href = 'https://polar.sh/dropsite';
+            }
+        } catch (err) {
+            console.error('Checkout error:', err);
+            window.location.href = 'https://polar.sh/dropsite';
+        }
+    }
+
+    // Obsługa zakupu subskrypcji kartą przez Polar.sh
     const btnBuyProSub = document.getElementById('btnBuyProSub');
     if (btnBuyProSub) {
         btnBuyProSub.addEventListener('click', (e) => {
             e.preventDefault();
-            if (isProUser()) {
-                if (typeof showNotification === 'function') {
-                    showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
-                }
-                return;
-            }
-            const btnText = btnBuyProSub.querySelector('.btn-text');
-            if (btnText) btnText.textContent = 'Przekierowanie...';
-            btnBuyProSub.style.pointerEvents = 'none';
-            // Przekierowanie do kasy Stripe
-            window.location.href = STRIPE_PRO_BLIK_URL;
+            startPolarCheckout('subscription', btnBuyProSub);
         });
     }
 
