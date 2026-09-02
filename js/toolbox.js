@@ -214,6 +214,7 @@
     let studioActiveTool = 'text'; // 'text' | 'sig' | 'highlight' | 'censor' | 'stamp' | 'link'
     let studioSelectedId = null;
     let studioNextId = 1;
+    let studioZoomScale = 1.0;
 
     // Inicjalizacja PDF.js workera
     if (typeof pdfjsLib !== 'undefined') {
@@ -224,11 +225,15 @@
         const dropzone = document.getElementById('editDropzone');
         const fileInput = document.getElementById('editFileInput');
         const btnChangeFile = document.getElementById('btnEditChangeFile');
+        const btnResetDoc = document.getElementById('btnEditResetDoc');
         const btnPrevPage = document.getElementById('btnEditPrevPage');
         const btnNextPage = document.getElementById('btnEditNextPage');
         const btnRotateLeft = document.getElementById('btnEditRotateLeft');
         const btnRotateRight = document.getElementById('btnEditRotateRight');
         const btnDeletePage = document.getElementById('btnEditDeletePage');
+        const btnZoomIn = document.getElementById('btnEditZoomIn');
+        const btnZoomOut = document.getElementById('btnEditZoomOut');
+        const btnZoomFit = document.getElementById('btnEditZoomFit');
         const btnAction = document.getElementById('btnExecuteEdit');
         const overlayLayer = document.getElementById('pdfOverlayLayer');
 
@@ -243,7 +248,53 @@
             }
         });
         if (btnChangeFile) {
-            btnChangeFile.addEventListener('click', () => fileInput.click());
+            btnChangeFile.addEventListener('click', () => {
+                fileInput.value = '';
+                fileInput.click();
+            });
+        }
+
+        // Resetowanie wszystkich zmian (przywrócenie czystego PDF)
+        if (btnResetDoc) {
+            btnResetDoc.addEventListener('click', () => {
+                const hasChanges = studioAnnotations.length > 0 || 
+                                   Object.keys(studioPageRotations).length > 0 || 
+                                   studioDeletedPages.size > 0;
+                if (hasChanges) {
+                    if (!confirm('Czy na pewno chcesz zresetować wszystkie naniesione zmiany (napisy, pieczątki, podpisy, obroty)?')) {
+                        return;
+                    }
+                }
+                studioAnnotations = [];
+                studioPageRotations = {};
+                studioDeletedPages.clear();
+                studioSelectedId = null;
+                studioZoomScale = 1.0;
+                renderCurrentPdfPage();
+                updateStudioPropertyBar();
+                if (window.playSound) window.playSound('pop');
+                if (window.showNotification) window.showNotification('Dokument został zresetowany do stanu początkowego.', 'info');
+            });
+        }
+
+        // Kontrola powiększenia / dopasowania podglądu (Zoom)
+        if (btnZoomIn) {
+            btnZoomIn.addEventListener('click', () => {
+                studioZoomScale = Math.min(2.2, Math.round((studioZoomScale + 0.15) * 100) / 100);
+                renderCurrentPdfPage();
+            });
+        }
+        if (btnZoomOut) {
+            btnZoomOut.addEventListener('click', () => {
+                studioZoomScale = Math.max(0.5, Math.round((studioZoomScale - 0.15) * 100) / 100);
+                renderCurrentPdfPage();
+            });
+        }
+        if (btnZoomFit) {
+            btnZoomFit.addEventListener('click', () => {
+                studioZoomScale = 1.0;
+                renderCurrentPdfPage();
+            });
         }
 
         // Drag & drop na dropzone
@@ -329,10 +380,19 @@
             });
         }
 
-        // Kliknięcie na arkuszu – wstawianie elementu w miejscu kliknięcia
+        // Kliknięcie na arkuszu – inteligentne odznaczanie lub wstawianie nowego elementu
         if (overlayLayer) {
             overlayLayer.addEventListener('click', (e) => {
-                if (e.target.closest('.pdf-item-wrap')) return; // kliknięto w istniejący element
+                if (e.target.closest('.pdf-item-wrap') || e.target.closest('.studio-float-pill')) return;
+
+                // Jeśli jakiś element był zaznaczony, kliknięcie w tło tylko go odznacza!
+                if (studioSelectedId) {
+                    studioSelectedId = null;
+                    updateSelectedUI();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                    return;
+                }
 
                 const rect = overlayLayer.getBoundingClientRect();
                 const clickX = Math.max(10, Math.min(rect.width - 60, e.clientX - rect.left));
@@ -375,6 +435,7 @@
             studioDeletedPages.clear();
             studioAnnotations = [];
             studioSelectedId = null;
+            studioZoomScale = 1.0;
 
             // Pokaż obszar roboczy Studio
             const workspace = document.getElementById('editWorkspace');
@@ -431,11 +492,18 @@
             const extraRotation = studioPageRotations[studioCurrentPage] || 0;
             const totalRotation = (page.rotate + extraRotation) % 360;
 
-            // Obliczenie skali, aby dopasować arkusz do kontenera roboczego (maksymalnie 680px)
-            const availableWidth = Math.max(300, (stage ? stage.clientWidth - 50 : 640));
+            // Obliczenie skali dopasowanej do szerokości obszaru roboczego
+            const availableWidth = Math.max(280, (stage ? stage.clientWidth - 48 : 640));
             const unscaledViewport = page.getViewport({ scale: 1.0, rotation: totalRotation });
-            const fitScale = Math.min(1.5, availableWidth / unscaledViewport.width);
-            const viewport = page.getViewport({ scale: fitScale, rotation: totalRotation });
+            const fitScale = Math.min(1.25, availableWidth / unscaledViewport.width);
+            const finalScale = fitScale * studioZoomScale;
+            const viewport = page.getViewport({ scale: finalScale, rotation: totalRotation });
+
+            // Zaktualizuj etykietę zoom
+            const zoomLabel = document.getElementById('editZoomLabel');
+            if (zoomLabel) {
+                zoomLabel.textContent = `${Math.round(studioZoomScale * 100)}%`;
+            }
 
             const dpr = window.devicePixelRatio || 1;
             canvas.width = Math.floor(viewport.width * dpr);
@@ -478,7 +546,7 @@
                 fontSize: 16,
                 color: '#000000',
                 bold: false,
-                width: 210,
+                width: 220,
                 height: 32
             };
         } else if (type === 'highlight') {
@@ -506,35 +574,35 @@
         } else if (type === 'stamp') {
             let label = 'ZATWIERDZONO';
             let color = '#16A34A';
-            let width = 175;
-            let height = 48;
+            let width = 180;
+            let height = 52;
             const chosenType = subType || 'approved';
 
             if (chosenType === 'paid') {
                 label = 'OPŁACONO';
                 color = '#0284C7';
-                width = 170;
-                height = 46;
+                width = 180;
+                height = 52;
             } else if (chosenType === 'confidential') {
                 label = 'ŚCIŚLE POUFNE';
                 color = '#DC2626';
-                width = 180;
-                height = 46;
+                width = 195;
+                height = 52;
             } else if (chosenType === 'copy') {
                 label = 'ZA ZGODNOŚĆ Z ORYGINAŁEM';
                 color = '#4338CA';
-                width = 185;
-                height = 46;
+                width = 195;
+                height = 52;
             } else if (chosenType === 'urgent') {
                 label = 'PILNE / WAŻNE';
                 color = '#D97706';
-                width = 165;
-                height = 42;
+                width = 175;
+                height = 48;
             } else if (chosenType === 'custom') {
                 label = customLabel || 'PIECZĘĆ';
                 color = '#8B5CF6';
-                width = 165;
-                height = 44;
+                width = 180;
+                height = 50;
             }
 
             annot = {
@@ -769,13 +837,13 @@
         const overlayW = overlayLayer.clientWidth;
         const overlayH = overlayLayer.clientHeight;
 
-        let left = selectedItem.x + selectedItem.width + 12;
+        let left = selectedItem.x + selectedItem.width + 10;
         let isLeft = false;
-        if (left + 48 > overlayW) {
-            left = Math.max(8, selectedItem.x - 48);
+        if (left + 46 > overlayW) {
+            left = Math.max(6, selectedItem.x - 46);
             isLeft = true;
         }
-        let top = Math.max(12, Math.min(overlayH - 145, selectedItem.y + (selectedItem.height / 2) - 60));
+        let top = Math.max(8, Math.min(overlayH - 145, selectedItem.y + (selectedItem.height - 120) / 2));
 
         pill.style.left = `${left}px`;
         pill.style.top = `${top}px`;

@@ -742,7 +742,16 @@
                                         <span class="tool-pdf-icon-mini">📄</span>
                                         <strong id="editLoadedFileName" class="studio-filename">dokument.pdf</strong>
                                         <span id="editLoadedFileSize" class="studio-filesize">0 KB</span>
-                                        <button type="button" class="btn-sm-ghost" id="btnEditChangeFile" title="Wczytaj inny dokument PDF">Zmień plik</button>
+                                        <div class="studio-doc-actions">
+                                            <button type="button" class="btn-studio-file" id="btnEditChangeFile" title="Wczytaj inny dokument PDF">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
+                                                <span>Zmień plik</span>
+                                            </button>
+                                            <button type="button" class="btn-studio-file btn-studio-file-reset" id="btnEditResetDoc" title="Resetuj wszystkie naniesione zmiany i przywróć czysty dokument">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                                                <span>Resetuj</span>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="studio-page-nav">
                                         <button type="button" class="btn-studio-nav" id="btnEditPrevPage" title="Poprzednia strona" disabled>&larr;</button>
@@ -750,6 +759,12 @@
                                         <button type="button" class="btn-studio-nav" id="btnEditNextPage" title="Następna strona" disabled>&rarr;</button>
                                     </div>
                                     <div class="studio-page-ops">
+                                        <div class="studio-zoom-ctrls">
+                                            <button type="button" class="btn-studio-op" id="btnEditZoomOut" title="Pomniejsz podgląd">−</button>
+                                            <span id="editZoomLabel" class="studio-zoom-label">100%</span>
+                                            <button type="button" class="btn-studio-op" id="btnEditZoomIn" title="Powiększ podgląd">+</button>
+                                            <button type="button" class="btn-studio-op" id="btnEditZoomFit" title="Dopasuj do szerokości">Dopasuj</button>
+                                        </div>
                                         <button type="button" class="btn-studio-op" id="btnEditRotateLeft" title="Obróć stronę o 90° w lewo">↺</button>
                                         <button type="button" class="btn-studio-op" id="btnEditRotateRight" title="Obróć stronę o 90° w prawo">↻</button>
                                         <button type="button" class="btn-studio-op btn-op-danger" id="btnEditDeletePage" title="Usuń tę stronę z pliku">🗑️</button>
