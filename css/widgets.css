@@ -6122,6 +6122,90 @@ input[type="range"]::-moz-range-thumb {
     max-width: 480px !important;
 }
 
+/* ==========================================================================
+   DROPSITE PDF STUDIO: PEŁNY EKRAN (FULLSCREEN WORKSPACE)
+   ========================================================================== */
+.btn-studio-fs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 145, 210, 0.12);
+    border: 1px solid rgba(15, 145, 210, 0.35);
+    color: #38BDF8;
+    margin-left: 6px;
+    padding: 4px 10px;
+    font-weight: 600;
+}
+
+.btn-studio-fs:hover {
+    background: rgba(15, 145, 210, 0.28);
+    border-color: #0F91D2;
+    color: #FFFFFF;
+}
+
+body.studio-fullscreen-active {
+    overflow: hidden !important;
+}
+
+#editWorkspace.studio-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    z-index: 99990 !important;
+    background: #080B12 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px 18px 14px 18px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: none !important;
+}
+
+#editWorkspace.studio-fullscreen .studio-doc-bar {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+#editWorkspace.studio-fullscreen .studio-ribbon {
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+#editWorkspace.studio-fullscreen .studio-prop-bar {
+    flex-shrink: 0;
+}
+
+#editWorkspace.studio-fullscreen .studio-viewport-stage {
+    flex: 1 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: 100% !important;
+    border-radius: 12px;
+}
+
+#editWorkspace.studio-fullscreen .studio-bottom-actions {
+    margin-top: 8px;
+    padding-top: 6px;
+    flex-shrink: 0;
+}
+
+#editWorkspace.studio-fullscreen .btn-studio-fs {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #F87171;
+}
+
+#editWorkspace.studio-fullscreen .btn-studio-fs:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #EF4444;
+    color: #FFFFFF;
+}
+
 
 
 

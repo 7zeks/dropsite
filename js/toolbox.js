@@ -250,11 +250,16 @@
         const btnZoomFit = document.getElementById('btnEditZoomFit');
         const btnToggleThumbs = document.getElementById('btnToggleThumbnails');
         const btnCloseThumbs = document.getElementById('btnCloseThumbs');
+        const btnFullscreen = document.getElementById('btnToggleFullscreen');
         const btnAction = document.getElementById('btnExecuteEdit');
         const overlayLayer = document.getElementById('pdfOverlayLayer');
         const thumbsDrawer = document.getElementById('studioThumbsDrawer');
 
         if (!dropzone || !fileInput) return;
+
+        if (btnFullscreen) {
+            btnFullscreen.addEventListener('click', toggleStudioFullscreen);
+        }
 
         // Wybór pliku
         dropzone.addEventListener('click', () => fileInput.click());
@@ -405,15 +410,32 @@
                 return;
             }
 
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.signature-modal-backdrop[style*="display: flex"]');
+                if (openModal) return;
+
+                if (studioSelectedId) {
+                    e.preventDefault();
+                    studioSelectedId = null;
+                    updateSelectedUI();
+                    updateStudioPropertyBar();
+                    renderFloatingToolbar();
+                    return;
+                }
+
+                const workspace = document.getElementById('editWorkspace');
+                if (workspace && workspace.classList.contains('studio-fullscreen')) {
+                    e.preventDefault();
+                    toggleStudioFullscreen();
+                    return;
+                }
+            }
+
+            if (!studioSelectedId) return;
+
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 e.preventDefault();
                 removeAnnotation(studioSelectedId);
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                studioSelectedId = null;
-                updateSelectedUI();
-                updateStudioPropertyBar();
-                renderFloatingToolbar();
             } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 const item = studioAnnotations.find(a => a.id === studioSelectedId);
                 if (!item) return;
@@ -424,6 +446,14 @@
                 if (e.key === 'ArrowUp') item.y = Math.max(0, item.y - step);
                 if (e.key === 'ArrowDown') item.y = item.y + step;
                 renderPageAnnotations();
+            }
+        });
+
+        // Nasłuchiwanie zmian pełnego ekranu przeglądarki
+        document.addEventListener('fullscreenchange', () => {
+            const workspace = document.getElementById('editWorkspace');
+            if (!document.fullscreenElement && workspace && workspace.classList.contains('studio-fullscreen')) {
+                toggleStudioFullscreen();
             }
         });
 
@@ -499,7 +529,54 @@
         }
     }
 
+    function toggleStudioFullscreen() {
+        const workspace = document.getElementById('editWorkspace');
+        const fsBtn = document.getElementById('btnToggleFullscreen');
+        const iconExpand = document.getElementById('fsIconExpand');
+        const iconCompress = document.getElementById('fsIconCompress');
+        const btnText = document.getElementById('fsBtnText');
+
+        if (!workspace) return;
+
+        const isFs = workspace.classList.contains('studio-fullscreen');
+
+        if (!isFs) {
+            workspace.classList.add('studio-fullscreen');
+            document.body.classList.add('studio-fullscreen-active');
+            if (iconExpand) iconExpand.style.display = 'none';
+            if (iconCompress) iconCompress.style.display = 'inline-block';
+            if (btnText) btnText.textContent = 'Wyjdź (Esc)';
+            if (fsBtn) fsBtn.title = 'Zamknij pełny ekran (Esc)';
+
+            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+
+            if (window.showNotification) window.showNotification('Tryb pełnoekranowy aktywny. Klawisz Esc przywraca normalny widok.', 'info');
+        } else {
+            workspace.classList.remove('studio-fullscreen');
+            document.body.classList.remove('studio-fullscreen-active');
+            if (iconExpand) iconExpand.style.display = 'inline-block';
+            if (iconCompress) iconCompress.style.display = 'none';
+            if (btnText) btnText.textContent = 'Pełny ekran';
+            if (fsBtn) fsBtn.title = 'Pełny ekran (Esc)';
+
+            if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        setTimeout(() => {
+            renderCurrentPdfPage();
+        }, 120);
+    }
+
     function resetStudioWorkspace() {
+        const workspace = document.getElementById('editWorkspace');
+        if (workspace && workspace.classList.contains('studio-fullscreen')) {
+            toggleStudioFullscreen();
+        }
+
         studioFile = null;
         studioBytes = null;
         studioPdfJsDoc = null;
@@ -513,7 +590,6 @@
         studioWatermark = { enabled: false, text: 'POUFNE', opacity: 0.16, angle: -45, color: '#64748B' };
         studioPageNumbers = { enabled: false, format: 'cur_total', position: 'bottom-right', skipFirst: false, color: '#334155' };
 
-        const workspace = document.getElementById('editWorkspace');
         const dropzone = document.getElementById('editDropzone');
         const fileInput = document.getElementById('editFileInput');
         const canvas = document.getElementById('pdfRenderCanvas');
