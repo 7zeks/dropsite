@@ -42,44 +42,13 @@
             slotHome: 'auto'
         },
 
-        // Baza Kampanii Afiliacyjnych (Wklej tutaj swoje linki partnerskie):
+        // Baza Kampanii - WYŁĄCZNIE TWOJE WŁASNE LINKI I OFERTY:
         campaigns: [
             {
-                id: 'nordVpn',
-                badge: { pl: 'VPN SPONSOR', en: 'VPN SPONSOR', de: 'VPN SPONSOR', es: 'PATROCINADOR VPN', fr: 'SPONSOR VPN', uk: 'VPN СПОНСОР' },
-                title: {
-                    pl: 'Chroń swoją prywatność i ukryj IP',
-                    en: 'Protect your privacy & hide your IP',
-                    de: 'Schütze deine Privatsphäre & IP',
-                    es: 'Protege tu privacidad y oculta tu IP',
-                    fr: 'Protégez votre vie privée et masquez votre IP',
-                    uk: 'Захистіть приватність та приховайте IP'
-                },
-                desc: {
-                    pl: 'Pobierasz lub wysyłasz poufne pliki? Zaszyfruj całe swoje łącze z NordVPN (82% rabatu + 3 msc gratis).',
-                    en: 'Downloading or sharing sensitive files? Encrypt your entire connection with NordVPN (82% off + 3 mos free).',
-                    de: 'Vertrauliche Dateien teilen? Verschlüssele deine Verbindung mit NordVPN (82% Rabatt + 3 Monate gratis).',
-                    es: '¿Compartiendo archivos sensibles? Cifra tu conexión con NordVPN (82% de descuento + 3 meses gratis).',
-                    fr: 'Vous partagez des fichiers sensibles ? Chiffrez votre connexion avec NordVPN (82% de réduction + 3 mois offerts).',
-                    uk: 'Передаєте конфіденційні файли? Зашифруйте своє з\'єднання з NordVPN (знижка 82% + 3 міс. безкоштовно).'
-                },
-                btnText: {
-                    pl: 'Odbierz rabat ➔',
-                    en: 'Get 82% Discount ➔',
-                    de: 'Rabatt sichern ➔',
-                    es: 'Obtener descuento ➔',
-                    fr: 'Profiter de l\'offre ➔',
-                    uk: 'Отримати знижку ➔'
-                },
-                url: 'https://nordvpn.com', // Podmień na swój link partnerski NordVPN
-                iconBg: 'linear-gradient(135deg, #0F91D2 0%, #0052CC 100%)',
-                iconType: 'shield'
-            },
-            {
-                id: 'pCloud',
+                id: 'pCloudLifetime',
                 badge: { pl: 'LIFETIME CLOUD', en: 'LIFETIME CLOUD', de: 'LIFETIME CLOUD', es: 'NUBE DE POR VIDA', fr: 'CLOUD À VIE', uk: 'ДОВІЧНА ХМАРА' },
                 title: {
-                    pl: 'Prywatna chmura dożywotnia (Lifetime 10 TB)',
+                    pl: 'Prywatna chmura dożywotnia (Lifetime do 10 TB)',
                     en: 'Swiss Lifetime Cloud Storage (Up to 10 TB)',
                     de: 'Lebenslanger Cloud-Speicher (Bis zu 10 TB)',
                     es: 'Almacenamiento en la nube de por vida (10 TB)',
@@ -87,7 +56,7 @@
                     uk: 'Довічна хмара без підписок (до 10 ТБ)'
                 },
                 desc: {
-                    pl: 'Masz dość comiesięcznych abonamentów? Przechowuj do 10 TB danych z szyfrowaniem zerowej wiedzy w Szwajcarii (pCloud).',
+                    pl: 'Koniec z comiesięcznym abonamentem. Przechowuj do 10 TB danych z szyfrowaniem w Szwajcarii bez limitów.',
                     en: 'Tired of monthly subscriptions? Secure up to 10 TB with zero-knowledge Swiss encryption on pCloud.',
                     de: 'Keine Lust auf monatliche Abos? Sichere bis zu 10 TB mit Schweizer Zero-Knowledge-Verschlüsselung.',
                     es: '¿Cansado de suscripciones mensuales? Guarda hasta 10 TB con cifrado suizo de conocimiento cero.',
@@ -102,102 +71,103 @@
                     fr: 'Découvrir l\'offre ➔',
                     uk: 'Переглянути хмару ➔'
                 },
-                url: 'https://partner.pcloud.com/r/157308', // Twój link partnerski pCloud (Lifetime 20% prowizji)
+                url: 'https://partner.pcloud.com/r/157308', // Twój link partnerski pCloud (20% prowizji dla Ciebie)
                 iconBg: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                 iconType: 'cloud'
             },
             {
-                id: 'devHosting',
-                badge: { pl: 'DEV SPONSOR', en: 'DEV SPONSOR', de: 'DEV SPONSOR', es: 'HOSTING PROMO', fr: 'SPONSOR DEV', uk: 'ХМАРНИЙ СПОНСОР' },
+                id: 'dropsitePro',
+                badge: { pl: 'DROPSITE PRO', en: 'DROPSITE PRO', de: 'DROPSITE PRO', es: 'DROPSITE PRO', fr: 'DROPSITE PRO', uk: 'DROPSITE PRO' },
                 title: {
-                    pl: 'Szybka chmura NVMe dla twórców & 200$ na start',
-                    en: 'High-Speed Cloud VPS & $200 Free Start Credit',
-                    de: 'Highspeed Cloud VPS & 200$ Startguthaben',
-                    es: 'Cloud VPS de alta velocidad y $200 de crédito',
-                    fr: 'VPS Cloud ultra-rapide et 200$ de crédit offert',
-                    uk: 'Хмарний VPS для розробників та 200$ на старт'
+                    pl: 'Wysyłaj duże pliki do 10 GB bez limitów prędkości',
+                    en: 'Transfer Large Files up to 10 GB with No Speed Limits',
+                    de: 'Große Dateien bis zu 10 GB ohne Tempolimit senden',
+                    es: 'Envía archivos grandes de hasta 10 GB sin límites',
+                    fr: 'Envoyez des fichiers volumineux jusqu\'à 10 Go sans limite',
+                    uk: 'Надсилайте великі файли до 10 ГБ без обмеження швидкості'
                 },
                 desc: {
-                    pl: 'Hostuj własne aplikacje, boty i pliki na superszybkich procesorach chmurowych – odbierz 200$ darmowego kredytu na 60 dni.',
-                    en: 'Deploy apps, storage, and projects on lightning-fast NVMe cloud – claim your $200 free credit today.',
-                    de: 'Erstelle Apps, Bots und Speicher auf schnellen NVMe-Servern – sichere dir 200$ Startguthaben.',
-                    es: 'Despliega aplicaciones y archivos en servidores ultrarrápidos NVMe – reclama tus $200 de crédito gratis.',
-                    fr: 'Déployez vos applications et fichiers sur des serveurs NVMe ultra-rapides – 200$ de crédit offert.',
-                    uk: 'Розгортайте додатки та сайти на надшвидких NVMe-серверах – отримайте 200$ безкоштовного кредиту.'
+                    pl: 'Odblokuj własne nazwy linków, przechowywanie do 30 dni lub na stałe oraz brak jakichkolwiek reklam.',
+                    en: 'Unlock custom link aliases, permanent and 30-day storage, zero ads, and priority global bandwidth.',
+                    de: 'Eigene Link-Namen, permanente Speicherung, keine Werbung und Prioritäts-Geschwindigkeit freischalten.',
+                    es: 'Desbloquea enlaces personalizados, almacenamiento permanente y 0 publicidad con Dropsite PRO.',
+                    fr: 'Débloquez des liens personnalisés, stockage permanent et zéro publicité avec Dropsite PRO.',
+                    uk: 'Розблокуйте власні аліаси посилань, постійне зберігання та повну відсутність реклами.'
                 },
                 btnText: {
-                    pl: 'Odbierz 200$ ➔',
-                    en: 'Claim $200 Credit ➔',
-                    de: '200$ sichern ➔',
-                    es: 'Reclamar $200 ➔',
-                    fr: 'Récupérer 200$ ➔',
-                    uk: 'Отримати 200$ ➔'
+                    pl: 'Aktywuj PRO ✦',
+                    en: 'Upgrade to PRO ✦',
+                    de: 'PRO aktivieren ✦',
+                    es: 'Activar PRO ✦',
+                    fr: 'Activer PRO ✦',
+                    uk: 'Активувати PRO ✦'
                 },
-                url: 'https://digitalocean.com', // Podmień na swój link partnerski DigitalOcean / Hostinger
-                iconBg: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                iconType: 'server'
+                action: 'pro', // Wewnętrzna akcja - otwiera okno zakupu PRO Dropsite (100% zysku dla Ciebie)
+                url: '#pro',
+                iconBg: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                iconType: 'star'
             },
             {
-                id: 'nordPass',
-                badge: { pl: 'BEZPIECZEŃSTWO', en: 'SECURITY VAULT', de: 'SICHERHEIT', es: 'SEGURIDAD', fr: 'SÉCURITÉ', uk: 'БЕЗПЕКА' },
+                id: 'pCloudCrypto',
+                badge: { pl: 'SZWAJCARSKI SEJF', en: 'SWISS VAULT', de: 'SCHWEIZER TRESOR', es: 'BÓVEDA SUIZA', fr: 'COFFRE SUISSE', uk: 'ШВЕЙЦАРСЬКИЙ СЕЙФ' },
                 title: {
-                    pl: 'Zaszyfrowany sejf na hasła i klucze licencyjne',
-                    en: 'Encrypted Password & Digital License Vault',
-                    de: 'Verschlüsselter Passwort-Tresor für alle Geräte',
-                    es: 'Bóveda cifrada de contraseñas y claves',
-                    fr: 'Coffre-fort chiffré pour mots de passe et clés',
-                    uk: 'Зашифроване сховище паролів та ключів'
+                    pl: 'Szyfrowanie zerowej wiedzy (Zero-Knowledge Privacy)',
+                    en: 'Military-Grade Zero-Knowledge File Encryption',
+                    de: 'Zero-Knowledge Datei-Verschlüsselung auf Militär-Niveau',
+                    es: 'Cifrado de archivos de grado militar sin conocimiento',
+                    fr: 'Chiffrement de fichiers de niveau militaire zéro connaissance',
+                    uk: 'Шифрування файлів військового рівня без доступу третіх осіб'
                 },
                 desc: {
-                    pl: 'Generuj unikalne hasła i bezpiecznie przechowuj dane dostępowe na telefonie i komputerze (NordPass).',
-                    en: 'Generate unhackable passwords and sync access keys securely across all your devices with NordPass.',
-                    de: 'Erstelle sichere Passwörter und synchronisiere deine Zugangsdaten auf allen Geräten.',
-                    es: 'Genera contraseñas seguras y sincroniza tus accesos de forma segura en todos tus dispositivos.',
-                    fr: 'Générez des mots de passe inviolables et synchronisez vos identifiants sur tous vos appareils.',
-                    uk: 'Створюйте надійні паролі та синхронізуйте ключі доступу на всіх пристроях з NordPass.'
+                    pl: 'Nawet administratorzy serwerów nie mają dostępu do Twoich kluczy. Pełna poufność danych w pCloud Crypto.',
+                    en: 'Not even server admins can access your encryption keys. Total privacy and confidentiality on pCloud.',
+                    de: 'Nicht einmal Server-Admins haben Zugriff auf deine Schlüssel. Vollständige Vertraulichkeit.',
+                    es: 'Ni siquiera los administradores del servidor pueden acceder a tus claves. Confidencialidad total.',
+                    fr: 'Même les administrateurs n\'ont pas accès à vos clés. Confidentialité totale garantie.',
+                    uk: 'Навіть адміністратори серверів не мають доступу до ваших ключів шифрування.'
                 },
                 btnText: {
-                    pl: 'Wypróbuj za darmo ➔',
-                    en: 'Try for Free ➔',
-                    de: 'Kostenlos testen ➔',
-                    es: 'Probar gratis ➔',
-                    fr: 'Essayer gratuitement ➔',
-                    uk: 'Спробувати безкоштовно ➔'
+                    pl: 'Zobacz szyfrowanie ➔',
+                    en: 'Explore Crypto ➔',
+                    de: 'Krypto ansehen ➔',
+                    es: 'Ver cifrado ➔',
+                    fr: 'Découvrir Crypto ➔',
+                    uk: 'Дізнатися більше ➔'
                 },
-                url: 'https://nordpass.com',
-                iconBg: 'linear-gradient(135deg, #FF9900 0%, #E65100 100%)',
-                iconType: 'key'
-            },
-            {
-                id: 'protonVpn',
-                badge: { pl: 'SWISS PRIVACY', en: 'SWISS PRIVACY', de: 'SCHWEIZER PRIVATSPHÄRE', es: 'PRIVACIDAD SUIZA', fr: 'CONFIDENTIALITÉ SUISSE', uk: 'ШВЕЙЦАРСЬКА ПРИВАТНІСТЬ' },
-                title: {
-                    pl: 'Szwajcarski VPN z polityką Zero-Logs (Proton)',
-                    en: 'Swiss Zero-Logs High Speed Privacy (Proton VPN)',
-                    de: 'Schweizer Zero-Logs Highspeed VPN (Proton)',
-                    es: 'VPN suizo de alta velocidad sin registros (Proton)',
-                    fr: 'VPN suisse haute vitesse sans logs (Proton)',
-                    uk: 'Швейцарський VPN без ведення логів (Proton)'
-                },
-                desc: {
-                    pl: 'Stworzony przez naukowców z CERN. Maksymalna ochrona przed inwigilacją i blokadami regionalnymi.',
-                    en: 'Developed by CERN scientists. Protect your traffic from tracking and bypass strict censorship.',
-                    de: 'Entwickelt von CERN-Wissenschaftlern. Schütze deine Daten vor Überwachung und Geoblocking.',
-                    es: 'Creado por científicos del CERN. Máxima protección contra el rastreo y bloqueos de red.',
-                    fr: 'Créé par les scientifiques du CERN. Protection maximale contre la surveillance en ligne.',
-                    uk: 'Створено науковцями CERN. Максимальний захист від стеження та гео-блокувань.'
-                },
-                btnText: {
-                    pl: 'Włącz Proton ➔',
-                    en: 'Get Proton VPN ➔',
-                    de: 'Proton holen ➔',
-                    es: 'Obtener Proton ➔',
-                    fr: 'Activer Proton ➔',
-                    uk: 'Отримати Proton ➔'
-                },
-                url: 'https://protonvpn.com',
-                iconBg: 'linear-gradient(135deg, #6D4AFF 0%, #3B1B99 100%)',
+                url: 'https://partner.pcloud.com/r/157308', // Twój link partnerski pCloud (20% prowizji dla Ciebie)
+                iconBg: 'linear-gradient(135deg, #0F91D2 0%, #0284C7 100%)',
                 iconType: 'shield'
+            },
+            {
+                id: 'pCloudPass',
+                badge: { pl: 'SEJF NA HASŁA', en: 'PASSWORD VAULT', de: 'PASSWORT-TRESOR', es: 'BÓVEDA DE CLAVES', fr: 'COFFRE DE MOTS DE PASSE', uk: 'СЕЙФ ПАРОЛІВ' },
+                title: {
+                    pl: 'Zaszyfrowany menedżer haseł i kluczy cyfrowych',
+                    en: 'Secure Password Manager & Digital Key Vault',
+                    de: 'Sicherer Passwort-Manager & digitaler Tresor',
+                    es: 'Gestor seguro de contraseñas y llaves digitales',
+                    fr: 'Gestionnaire de mots de passe et clés numériques sécurisé',
+                    uk: 'Безпечний менеджер паролів та цифрових ключів'
+                },
+                desc: {
+                    pl: 'Zapisuj hasła, numery kart i poufne notatki z synchronizacją na wszystkich Twoich urządzeniach (pCloud Pass).',
+                    en: 'Store unhackable passwords, credit cards, and private notes synced across all devices with pCloud Pass.',
+                    de: 'Speichere Passwörter, Kreditkarten und Notizen synchron auf all deinen Geräten mit pCloud Pass.',
+                    es: 'Guarda contraseñas, tarjetas y notas privadas sincronizadas en todos tus dispositivos con pCloud Pass.',
+                    fr: 'Enregistrez mots de passe, cartes et notes synchronisés sur tous vos appareils avec pCloud Pass.',
+                    uk: 'Зберігайте паролі, дані карток та конфіденційні нотатки із синхронізацією на всіх пристроях.'
+                },
+                btnText: {
+                    pl: 'Wypróbuj sejf ➔',
+                    en: 'Try Pass Vault ➔',
+                    de: 'Tresor testen ➔',
+                    es: 'Probar bóveda ➔',
+                    fr: 'Tester le coffre ➔',
+                    uk: 'Спробувати сейф ➔'
+                },
+                url: 'https://partner.pcloud.com/r/157308', // Twój link partnerski pCloud (20% prowizji dla Ciebie)
+                iconBg: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                iconType: 'key'
             }
         ]
     };
@@ -228,6 +198,8 @@
                 return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>`;
             case 'key':
                 return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+            case 'star':
+                return `<svg width="22" height="22" viewBox="0 0 24 24" fill="#FFD24C" stroke="#FFD24C" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
             case 'shield':
             default:
                 return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`;
@@ -338,9 +310,10 @@
                             <h4 class="ad-banner-title">${titleText}</h4>
                             <p class="ad-banner-desc">${descText}</p>
                         </div>
-                        <a href="${c.url}" target="_blank" rel="noopener noreferrer nofollow" class="btn-ad-action">
-                            ${btnText}
-                        </a>
+                        ${c.action === 'pro'
+                            ? `<button type="button" onclick="if(window.openProModal) window.openProModal();" class="btn-ad-action" style="cursor: pointer; border: none;">${btnText}</button>`
+                            : `<a href="${c.url}" target="_blank" rel="noopener noreferrer nofollow" class="btn-ad-action">${btnText}</a>`
+                        }
                     `;
                     bodyEl.classList.remove('ad-animating');
                 }
