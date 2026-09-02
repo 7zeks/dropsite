@@ -254,26 +254,11 @@
             });
         }
 
-        // Resetowanie wszystkich zmian (przywrócenie czystego PDF)
+        // Resetowanie całego widoku: usuwa załadowany plik i przywraca ekran wyboru/dropzone
         if (btnResetDoc) {
             btnResetDoc.addEventListener('click', () => {
-                const hasChanges = studioAnnotations.length > 0 || 
-                                   Object.keys(studioPageRotations).length > 0 || 
-                                   studioDeletedPages.size > 0;
-                if (hasChanges) {
-                    if (!confirm('Czy na pewno chcesz zresetować wszystkie naniesione zmiany (napisy, pieczątki, podpisy, obroty)?')) {
-                        return;
-                    }
-                }
-                studioAnnotations = [];
-                studioPageRotations = {};
-                studioDeletedPages.clear();
-                studioSelectedId = null;
-                studioZoomScale = 1.0;
-                renderCurrentPdfPage();
-                updateStudioPropertyBar();
-                if (window.playSound) window.playSound('pop');
-                if (window.showNotification) window.showNotification('Dokument został zresetowany do stanu początkowego.', 'info');
+                resetStudioWorkspace();
+                if (window.showNotification) window.showNotification('Plik został usunięty. Możesz dodać nowy dokument.', 'info');
             });
         }
 
@@ -409,6 +394,45 @@
         if (btnAction) {
             btnAction.addEventListener('click', executePdfEdit);
         }
+    }
+
+    function resetStudioWorkspace() {
+        studioFile = null;
+        studioBytes = null;
+        studioPdfJsDoc = null;
+        studioTotalPages = 1;
+        studioCurrentPage = 1;
+        studioPageRotations = {};
+        studioDeletedPages.clear();
+        studioAnnotations = [];
+        studioSelectedId = null;
+        studioZoomScale = 1.0;
+
+        const workspace = document.getElementById('editWorkspace');
+        const dropzone = document.getElementById('editDropzone');
+        const fileInput = document.getElementById('editFileInput');
+        const canvas = document.getElementById('pdfRenderCanvas');
+        const overlayLayer = document.getElementById('pdfOverlayLayer');
+        const pill = document.getElementById('studioFloatPill');
+
+        if (fileInput) fileInput.value = '';
+        if (workspace) workspace.style.display = 'none';
+        if (dropzone) dropzone.style.display = 'block';
+
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (overlayLayer) overlayLayer.innerHTML = '';
+        if (pill) pill.style.display = 'none';
+
+        const resultBox = document.getElementById('editResultBox');
+        if (resultBox) {
+            resultBox.style.display = 'none';
+            resultBox.innerHTML = '';
+        }
+
+        if (window.playSound) window.playSound('pop');
     }
 
     async function loadEditPdfFile(file) {
