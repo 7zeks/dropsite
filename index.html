@@ -1443,41 +1443,9 @@
             <!-- Opcje zakupu (Subskrypcja PRO + BLIK 30 dni) -->
             <div class="pro-purchase-options">
                 <div class="pro-plan-selector-grid">
-                    <!-- Opcja 1: BLIK 30 Dni (WYRÓŻNIONA DLA POLSKI) -->
-                    <div class="pro-buy-card featured" id="cardBuyBlik">
-                        <div class="pro-buy-card-badge">NAJPOPULARNIEJSZA W POLSCE ✦</div>
-                        <div class="pro-buy-card-header">
-                            <div>
-                                <div class="pro-buy-card-title">Dropsite PRO (30 Dni)</div>
-                                <div class="pro-buy-card-subtitle">Płatność kodem BLIK • Bez podpinania karty</div>
-                            </div>
-                            <div class="pro-buy-card-price">
-                                <span class="price-val">14.99 zł</span>
-                                <span class="price-period">/ 30 dni</span>
-                            </div>
-                        </div>
-
-                        <div class="pro-methods-row">
-                            <span class="pay-badge blik-badge" title="Płatność kodem BLIK">
-                                <svg width="34" height="14" viewBox="0 0 50 20" fill="none" style="vertical-align: middle;">
-                                    <rect width="50" height="20" rx="4" fill="#000" />
-                                    <circle cx="10" cy="10" r="4.5" fill="#EB0029" />
-                                    <text x="20" y="14" fill="#FFF" font-size="11" font-weight="900" font-family="sans-serif" letter-spacing="0.5">BLIK</text>
-                                </svg>
-                            </span>
-                            <span class="pay-badge">Google Pay</span>
-                            <span class="pay-badge">Apple Pay</span>
-                            <span class="pay-badge">Karty</span>
-                        </div>
-
-                        <button type="button" id="btnBuyProBlik" class="btn-primary pro-buy-btn-blik">
-                            <span class="btn-text">Kup PRO kodem BLIK (14.99 zł)</span>
-                            <div class="btn-ripple"></div>
-                        </button>
-                    </div>
-
-                    <!-- Opcja 2: Subskrypcja cykliczna -->
-                    <div class="pro-buy-card" id="cardBuySub">
+                    <!-- Opcja 1: Subskrypcja cykliczna z karty (WYRÓŻNIONA / NAJPOPULARNIEJSZA) -->
+                    <div class="pro-buy-card featured" id="cardBuySub">
+                        <div class="pro-buy-card-badge">NAJCZĘŚCIEJ WYBIERANA ✦</div>
                         <div class="pro-buy-card-header">
                             <div>
                                 <div class="pro-buy-card-title">Subskrypcja PRO</div>
@@ -1495,8 +1463,40 @@
                             <span class="pay-badge">Karty Visa / MC</span>
                         </div>
 
-                        <button type="button" id="btnBuyProSub" class="btn-secondary pro-buy-btn-sub">
+                        <button type="button" id="btnBuyProSub" class="btn-primary pro-buy-btn-sub">
                             <span class="btn-text">Włącz subskrypcję z karty (14.99 zł/mc)</span>
+                            <div class="btn-ripple"></div>
+                        </button>
+                    </div>
+
+                    <!-- Opcja 2: BLIK / Jednorazowo na 30 Dni -->
+                    <div class="pro-buy-card" id="cardBuyBlik">
+                        <div class="pro-buy-card-header">
+                            <div>
+                                <div class="pro-buy-card-title">Dostęp na 30 Dni</div>
+                                <div class="pro-buy-card-subtitle">Płatność kodem BLIK • Bez podpinania karty</div>
+                            </div>
+                            <div class="pro-buy-card-price">
+                                <span class="price-val">14.99 zł</span>
+                                <span class="price-period">jednorazowo</span>
+                            </div>
+                        </div>
+
+                        <div class="pro-methods-row">
+                            <span class="pay-badge blik-badge" title="Płatność kodem BLIK">
+                                <svg width="34" height="14" viewBox="0 0 50 20" fill="none" style="vertical-align: middle;">
+                                    <rect width="50" height="20" rx="4" fill="#000" />
+                                    <circle cx="10" cy="10" r="4.5" fill="#EB0029" />
+                                    <text x="20" y="14" fill="#FFF" font-size="11" font-weight="900" font-family="sans-serif" letter-spacing="0.5">BLIK</text>
+                                </svg>
+                            </span>
+                            <span class="pay-badge">Google Pay</span>
+                            <span class="pay-badge">Apple Pay</span>
+                            <span class="pay-badge">Karty</span>
+                        </div>
+
+                        <button type="button" id="btnBuyProBlik" class="btn-secondary pro-buy-btn-blik">
+                            <span class="btn-text">Kup PRO kodem BLIK (14.99 zł)</span>
                             <div class="btn-ripple"></div>
                         </button>
                     </div>

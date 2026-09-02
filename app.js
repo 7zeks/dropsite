@@ -404,8 +404,8 @@ function updateProUI() {
         }
     }
 
-    if (proKeyInput && isPro) {
-        proKeyInput.value = proKey || (isAdmin ? 'ADMIN-LIFETIME' : '');
+    if (proKeyInput) {
+        proKeyInput.value = '';
     }
 
     // Aktualizacja przycisku w cenniku
