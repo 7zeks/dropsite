@@ -754,6 +754,7 @@
                                         </div>
                                     </div>
                                     <div class="studio-page-nav">
+                                        <button type="button" class="btn-studio-file" id="btnToggleThumbnails" title="Pokaż miniatury wszystkich stron">📑 Miniaturki</button>
                                         <button type="button" class="btn-studio-nav" id="btnEditPrevPage" title="Poprzednia strona" disabled>&larr;</button>
                                         <span id="editPageNumberLabel" class="studio-page-indicator">Strona 1 z 1</span>
                                         <button type="button" class="btn-studio-nav" id="btnEditNextPage" title="Następna strona" disabled>&rarr;</button>
@@ -781,6 +782,14 @@
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"></path><path d="M18 12L11 5"></path></svg>
                                         <span>E-Podpis</span>
                                     </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="company-stamp">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h6"></path></svg>
+                                        <span>Pieczęć Firmowa</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="stamp">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="12" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        <span>Stempel</span>
+                                    </button>
                                     <button type="button" class="studio-ribbon-btn" data-studio-tool="highlight">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"></path><path d="m22 2-2 2-4-4 2-2 4 4Z"></path><path d="m14 6 4 4"></path></svg>
                                         <span>Zakreślacz</span>
@@ -789,9 +798,13 @@
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="currentColor"></rect></svg>
                                         <span>Cenzura / RODO</span>
                                     </button>
-                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="stamp">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="12" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                        <span>Pieczątka</span>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="watermark">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+                                        <span>Znak Wodny</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="page-number">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
+                                        <span>Numeruj Strony</span>
                                     </button>
                                     <button type="button" class="studio-ribbon-btn" data-studio-tool="link">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -804,6 +817,15 @@
 
                                 <!-- Scena z podglądem Canvas i interaktywną nakładką -->
                                 <div class="studio-viewport-stage" id="studioViewportStage">
+                                    <!-- Boczny panel miniaturek stron -->
+                                    <div class="studio-thumbs-drawer" id="studioThumbsDrawer" style="display: none;">
+                                        <div class="thumbs-drawer-header">
+                                            <strong>📑 Strony (<span id="thumbsCountLabel">0</span>)</strong>
+                                            <button type="button" class="thumbs-drawer-close" id="btnCloseThumbs" title="Zamknij panel">&times;</button>
+                                        </div>
+                                        <div class="thumbs-drawer-body" id="studioThumbsList"></div>
+                                    </div>
+
                                     <div class="studio-sheet-wrap" id="studioSheetWrap">
                                         <canvas id="pdfRenderCanvas"></canvas>
                                         <div id="pdfOverlayLayer" class="pdf-overlay-layer"></div>
@@ -1978,6 +2000,186 @@
             <div class="sig-modal-footer">
                 <button type="button" class="btn-sm-ghost" id="btnSigCancel">Anuluj</button>
                 <button type="button" class="btn-primary" id="btnSigApply" style="margin: 0; padding: 10px 20px; width: auto;">Wstaw podpis do dokumentu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: KREATOR PIECZĄTKI FIRMOWEJ -->
+    <div id="companyStampModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box company-stamp-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span>🏢</span>
+                    <h3>Kreator Oficjalnej Pieczątki Firmowej</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnCompanyStampClose">✕</button>
+            </div>
+            <div class="company-stamp-body">
+                <div class="company-stamp-form">
+                    <div class="company-input-group">
+                        <label>Kształt pieczęci:</label>
+                        <div class="stamp-shape-toggle">
+                            <button type="button" class="stamp-shape-btn active" data-shape="rect">Prostokątna (Księgowa)</button>
+                            <button type="button" class="stamp-shape-btn" data-shape="circle">Okrągła (Urzędowa)</button>
+                        </div>
+                    </div>
+                    <div class="company-input-group">
+                        <label for="cStampName">Nazwa firmy / Przedsiębiorca:</label>
+                        <input type="text" id="cStampName" class="tool-text-input" placeholder="np. DROPSITE SP. Z O.O." value="DROPSITE TECH SP. Z O.O.">
+                    </div>
+                    <div class="company-input-row">
+                        <div class="company-input-group">
+                            <label for="cStampNip">NIP:</label>
+                            <input type="text" id="cStampNip" class="tool-text-input" placeholder="np. 5213894210" value="NIP 5213894210">
+                        </div>
+                        <div class="company-input-group">
+                            <label for="cStampRegon">REGON / KRS:</label>
+                            <input type="text" id="cStampRegon" class="tool-text-input" placeholder="np. REGON 382910482" value="REGON 382910482">
+                        </div>
+                    </div>
+                    <div class="company-input-group">
+                        <label for="cStampAddress">Siedziba / Adres:</label>
+                        <input type="text" id="cStampAddress" class="tool-text-input" placeholder="np. ul. Złota 44, 00-120 Warszawa" value="ul. Złota 44, 00-120 Warszawa">
+                    </div>
+                    <div class="company-input-group">
+                        <label for="cStampContact">Telefon / E-mail / WWW:</label>
+                        <input type="text" id="cStampContact" class="tool-text-input" placeholder="np. tel. +48 22 100 20 30, biuro@dropsite.pl" value="tel. +48 22 100 20 30 &bull; dropsite.pl">
+                    </div>
+                    <div class="company-input-group">
+                        <label>Kolor tuszu pieczęci:</label>
+                        <div class="company-colors-picker">
+                            <button type="button" class="company-color-choice active" data-color="#1E40AF" style="background: #1E40AF;" title="Klasyczny Błękit Biurowy"></button>
+                            <button type="button" class="company-color-choice" data-color="#6D28D9" style="background: #6D28D9;" title="Fiolet Kancelaryjny"></button>
+                            <button type="button" class="company-color-choice" data-color="#0F172A" style="background: #0F172A;" title="Czarny Tusz"></button>
+                            <button type="button" class="company-color-choice" data-color="#047857" style="background: #047857;" title="Zieleń Urzędowa"></button>
+                            <button type="button" class="company-color-choice" data-color="#B91C1C" style="background: #B91C1C;" title="Czerwień"></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="company-stamp-preview-col">
+                    <span class="preview-label">Podgląd stempla w skali 1:1:</span>
+                    <div class="company-stamp-canvas-wrap">
+                        <canvas id="companyStampCanvas" width="340" height="150"></canvas>
+                    </div>
+                    <p class="company-stamp-hint">Pieczęć zostanie wstawiona na bieżącą stronę jako wektorowy obiekt Retina. Możesz go dowolnie przesuwać i skalować.</p>
+                </div>
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="btnCompanyStampCancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnCompanyStampApply" style="margin: 0; padding: 10px 22px; width: auto;">Wstaw pieczęć do dokumentu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ZNAK WODNY (WATERMARK) -->
+    <div id="watermarkModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box watermark-modal-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span>💧</span>
+                    <h3>Znak Wodny na całym dokumencie</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnWatermarkClose">✕</button>
+            </div>
+            <div class="sig-modal-body">
+                <div class="watermark-toggle-row">
+                    <label class="switch-toggle-label">
+                        <input type="checkbox" id="chkWatermarkActive">
+                        <span class="switch-slider"></span>
+                        <strong style="margin-left: 10px;">Włącz znak wodny na wszystkich stronach</strong>
+                    </label>
+                </div>
+                <div class="company-input-group" style="margin-top: 14px;">
+                    <label for="wmTextInput">Treść znaku wodnego:</label>
+                    <input type="text" id="wmTextInput" class="tool-text-input" placeholder="np. POUFNE" value="POUFNE">
+                </div>
+                <div class="wm-presets-row">
+                    <span>Szybkie szablony:</span>
+                    <button type="button" class="wm-preset-pill" data-text="POUFNE">POUFNE</button>
+                    <button type="button" class="wm-preset-pill" data-text="PROJEKT">PROJEKT</button>
+                    <button type="button" class="wm-preset-pill" data-text="WZÓR UMOWY">WZÓR UMOWY</button>
+                    <button type="button" class="wm-preset-pill" data-text="DUPLIKAT">DUPLIKAT</button>
+                    <button type="button" class="wm-preset-pill" data-text="KOPIA">KOPIA</button>
+                </div>
+                <div class="company-input-row" style="margin-top: 14px;">
+                    <div class="company-input-group">
+                        <label for="wmOpacityRange">Przezroczystość: <strong id="wmOpacityVal">16%</strong></label>
+                        <input type="range" id="wmOpacityRange" min="5" max="60" value="16" step="1" style="width: 100%;">
+                    </div>
+                    <div class="company-input-group">
+                        <label for="wmAngleSelect">Kąt nachylenia:</label>
+                        <select id="wmAngleSelect" class="tool-text-input">
+                            <option value="-45" selected>Ukośnie (-45°)</option>
+                            <option value="0">Poziomo (0°)</option>
+                            <option value="45">Ukośnie w prawo (45°)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="company-input-group" style="margin-top: 10px;">
+                    <label>Kolor znaku wodnego:</label>
+                    <div class="company-colors-picker">
+                        <button type="button" class="wm-color-choice active" data-color="#64748B" style="background: #64748B;" title="Dyskretny Szary"></button>
+                        <button type="button" class="wm-color-choice" data-color="#DC2626" style="background: #DC2626;" title="Czerwony Klauzulowy"></button>
+                        <button type="button" class="wm-color-choice" data-color="#2563EB" style="background: #2563EB;" title="Błękitny"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="btnWatermarkCancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnWatermarkApply" style="margin: 0; padding: 10px 22px; width: auto;">Zastosuj znak wodny</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NUMEROWANIE STRON (PAGINACJA) -->
+    <div id="pageNumberModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box page-number-modal-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span>🔢</span>
+                    <h3>Automatyczna Paginacja Dokumentu</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnPageNumClose">✕</button>
+            </div>
+            <div class="sig-modal-body">
+                <div class="watermark-toggle-row">
+                    <label class="switch-toggle-label">
+                        <input type="checkbox" id="chkPageNumActive">
+                        <span class="switch-slider"></span>
+                        <strong style="margin-left: 10px;">Włącz numerowanie stron</strong>
+                    </label>
+                </div>
+                <div class="company-input-row" style="margin-top: 14px;">
+                    <div class="company-input-group">
+                        <label for="pnFormatSelect">Format zapisu:</label>
+                        <select id="pnFormatSelect" class="tool-text-input">
+                            <option value="cur_total" selected>Strona 1 z 12</option>
+                            <option value="slash">1 / 12</option>
+                            <option value="dashes">- 1 -</option>
+                            <option value="only_num">1</option>
+                        </select>
+                    </div>
+                    <div class="company-input-group">
+                        <label for="pnPosSelect">Położenie na arkuszu:</label>
+                        <select id="pnPosSelect" class="tool-text-input">
+                            <option value="bottom-right" selected>Dolny prawy róg</option>
+                            <option value="bottom-center">Dolny środek</option>
+                            <option value="bottom-left">Dolny lewy róg</option>
+                            <option value="top-right">Górny prawy róg</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="watermark-toggle-row" style="margin-top: 14px;">
+                    <label class="switch-toggle-label">
+                        <input type="checkbox" id="chkPageNumSkipFirst">
+                        <span class="switch-slider"></span>
+                        <span style="margin-left: 10px; font-size: 0.9rem; color: #E2E8F0;">Pomiń pierwszą stronę (np. strona tytułowa / okładka)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="btnPageNumCancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnPageNumApply" style="margin: 0; padding: 10px 22px; width: auto;">Zapisz paginację</button>
             </div>
         </div>
     </div>

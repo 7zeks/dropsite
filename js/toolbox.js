@@ -215,6 +215,20 @@
     let studioSelectedId = null;
     let studioNextId = 1;
     let studioZoomScale = 1.0;
+    let studioWatermark = {
+        enabled: false,
+        text: 'POUFNE',
+        opacity: 0.16,
+        angle: -45,
+        color: '#64748B'
+    };
+    let studioPageNumbers = {
+        enabled: false,
+        format: 'cur_total',
+        position: 'bottom-right',
+        skipFirst: false,
+        color: '#334155'
+    };
 
     // Inicjalizacja PDF.js workera
     if (typeof pdfjsLib !== 'undefined') {
@@ -234,8 +248,11 @@
         const btnZoomIn = document.getElementById('btnEditZoomIn');
         const btnZoomOut = document.getElementById('btnEditZoomOut');
         const btnZoomFit = document.getElementById('btnEditZoomFit');
+        const btnToggleThumbs = document.getElementById('btnToggleThumbnails');
+        const btnCloseThumbs = document.getElementById('btnCloseThumbs');
         const btnAction = document.getElementById('btnExecuteEdit');
         const overlayLayer = document.getElementById('pdfOverlayLayer');
+        const thumbsDrawer = document.getElementById('studioThumbsDrawer');
 
         if (!dropzone || !fileInput) return;
 
@@ -305,11 +322,41 @@
                     openSignatureModal();
                     return;
                 }
+                if (tool === 'company-stamp') {
+                    openCompanyStampModal();
+                    return;
+                }
+                if (tool === 'watermark') {
+                    openWatermarkModal();
+                    return;
+                }
+                if (tool === 'page-number') {
+                    openPageNumberModal();
+                    return;
+                }
                 studioActiveTool = tool;
                 ribbonBtns.forEach(b => b.classList.toggle('active', b === btn));
                 updateStudioPropertyBar();
             });
         });
+
+        // Boczny panel miniaturek
+        if (btnToggleThumbs) {
+            btnToggleThumbs.addEventListener('click', () => {
+                if (thumbsDrawer) {
+                    const isShown = thumbsDrawer.style.display === 'flex';
+                    thumbsDrawer.style.display = isShown ? 'none' : 'flex';
+                    if (!isShown) {
+                        renderThumbnailsDrawer();
+                    }
+                }
+            });
+        }
+        if (btnCloseThumbs) {
+            btnCloseThumbs.addEventListener('click', () => {
+                if (thumbsDrawer) thumbsDrawer.style.display = 'none';
+            });
+        }
 
         // Nawigacja stron
         if (btnPrevPage) {
@@ -386,7 +433,6 @@
                 const cur = studioPageRotations[studioCurrentPage] || 0;
                 studioPageRotations[studioCurrentPage] = (cur + 270) % 360;
                 renderCurrentPdfPage();
-                if (window.playSound) window.playSound('pop');
             });
         }
         if (btnRotateRight) {
@@ -394,34 +440,35 @@
                 const cur = studioPageRotations[studioCurrentPage] || 0;
                 studioPageRotations[studioCurrentPage] = (cur + 90) % 360;
                 renderCurrentPdfPage();
-                if (window.playSound) window.playSound('pop');
             });
         }
 
-        // Usuwanie / przywracanie strony
+        // Usuwanie bieżącej strony
         if (btnDeletePage) {
             btnDeletePage.addEventListener('click', () => {
                 if (studioDeletedPages.has(studioCurrentPage)) {
                     studioDeletedPages.delete(studioCurrentPage);
-                    if (window.showNotification) window.showNotification(`Przywrócono stronę ${studioCurrentPage}`, 'info');
+                    if (window.showNotification) window.showNotification(`Przywrócono stronę ${studioCurrentPage}.`, 'info');
                 } else {
                     if (studioDeletedPages.size >= studioTotalPages - 1) {
                         if (window.showNotification) window.showNotification('Nie możesz usunąć wszystkich stron dokumentu!', 'error');
                         return;
                     }
                     studioDeletedPages.add(studioCurrentPage);
-                    if (window.showNotification) window.showNotification(`Strona ${studioCurrentPage} zostanie usunięta przy eksporcie`, 'info');
+                    if (window.showNotification) window.showNotification(`Strona ${studioCurrentPage} zostanie pominięta w finalnym PDF.`, 'info');
                 }
                 renderCurrentPdfPage();
             });
         }
 
-        // Kliknięcie na arkuszu – inteligentne odznaczanie lub wstawianie nowego elementu
+        // Kliknięcie w arkusz dodaje wybrany obiekt (np. tekst, zakreślacz)
         if (overlayLayer) {
             overlayLayer.addEventListener('click', (e) => {
-                if (e.target.closest('.pdf-item-wrap') || e.target.closest('.studio-float-pill')) return;
+                if (e.target.closest('.pdf-item-wrap') || e.target.closest('.studio-float-pill') || e.target.closest('.float-popover-box')) {
+                    return;
+                }
 
-                // Jeśli jakiś element był zaznaczony, kliknięcie w tło tylko go odznacza!
+                // Kliknięcie w puste tło odznacza bieżący obiekt
                 if (studioSelectedId) {
                     studioSelectedId = null;
                     updateSelectedUI();
@@ -438,8 +485,11 @@
             });
         }
 
-        // Modal podpisu odręcznego
+        // Modale zaawansowanych funkcji
         initSignatureModal();
+        initCompanyStampModal();
+        initWatermarkModal();
+        initPageNumberModal();
 
         // Przycisk eksportu
         if (btnAction) {
@@ -458,6 +508,8 @@
         studioAnnotations = [];
         studioSelectedId = null;
         studioZoomScale = 1.0;
+        studioWatermark = { enabled: false, text: 'POUFNE', opacity: 0.16, angle: -45, color: '#64748B' };
+        studioPageNumbers = { enabled: false, format: 'cur_total', position: 'bottom-right', skipFirst: false, color: '#334155' };
 
         const workspace = document.getElementById('editWorkspace');
         const dropzone = document.getElementById('editDropzone');
@@ -465,10 +517,12 @@
         const canvas = document.getElementById('pdfRenderCanvas');
         const overlayLayer = document.getElementById('pdfOverlayLayer');
         const pill = document.getElementById('studioFloatPill');
+        const thumbsDrawer = document.getElementById('studioThumbsDrawer');
 
         if (fileInput) fileInput.value = '';
         if (workspace) workspace.style.display = 'none';
         if (dropzone) dropzone.style.display = 'block';
+        if (thumbsDrawer) thumbsDrawer.style.display = 'none';
 
         if (canvas) {
             const ctx = canvas.getContext('2d');
@@ -600,6 +654,27 @@
 
             // Narysuj nałożone adnotacje dla bieżącej strony
             renderPageAnnotations();
+
+            // Jeśli znak wodny jest włączony, dodaj podgląd na żywo
+            if (studioWatermark.enabled && studioWatermark.text) {
+                const wmDiv = document.createElement('div');
+                wmDiv.className = 'studio-live-watermark-overlay';
+                wmDiv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1;';
+                const wmSpan = document.createElement('span');
+                wmSpan.textContent = studioWatermark.text;
+                wmSpan.style.color = studioWatermark.color || '#64748B';
+                wmSpan.style.opacity = `${studioWatermark.opacity || 0.16}`;
+                wmSpan.style.transform = `rotate(${studioWatermark.angle || -45}deg)`;
+                wmSpan.style.fontSize = `${Math.min(viewport.width, viewport.height) * 0.14}px`;
+                wmSpan.style.fontWeight = '900';
+                wmSpan.style.letterSpacing = '0.12em';
+                wmSpan.style.textTransform = 'uppercase';
+                wmSpan.style.userSelect = 'none';
+                wmDiv.appendChild(wmSpan);
+                overlayLayer.appendChild(wmDiv);
+            }
+
+            updateThumbnailsActive();
         } catch (err) {
             console.error('Błąd renderowania strony:', err);
         }
@@ -788,17 +863,30 @@
                 cs.style.background = item.color || '#000000';
                 wrap.appendChild(cs);
             } else if (item.type === 'stamp') {
-                const st = document.createElement('div');
-                const subType = item.subType || (
-                    item.label.includes('ZATWIERDZ') ? 'approved' :
-                    item.label.includes('OPŁA') ? 'paid' :
-                    item.label.includes('POUFN') ? 'confidential' :
-                    item.label.includes('KOPIA') || item.label.includes('ZGODN') ? 'copy' :
-                    item.label.includes('PILN') ? 'urgent' : 'custom'
-                );
-                st.className = `pdf-item-stamp stamp-type-${subType}`;
-                st.style.width = '100%';
-                st.style.height = '100%';
+                if (item.subType === 'company' && item.dataUrl) {
+                    const stBox = document.createElement('div');
+                    stBox.className = 'pdf-item-sig';
+                    stBox.style.width = '100%';
+                    stBox.style.height = '100%';
+                    const img = document.createElement('img');
+                    img.src = item.dataUrl;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    stBox.appendChild(img);
+                    wrap.appendChild(stBox);
+                } else {
+                    const st = document.createElement('div');
+                    const subType = item.subType || (
+                        item.label.includes('ZATWIERDZ') ? 'approved' :
+                        item.label.includes('OPŁA') ? 'paid' :
+                        item.label.includes('POUFN') ? 'confidential' :
+                        item.label.includes('KOPIA') || item.label.includes('ZGODN') ? 'copy' :
+                        item.label.includes('PILN') ? 'urgent' : 'custom'
+                    );
+                    st.className = `pdf-item-stamp stamp-type-${subType}`;
+                    st.style.width = '100%';
+                    st.style.height = '100%';
 
                 const curDate = item.date || new Date().toLocaleDateString('pl-PL');
 
@@ -834,7 +922,8 @@
                     `;
                 }
                 wrap.appendChild(st);
-            } else if (item.type === 'link') {
+            }
+        } else if (item.type === 'link') {
                 const lk = document.createElement('div');
                 lk.className = 'pdf-item-link';
                 lk.style.width = '100%';
@@ -1381,6 +1470,24 @@
                     }
                 });
             });
+        } else if (studioActiveTool === 'company-stamp') {
+            bar.innerHTML = `
+                <span class="prop-label">🏢 Oficjalna pieczęć firmowa z NIP, REGON i adresem:</span>
+                <button type="button" class="btn-sm-ghost" id="btnOpenCStampFromBar" style="background:rgba(15,145,210,0.18); border-color:#0F91D2; color:#FFFFFF;">✨ Otwórz kreator pieczęci</button>
+            `;
+            bar.querySelector('#btnOpenCStampFromBar')?.addEventListener('click', openCompanyStampModal);
+        } else if (studioActiveTool === 'watermark') {
+            bar.innerHTML = `
+                <span class="prop-label">💧 Znak wodny: <strong>${studioWatermark.enabled ? `WŁĄCZONY („${studioWatermark.text}”)` : 'WYŁĄCZONY'}</strong></span>
+                <button type="button" class="btn-sm-ghost" id="btnOpenWmFromBar" style="background:rgba(15,145,210,0.18); border-color:#0F91D2; color:#FFFFFF;">⚙️ Konfiguruj znak wodny</button>
+            `;
+            bar.querySelector('#btnOpenWmFromBar')?.addEventListener('click', openWatermarkModal);
+        } else if (studioActiveTool === 'page-number') {
+            bar.innerHTML = `
+                <span class="prop-label">🔢 Numerowanie stron: <strong>${studioPageNumbers.enabled ? 'WŁĄCZONE' : 'WYŁĄCZONE'}</strong></span>
+                <button type="button" class="btn-sm-ghost" id="btnOpenPnFromBar" style="background:rgba(15,145,210,0.18); border-color:#0F91D2; color:#FFFFFF;">⚙️ Konfiguruj paginację</button>
+            `;
+            bar.querySelector('#btnOpenPnFromBar')?.addEventListener('click', openPageNumberModal);
         } else if (studioActiveTool === 'link') {
             bar.innerHTML = `<span class="prop-label">🔗 Kliknij na dokumencie, aby dodać klikalny link dla czytelnika.</span>`;
         }
@@ -1520,6 +1627,485 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
             }
         }
+    }
+
+    // -------------------------------------------------------------
+    // KREATOR OFICJALNEJ PIECZĄTKI FIRMOWEJ
+    // -------------------------------------------------------------
+    function renderCompanyStampToCanvas(canvas, data) {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const color = data.color || '#1E40AF';
+        const shape = data.shape || 'rect';
+
+        if (shape === 'rect') {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+
+            // Zewnętrzna grubsza ramka
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(8, 8, w - 16, h - 16);
+
+            // Wewnętrzna cieńsza ramka
+            ctx.lineWidth = 1;
+            ctx.strokeRect(13, 13, w - 26, h - 26);
+
+            // Linia 1: Nazwa firmy (pogrubiona)
+            ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const name = (data.name || 'DROPSITE TECH SP. Z O.O.').toUpperCase();
+            ctx.fillText(name, w / 2, 34, w - 40);
+
+            // Linia 2: NIP i REGON
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            let nipRegon = '';
+            if (data.nip) nipRegon += data.nip.trim();
+            if (data.regon) nipRegon += (nipRegon ? '  |  ' : '') + data.regon.trim();
+            if (nipRegon) {
+                ctx.fillText(nipRegon, w / 2, 58, w - 40);
+            }
+
+            // Linia 3: Adres / Siedziba
+            if (data.address) {
+                ctx.fillText(data.address.trim(), w / 2, 80, w - 40);
+            }
+
+            // Linia 4: Kontakt / Tel / WWW
+            if (data.contact) {
+                ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                ctx.fillText(data.contact.trim(), w / 2, 102, w - 40);
+            }
+
+            ctx.restore();
+        } else {
+            // Okrągła pieczęć urzędowa
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = Math.min(cx, cy) - 10;
+
+            // Zewnętrzne koło
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Wewnętrzny okrąg
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Centralne koło ozdobne (przerywane)
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 24, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Tekst na okręgu u góry (Nazwa firmy)
+            const topText = (data.name || 'DROPSITE TECH SP. Z O.O.').toUpperCase();
+            drawCurvedText(ctx, topText, cx, cy, radius - 15, Math.PI * 0.85, Math.PI * 0.15, false);
+
+            // Tekst na okręgu na dole (Adres lub Kontakt)
+            const bottomText = (data.address || data.contact || 'POLSKA').toUpperCase();
+            drawCurvedText(ctx, bottomText, cx, cy, radius - 15, Math.PI * 1.15, Math.PI * 1.85, true);
+
+            // Środek pieczęci: Gwiazdki i NIP
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★ ★ ★', cx, cy - 8);
+            if (data.nip) {
+                ctx.font = 'bold 10px sans-serif';
+                ctx.fillText(data.nip.trim(), cx, cy + 10, radius * 1.2);
+            }
+
+            ctx.restore();
+        }
+    }
+
+    function drawCurvedText(ctx, text, cx, cy, radius, startAngle, endAngle, inward) {
+        ctx.save();
+        ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const numChars = text.length;
+        if (numChars === 0) { ctx.restore(); return; }
+
+        const angleStep = (endAngle - startAngle) / (numChars - 1 || 1);
+        for (let i = 0; i < numChars; i++) {
+            const char = text[i];
+            const angle = startAngle + i * angleStep;
+            ctx.save();
+            ctx.translate(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
+            ctx.rotate(angle + (inward ? -Math.PI / 2 : Math.PI / 2));
+            ctx.fillText(char, 0, 0);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    function initCompanyStampModal() {
+        const modal = document.getElementById('companyStampModal');
+        const canvas = document.getElementById('companyStampCanvas');
+        const btnClose = document.getElementById('btnCompanyStampClose');
+        const btnCancel = document.getElementById('btnCompanyStampCancel');
+        const btnApply = document.getElementById('btnCompanyStampApply');
+
+        const inName = document.getElementById('cStampName');
+        const inNip = document.getElementById('cStampNip');
+        const inRegon = document.getElementById('cStampRegon');
+        const inAddress = document.getElementById('cStampAddress');
+        const inContact = document.getElementById('cStampContact');
+
+        const shapeBtns = document.querySelectorAll('.stamp-shape-btn');
+        const colorBtns = document.querySelectorAll('.company-color-choice');
+
+        if (!modal || !canvas) return;
+
+        let curShape = 'rect';
+        let curColor = '#1E40AF';
+
+        function updatePreview() {
+            renderCompanyStampToCanvas(canvas, {
+                shape: curShape,
+                color: curColor,
+                name: inName?.value || '',
+                nip: inNip?.value || '',
+                regon: inRegon?.value || '',
+                address: inAddress?.value || '',
+                contact: inContact?.value || ''
+            });
+        }
+
+        [inName, inNip, inRegon, inAddress, inContact].forEach(input => {
+            if (input) input.addEventListener('input', updatePreview);
+        });
+
+        shapeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                shapeBtns.forEach(b => b.classList.toggle('active', b === btn));
+                curShape = btn.dataset.shape || 'rect';
+                updatePreview();
+            });
+        });
+
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorBtns.forEach(b => b.classList.toggle('active', b === btn));
+                curColor = btn.dataset.color || '#1E40AF';
+                updatePreview();
+            });
+        });
+
+        const closeModal = () => { modal.style.display = 'none'; };
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+        if (btnApply) {
+            btnApply.addEventListener('click', () => {
+                const dataUrl = canvas.toDataURL('image/png');
+                const overlayLayer = document.getElementById('pdfOverlayLayer');
+                const curW = overlayLayer ? overlayLayer.clientWidth : 595;
+                const curH = overlayLayer ? overlayLayer.clientHeight : 842;
+
+                const annotW = curShape === 'circle' ? 140 : 200;
+                const annotH = curShape === 'circle' ? 140 : 90;
+                const id = 'ann_' + (studioNextId++);
+
+                const annot = {
+                    id,
+                    page: studioCurrentPage,
+                    type: 'stamp',
+                    subType: 'company',
+                    shape: curShape,
+                    color: curColor,
+                    dataUrl,
+                    x: Math.max(20, Math.floor((curW - annotW) / 2)),
+                    y: Math.max(20, Math.floor((curH - annotH) / 2)),
+                    width: annotW,
+                    height: annotH,
+                    pageOverlayW: curW,
+                    pageOverlayH: curH
+                };
+
+                studioAnnotations.push(annot);
+                studioSelectedId = id;
+                renderPageAnnotations();
+                updateStudioPropertyBar();
+                renderFloatingToolbar();
+                if (window.playSound) window.playSound('pop');
+                if (window.showNotification) window.showNotification('Pieczęć firmowa została wstawiona na arkusz.', 'success');
+                closeModal();
+            });
+        }
+
+        updatePreview();
+    }
+
+    function openCompanyStampModal() {
+        const modal = document.getElementById('companyStampModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            const canvas = document.getElementById('companyStampCanvas');
+            if (canvas) {
+                const inName = document.getElementById('cStampName');
+                const inNip = document.getElementById('cStampNip');
+                const inRegon = document.getElementById('cStampRegon');
+                const inAddress = document.getElementById('cStampAddress');
+                const inContact = document.getElementById('cStampContact');
+                const shape = document.querySelector('.stamp-shape-btn.active')?.dataset.shape || 'rect';
+                const color = document.querySelector('.company-color-choice.active')?.dataset.color || '#1E40AF';
+                renderCompanyStampToCanvas(canvas, {
+                    shape,
+                    color,
+                    name: inName?.value || '',
+                    nip: inNip?.value || '',
+                    regon: inRegon?.value || '',
+                    address: inAddress?.value || '',
+                    contact: inContact?.value || ''
+                });
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // ZNAK WODNY (WATERMARK)
+    // -------------------------------------------------------------
+    function createWatermarkPngDataUrl(text, colorHex, angleDeg) {
+        const c = document.createElement('canvas');
+        c.width = 1000;
+        c.height = 1000;
+        const ctx = c.getContext('2d');
+
+        ctx.translate(500, 500);
+        ctx.rotate((angleDeg || -45) * Math.PI / 180);
+        ctx.fillStyle = colorHex || '#64748B';
+        ctx.font = '900 84px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text || 'POUFNE', 0, 0);
+
+        return c.toDataURL('image/png');
+    }
+
+    function initWatermarkModal() {
+        const modal = document.getElementById('watermarkModal');
+        const btnClose = document.getElementById('btnWatermarkClose');
+        const btnCancel = document.getElementById('btnWatermarkCancel');
+        const btnApply = document.getElementById('btnWatermarkApply');
+
+        const chkActive = document.getElementById('chkWatermarkActive');
+        const textInput = document.getElementById('wmTextInput');
+        const opacityRange = document.getElementById('wmOpacityRange');
+        const opacityVal = document.getElementById('wmOpacityVal');
+        const angleSelect = document.getElementById('wmAngleSelect');
+        const presetBtns = document.querySelectorAll('.wm-preset-pill');
+        const colorBtns = document.querySelectorAll('.wm-color-choice');
+
+        if (!modal) return;
+
+        let selectedColor = '#64748B';
+
+        if (opacityRange && opacityVal) {
+            opacityRange.addEventListener('input', () => {
+                opacityVal.textContent = `${opacityRange.value}%`;
+            });
+        }
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (textInput) textInput.value = btn.dataset.text || '';
+            });
+        });
+
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorBtns.forEach(b => b.classList.toggle('active', b === btn));
+                selectedColor = btn.dataset.color || '#64748B';
+            });
+        });
+
+        const closeModal = () => { modal.style.display = 'none'; };
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+        if (btnApply) {
+            btnApply.addEventListener('click', () => {
+                studioWatermark.enabled = chkActive?.checked || false;
+                studioWatermark.text = textInput?.value.trim() || 'POUFNE';
+                studioWatermark.opacity = parseInt(opacityRange?.value || '16', 10) / 100;
+                studioWatermark.angle = parseInt(angleSelect?.value || '-45', 10);
+                studioWatermark.color = selectedColor;
+
+                renderCurrentPdfPage();
+                updateStudioPropertyBar();
+                closeModal();
+                if (window.showNotification) {
+                    window.showNotification(
+                        studioWatermark.enabled 
+                            ? `Znak wodny "${studioWatermark.text}" został aktywowany.` 
+                            : 'Znak wodny został wyłączony.',
+                        'info'
+                    );
+                }
+            });
+        }
+    }
+
+    function openWatermarkModal() {
+        const modal = document.getElementById('watermarkModal');
+        if (modal) {
+            const chk = document.getElementById('chkWatermarkActive');
+            const textInput = document.getElementById('wmTextInput');
+            const range = document.getElementById('wmOpacityRange');
+            const val = document.getElementById('wmOpacityVal');
+            const select = document.getElementById('wmAngleSelect');
+
+            if (chk) chk.checked = studioWatermark.enabled;
+            if (textInput) textInput.value = studioWatermark.text;
+            if (range) range.value = Math.round(studioWatermark.opacity * 100);
+            if (val) val.textContent = `${Math.round(studioWatermark.opacity * 100)}%`;
+            if (select) select.value = `${studioWatermark.angle}`;
+
+            modal.style.display = 'flex';
+        }
+    }
+
+    // -------------------------------------------------------------
+    // AUTOMATYCZNA PAGINACJA (NUMEROWANIE STRON)
+    // -------------------------------------------------------------
+    function initPageNumberModal() {
+        const modal = document.getElementById('pageNumberModal');
+        const btnClose = document.getElementById('btnPageNumClose');
+        const btnCancel = document.getElementById('btnPageNumCancel');
+        const btnApply = document.getElementById('btnPageNumApply');
+
+        const chkActive = document.getElementById('chkPageNumActive');
+        const formatSelect = document.getElementById('pnFormatSelect');
+        const posSelect = document.getElementById('pnPosSelect');
+        const chkSkip = document.getElementById('chkPageNumSkipFirst');
+
+        if (!modal) return;
+
+        const closeModal = () => { modal.style.display = 'none'; };
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+        if (btnApply) {
+            btnApply.addEventListener('click', () => {
+                studioPageNumbers.enabled = chkActive?.checked || false;
+                studioPageNumbers.format = formatSelect?.value || 'cur_total';
+                studioPageNumbers.position = posSelect?.value || 'bottom-right';
+                studioPageNumbers.skipFirst = chkSkip?.checked || false;
+
+                updateStudioPropertyBar();
+                closeModal();
+                if (window.showNotification) {
+                    window.showNotification(
+                        studioPageNumbers.enabled
+                            ? 'Numerowanie stron zostanie naniesione podczas eksportu do PDF.'
+                            : 'Numerowanie stron zostało wyłączone.',
+                        'info'
+                    );
+                }
+            });
+        }
+    }
+
+    function openPageNumberModal() {
+        const modal = document.getElementById('pageNumberModal');
+        if (modal) {
+            const chk = document.getElementById('chkPageNumActive');
+            const format = document.getElementById('pnFormatSelect');
+            const pos = document.getElementById('pnPosSelect');
+            const skip = document.getElementById('chkPageNumSkipFirst');
+
+            if (chk) chk.checked = studioPageNumbers.enabled;
+            if (format) format.value = studioPageNumbers.format;
+            if (pos) pos.value = studioPageNumbers.position;
+            if (skip) skip.checked = studioPageNumbers.skipFirst;
+
+            modal.style.display = 'flex';
+        }
+    }
+
+    // -------------------------------------------------------------
+    // BOCZNY PANEL MINIATUREK STRON (THUMBNAILS)
+    // -------------------------------------------------------------
+    async function renderThumbnailsDrawer() {
+        const list = document.getElementById('studioThumbsList');
+        const countLabel = document.getElementById('thumbsCountLabel');
+        if (!list || !studioPdfJsDoc) return;
+
+        if (countLabel) countLabel.textContent = `${studioTotalPages}`;
+        list.innerHTML = '';
+
+        for (let p = 1; p <= studioTotalPages; p++) {
+            const card = document.createElement('div');
+            const isDel = studioDeletedPages.has(p);
+            const isCur = (p === studioCurrentPage);
+            card.className = `thumb-page-card ${isCur ? 'active' : ''} ${isDel ? 'deleted' : ''}`;
+            card.dataset.page = p;
+
+            card.innerHTML = `
+                <div class="thumb-page-canvas-wrap">
+                    <canvas id="thumbCanvas_${p}"></canvas>
+                </div>
+                <span class="thumb-page-num">Strona ${p}</span>
+                ${isDel ? '<span class="thumb-del-badge">Usunięta</span>' : ''}
+            `;
+
+            card.addEventListener('click', () => {
+                studioCurrentPage = p;
+                studioSelectedId = null;
+                renderCurrentPdfPage();
+                updateStudioPropertyBar();
+                renderFloatingToolbar();
+                updateThumbnailsActive();
+            });
+
+            list.appendChild(card);
+
+            try {
+                const pdfPage = await studioPdfJsDoc.getPage(p);
+                const rot = (pdfPage.rotate + (studioPageRotations[p] || 0)) % 360;
+                const unscaled = pdfPage.getViewport({ scale: 1.0, rotation: rot });
+                const thumbScale = Math.min(130 / unscaled.width, 170 / unscaled.height);
+                const viewport = pdfPage.getViewport({ scale: thumbScale, rotation: rot });
+
+                const canvas = document.getElementById(`thumbCanvas_${p}`);
+                if (canvas) {
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+                }
+            } catch (e) {
+                console.warn(`Błąd renderowania miniatury strony ${p}:`, e);
+            }
+        }
+    }
+
+    function updateThumbnailsActive() {
+        const cards = document.querySelectorAll('.thumb-page-card');
+        cards.forEach(c => {
+            const p = parseInt(c.dataset.page, 10);
+            c.classList.toggle('active', p === studioCurrentPage);
+            c.classList.toggle('deleted', studioDeletedPages.has(p));
+        });
     }
 
     // Pomocnicze funkcje do generowania krystalicznie czystych grafik PNG z tekstem / pieczęciami
@@ -1852,8 +2438,13 @@
                             opacity: 1.0
                         });
                     } else if (item.type === 'stamp') {
-                        const stampGen = createStampPngDataUrl(item);
-                        const pngBytes = base64ToUint8Array(stampGen.dataUrl.split(',')[1]);
+                        let pngBytes;
+                        if (item.subType === 'company' && item.dataUrl) {
+                            pngBytes = base64ToUint8Array(item.dataUrl.split(',')[1]);
+                        } else {
+                            const stampGen = createStampPngDataUrl(item);
+                            pngBytes = base64ToUint8Array(stampGen.dataUrl.split(',')[1]);
+                        }
                         const pngImg = await pdfDoc.embedPng(pngBytes);
                         page.drawImage(pngImg, {
                             x: targetX,
@@ -1902,6 +2493,25 @@
                         });
                     }
                 }
+
+                // 3. Znak Wodny na bieżącej stronie (jeśli włączony)
+                if (studioWatermark.enabled && studioWatermark.text) {
+                    try {
+                        const wmPngUrl = createWatermarkPngDataUrl(studioWatermark.text, studioWatermark.color, studioWatermark.angle);
+                        const wmPngBytes = base64ToUint8Array(wmPngUrl.split(',')[1]);
+                        const wmImg = await pdfDoc.embedPng(wmPngBytes);
+                        const wmSize = Math.min(pdfW, pdfH) * 0.95;
+                        page.drawImage(wmImg, {
+                            x: (pdfW - wmSize) / 2,
+                            y: (pdfH - wmSize) / 2,
+                            width: wmSize,
+                            height: wmSize,
+                            opacity: studioWatermark.opacity || 0.16
+                        });
+                    } catch (wErr) {
+                        console.warn('Błąd nakładania znaku wodnego:', wErr);
+                    }
+                }
             }
 
             // Usunięcie stron oznaczonych do usunięcia (w odwrotnej kolejności indeksów)
@@ -1909,6 +2519,56 @@
                 const pageNum = i + 1;
                 if (studioDeletedPages.has(pageNum)) {
                     pdfDoc.removePage(i);
+                }
+            }
+
+            // 4. Automatyczna Paginacja (jeśli włączona)
+            if (studioPageNumbers.enabled) {
+                const finalPageCount = pdfDoc.getPageCount();
+                for (let i = 0; i < finalPageCount; i++) {
+                    const pageNum = i + 1;
+                    if (studioPageNumbers.skipFirst && pageNum === 1) continue;
+
+                    let numText = `${pageNum}`;
+                    if (studioPageNumbers.format === 'cur_total') {
+                        numText = `Strona ${pageNum} z ${finalPageCount}`;
+                    } else if (studioPageNumbers.format === 'slash') {
+                        numText = `${pageNum} / ${finalPageCount}`;
+                    } else if (studioPageNumbers.format === 'dashes') {
+                        numText = `- ${pageNum} -`;
+                    }
+
+                    try {
+                        const numGen = createTextPngDataUrl(numText, 10, studioPageNumbers.color || '#334155', false);
+                        const numPngBytes = base64ToUint8Array(numGen.dataUrl.split(',')[1]);
+                        const numImg = await pdfDoc.embedPng(numPngBytes);
+
+                        const curPage = pdfDoc.getPage(i);
+                        const { width: pW, height: pH } = curPage.getSize();
+                        let posX = pW - numGen.cssWidth - 32;
+                        let posY = 20;
+
+                        if (studioPageNumbers.position === 'bottom-center') {
+                            posX = (pW - numGen.cssWidth) / 2;
+                            posY = 20;
+                        } else if (studioPageNumbers.position === 'bottom-left') {
+                            posX = 32;
+                            posY = 20;
+                        } else if (studioPageNumbers.position === 'top-right') {
+                            posX = pW - numGen.cssWidth - 32;
+                            posY = pH - 28;
+                        }
+
+                        curPage.drawImage(numImg, {
+                            x: posX,
+                            y: posY,
+                            width: numGen.cssWidth,
+                            height: numGen.cssHeight,
+                            opacity: 0.85
+                        });
+                    } catch (pErr) {
+                        console.warn('Błąd nakładania paginacji:', pErr);
+                    }
                 }
             }
 
