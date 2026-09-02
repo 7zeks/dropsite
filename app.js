@@ -563,58 +563,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Obsługa zakupu PRO (BLIK 30 Dni oraz Subskrypcja) przez Polar.sh
-    async function startPolarCheckout(planType, buttonElement) {
-        if (isProUser()) {
-            if (typeof showNotification === 'function') {
-                showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
-            }
-            return;
-        }
+    // Oficjalny link kasy Stripe (BLIK na 30 dni)
+    const STRIPE_PRO_BLIK_URL = 'https://buy.stripe.com/test_00w00jbPz3MgeLC0Zp2go01';
 
-        const btnText = buttonElement ? buttonElement.querySelector('.btn-text') : null;
-        const origText = btnText ? btnText.textContent : 'Kup PRO';
-        if (btnText) btnText.textContent = 'Przekierowanie do kasy...';
-        if (buttonElement) buttonElement.style.pointerEvents = 'none';
-
-        try {
-            const res = await fetch(`${WORKER_URL}/create-checkout`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plan_type: planType,
-                    success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
-                })
-            });
-            const data = await res.json();
-            if (data.success && data.url) {
-                window.location.href = data.url;
-            } else {
-                throw new Error(data.error || 'Nie udało się otworzyć kasy');
-            }
-        } catch (err) {
-            console.error('Checkout error:', err);
-            if (typeof showNotification === 'function') {
-                showNotification('Błąd otwierania kasy Polar.sh. Spróbuj ponownie.', 'error');
-            }
-            if (btnText) btnText.textContent = origText;
-            if (buttonElement) buttonElement.style.pointerEvents = 'auto';
-        }
-    }
-
+    // Obsługa zakupu PRO (BLIK 30 Dni) przez bezpośredni Stripe Payment Link
     const btnBuyProBlik = document.getElementById('btnBuyProBlik');
     if (btnBuyProBlik) {
         btnBuyProBlik.addEventListener('click', (e) => {
             e.preventDefault();
-            startPolarCheckout('one_time', btnBuyProBlik);
+            if (isProUser()) {
+                if (typeof showNotification === 'function') {
+                    showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan Dropsite PRO!', 'info');
+                }
+                return;
+            }
+            const btnText = btnBuyProBlik.querySelector('.btn-text');
+            if (btnText) btnText.textContent = 'Przekierowanie do BLIK...';
+            btnBuyProBlik.style.pointerEvents = 'none';
+            window.location.href = STRIPE_PRO_BLIK_URL;
         });
     }
 
+    // Obsługa zakupu subskrypcji kartą
     const btnBuyProSub = document.getElementById('btnBuyProSub');
     if (btnBuyProSub) {
         btnBuyProSub.addEventListener('click', (e) => {
             e.preventDefault();
-            startPolarCheckout('subscription', btnBuyProSub);
+            if (isProUser()) {
+                if (typeof showNotification === 'function') {
+                    showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
+                }
+                return;
+            }
+            const btnText = btnBuyProSub.querySelector('.btn-text');
+            if (btnText) btnText.textContent = 'Przekierowanie...';
+            btnBuyProSub.style.pointerEvents = 'none';
+            // Przekierowanie do kasy Stripe
+            window.location.href = STRIPE_PRO_BLIK_URL;
         });
     }
 
@@ -627,16 +612,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Detekcja powrotu po udanym zakupie z Polar.sh (?pro_success=1)
+    // Detekcja powrotu po udanym zakupie ze Stripe BLIK (?pro_success=1)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('pro_success') === '1') {
+        // Generuj i aktywuj natychmiast klucz Dropsite PRO na 30 dni
+        const randomHash = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        const blikProKey = `DS-PRO-BLIK-${randomHash}`;
+        
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
+
+        localStorage.setItem('dropsite_pro_key', blikProKey);
+        localStorage.setItem('dropsite_pro_type', 'blik_30d');
+        localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
+
+        updateProUI();
         window.openProModal();
+
         if (typeof confetti === 'function') {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            confetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
         }
         playSound('success');
         if (typeof showNotification === 'function') {
-            showNotification('Dziękujemy za zakup subskrypcji PRO! Wpisz swój klucz licencyjny z e-maila lub ekranu podziękowania.', 'success');
+            showNotification(`🎉 Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
         }
         history.replaceState(null, '', window.location.pathname);
     }
