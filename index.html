@@ -719,9 +719,9 @@
                         </div>
                     </div>
 
-                    <!-- PANEL 2: EDYTOR PDF (NAPIS & LINK) -->
+                    <!-- PANEL 2: EDYTOR PDF (DROPSITE PDF STUDIO) -->
                     <div id="toolPanel_edit" class="tool-panel" style="display: none;">
-                        <div class="tool-card-box">
+                        <div class="tool-card-box studio-card-box">
                             <div class="tool-dropzone" id="editDropzone">
                                 <input type="file" id="editFileInput" accept=".pdf,application/pdf" style="display: none;">
                                 <div class="tool-drop-icon">
@@ -731,104 +731,76 @@
                                     </svg>
                                 </div>
                                 <strong class="tool-drop-title" data-i18n="tool_edit_drop_title">Wybierz lub upuść dokument PDF</strong>
-                                <span class="tool-drop-sub" data-i18n="tool_edit_drop_sub">Wstaw własny napis, pieczątkę, podpis lub klikalny link w dowolnym miejscu</span>
+                                <span class="tool-drop-sub" data-i18n="tool_edit_drop_sub">Podpis odręczny, cenzura RODO, zakreślacz, tekst, stemple i klikalne linki</span>
                             </div>
 
-                            <!-- Obszar roboczy po wczytaniu PDF -->
+                            <!-- Obszar roboczy po wczytaniu PDF (Dropsite PDF Studio) -->
                             <div id="editWorkspace" style="display: none;">
-                                <div class="edit-doc-bar">
-                                    <div class="edit-doc-left">
+                                <!-- Pasek informacyjny dokumentu & nawigacji stron -->
+                                <div class="studio-doc-bar">
+                                    <div class="studio-doc-info">
                                         <span class="tool-pdf-icon-mini">📄</span>
-                                        <strong id="editLoadedFileName">dokument.pdf</strong>
+                                        <strong id="editLoadedFileName" class="studio-filename">dokument.pdf</strong>
+                                        <span id="editLoadedFileSize" class="studio-filesize">0 KB</span>
+                                        <button type="button" class="btn-sm-ghost" id="btnEditChangeFile" title="Wczytaj inny dokument PDF">Zmień plik</button>
                                     </div>
-                                    <button type="button" class="btn-sm-ghost" onclick="document.getElementById('editFileInput').click()">Zmień plik</button>
-                                </div>
-
-                                <div class="edit-mode-selector">
-                                    <label class="edit-mode-pill">
-                                        <input type="radio" name="editModeChoice" value="text" checked>
-                                        <span>✍️ Dodaj Napis / Podpis</span>
-                                    </label>
-                                    <label class="edit-mode-pill">
-                                        <input type="radio" name="editModeChoice" value="link">
-                                        <span>🔗 Dodaj Klikalny Link</span>
-                                    </label>
-                                </div>
-
-                                <!-- Kontrolki tekstu -->
-                                <div id="editTextControls" class="edit-controls-subpanel">
-                                    <div class="form-group">
-                                        <label>Treść napisu / pieczątki:</label>
-                                        <input type="text" id="editTextInput" class="tool-input" placeholder="np. Zatwierdzono, Podpis, Data, Poufne..." value="Zatwierdzono do publikacji">
+                                    <div class="studio-page-nav">
+                                        <button type="button" class="btn-studio-nav" id="btnEditPrevPage" title="Poprzednia strona" disabled>&larr;</button>
+                                        <span id="editPageNumberLabel" class="studio-page-indicator">Strona 1 z 1</span>
+                                        <button type="button" class="btn-studio-nav" id="btnEditNextPage" title="Następna strona" disabled>&rarr;</button>
                                     </div>
-                                    <div class="edit-inline-row">
-                                        <div class="form-group">
-                                            <label>Rozmiar czcionki:</label>
-                                            <select id="editFontSizeSelect" class="tool-select">
-                                                <option value="12">12 pt (Drobny druk)</option>
-                                                <option value="16" selected>16 pt (Standardowy)</option>
-                                                <option value="20">20 pt (Podpis)</option>
-                                                <option value="26">26 pt (Nagłówek)</option>
-                                                <option value="34">34 pt (Pieczęć / Duży)</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Kolor napisu:</label>
-                                            <div class="edit-color-palette">
-                                                <label class="color-dot" style="background: #FF4439;" title="Czerwony">
-                                                    <input type="radio" name="editTextColor" value="#FF4439" checked>
-                                                    <span class="dot-check"></span>
-                                                </label>
-                                                <label class="color-dot" style="background: #000000;" title="Czarny">
-                                                    <input type="radio" name="editTextColor" value="#000000">
-                                                    <span class="dot-check"></span>
-                                                </label>
-                                                <label class="color-dot" style="background: #0F91D2;" title="Niebieski">
-                                                    <input type="radio" name="editTextColor" value="#0F91D2">
-                                                    <span class="dot-check"></span>
-                                                </label>
-                                                <label class="color-dot" style="background: #D4AF37;" title="Złoty">
-                                                    <input type="radio" name="editTextColor" value="#D4AF37">
-                                                    <span class="dot-check"></span>
-                                                </label>
-                                                <label class="color-dot" style="background: #FFFFFF;" title="Biały">
-                                                    <input type="radio" name="editTextColor" value="#FFFFFF">
-                                                    <span class="dot-check"></span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                    <div class="studio-page-ops">
+                                        <button type="button" class="btn-studio-op" id="btnEditRotateLeft" title="Obróć stronę o 90° w lewo">↺</button>
+                                        <button type="button" class="btn-studio-op" id="btnEditRotateRight" title="Obróć stronę o 90° w prawo">↻</button>
+                                        <button type="button" class="btn-studio-op btn-op-danger" id="btnEditDeletePage" title="Usuń tę stronę z pliku">🗑️</button>
                                     </div>
                                 </div>
 
-                                <!-- Kontrolki linku -->
-                                <div id="editLinkControls" class="edit-controls-subpanel" style="display: none;">
-                                    <div class="form-group">
-                                        <label>Adres docelowy linku (URL):</label>
-                                        <input type="url" id="editLinkUrlInput" class="tool-input" placeholder="https://twojastrona.pl" value="https://dropsite.pages.dev">
-                                        <span class="tool-hint">Kliknięcie w zaznaczone miejsce w gotowym PDF otworzy tę stronę w przeglądarce odbiorcy.</span>
+                                <!-- Wstążka narzędzi (Tools Ribbon) -->
+                                <div class="studio-ribbon">
+                                    <button type="button" class="studio-ribbon-btn active" data-studio-tool="text">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                                        <span>Tekst</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="sig">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"></path><path d="M18 12L11 5"></path></svg>
+                                        <span>E-Podpis</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="highlight">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"></path><path d="m22 2-2 2-4-4 2-2 4 4Z"></path><path d="m14 6 4 4"></path></svg>
+                                        <span>Zakreślacz</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="censor">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="currentColor"></rect></svg>
+                                        <span>Cenzura / RODO</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="stamp">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="12" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        <span>Pieczątka</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="link">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                        <span>Link URL</span>
+                                    </button>
+                                </div>
+
+                                <!-- Podręczny pasek właściwości wybranego narzędzia/obiektu -->
+                                <div id="studioPropertyBar" class="studio-prop-bar"></div>
+
+                                <!-- Scena z podglądem Canvas i interaktywną nakładką -->
+                                <div class="studio-viewport-stage" id="studioViewportStage">
+                                    <div class="studio-sheet-wrap" id="studioSheetWrap">
+                                        <canvas id="pdfRenderCanvas"></canvas>
+                                        <div id="pdfOverlayLayer" class="pdf-overlay-layer"></div>
                                     </div>
                                 </div>
 
-                                <!-- Selektor strony i podgląd kliknięcia -->
-                                <div class="edit-preview-box-wrap">
-                                    <div class="edit-page-nav">
-                                        <button type="button" class="btn-sm-nav" id="btnEditPrevPage" disabled>&larr; Poprzednia</button>
-                                        <strong id="editPageNumberLabel">Strona 1 z 1</strong>
-                                        <button type="button" class="btn-sm-nav" id="btnEditNextPage" disabled>Następna &rarr;</button>
-                                    </div>
-                                    <span class="edit-preview-hint">👇 Kliknij w wybranym miejscu na arkuszu dokumentu, aby ustawić pozycję:</span>
-
-                                    <div class="edit-page-sheet" id="editPageVisualPreview">
-                                        <div class="edit-visual-pin pin-mode-text" id="editVisualPin" style="left: 50%; top: 50%;">
-                                            <span class="pin-target-cross"></span>
-                                            <span class="pin-label-text" id="editVisualPinText">Zatwierdzono do publikacji</span>
-                                        </div>
-                                    </div>
+                                <div class="studio-bottom-actions">
+                                    <button type="button" class="btn-primary tool-action-btn" id="btnExecuteEdit">
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                        <span class="btn-text" data-i18n="tool_btn_apply_edit">Zastosuj i Wyeksportuj PDF</span>
+                                    </button>
                                 </div>
-
-                                <button type="button" class="btn-primary tool-action-btn" id="btnExecuteEdit" style="margin-top: 20px;">
-                                    <span class="btn-text" data-i18n="tool_btn_apply_edit">Zastosuj i Wyeksportuj PDF</span>
-                                </button>
 
                                 <div id="editResultBox" style="display: none;"></div>
                             </div>
@@ -1957,11 +1929,50 @@
         </div>
     </div>
 
+    <!-- MODAL: PODPIS ODRĘCZNY (SIGNATURE PAD) -->
+    <div id="signatureModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span>🖋️</span>
+                    <h3>Podpis odręczny (E-Podpis)</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnSigClose">✕</button>
+            </div>
+            <div class="sig-modal-body">
+                <p class="sig-instruction">Złóż podpis myszką, piórkiem lub palcem na ekranie dotykowym:</p>
+                <div class="sig-canvas-wrap">
+                    <canvas id="sigPadCanvas" width="560" height="200"></canvas>
+                    <div class="sig-canvas-baseline"></div>
+                </div>
+                <div class="sig-tools-row">
+                    <div class="sig-colors-picker">
+                        <button type="button" class="sig-color-choice active" data-color="#000000" style="background: #000000;" title="Czarny"></button>
+                        <button type="button" class="sig-color-choice" data-color="#0F2B5C" style="background: #0F2B5C;" title="Granatowy"></button>
+                        <button type="button" class="sig-color-choice" data-color="#0F91D2" style="background: #0F91D2;" title="Błękitny"></button>
+                    </div>
+                    <div class="sig-actions-right">
+                        <button type="button" class="btn-sm-ghost" id="btnSigClear">Wyczyść</button>
+                        <label class="btn-sm-ghost btn-sig-upload">
+                            <span>Wgraj plik (PNG)</span>
+                            <input type="file" id="sigImageUploadInput" accept="image/png,image/jpeg" style="display: none;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="btnSigCancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnSigApply" style="margin: 0; padding: 10px 20px; width: auto;">Wstaw podpis do dokumentu</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="js/pdf.min.js"></script>
     <script src="js/pdf-lib.min.js"></script>
     <script src="js/toolbox.js"></script>
     <script src="js/ads-engine.js"></script>

@@ -201,26 +201,52 @@
     }
 
     // ==========================================
-    // 2. MODUŁ: EDYTOR PDF (TEKST, PODPIS & LINKI)
+    // 2. MODUŁ: DROPSITE PDF STUDIO (ZAAWANSOWANY EDYTOR)
     // ==========================================
+    let studioFile = null;
+    let studioBytes = null;
+    let studioPdfJsDoc = null;
+    let studioTotalPages = 1;
+    let studioCurrentPage = 1;
+    let studioPageRotations = {}; // { [pageNum]: 0 | 90 | 180 | 270 }
+    let studioDeletedPages = new Set();
+    let studioAnnotations = []; // { id, page, type, x, y, width, height, text, fontSize, color, bold, dataUrl, url, label }
+    let studioActiveTool = 'text'; // 'text' | 'sig' | 'highlight' | 'censor' | 'stamp' | 'link'
+    let studioSelectedId = null;
+    let studioNextId = 1;
+
+    // Inicjalizacja PDF.js workera
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+    }
+
     function initEditModule() {
         const dropzone = document.getElementById('editDropzone');
         const fileInput = document.getElementById('editFileInput');
+        const btnChangeFile = document.getElementById('btnEditChangeFile');
+        const btnPrevPage = document.getElementById('btnEditPrevPage');
+        const btnNextPage = document.getElementById('btnEditNextPage');
+        const btnRotateLeft = document.getElementById('btnEditRotateLeft');
+        const btnRotateRight = document.getElementById('btnEditRotateRight');
+        const btnDeletePage = document.getElementById('btnEditDeletePage');
         const btnAction = document.getElementById('btnExecuteEdit');
-        const pagePreview = document.getElementById('editPageVisualPreview');
+        const overlayLayer = document.getElementById('pdfOverlayLayer');
 
         if (!dropzone || !fileInput) return;
 
+        // Wybór pliku
         dropzone.addEventListener('click', () => fileInput.click());
-
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 loadEditPdfFile(e.target.files[0]);
                 fileInput.value = '';
             }
         });
+        if (btnChangeFile) {
+            btnChangeFile.addEventListener('click', () => fileInput.click());
+        }
 
-        // Drag & drop
+        // Drag & drop na dropzone
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropzone.classList.add('drag-over');
@@ -234,60 +260,92 @@
             }
         });
 
-        // Przełączanie trybu Tekst vs Link
-        const modeRadios = document.querySelectorAll('input[name="editModeChoice"]');
-        modeRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                editMode = radio.value;
-                const textControls = document.getElementById('editTextControls');
-                const linkControls = document.getElementById('editLinkControls');
-                if (textControls) textControls.style.display = editMode === 'text' ? 'block' : 'none';
-                if (linkControls) linkControls.style.display = editMode === 'link' ? 'block' : 'none';
-                updateVisualPin();
+        // Wstążka narzędzi (Ribbon)
+        const ribbonBtns = document.querySelectorAll('.studio-ribbon-btn');
+        ribbonBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tool = btn.getAttribute('data-studio-tool');
+                if (tool === 'sig') {
+                    openSignatureModal();
+                    return;
+                }
+                studioActiveTool = tool;
+                ribbonBtns.forEach(b => b.classList.toggle('active', b === btn));
+                updateStudioPropertyBar();
             });
         });
 
-        // Kliknięcie na podglądzie strony – ustalenie współrzędnych
-        if (pagePreview) {
-            pagePreview.addEventListener('click', (e) => {
-                const rect = pagePreview.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
+        // Nawigacja stron
+        if (btnPrevPage) {
+            btnPrevPage.addEventListener('click', () => {
+                if (studioCurrentPage > 1) {
+                    studioCurrentPage--;
+                    renderCurrentPdfPage();
+                }
+            });
+        }
+        if (btnNextPage) {
+            btnNextPage.addEventListener('click', () => {
+                if (studioCurrentPage < studioTotalPages) {
+                    studioCurrentPage++;
+                    renderCurrentPdfPage();
+                }
+            });
+        }
 
-                editClickPos.xPct = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-                editClickPos.yPct = Math.max(0, Math.min(100, (clickY / rect.height) * 100));
-
-                updateVisualPin();
+        // Obracanie stron
+        if (btnRotateLeft) {
+            btnRotateLeft.addEventListener('click', () => {
+                const cur = studioPageRotations[studioCurrentPage] || 0;
+                studioPageRotations[studioCurrentPage] = (cur + 270) % 360;
+                renderCurrentPdfPage();
+                if (window.playSound) window.playSound('pop');
+            });
+        }
+        if (btnRotateRight) {
+            btnRotateRight.addEventListener('click', () => {
+                const cur = studioPageRotations[studioCurrentPage] || 0;
+                studioPageRotations[studioCurrentPage] = (cur + 90) % 360;
+                renderCurrentPdfPage();
                 if (window.playSound) window.playSound('pop');
             });
         }
 
-        // Zmiana tekstu lub linku na bieżąco
-        const textInput = document.getElementById('editTextInput');
-        if (textInput) {
-            textInput.addEventListener('input', updateVisualPin);
-        }
-
-        // Zmiana strony
-        const prevPageBtn = document.getElementById('btnEditPrevPage');
-        const nextPageBtn = document.getElementById('btnEditNextPage');
-        if (prevPageBtn) {
-            prevPageBtn.addEventListener('click', () => {
-                if (editSelectedPage > 1) {
-                    editSelectedPage--;
-                    updatePageSelectorUI();
+        // Usuwanie / przywracanie strony
+        if (btnDeletePage) {
+            btnDeletePage.addEventListener('click', () => {
+                if (studioDeletedPages.has(studioCurrentPage)) {
+                    studioDeletedPages.delete(studioCurrentPage);
+                    if (window.showNotification) window.showNotification(`Przywrócono stronę ${studioCurrentPage}`, 'info');
+                } else {
+                    if (studioDeletedPages.size >= studioTotalPages - 1) {
+                        if (window.showNotification) window.showNotification('Nie możesz usunąć wszystkich stron dokumentu!', 'error');
+                        return;
+                    }
+                    studioDeletedPages.add(studioCurrentPage);
+                    if (window.showNotification) window.showNotification(`Strona ${studioCurrentPage} zostanie usunięta przy eksporcie`, 'info');
                 }
-            });
-        }
-        if (nextPageBtn) {
-            nextPageBtn.addEventListener('click', () => {
-                if (editSelectedPage < editPageCount) {
-                    editSelectedPage++;
-                    updatePageSelectorUI();
-                }
+                renderCurrentPdfPage();
             });
         }
 
+        // Kliknięcie na arkuszu – wstawianie elementu w miejscu kliknięcia
+        if (overlayLayer) {
+            overlayLayer.addEventListener('click', (e) => {
+                if (e.target.closest('.pdf-item-wrap')) return; // kliknięto w istniejący element
+
+                const rect = overlayLayer.getBoundingClientRect();
+                const clickX = Math.max(10, Math.min(rect.width - 60, e.clientX - rect.left));
+                const clickY = Math.max(10, Math.min(rect.height - 30, e.clientY - rect.top));
+
+                addNewAnnotationAt(studioActiveTool, clickX, clickY);
+            });
+        }
+
+        // Modal podpisu odręcznego
+        initSignatureModal();
+
+        // Przycisk eksportu
         if (btnAction) {
             btnAction.addEventListener('click', executePdfEdit);
         }
@@ -299,152 +357,788 @@
             return;
         }
 
-        if (typeof PDFLib === 'undefined') {
-            if (window.showNotification) window.showNotification('Biblioteka PDF ładuje się... Spróbuj za chwilę.', 'info');
+        if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
+            if (window.showNotification) window.showNotification('Ładowanie silnika PDF... Spróbuj za sekundę.', 'info');
             return;
         }
 
         try {
-            editFile = file;
-            const arrayBuf = await file.arrayBuffer();
-            editPdfDoc = await PDFLib.PDFDocument.load(arrayBuf);
-            editPageCount = editPdfDoc.getPageCount();
-            editSelectedPage = 1;
+            studioFile = file;
+            studioBytes = await file.arrayBuffer();
 
-            const firstPage = editPdfDoc.getPage(0);
-            const { width, height } = firstPage.getSize();
-            editPageDimensions = { width, height };
+            // Kopia bufora dla PDF.js, bo przeniesienie bufora może go odpiąć
+            const pdfData = new Uint8Array(studioBytes.slice(0));
+            studioPdfJsDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            studioTotalPages = studioPdfJsDoc.numPages;
+            studioCurrentPage = 1;
+            studioPageRotations = {};
+            studioDeletedPages.clear();
+            studioAnnotations = [];
+            studioSelectedId = null;
 
-            // Pokaż obszar edytora
-            const editorWorkspace = document.getElementById('editWorkspace');
+            // Pokaż obszar roboczy Studio
+            const workspace = document.getElementById('editWorkspace');
             const dropzone = document.getElementById('editDropzone');
-            const fileNameLabel = document.getElementById('editLoadedFileName');
-            if (editorWorkspace) editorWorkspace.style.display = 'block';
-            if (dropzone) dropzone.style.display = 'none';
-            if (fileNameLabel) fileNameLabel.textContent = `${file.name} (${editPageCount} ${editPageCount === 1 ? 'strona' : 'stron'})`;
+            const nameEl = document.getElementById('editLoadedFileName');
+            const sizeEl = document.getElementById('editLoadedFileSize');
 
-            updatePageSelectorUI();
-            updateVisualPin();
+            if (workspace) workspace.style.display = 'block';
+            if (dropzone) dropzone.style.display = 'none';
+            if (nameEl) nameEl.textContent = file.name;
+            if (sizeEl) sizeEl.textContent = formatBytes(file.size);
+
+            await renderCurrentPdfPage();
+            updateStudioPropertyBar();
+
             if (window.playSound) window.playSound('success');
+            if (window.showNotification) window.showNotification(`Wczytano dokument (${studioTotalPages} ${studioTotalPages === 1 ? 'strona' : 'stron'})`, 'success');
         } catch (err) {
-            console.error('PDF load error:', err);
-            if (window.showNotification) window.showNotification('Nie udało się wczytać PDF: ' + err.message, 'error');
+            console.error('Błąd wczytywania PDF:', err);
+            if (window.showNotification) window.showNotification('Błąd odczytu PDF: ' + err.message, 'error');
         }
     }
 
-    function updatePageSelectorUI() {
-        const label = document.getElementById('editPageNumberLabel');
+    async function renderCurrentPdfPage() {
+        if (!studioPdfJsDoc) return;
+
+        const canvas = document.getElementById('pdfRenderCanvas');
+        const overlayLayer = document.getElementById('pdfOverlayLayer');
+        const stage = document.getElementById('studioViewportStage');
+        const pageLabel = document.getElementById('editPageNumberLabel');
         const prevBtn = document.getElementById('btnEditPrevPage');
         const nextBtn = document.getElementById('btnEditNextPage');
+        const delBtn = document.getElementById('btnEditDeletePage');
 
-        if (label) label.textContent = `Strona ${editSelectedPage} z ${editPageCount}`;
-        if (prevBtn) prevBtn.disabled = editSelectedPage <= 1;
-        if (nextBtn) nextBtn.disabled = editSelectedPage >= editPageCount;
-    }
+        if (!canvas || !overlayLayer) return;
 
-    function updateVisualPin() {
-        const pin = document.getElementById('editVisualPin');
-        const pinText = document.getElementById('editVisualPinText');
-        const textInput = document.getElementById('editTextInput');
-        const linkInput = document.getElementById('editLinkUrlInput');
+        // Aktualizacja kontrolek nawigacji
+        const isDeleted = studioDeletedPages.has(studioCurrentPage);
+        if (pageLabel) {
+            pageLabel.innerHTML = isDeleted 
+                ? `<span style="color: #FF8E72; text-decoration: line-through;">Strona ${studioCurrentPage}</span> <span style="font-size: 10px; color: #FF4439;">(Usunięta)</span>`
+                : `Strona ${studioCurrentPage} z ${studioTotalPages}`;
+        }
+        if (prevBtn) prevBtn.disabled = studioCurrentPage <= 1;
+        if (nextBtn) nextBtn.disabled = studioCurrentPage >= studioTotalPages;
+        if (delBtn) {
+            delBtn.title = isDeleted ? 'Przywróć tę stronę' : 'Usuń tę stronę z pliku';
+            delBtn.style.opacity = isDeleted ? '1' : '0.7';
+            delBtn.style.background = isDeleted ? 'rgba(255, 68, 57, 0.3)' : '';
+        }
 
-        if (!pin) return;
+        try {
+            const page = await studioPdfJsDoc.getPage(studioCurrentPage);
+            const extraRotation = studioPageRotations[studioCurrentPage] || 0;
+            const totalRotation = (page.rotate + extraRotation) % 360;
 
-        pin.style.left = `${editClickPos.xPct}%`;
-        pin.style.top = `${editClickPos.yPct}%`;
+            // Obliczenie skali, aby dopasować arkusz do kontenera roboczego (maksymalnie 680px)
+            const availableWidth = Math.max(300, (stage ? stage.clientWidth - 50 : 640));
+            const unscaledViewport = page.getViewport({ scale: 1.0, rotation: totalRotation });
+            const fitScale = Math.min(1.5, availableWidth / unscaledViewport.width);
+            const viewport = page.getViewport({ scale: fitScale, rotation: totalRotation });
 
-        if (editMode === 'text') {
-            const val = textInput?.value.trim() || 'Kliknij i wpisz tekst';
-            if (pinText) pinText.textContent = val;
-            pin.className = 'edit-visual-pin pin-mode-text';
-        } else {
-            const val = linkInput?.value.trim() || 'https://twojastrona.pl';
-            if (pinText) pinText.textContent = `🔗 ${val}`;
-            pin.className = 'edit-visual-pin pin-mode-link';
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(viewport.width * dpr);
+            canvas.height = Math.floor(viewport.height * dpr);
+            canvas.style.width = `${Math.floor(viewport.width)}px`;
+            canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+            overlayLayer.style.width = `${Math.floor(viewport.width)}px`;
+            overlayLayer.style.height = `${Math.floor(viewport.height)}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+            await page.render(renderContext).promise;
+
+            // Narysuj nałożone adnotacje dla bieżącej strony
+            renderPageAnnotations();
+        } catch (err) {
+            console.error('Błąd renderowania strony:', err);
         }
     }
 
+    function addNewAnnotationAt(type, x, y) {
+        const id = 'ann_' + (studioNextId++);
+        let annot = null;
+
+        if (type === 'text') {
+            annot = {
+                id,
+                page: studioCurrentPage,
+                type: 'text',
+                x,
+                y,
+                text: 'Nowy tekst...',
+                fontSize: 16,
+                color: '#FF4439',
+                bold: true,
+                width: 140,
+                height: 30
+            };
+        } else if (type === 'highlight') {
+            annot = {
+                id,
+                page: studioCurrentPage,
+                type: 'highlight',
+                x,
+                y,
+                color: '#FFEB3B',
+                width: 130,
+                height: 24
+            };
+        } else if (type === 'censor') {
+            annot = {
+                id,
+                page: studioCurrentPage,
+                type: 'censor',
+                x,
+                y,
+                color: '#000000',
+                width: 140,
+                height: 24
+            };
+        } else if (type === 'stamp') {
+            annot = {
+                id,
+                page: studioCurrentPage,
+                type: 'stamp',
+                x,
+                y,
+                label: 'ZATWIERDZONO',
+                color: '#FF4439',
+                width: 160,
+                height: 40
+            };
+        } else if (type === 'link') {
+            annot = {
+                id,
+                page: studioCurrentPage,
+                type: 'link',
+                x,
+                y,
+                url: 'https://dropsite.pages.dev',
+                width: 160,
+                height: 28
+            };
+        }
+
+        if (annot) {
+            studioAnnotations.push(annot);
+            studioSelectedId = id;
+            renderPageAnnotations();
+            updateStudioPropertyBar();
+            if (window.playSound) window.playSound('pop');
+        }
+    }
+
+    function renderPageAnnotations() {
+        const overlayLayer = document.getElementById('pdfOverlayLayer');
+        if (!overlayLayer) return;
+
+        overlayLayer.innerHTML = '';
+
+        const pageAnnots = studioAnnotations.filter(a => a.page === studioCurrentPage);
+        pageAnnots.forEach(item => {
+            const wrap = document.createElement('div');
+            wrap.className = `pdf-item-wrap ${studioSelectedId === item.id ? 'selected' : ''}`;
+            wrap.style.left = `${item.x}px`;
+            wrap.style.top = `${item.y}px`;
+            wrap.style.width = `${item.width}px`;
+            wrap.style.height = `${item.height}px`;
+            wrap.dataset.id = item.id;
+
+            // Przycisk usuwania
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'pdf-item-del-btn';
+            delBtn.innerHTML = '✕';
+            delBtn.title = 'Usuń';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeAnnotation(item.id);
+            });
+            wrap.appendChild(delBtn);
+
+            // Zawartość elementu
+            if (item.type === 'text') {
+                const textEl = document.createElement('div');
+                textEl.className = 'pdf-item-text';
+                textEl.style.fontSize = `${item.fontSize}px`;
+                textEl.style.color = item.color;
+                textEl.style.fontWeight = item.bold ? '700' : '400';
+                textEl.textContent = item.text;
+                wrap.appendChild(textEl);
+            } else if (item.type === 'sig') {
+                const sigBox = document.createElement('div');
+                sigBox.className = 'pdf-item-sig';
+                sigBox.style.width = '100%';
+                sigBox.style.height = '100%';
+                const img = document.createElement('img');
+                img.src = item.dataUrl;
+                sigBox.appendChild(img);
+                wrap.appendChild(sigBox);
+            } else if (item.type === 'highlight') {
+                const hl = document.createElement('div');
+                hl.className = 'pdf-item-highlight';
+                hl.style.width = '100%';
+                hl.style.height = '100%';
+                hl.style.background = item.color;
+                hl.style.opacity = '0.45';
+                wrap.appendChild(hl);
+            } else if (item.type === 'censor') {
+                const cs = document.createElement('div');
+                cs.className = 'pdf-item-censor';
+                cs.style.width = '100%';
+                cs.style.height = '100%';
+                cs.style.background = item.color || '#000000';
+                wrap.appendChild(cs);
+            } else if (item.type === 'stamp') {
+                const st = document.createElement('div');
+                st.className = 'pdf-item-stamp';
+                st.style.width = '100%';
+                st.style.height = '100%';
+                st.style.borderColor = item.color || '#FF4439';
+                st.style.color = item.color || '#FF4439';
+                st.textContent = item.label || 'ZATWIERDZONO';
+                wrap.appendChild(st);
+            } else if (item.type === 'link') {
+                const lk = document.createElement('div');
+                lk.className = 'pdf-item-link';
+                lk.style.width = '100%';
+                lk.style.height = '100%';
+                lk.innerHTML = `<span>🔗</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.url}</span>`;
+                wrap.appendChild(lk);
+            }
+
+            // Przeciąganie myszką (Drag & Drop)
+            attachDragHandlers(wrap, item);
+
+            overlayLayer.appendChild(wrap);
+        });
+    }
+
+    function attachDragHandlers(el, item) {
+        let isDragging = false;
+        let startPointerX = 0;
+        let startPointerY = 0;
+        let initialX = 0;
+        let initialY = 0;
+
+        el.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.pdf-item-del-btn')) return;
+            e.stopPropagation();
+
+            studioSelectedId = item.id;
+            updateSelectedUI();
+            updateStudioPropertyBar();
+
+            isDragging = true;
+            el.setPointerCapture(e.pointerId);
+            startPointerX = e.clientX;
+            startPointerY = e.clientY;
+            initialX = item.x;
+            initialY = item.y;
+        });
+
+        el.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startPointerX;
+            const deltaY = e.clientY - startPointerY;
+
+            const overlay = document.getElementById('pdfOverlayLayer');
+            const maxW = overlay ? overlay.clientWidth - item.width : 500;
+            const maxH = overlay ? overlay.clientHeight - item.height : 800;
+
+            item.x = Math.max(0, Math.min(maxW, initialX + deltaX));
+            item.y = Math.max(0, Math.min(maxH, initialY + deltaY));
+
+            el.style.left = `${item.x}px`;
+            el.style.top = `${item.y}px`;
+        });
+
+        el.addEventListener('pointerup', (e) => {
+            if (isDragging) {
+                isDragging = false;
+                try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
+        });
+    }
+
+    function updateSelectedUI() {
+        const wraps = document.querySelectorAll('.pdf-item-wrap');
+        wraps.forEach(w => w.classList.toggle('selected', w.dataset.id === studioSelectedId));
+    }
+
+    function removeAnnotation(id) {
+        studioAnnotations = studioAnnotations.filter(a => a.id !== id);
+        if (studioSelectedId === id) studioSelectedId = null;
+        renderPageAnnotations();
+        updateStudioPropertyBar();
+        if (window.playSound) window.playSound('pop');
+    }
+
+    function updateStudioPropertyBar() {
+        const bar = document.getElementById('studioPropertyBar');
+        if (!bar) return;
+
+        const selectedItem = studioAnnotations.find(a => a.id === studioSelectedId);
+
+        if (selectedItem) {
+            // Pokaż właściwości zaznaczonego elementu
+            if (selectedItem.type === 'text') {
+                bar.innerHTML = `
+                    <div class="prop-group">
+                        <span class="prop-label">Treść:</span>
+                        <input type="text" class="prop-input" id="propTextInput" value="${selectedItem.text}" style="width: 180px;">
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Rozmiar:</span>
+                        <select class="prop-select" id="propFontSizeSelect">
+                            <option value="12" ${selectedItem.fontSize === 12 ? 'selected' : ''}>12 pt</option>
+                            <option value="16" ${selectedItem.fontSize === 16 ? 'selected' : ''}>16 pt</option>
+                            <option value="20" ${selectedItem.fontSize === 20 ? 'selected' : ''}>20 pt</option>
+                            <option value="26" ${selectedItem.fontSize === 26 ? 'selected' : ''}>26 pt</option>
+                            <option value="36" ${selectedItem.fontSize === 36 ? 'selected' : ''}>36 pt</option>
+                        </select>
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Kolor:</span>
+                        <div class="prop-colors">
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#FF4439' ? 'active' : ''}" style="background: #FF4439;" data-c="#FF4439"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#000000' ? 'active' : ''}" style="background: #000000;" data-c="#000000"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#0F91D2' ? 'active' : ''}" style="background: #0F91D2;" data-c="#0F91D2"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#10B981' ? 'active' : ''}" style="background: #10B981;" data-c="#10B981"></button>
+                        </div>
+                    </div>
+                    <button type="button" class="prop-btn-del" id="propBtnDelete">🗑️ Usuń</button>
+                `;
+
+                const textInp = bar.querySelector('#propTextInput');
+                const fontSel = bar.querySelector('#propFontSizeSelect');
+                const colorBtns = bar.querySelectorAll('.prop-color-pill');
+                const delBtn = bar.querySelector('#propBtnDelete');
+
+                if (textInp) textInp.addEventListener('input', (e) => {
+                    selectedItem.text = e.target.value;
+                    renderPageAnnotations();
+                });
+                if (fontSel) fontSel.addEventListener('change', (e) => {
+                    selectedItem.fontSize = parseInt(e.target.value, 10);
+                    renderPageAnnotations();
+                });
+                colorBtns.forEach(btn => btn.addEventListener('click', () => {
+                    selectedItem.color = btn.getAttribute('data-c');
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                }));
+                if (delBtn) delBtn.addEventListener('click', () => removeAnnotation(selectedItem.id));
+                return;
+            } else if (selectedItem.type === 'highlight') {
+                bar.innerHTML = `
+                    <div class="prop-group">
+                        <span class="prop-label">Kolor zakreślacza:</span>
+                        <div class="prop-colors">
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#FFEB3B' ? 'active' : ''}" style="background: #FFEB3B;" data-c="#FFEB3B" title="Żółty"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#4CAF50' ? 'active' : ''}" style="background: #4CAF50;" data-c="#4CAF50" title="Zielony"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#00E5FF' ? 'active' : ''}" style="background: #00E5FF;" data-c="#00E5FF" title="Niebieski"></button>
+                            <button type="button" class="prop-color-pill ${selectedItem.color === '#FF4081' ? 'active' : ''}" style="background: #FF4081;" data-c="#FF4081" title="Różowy"></button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Szerokość:</span>
+                        <input type="range" min="60" max="300" value="${selectedItem.width}" id="propHlWidth" style="width: 100px;">
+                    </div>
+                    <button type="button" class="prop-btn-del" id="propBtnDelete">🗑️ Usuń</button>
+                `;
+                bar.querySelectorAll('.prop-color-pill').forEach(btn => btn.addEventListener('click', () => {
+                    selectedItem.color = btn.getAttribute('data-c');
+                    renderPageAnnotations();
+                    updateStudioPropertyBar();
+                }));
+                const wRange = bar.querySelector('#propHlWidth');
+                if (wRange) wRange.addEventListener('input', (e) => {
+                    selectedItem.width = parseInt(e.target.value, 10);
+                    renderPageAnnotations();
+                });
+                bar.querySelector('#propBtnDelete')?.addEventListener('click', () => removeAnnotation(selectedItem.id));
+                return;
+            } else if (selectedItem.type === 'censor') {
+                bar.innerHTML = `
+                    <div class="prop-group">
+                        <span class="prop-label">Blok cenzury:</span>
+                        <button type="button" class="prop-btn-stamp" style="border-color:#000; color:#fff; background:#000;" id="propCensorBlack">Czarny (Blackout)</button>
+                        <button type="button" class="prop-btn-stamp" style="border-color:#ccc; color:#000; background:#fff;" id="propCensorWhite">Biały (Czyszczenie)</button>
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Szerokość:</span>
+                        <input type="range" min="60" max="300" value="${selectedItem.width}" id="propCsWidth" style="width: 100px;">
+                    </div>
+                    <button type="button" class="prop-btn-del" id="propBtnDelete">🗑️ Usuń</button>
+                `;
+                bar.querySelector('#propCensorBlack')?.addEventListener('click', () => {
+                    selectedItem.color = '#000000';
+                    renderPageAnnotations();
+                });
+                bar.querySelector('#propCensorWhite')?.addEventListener('click', () => {
+                    selectedItem.color = '#FFFFFF';
+                    renderPageAnnotations();
+                });
+                const wRange = bar.querySelector('#propCsWidth');
+                if (wRange) wRange.addEventListener('input', (e) => {
+                    selectedItem.width = parseInt(e.target.value, 10);
+                    renderPageAnnotations();
+                });
+                bar.querySelector('#propBtnDelete')?.addEventListener('click', () => removeAnnotation(selectedItem.id));
+                return;
+            } else if (selectedItem.type === 'link') {
+                bar.innerHTML = `
+                    <div class="prop-group">
+                        <span class="prop-label">Adres URL:</span>
+                        <input type="url" class="prop-input" id="propLinkUrl" value="${selectedItem.url}" style="width: 240px;">
+                    </div>
+                    <button type="button" class="prop-btn-del" id="propBtnDelete">🗑️ Usuń</button>
+                `;
+                bar.querySelector('#propLinkUrl')?.addEventListener('input', (e) => {
+                    selectedItem.url = e.target.value;
+                    renderPageAnnotations();
+                });
+                bar.querySelector('#propBtnDelete')?.addEventListener('click', () => removeAnnotation(selectedItem.id));
+                return;
+            }
+        }
+
+        // Domyślny pasek dla aktywnego narzędzia, gdy żaden element nie jest zaznaczony
+        if (studioActiveTool === 'text') {
+            bar.innerHTML = `<span class="prop-label">✍️ Kliknij w dowolnym miejscu dokumentu, aby wstawić napis. Możesz go potem swobodnie przesuwać!</span>`;
+        } else if (studioActiveTool === 'highlight') {
+            bar.innerHTML = `<span class="prop-label">🖍️ Kliknij na dokumencie, aby umieścić pasek zakreślacza.</span>`;
+        } else if (studioActiveTool === 'censor') {
+            bar.innerHTML = `<span class="prop-label">⬛ Kliknij na dokumencie, aby trwale zakryć poufne dane (PESEL, kwotę, nazwisko).</span>`;
+        } else if (studioActiveTool === 'stamp') {
+            bar.innerHTML = `
+                <span class="prop-label">Wybierz gotową pieczęć do wstawienia:</span>
+                <button type="button" class="prop-btn-stamp" data-st="ZATWIERDZONO" style="border-color:#16A34A; color:#4ADE80;">✓ ZATWIERDZONO</button>
+                <button type="button" class="prop-btn-stamp" data-st="OPŁACONO" style="border-color:#0284C7; color:#38BDF8;">💳 OPŁACONO</button>
+                <button type="button" class="prop-btn-stamp" data-st="POUFNE" style="border-color:#DC2626; color:#F87171;">🔒 POUFNE</button>
+                <button type="button" class="prop-btn-stamp" data-st="KOPIA" style="border-color:#D97706; color:#FBBF24;">📄 KOPIA</button>
+            `;
+            bar.querySelectorAll('.prop-btn-stamp').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const label = btn.getAttribute('data-st');
+                    addNewAnnotationAt('stamp', 80, 80);
+                    const last = studioAnnotations[studioAnnotations.length - 1];
+                    if (last) last.label = label;
+                    renderPageAnnotations();
+                });
+            });
+        } else if (studioActiveTool === 'link') {
+            bar.innerHTML = `<span class="prop-label">🔗 Kliknij na dokumencie, aby dodać klikalny link dla czytelnika.</span>`;
+        }
+    }
+
+    // Modal podpisu odręcznego (Signature Pad)
+    function initSignatureModal() {
+        const modal = document.getElementById('signatureModal');
+        const canvas = document.getElementById('sigPadCanvas');
+        const btnClose = document.getElementById('btnSigClose');
+        const btnCancel = document.getElementById('btnSigCancel');
+        const btnClear = document.getElementById('btnSigClear');
+        const btnApply = document.getElementById('btnSigApply');
+        const fileUpload = document.getElementById('sigImageUploadInput');
+        const colorBtns = document.querySelectorAll('.sig-color-choice');
+
+        if (!modal || !canvas) return;
+
+        let ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let strokeColor = '#000000';
+        let hasDrawn = false;
+
+        function resetCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasDrawn = false;
+        }
+
+        function getCanvasPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            isDrawing = true;
+            hasDrawn = true;
+            canvas.setPointerCapture(e.pointerId);
+            const pt = getCanvasPoint(e);
+            ctx.beginPath();
+            ctx.moveTo(pt.x, pt.y);
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if (!isDrawing) return;
+            const pt = getCanvasPoint(e);
+            ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            if (isDrawing) {
+                isDrawing = false;
+                try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
+        });
+
+        if (btnClear) btnClear.addEventListener('click', resetCanvas);
+
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorBtns.forEach(b => b.classList.toggle('active', b === btn));
+                strokeColor = btn.getAttribute('data-color') || '#000000';
+            });
+        });
+
+        // Wgranie pliku graficznego podpisu (PNG z przezroczystością)
+        if (fileUpload) {
+            fileUpload.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            resetCanvas();
+                            ctx.drawImage(img, 50, 20, canvas.width - 100, canvas.height - 40);
+                            hasDrawn = true;
+                        };
+                        img.src = re.target.result;
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        }
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+        if (btnApply) {
+            btnApply.addEventListener('click', () => {
+                if (!hasDrawn) {
+                    if (window.showNotification) window.showNotification('Złóż podpis przed zatwierdzeniem!', 'info');
+                    return;
+                }
+
+                const dataUrl = canvas.toDataURL('image/png');
+                const id = 'ann_' + (studioNextId++);
+                studioAnnotations.push({
+                    id,
+                    page: studioCurrentPage,
+                    type: 'sig',
+                    x: 60,
+                    y: 120,
+                    width: 180,
+                    height: 65,
+                    dataUrl
+                });
+                studioSelectedId = id;
+                closeModal();
+                renderPageAnnotations();
+                updateStudioPropertyBar();
+                if (window.playSound) window.playSound('pop');
+                if (window.showNotification) window.showNotification('Podpis został wstawiony na stronę!', 'success');
+            });
+        }
+    }
+
+    function openSignatureModal() {
+        const modal = document.getElementById('signatureModal');
+        const canvas = document.getElementById('sigPadCanvas');
+        if (modal) {
+            modal.style.display = 'flex';
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    }
+
+    // ==========================================
+    // EKSPORT ZMODYFIKOWANEGO PDF (PDF-LIB)
+    // ==========================================
     async function executePdfEdit() {
-        if (!editPdfDoc || !editFile) return;
+        if (!studioBytes || !studioFile) return;
 
         const btnAction = document.getElementById('btnExecuteEdit');
         const textSpan = btnAction.querySelector('.btn-text');
         const origText = textSpan ? textSpan.textContent : 'Zastosuj i Wyeksportuj PDF';
-        if (textSpan) textSpan.textContent = 'Modyfikowanie PDF...';
+        if (textSpan) textSpan.textContent = 'Modyfikowanie dokumentu...';
         btnAction.disabled = true;
 
         try {
-            const pages = editPdfDoc.getPages();
-            const targetPage = pages[editSelectedPage - 1];
-            const { width, height } = targetPage.getSize();
+            const pdfDoc = await PDFLib.PDFDocument.load(studioBytes);
+            const total = pdfDoc.getPageCount();
 
-            // Przeliczenie współrzędnych procentowych z podglądu na punkty PDF
-            // Uwaga: w PDF oś Y rośnie od DOŁU do GÓRY!
-            const pdfX = (editClickPos.xPct / 100) * width;
-            const pdfY = (1 - (editClickPos.yPct / 100)) * height;
+            // Fonty dla tekstu
+            const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+            const fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
 
-            if (editMode === 'text') {
-                const textInput = document.getElementById('editTextInput');
-                const textVal = textInput?.value.trim() || 'Zatwierdzono';
-                const fontSize = parseInt(document.getElementById('editFontSizeSelect')?.value || '18', 10);
-                const colorHex = document.querySelector('input[name="editTextColor"]:checked')?.value || '#FF4439';
+            const overlay = document.getElementById('pdfOverlayLayer');
+            const overlayW = overlay ? overlay.clientWidth : 595;
+            const overlayH = overlay ? overlay.clientHeight : 842;
 
-                const font = await editPdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-                const colorRgb = hexToRgb01(colorHex);
+            for (let p = 1; p <= total; p++) {
+                if (studioDeletedPages.has(p)) continue; // Pomijamy usunięte strony
 
-                targetPage.drawText(textVal, {
-                    x: Math.max(10, Math.min(width - 150, pdfX)),
-                    y: Math.max(10, Math.min(height - 20, pdfY)),
-                    size: fontSize,
-                    font: font,
-                    color: PDFLib.rgb(colorRgb.r, colorRgb.g, colorRgb.b)
-                });
-            } else {
-                // Tryb Linku: dodanie klikalnej adnotacji URI
-                const linkInput = document.getElementById('editLinkUrlInput');
-                let targetUrl = linkInput?.value.trim() || 'https://dropsite.pages.dev';
-                if (!/^https?:\/\//i.test(targetUrl)) targetUrl = 'https://' + targetUrl;
+                const page = pdfDoc.getPage(p - 1);
+                const { width: pdfW, height: pdfH } = page.getSize();
 
-                const linkWidth = 140;
-                const linkHeight = 24;
+                // 1. Zastosowanie obrotu strony
+                const extraRot = studioPageRotations[p] || 0;
+                if (extraRot !== 0) {
+                    const currentRot = page.getRotation().angle;
+                    page.setRotation(PDFLib.degrees((currentRot + extraRot) % 360));
+                }
 
-                const linkAnnot = editPdfDoc.context.obj({
-                    Type: 'Annot',
-                    Subtype: 'Link',
-                    Rect: [pdfX, pdfY, pdfX + linkWidth, pdfY + linkHeight],
-                    Border: [0, 0, 1], // ramka linku
-                    C: [0, 0.4, 0.9], // kolor niebieski
-                    A: {
-                        Type: 'Action',
-                        S: 'URI',
-                        URI: PDFLib.PDFString.of(targetUrl)
+                // 2. Skalowanie współrzędnych ekranu do punktów PDF
+                const scaleX = pdfW / overlayW;
+                const scaleY = pdfH / overlayH;
+
+                // 3. Rysowanie adnotacji
+                const pageAnnots = studioAnnotations.filter(a => a.page === p);
+                for (let i = 0; i < pageAnnots.length; i++) {
+                    const item = pageAnnots[i];
+                    const targetX = Math.max(0, item.x * scaleX);
+                    const targetY = Math.max(0, pdfH - (item.y + item.height) * scaleY);
+                    const targetW = item.width * scaleX;
+                    const targetH = item.height * scaleY;
+
+                    if (item.type === 'text') {
+                        const rgb = hexToRgb01(item.color || '#FF4439');
+                        page.drawText(item.text, {
+                            x: targetX,
+                            y: targetY + 2,
+                            size: Math.max(8, item.fontSize * scaleY * 0.95),
+                            font: item.bold ? fontBold : fontRegular,
+                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b)
+                        });
+                    } else if (item.type === 'highlight') {
+                        const rgb = hexToRgb01(item.color || '#FFEB3B');
+                        page.drawRectangle({
+                            x: targetX,
+                            y: targetY,
+                            width: targetW,
+                            height: targetH,
+                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
+                            opacity: 0.35
+                        });
+                    } else if (item.type === 'censor') {
+                        const rgb = hexToRgb01(item.color || '#000000');
+                        page.drawRectangle({
+                            x: targetX,
+                            y: targetY,
+                            width: targetW,
+                            height: targetH,
+                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
+                            opacity: 1.0
+                        });
+                    } else if (item.type === 'stamp') {
+                        const rgb = hexToRgb01(item.color || '#FF4439');
+                        page.drawRectangle({
+                            x: targetX,
+                            y: targetY,
+                            width: targetW,
+                            height: targetH,
+                            borderColor: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
+                            borderWidth: 2,
+                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
+                            opacity: 0.08
+                        });
+                        page.drawText(item.label || 'ZATWIERDZONO', {
+                            x: targetX + 12,
+                            y: targetY + (targetH / 2) - 5,
+                            size: 13 * scaleY,
+                            font: fontBold,
+                            color: PDFLib.rgb(rgb.r, rgb.g, rgb.b)
+                        });
+                    } else if (item.type === 'sig' && item.dataUrl) {
+                        const pngBase64 = item.dataUrl.split(',')[1];
+                        const pngBytes = Uint8Array.from(atob(pngBase64), c => c.charCodeAt(0));
+                        const pngImage = await pdfDoc.embedPng(pngBytes);
+                        page.drawImage(pngImage, {
+                            x: targetX,
+                            y: targetY,
+                            width: targetW,
+                            height: targetH
+                        });
+                    } else if (item.type === 'link' && item.url) {
+                        let linkUrl = item.url.trim();
+                        if (!/^https?:\/\//i.test(linkUrl)) linkUrl = 'https://' + linkUrl;
+
+                        const linkAnnot = pdfDoc.context.obj({
+                            Type: 'Annot',
+                            Subtype: 'Link',
+                            Rect: [targetX, targetY, targetX + targetW, targetY + targetH],
+                            Border: [0, 0, 1],
+                            C: [0.06, 0.57, 0.82],
+                            A: {
+                                Type: 'Action',
+                                S: 'URI',
+                                URI: PDFLib.PDFString.of(linkUrl)
+                            }
+                        });
+                        const linkRef = pdfDoc.context.register(linkAnnot);
+                        page.node.addAnnot(linkRef);
+
+                        page.drawText(linkUrl, {
+                            x: targetX + 4,
+                            y: targetY + 4,
+                            size: 9 * scaleY,
+                            font: fontRegular,
+                            color: PDFLib.rgb(0.06, 0.57, 0.82)
+                        });
                     }
-                });
-
-                const linkRef = editPdfDoc.context.register(linkAnnot);
-                targetPage.node.addAnnot(linkRef);
-
-                // Narysuj też tekst linku, żeby był widoczny wizualnie
-                const font = await editPdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-                targetPage.drawText(targetUrl, {
-                    x: pdfX + 2,
-                    y: pdfY + 6,
-                    size: 11,
-                    font: font,
-                    color: PDFLib.rgb(0, 0.4, 0.9)
-                });
+                }
             }
 
-            const modifiedBytes = await editPdfDoc.save();
-            const modifiedBlob = new Blob([modifiedBytes], { type: 'application/pdf' });
-            const outputFilename = `Dropsite_Edytowany_${editFile.name}`;
+            // Usunięcie stron oznaczonych do usunięcia (w odwrotnej kolejności indeksów)
+            for (let i = total - 1; i >= 0; i--) {
+                const pageNum = i + 1;
+                if (studioDeletedPages.has(pageNum)) {
+                    pdfDoc.removePage(i);
+                }
+            }
 
-            showToolResult('editResultBox', modifiedBlob, outputFilename, `Pomyślnie dodano ${editMode === 'text' ? 'napis' : 'link'} na stronie ${editSelectedPage}! Dokument jest gotowy do pobrania lub wysyłki.`);
+            const modifiedBytes = await pdfDoc.save();
+            const modifiedBlob = new Blob([modifiedBytes], { type: 'application/pdf' });
+            const outputFilename = `Dropsite_Studio_${studioFile.name}`;
+
+            showToolResult(
+                'editResultBox',
+                modifiedBlob,
+                outputFilename,
+                `Twój dokument został zaktualizowany w Dropsite PDF Studio! Wszystkie adnotacje, podpisy i zmiany stron zostały pomyślnie scalone.`
+            );
+
             if (window.playSound) window.playSound('success');
-            if (window.showNotification) window.showNotification('PDF został pomyślnie zmodyfikowany!', 'success');
+            if (window.showNotification) window.showNotification('Dokument PDF został pomyślnie zaktualizowany!', 'success');
         } catch (err) {
-            console.error('PDF Edit error:', err);
-            if (window.showNotification) window.showNotification('Błąd edycji PDF: ' + err.message, 'error');
+            console.error('Błąd PDF Studio:', err);
+            if (window.showNotification) window.showNotification('Błąd zapisu PDF: ' + err.message, 'error');
         } finally {
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;
