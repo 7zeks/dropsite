@@ -5868,6 +5868,260 @@ body.is-admin .ad-container {
     border-radius: 4px;
 }
 
+/* ==========================================================================
+   DROPSITE UNIFIED DARK GLASS FORM & MODAL CONTROLS
+   ========================================================================== */
+
+/* Pola tekstowe i selektory we wszystkich modalach i toolboxie */
+.tool-text-input,
+.company-stamp-form input,
+.watermark-modal-box input[type="text"],
+.page-number-modal-box input[type="text"],
+.studio-prompt-box input[type="text"] {
+    width: 100%;
+    background: rgba(18, 22, 34, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #FFFFFF;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tool-text-input:hover,
+.company-stamp-form input:hover {
+    background: rgba(24, 29, 44, 0.95);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.tool-text-input:focus,
+.company-stamp-form input:focus {
+    background: rgba(20, 27, 44, 0.98);
+    border-color: #0F91D2;
+    box-shadow: 0 0 0 3px rgba(15, 145, 210, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tool-text-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+/* Pola wyboru <select> w stylu dark glass z elegancką strzałką SVG */
+select.tool-text-input,
+.company-input-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    background-color: rgba(18, 22, 34, 0.9);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+select.tool-text-input option {
+    background-color: #0F131D;
+    color: #FFFFFF;
+    padding: 10px;
+}
+
+/* Kontrolki w pasku właściwości (property bar) */
+.prop-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-size: 12px;
+    padding: 5px 10px;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.prop-input:focus {
+    border-color: #0F91D2;
+    background: rgba(15, 145, 210, 0.1);
+    box-shadow: 0 0 0 2px rgba(15, 145, 210, 0.3);
+}
+
+.prop-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-size: 12px;
+    padding: 5px 10px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.prop-select option {
+    background-color: #0F131D;
+    color: #FFFFFF;
+}
+
+/* Przyciski w stopkach modali */
+.btn-sm-ghost,
+.sig-modal-footer .btn-sm-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #CBD5E1;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+.btn-sm-ghost:hover,
+.sig-modal-footer .btn-sm-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+.btn-sm-ghost:active,
+.sig-modal-footer .btn-sm-ghost:active {
+    transform: translateY(0);
+}
+
+/* Główny przycisk zatwierdzenia w modalach (luminous cyan/blue gradient) */
+.sig-modal-footer .btn-primary {
+    margin: 0 !important;
+    padding: 11px 24px !important;
+    width: auto !important;
+    background: linear-gradient(135deg, #0F91D2 0%, #0284C7 100%) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 10px !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
+    box-shadow: 0 4px 16px rgba(15, 145, 210, 0.4) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.sig-modal-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #1DA8EF 0%, #0EA5E9 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 24px rgba(15, 145, 210, 0.6) !important;
+}
+
+.sig-modal-footer .btn-primary:active {
+    transform: translateY(0) !important;
+}
+
+/* Przycisk zamknięcia modala (✕) */
+.btn-close-modal {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    line-height: 1;
+}
+
+.btn-close-modal:hover {
+    background: rgba(255, 68, 57, 0.18);
+    border-color: rgba(255, 68, 57, 0.35);
+    color: #FF6B6B;
+    transform: scale(1.05);
+}
+
+/* Suwaki <input type="range"> */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+input[type="range"]:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0F91D2;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 2px 8px rgba(15, 145, 210, 0.6);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(15, 145, 210, 0.9);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #0F91D2;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 2px 8px rgba(15, 145, 210, 0.6);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Szybkie szablony (preset pills) w znaku wodnym */
+.wm-preset-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #CBD5E1;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wm-preset-pill:hover {
+    background: rgba(15, 145, 210, 0.15);
+    border-color: #0F91D2;
+    color: #38BDF8;
+}
+
+/* Okno prompta (studioPromptModal) */
+.studio-prompt-box {
+    max-width: 480px !important;
+}
+
 
 
 

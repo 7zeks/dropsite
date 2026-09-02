@@ -2184,6 +2184,27 @@
         </div>
     </div>
 
+    <!-- MODAL: STYLOWY DIALOG PROMPT (ZAMIAST SYSTEMOWEGO OKNA PROMPT) -->
+    <div id="studioPromptModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box studio-prompt-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span id="promptModalIcon">✏️</span>
+                    <h3 id="promptModalTitle">Wprowadź tekst</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnPromptModalClose">✕</button>
+            </div>
+            <div class="sig-modal-body" style="padding: 20px 24px;">
+                <label id="promptModalLabel" style="font-size: 0.82rem; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 8px;">Tekst:</label>
+                <input type="text" id="promptModalInput" class="tool-text-input" style="width: 100%; font-size: 0.95rem; padding: 12px 14px;">
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="btnPromptModalCancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnPromptModalApply" style="margin: 0; padding: 10px 22px; width: auto;">Zatwierdź</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>

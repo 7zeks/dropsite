@@ -1207,7 +1207,7 @@
 
         // 3. Edycja Tekstu (dokument z plusem)
         const btnEdit = pill.querySelector('#btnFloatEdit');
-        btnEdit.addEventListener('click', (e) => {
+        btnEdit.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (selectedItem.type === 'text') {
                 const targetWrap = document.querySelector(`.pdf-item-wrap[data-id="${selectedItem.id}"]`);
@@ -1216,14 +1216,26 @@
                     startInlineTextEditing(selectedItem, textEl);
                 }
             } else if (selectedItem.type === 'stamp') {
-                const newLabel = prompt('Wpisz nowy tekst dla tej pieczęci:', selectedItem.label || '');
+                const newLabel = await showStudioPrompt({
+                    title: 'Edytuj treść pieczęci',
+                    icon: '🏷️',
+                    label: 'Wpisz nowy tekst dla tej pieczęci:',
+                    defaultValue: selectedItem.label || '',
+                    placeholder: 'np. ZATWIERDZONO'
+                });
                 if (newLabel !== null && newLabel.trim()) {
                     selectedItem.label = newLabel.trim();
                     renderPageAnnotations();
                     updateStudioPropertyBar();
                 }
             } else if (selectedItem.type === 'link') {
-                const newUrl = prompt('Podaj adres URL odnośnika:', selectedItem.url || 'https://');
+                const newUrl = await showStudioPrompt({
+                    title: 'Edytuj odnośnik URL',
+                    icon: '🔗',
+                    label: 'Podaj adres strony WWW:',
+                    defaultValue: selectedItem.url || 'https://',
+                    placeholder: 'https://example.com'
+                });
                 if (newUrl !== null && newUrl.trim()) {
                     selectedItem.url = newUrl.trim();
                     renderPageAnnotations();
@@ -1460,10 +1472,16 @@
                 <button type="button" class="prop-btn-stamp" data-st="custom" style="border-color:#8B5CF6; color:#C084FC; background:rgba(139,92,246,0.12);">✏️ WŁASNA...</button>
             `;
             bar.querySelectorAll('.prop-btn-stamp').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', async () => {
                     const st = btn.getAttribute('data-st');
                     if (st === 'custom') {
-                        const customText = prompt('Wpisz tekst Twojej pieczęci (np. ANULOWANO, WPŁYNĘŁO, FAKTURA):', 'FAKTURA ZAPŁACONA');
+                        const customText = await showStudioPrompt({
+                            title: 'Własna pieczęć firmowa',
+                            icon: '✏️',
+                            label: 'Wpisz tekst Twojej pieczęci:',
+                            defaultValue: 'FAKTURA ZAPŁACONA',
+                            placeholder: 'np. ANULOWANO, WPŁYNĘŁO, FAKTURA'
+                        });
                         if (customText && customText.trim()) {
                             addNewAnnotationAt('stamp', 80, 80, 'custom', customText.trim());
                         }
@@ -1759,6 +1777,73 @@
             ctx.restore();
         }
         ctx.restore();
+    }
+
+    // -------------------------------------------------------------
+    // STYLOWY DIALOG PROMPT W STYLU DROPSITE (ZAMIAST OKNA SYSTEMOWEGO)
+    // -------------------------------------------------------------
+    function showStudioPrompt({ title, icon, label, defaultValue, placeholder }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('studioPromptModal');
+            const titleEl = document.getElementById('promptModalTitle');
+            const iconEl = document.getElementById('promptModalIcon');
+            const labelEl = document.getElementById('promptModalLabel');
+            const inputEl = document.getElementById('promptModalInput');
+            const btnClose = document.getElementById('btnPromptModalClose');
+            const btnCancel = document.getElementById('btnPromptModalCancel');
+            const btnApply = document.getElementById('btnPromptModalApply');
+
+            if (!modal || !inputEl) {
+                resolve(prompt(label || title, defaultValue || ''));
+                return;
+            }
+
+            if (titleEl) titleEl.textContent = title || 'Wprowadź tekst';
+            if (iconEl) iconEl.textContent = icon || '✏️';
+            if (labelEl) labelEl.textContent = label || 'Tekst:';
+            inputEl.value = defaultValue || '';
+            inputEl.placeholder = placeholder || '';
+
+            const cleanup = () => {
+                modal.style.display = 'none';
+                btnClose?.removeEventListener('click', onCancel);
+                btnCancel?.removeEventListener('click', onCancel);
+                btnApply?.removeEventListener('click', onApply);
+                inputEl.removeEventListener('keydown', onKeyDown);
+            };
+
+            const onCancel = () => {
+                cleanup();
+                resolve(null);
+            };
+
+            const onApply = () => {
+                const val = inputEl.value;
+                cleanup();
+                resolve(val);
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onApply();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onCancel();
+                }
+            };
+
+            btnClose?.addEventListener('click', onCancel);
+            btnCancel?.addEventListener('click', onCancel);
+            btnApply?.addEventListener('click', onApply);
+            inputEl.addEventListener('keydown', onKeyDown);
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                inputEl.focus();
+                inputEl.select();
+            }, 50);
+        });
     }
 
     function initCompanyStampModal() {
