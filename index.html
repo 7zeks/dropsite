@@ -682,6 +682,12 @@
                             </svg>
                             <span data-i18n="tool_tab_convert">Konwerter Formatów</span>
                         </button>
+                        <button type="button" class="toolbox-tab-btn" data-tool="compress">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"></path>
+                            </svg>
+                            <span data-i18n="tool_tab_compress">Kompresor PDF</span>
+                        </button>
                     </div>
 
                     <!-- PANEL 1: ŁĄCZENIE PDF -->
@@ -704,7 +710,10 @@
                             <div class="tool-file-manager">
                                 <div class="tool-manager-header">
                                     <span>Kolejność scalania dokumentów</span>
-                                    <span class="badge-count" id="mergeFilesCount">0 plików</span>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="badge-count" id="mergeFilesCount">0 plików</span>
+                                        <button type="button" class="btn-sm-ghost" id="btnClearMergeList" style="padding: 2px 8px; font-size: 0.74rem; display: none;">Wyczyść listę</button>
+                                    </div>
                                 </div>
                                 <div class="tool-file-list" id="mergeFileList">
                                     <div class="tool-empty-placeholder">Brak dodanych plików. Upuść minimum 2 pliki PDF, aby je połączyć.</div>
@@ -760,6 +769,16 @@
                                         <button type="button" class="btn-studio-nav" id="btnEditNextPage" title="Następna strona" disabled>&rarr;</button>
                                     </div>
                                     <div class="studio-page-ops">
+                                        <div class="studio-history-ctrls">
+                                            <button type="button" class="btn-studio-op" id="btnEditUndo" title="Cofnij ostatnią zmianę (Ctrl+Z)" disabled>
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                                                <span>Cofnij</span>
+                                            </button>
+                                            <button type="button" class="btn-studio-op" id="btnEditRedo" title="Ponów zmianę (Ctrl+Y)" disabled>
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
+                                                <span>Ponów</span>
+                                            </button>
+                                        </div>
                                         <div class="studio-zoom-ctrls">
                                             <button type="button" class="btn-studio-op" id="btnEditZoomOut" title="Pomniejsz podgląd">−</button>
                                             <span id="editZoomLabel" class="studio-zoom-label">100%</span>
@@ -786,6 +805,14 @@
                                     <button type="button" class="studio-ribbon-btn" data-studio-tool="sig">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"></path><path d="M18 12L11 5"></path></svg>
                                         <span>E-Podpis</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="image">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        <span>Wstaw Obraz</span>
+                                    </button>
+                                    <button type="button" class="studio-ribbon-btn" data-studio-tool="shape">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1"></rect><circle cx="17.5" cy="17.5" r="4.5"></circle></svg>
+                                        <span>Kształty</span>
                                     </button>
                                     <button type="button" class="studio-ribbon-btn" data-studio-tool="company-stamp">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h6"></path></svg>
@@ -816,6 +843,9 @@
                                         <span>Link URL</span>
                                     </button>
                                 </div>
+
+                                <!-- Ukryty input do wgrywania własnego obrazu/loga -->
+                                <input type="file" id="studioImageInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;">
 
                                 <!-- Podręczny pasek właściwości wybranego narzędzia/obiektu -->
                                 <div id="studioPropertyBar" class="studio-prop-bar"></div>
@@ -853,7 +883,7 @@
                     <div id="toolPanel_convert" class="tool-panel" style="display: none;">
                         <div class="tool-card-box">
                             <div class="tool-dropzone" id="convertDropzone">
-                                <input type="file" id="convertFileInput" accept="image/*,.pdf" style="display: none;">
+                                <input type="file" id="convertFileInput" multiple accept="image/*,.pdf" style="display: none;">
                                 <div class="tool-drop-icon">
                                     <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="23 4 23 10 17 10"></polyline>
@@ -873,13 +903,26 @@
                                         <span id="convertFileSize">1.2 MB</span>
                                     </div>
                                 </div>
-                                <button type="button" class="btn-sm-ghost" onclick="document.getElementById('convertFileInput').click()">Zmień plik</button>
+                                <button type="button" class="btn-sm-ghost" id="btnChangeConvertFile">Zmień plik</button>
                             </div>
 
-                            <div class="convert-options-grid">
+                            <!-- Kontener na miniatury wielu plików, gdy wgrano wiele grafik -->
+                            <div id="convertMultiListWrap" class="convert-multi-wrap" style="display: none; margin-top: 14px;">
+                                <div class="tool-manager-header" style="margin-bottom: 8px;">
+                                    <span>Wybrane obrazy do połączenia w PDF</span>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="badge-count" id="convertMultiCount">0 plików</span>
+                                        <button type="button" class="btn-sm-ghost" id="btnAddMoreConvertImages" style="padding: 2px 8px; font-size: 0.74rem;">+ Dodaj więcej</button>
+                                        <button type="button" class="btn-sm-ghost" id="btnClearConvertList" style="padding: 2px 8px; font-size: 0.74rem;">Wyczyść</button>
+                                    </div>
+                                </div>
+                                <div class="convert-thumbs-grid" id="convertThumbsGrid"></div>
+                            </div>
+
+                            <div class="convert-options-grid" id="convertOptionsGrid">
                                 <div class="form-group">
-                                    <label>Format docelowy konwersji:</label>
-                                    <div class="format-chips-group">
+                                    <label id="convertTargetFormatLabel">Format docelowy konwersji:</label>
+                                    <div class="format-chips-group" id="convertChipsGroup">
                                         <label class="format-chip">
                                             <input type="radio" name="convertTargetFormat" value="image/png" checked>
                                             <span>PNG (Bezstratny)</span>
@@ -914,6 +957,75 @@
                             </button>
 
                             <div id="convertResultBox" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 4: KOMPRESOR PDF (PREMIUM IN-RAM COMPRESSION) -->
+                    <div id="toolPanel_compress" class="tool-panel" style="display: none;">
+                        <div class="tool-card-box">
+                            <div class="tool-dropzone" id="compressDropzone">
+                                <input type="file" id="compressFileInput" accept=".pdf,application/pdf" style="display: none;">
+                                <div class="tool-drop-icon">
+                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"></path>
+                                    </svg>
+                                </div>
+                                <strong class="tool-drop-title">Wybierz lub upuść plik PDF do kompresji</strong>
+                                <span class="tool-drop-sub">Zmniejsz wagę dokumentu z zachowaniem czytelności tekstu (100% w przeglądarce)</span>
+                            </div>
+
+                            <div id="compressFileInfo" class="tool-loaded-file" style="display: none;">
+                                <div class="tool-file-left">
+                                    <span class="tool-file-icon">📄</span>
+                                    <div>
+                                        <strong id="compressFileName">dokument.pdf</strong>
+                                        <span id="compressFileSize">0 KB</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-sm-ghost" id="btnChangeCompressFile">Zmień plik</button>
+                            </div>
+
+                            <div class="compress-options-wrap" id="compressOptionsWrap" style="display: none; margin-top: 18px;">
+                                <label style="font-size: 0.85rem; font-weight: 600; color: #CBD5E1; margin-bottom: 10px; display: block;">Wybierz profil kompresji:</label>
+                                <div class="compress-profile-cards">
+                                    <label class="compress-profile-card">
+                                        <input type="radio" name="compressProfile" value="low">
+                                        <div class="compress-card-content">
+                                            <div class="compress-card-header">
+                                                <strong>Lekka kompresja</strong>
+                                                <span class="compress-tag">Wysoka jakość</span>
+                                            </div>
+                                            <p>Optymalizacja struktur i strumieni PDF. Czysty wektor, redukcja 10%–25%.</p>
+                                        </div>
+                                    </label>
+                                    <label class="compress-profile-card active">
+                                        <input type="radio" name="compressProfile" value="medium" checked>
+                                        <div class="compress-card-content">
+                                            <div class="compress-card-header">
+                                                <strong>Zalecana kompresja</strong>
+                                                <span class="compress-tag compress-tag-rec">Optymalna (150 DPI)</span>
+                                            </div>
+                                            <p>Idealny kompromis między ostrością a wagą. Wyraźny tekst, redukcja 40%–60%.</p>
+                                        </div>
+                                    </label>
+                                    <label class="compress-profile-card">
+                                        <input type="radio" name="compressProfile" value="high">
+                                        <div class="compress-card-content">
+                                            <div class="compress-card-header">
+                                                <strong>Maksymalna kompresja</strong>
+                                                <span class="compress-tag compress-tag-max">E-mail / ePUAP (96 DPI)</span>
+                                            </div>
+                                            <p>Głęboka redukcja rozmiaru dla urzędów i załączników e-mail, redukcja do 80%.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-primary tool-action-btn" id="btnExecuteCompress" disabled style="margin-top: 20px;">
+                                <span class="btn-text">Kompresuj plik PDF</span>
+                            </button>
+
+                            <div id="compressResultBox" style="display: none;"></div>
                         </div>
                     </div>
                 </div>

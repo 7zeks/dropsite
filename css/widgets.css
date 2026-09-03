@@ -6207,6 +6207,239 @@ body.studio-fullscreen-active {
     color: #FFFFFF;
 }
 
+/* ==========================================================================
+   DROPSITE TOOLBOX SUITE: HISTORIA UNDO/REDO, KSZTAŁTY, OBRAZY, KOMPRESOR
+   ========================================================================== */
+
+/* Kontrolki historii (Cofnij / Ponów) */
+.studio-history-ctrls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-studio-op:disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Obrazy / Logo wklejone do dokumentu */
+.pdf-item-wrap[data-type="image"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-item-wrap[data-type="image"] img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+/* Kształty geometryczne na scenie */
+.pdf-item-wrap[data-type="shape"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-item-wrap[data-type="shape"] svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+/* Przyciski kształtów w pasku właściwości */
+.prop-shape-types {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.prop-btn-shape {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #CBD5E1;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.prop-btn-shape:hover,
+.prop-btn-shape.active {
+    background: rgba(15, 145, 210, 0.2);
+    border-color: #0F91D2;
+    color: #38BDF8;
+}
+
+/* Wieloplikowy konwerter obrazów */
+.convert-multi-wrap {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.convert-thumbs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.convert-thumb-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.15s ease;
+}
+
+.convert-thumb-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.convert-thumb-img-wrap {
+    width: 100%;
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.convert-thumb-img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.convert-thumb-name {
+    font-size: 0.72rem;
+    color: #CBD5E1;
+    margin-top: 5px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.convert-thumb-del {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    background: rgba(239, 68, 68, 0.8);
+    border: none;
+    border-radius: 50%;
+    color: #FFFFFF;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.convert-thumb-del:hover {
+    transform: scale(1.15);
+    background: #EF4444;
+}
+
+/* Profile kompresora PDF */
+.compress-profile-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.compress-profile-card {
+    background: rgba(18, 22, 34, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: block;
+}
+
+.compress-profile-card input {
+    display: none;
+}
+
+.compress-profile-card:hover {
+    background: rgba(24, 30, 48, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.compress-profile-card.active,
+.compress-profile-card:has(input:checked) {
+    background: rgba(15, 145, 210, 0.12);
+    border-color: #38BDF8;
+    box-shadow: 0 0 16px rgba(15, 145, 210, 0.25);
+}
+
+.compress-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.compress-card-header strong {
+    font-size: 0.92rem;
+    color: #FFFFFF;
+}
+
+.compress-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #94A3B8;
+}
+
+.compress-tag-rec {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34D399;
+}
+
+.compress-tag-max {
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #FBBF24;
+}
+
+.compress-card-content p {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    line-height: 1.4;
+    margin: 0;
+}
+
 
 
 
