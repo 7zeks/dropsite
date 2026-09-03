@@ -55,11 +55,11 @@ body {
     color: var(--text-main);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 40px 20px;
+    padding: 0; /* Zero padding: footer touches bottom edge & spans full screen */
     box-sizing: border-box;
     position: relative;
     overflow-x: hidden;
@@ -76,7 +76,7 @@ body {
 @media (max-width: 1200px), (max-height: 820px) {
     body {
         justify-content: flex-start;
-        padding: 95px 16px 80px;
+        padding: 0;
     }
 }
 
