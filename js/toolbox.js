@@ -409,12 +409,16 @@
                     if (!isShown) {
                         renderThumbnailsDrawer();
                     }
+                    renderCurrentPdfPage();
                 }
             });
         }
         if (btnCloseThumbs) {
             btnCloseThumbs.addEventListener('click', () => {
-                if (thumbsDrawer) thumbsDrawer.style.display = 'none';
+                if (thumbsDrawer) {
+                    thumbsDrawer.style.display = 'none';
+                    renderCurrentPdfPage();
+                }
             });
         }
 
@@ -1013,7 +1017,12 @@
             const totalRotation = (page.rotate + extraRotation) % 360;
 
             // Obliczenie skali dopasowanej do szerokości obszaru roboczego
-            const availableWidth = Math.max(280, (stage ? stage.clientWidth - 48 : 640));
+            const drawer = document.getElementById('studioThumbsDrawer');
+            const isDrawerOpen = drawer && drawer.style.display === 'flex';
+            const drawerW = isDrawerOpen ? (drawer.offsetWidth || 236) : 0;
+            const stageClientW = stage ? stage.clientWidth : 720;
+            const availableWidth = Math.max(280, stageClientW - drawerW - 48);
+
             const unscaledViewport = page.getViewport({ scale: 1.0, rotation: totalRotation });
             const fitScale = Math.min(1.25, availableWidth / unscaledViewport.width);
             const finalScale = fitScale * studioZoomScale;
@@ -1025,14 +1034,23 @@
                 zoomLabel.textContent = `${Math.round(studioZoomScale * 100)}%`;
             }
 
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = Math.floor(viewport.width * dpr);
-            canvas.height = Math.floor(viewport.height * dpr);
-            canvas.style.width = `${Math.floor(viewport.width)}px`;
-            canvas.style.height = `${Math.floor(viewport.height)}px`;
+            const pageW = Math.floor(viewport.width);
+            const pageH = Math.floor(viewport.height);
 
-            overlayLayer.style.width = `${Math.floor(viewport.width)}px`;
-            overlayLayer.style.height = `${Math.floor(viewport.height)}px`;
+            const sheetWrap = document.getElementById('studioSheetWrap');
+            if (sheetWrap) {
+                sheetWrap.style.width = `${pageW}px`;
+                sheetWrap.style.height = `${pageH}px`;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(pageW * dpr);
+            canvas.height = Math.floor(pageH * dpr);
+            canvas.style.width = `${pageW}px`;
+            canvas.style.height = `${pageH}px`;
+
+            overlayLayer.style.width = `${pageW}px`;
+            overlayLayer.style.height = `${pageH}px`;
 
             const ctx = canvas.getContext('2d');
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

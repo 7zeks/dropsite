@@ -4819,9 +4819,9 @@ body.is-admin .ad-container {
     width: 100%;
     min-height: 540px;
     max-height: 76vh;
-    overflow: auto;
+    overflow: auto !important;
     display: flex;
-    justify-content: center;
+    flex-direction: row;
     align-items: flex-start;
     background: #080B12;
     background-image: 
@@ -4839,18 +4839,21 @@ body.is-admin .ad-container {
 .studio-sheet-wrap {
     position: relative;
     margin: 0 auto;
+    flex-shrink: 0 !important;
     background: #FFFFFF;
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12);
-    border-radius: 3px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
     line-height: 0;
     transform-origin: top center;
-    transition: transform 0.15s ease;
+    box-sizing: content-box !important;
 }
 
 #pdfRenderCanvas {
     display: block;
-    max-width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
 }
 
 .pdf-overlay-layer {
