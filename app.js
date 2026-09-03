@@ -1918,18 +1918,24 @@ if (openUserPanelBtn) {
     });
 }
 
-closeModBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.smoothCloseModal(modModal);
-});
-
-modModal.addEventListener('click', (e) => {
-    if (e.target === modModal) {
+if (closeModBtn) {
+    closeModBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         window.smoothCloseModal(modModal);
-    }
-});
+    });
+}
 
-refreshModBtn.addEventListener('click', fetchModFiles);
+if (modModal) {
+    modModal.addEventListener('click', (e) => {
+        if (e.target === modModal) {
+            window.smoothCloseModal(modModal);
+        }
+    });
+}
+
+if (refreshModBtn) {
+    refreshModBtn.addEventListener('click', fetchModFiles);
+}
 
 if (modSearchInput) {
     modSearchInput.addEventListener('input', (e) => {
@@ -3540,7 +3546,13 @@ window.openVideoPreview = function(url) {
     }
 
     const videoElement = document.getElementById('videoPreviewSrc');
-    videoElement.src = url;
+    if (videoElement) {
+        videoElement.src = url;
+        const playProm = videoElement.play();
+        if (playProm !== undefined) {
+            playProm.catch(() => {});
+        }
+    }
     window.smoothOpenModal(previewModal);
 };
 
@@ -4189,7 +4201,12 @@ async function initDownloadRouter() {
 
                 playBtn.addEventListener('click', () => {
                     if (audio.paused) {
-                        audio.play();
+                        const playProm = audio.play();
+                        if (playProm !== undefined) {
+                            playProm.catch(err => {
+                                console.warn('Audio playback prevented:', err);
+                            });
+                        }
                         if (playerContainer) playerContainer.classList.add('playing');
                         if (playIcon) playIcon.style.display = 'none';
                         if (pauseIcon) pauseIcon.style.display = 'block';

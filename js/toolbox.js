@@ -249,7 +249,7 @@
             for (let i = 0; i < mergeFiles.length; i++) {
                 if (textSpan) textSpan.textContent = `Dołączanie #${i + 1} z ${mergeFiles.length}...`;
                 const arrayBuf = await mergeFiles[i].arrayBuffer();
-                const doc = await PDFLib.PDFDocument.load(arrayBuf);
+                const doc = await PDFLib.PDFDocument.load(arrayBuf, { ignoreEncryption: true });
                 const pageIndices = doc.getPageIndices();
                 const copiedPages = await mergedPdf.copyPages(doc, pageIndices);
                 copiedPages.forEach(p => mergedPdf.addPage(p));
@@ -286,6 +286,7 @@
     let studioSelectedId = null;
     let studioNextId = 1;
     let studioZoomScale = 1.0;
+    let studioActiveRenderTask = null; // Track active PDF.js page render task to cancel safely
     let studioWatermark = {
         enabled: false,
         text: 'POUFNE',
@@ -1109,11 +1110,29 @@
             const ctx = canvas.getContext('2d');
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+            // Anuluj poprzednie aktywne renderowanie (np. przy szybkim przewijaniu stron lub zoomie)
+            if (studioActiveRenderTask) {
+                try {
+                    studioActiveRenderTask.cancel();
+                } catch (_) {}
+                studioActiveRenderTask = null;
+            }
+
             const renderContext = {
                 canvasContext: ctx,
                 viewport: viewport
             };
-            await page.render(renderContext).promise;
+            studioActiveRenderTask = page.render(renderContext);
+            try {
+                await studioActiveRenderTask.promise;
+            } catch (renderErr) {
+                if (renderErr && (renderErr.name === 'RenderingCancelledException' || renderErr.message?.includes('cancelled'))) {
+                    return; // Normalne anulowanie poprzedniej klatki
+                }
+                throw renderErr;
+            } finally {
+                studioActiveRenderTask = null;
+            }
 
             // Narysuj nałożone adnotacje dla bieżącej strony
             renderPageAnnotations();
@@ -3155,8 +3174,20 @@
         btnAction.disabled = true;
 
         try {
-            const pdfDoc = await PDFLib.PDFDocument.load(studioBytes);
+            const pdfDoc = await PDFLib.PDFDocument.load(studioBytes, { ignoreEncryption: true });
             const total = pdfDoc.getPageCount();
+
+            // Zabezpieczenie przed usunięciem wszystkich stron dokumentu
+            if (studioDeletedPages.size >= total) {
+                if (window.showNotification) {
+                    window.showNotification('Nie możesz usunąć wszystkich stron dokumentu PDF!', 'warning');
+                } else {
+                    alert('Nie możesz usunąć wszystkich stron dokumentu PDF!');
+                }
+                if (textSpan) textSpan.textContent = origText;
+                btnAction.disabled = false;
+                return;
+            }
 
             const overlay = document.getElementById('pdfOverlayLayer');
             const overlayW = overlay ? overlay.clientWidth : 595;
@@ -3732,9 +3763,16 @@
 
                 const isJpg = convertFile.type === 'image/jpeg' || /\.(jpe?g)$/i.test(convertFile.name);
                 let embeddedImg;
-                if (isJpg) {
-                    embeddedImg = await pdfDoc.embedJpg(await convertFile.arrayBuffer());
-                } else {
+                try {
+                    if (isJpg) {
+                        embeddedImg = await pdfDoc.embedJpg(await convertFile.arrayBuffer());
+                    } else {
+                        const pngDataUrl = await convertImageViaCanvas(convertFile, 'image/png', 1.0);
+                        const pngBytes = dataUrlToUint8(pngDataUrl);
+                        embeddedImg = await pdfDoc.embedPng(pngBytes);
+                    }
+                } catch (imgErr) {
+                    // Odporny fallback: konwertuj plik graficzny przez canvas na poprawny PNG
                     const pngDataUrl = await convertImageViaCanvas(convertFile, 'image/png', 1.0);
                     const pngBytes = dataUrlToUint8(pngDataUrl);
                     embeddedImg = await pdfDoc.embedPng(pngBytes);
