@@ -7646,8 +7646,9 @@ body.studio-fullscreen-active {
 }
 
 .split-mode-icon {
-    font-size: 24px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     margin-top: 2px;
 }
