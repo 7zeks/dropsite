@@ -448,6 +448,10 @@ body.is-admin .storage-widget {
     display: none;
     will-change: opacity, backdrop-filter;
     -webkit-font-smoothing: antialiased;
+    overflow-y: auto; /* Allows smooth vertical scrolling on mobile & small viewports */
+    -webkit-overflow-scrolling: touch;
+    padding: 24px 16px;
+    box-sizing: border-box;
 }
 
 .mod-modal:not([hidden]) { 
@@ -474,6 +478,8 @@ body.is-admin .storage-widget {
     width: 92%;
     max-width: 860px; 
     max-height: 88vh;
+    max-height: 88dvh;
+    margin: auto; /* Auto-centers when space is available, allows scrolling from top when content overflows */
     padding: 28px 32px;
     box-shadow: 
         0 0 0 1px rgba(255, 255, 255, 0.04),
@@ -482,7 +488,10 @@ body.is-admin .storage-widget {
         inset 0 1px 1px rgba(255, 255, 255, 0.15),
         inset 0 -2px 8px rgba(0, 0, 0, 0.6);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto; /* Enables native, buttery-smooth touch & wheel scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -490,6 +499,22 @@ body.is-admin .storage-widget {
     backface-visibility: hidden;
     transform: translate3d(0, 0, 0);
     animation: smoothModalIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom subtle scrollbar for all modals */
+.mod-container::-webkit-scrollbar {
+    width: 6px;
+}
+.mod-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+}
+.mod-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+}
+.mod-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
 /* Ambient beam - miękkie, kinowe oświetlenie */
@@ -2944,11 +2969,104 @@ body.is-pro .pro-sparkle {
 
 /* Modal Dropsite PRO */
 .pro-modal-container {
-    background: rgba(14, 16, 24, 0.95) !important;
+    background: rgba(14, 16, 24, 0.97) !important;
     backdrop-filter: blur(28px) !important;
-    border: 1px solid rgba(255, 195, 60, 0.25) !important;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 195, 60, 0.15) !important;
-    padding: 32px !important;
+    border: 1px solid rgba(255, 195, 60, 0.3) !important;
+    border-top: 1px solid rgba(255, 226, 89, 0.6) !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(255, 195, 60, 0.2) !important;
+    padding: 28px 30px !important;
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+}
+
+.pro-modal-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 195, 60, 0.45) !important;
+}
+.pro-modal-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 195, 60, 0.7) !important;
+}
+
+.pro-modal-container .mod-header {
+    position: sticky;
+    top: -28px;
+    margin-top: -28px;
+    padding-top: 22px;
+    padding-bottom: 12px;
+    margin-left: -30px;
+    margin-right: -30px;
+    padding-left: 30px;
+    padding-right: 30px;
+    background: rgba(14, 16, 24, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 25;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 640px) {
+    .mod-modal {
+        padding: 12px 8px !important;
+        align-items: flex-start !important;
+    }
+    .mod-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px 16px !important;
+        border-radius: 20px !important;
+        margin: 8px auto !important;
+    }
+    .pro-modal-container {
+        padding: 20px 16px 26px 16px !important;
+        max-height: 92vh !important;
+        max-height: 92dvh !important;
+    }
+    .pro-modal-container .mod-header {
+        top: -20px;
+        margin-top: -20px;
+        margin-left: -16px;
+        margin-right: -16px;
+        padding: 16px 16px 10px 16px;
+    }
+    .pro-features-summary {
+        padding: 12px 12px !important;
+        margin: 12px 0 !important;
+        gap: 8px !important;
+    }
+    .pro-feature-item {
+        font-size: 12.5px !important;
+        line-height: 1.4 !important;
+        align-items: flex-start !important;
+    }
+    .pro-feature-item svg {
+        margin-top: 2px !important;
+        flex-shrink: 0 !important;
+    }
+    .pro-buy-card {
+        padding: 14px 14px !important;
+    }
+    .pro-buy-card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 6px !important;
+    }
+    .pro-buy-card-price {
+        text-align: left !important;
+        align-items: flex-start !important;
+    }
+    .pro-buy-btn-sub,
+    .pro-buy-btn-blik {
+        width: 100% !important;
+        padding: 12px 14px !important;
+        font-size: 13.5px !important;
+    }
+    .pro-methods-row {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
 }
 
 .pro-modal-header-left {
