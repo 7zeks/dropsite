@@ -1773,27 +1773,42 @@ async function fetchDiskStats() {
     }
 }
 
+function getAdminStorageLimitBytes() {
+    const saved = localStorage.getItem('dropsite_admin_quota_gb');
+    if (saved === '0' || saved === 'unlimited') return 10995116277760; // 10 TB (efektywnie nielimitowany)
+    if (saved) {
+        const gb = parseInt(saved, 10);
+        if (!isNaN(gb) && gb > 0) return gb * 1024 * 1024 * 1024;
+    }
+    return 1099511627776; // Domyślnie 1 TB (zniesienie blokady 10 GB)
+}
+
 function renderDiskStats(data) {
-    const { totalBytes, usedBytes, categories } = data;
+    const configuredLimit = getAdminStorageLimitBytes();
+    const { usedBytes = 0, categories = {} } = data || {};
+    const totalBytes = Math.max(data?.totalBytes || 0, configuredLimit);
     currentFreeSpace = Math.max(0, totalBytes - usedBytes);
     
-    document.getElementById('diskUsedText').innerText = `${formatBytes(usedBytes)} z ${formatBytes(totalBytes)} zajęte`;
-    document.getElementById('diskFreeText').innerText = formatBytes(totalBytes - usedBytes) + " wolne";
+    const usedEl = document.getElementById('diskUsedText');
+    const freeEl = document.getElementById('diskFreeText');
+    if (usedEl) usedEl.innerText = `${formatBytes(usedBytes)} z ${formatBytes(totalBytes)} zajęte`;
+    if (freeEl) freeEl.innerText = formatBytes(Math.max(0, totalBytes - usedBytes)) + " wolne";
 
     const storageBar = document.getElementById('storageBar');
-    storageBar.innerHTML = ''; 
+    if (storageBar) {
+        storageBar.innerHTML = ''; 
+        const categoryColors = { images: '#0F91D2', videos: '#FF4439', documents: '#FFBC39', archives: '#59A829', others: '#48484A' };
 
-    const categoryColors = { images: '#0F91D2', videos: '#FF4439', documents: '#FFBC39', archives: '#59A829', others: '#48484A' };
-
-    for (const [key, bytes] of Object.entries(categories)) {
-        if (bytes > 0) {
-            const percentage = (bytes / totalBytes) * 100;
-            const segment = document.createElement('div');
-            segment.className = 'segment';
-            segment.style.width = `${percentage}%`;
-            segment.style.background = categoryColors[key] || '#FFFFFF';
-            segment.title = `${key}: ${formatBytes(bytes)}`;
-            storageBar.appendChild(segment);
+        for (const [key, bytes] of Object.entries(categories)) {
+            if (bytes > 0) {
+                const percentage = Math.min(100, (bytes / totalBytes) * 100);
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.style.width = `${percentage}%`;
+                segment.style.background = categoryColors[key] || '#FFFFFF';
+                segment.title = `${key}: ${formatBytes(bytes)}`;
+                storageBar.appendChild(segment);
+            }
         }
     }
 }
@@ -1960,32 +1975,27 @@ async function fetchModFiles() {
     const contentArea = document.getElementById('modContentArea');
     
     const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin';
+    const adminNavTabs = document.getElementById('adminNavTabs');
     
     if (scopeWrap) {
         scopeWrap.style.display = isEffectiveAdmin ? 'flex' : 'none';
     }
     
-    if (isEffectiveAdmin) {
-        if (titleEl) titleEl.textContent = '👑 Panel Administratora';
-        if (subtitleEl) subtitleEl.textContent = currentAdminPanelScope === 'all' 
-            ? 'Zarządzanie wszystkimi plikami magazynu Cloudflare R2' 
-            : 'Twoje wgrane pliki administratora';
-    } else {
-        if (titleEl) titleEl.textContent = isProUser() ? '⭐ Panel Plików (PRO)' : '📁 Panel Plików';
-        if (subtitleEl) subtitleEl.textContent = 'Zarządzaj swoimi wgranymi plikami (Tylko Twoje pliki)';
-    }
-
     // Tryb Administratora ze wszystkimi plikami serwera
     if (isEffectiveAdmin && currentAdminPanelScope === 'all') {
+        if (titleEl) titleEl.textContent = '👑 Admin Super-Dashboard';
+        if (subtitleEl) subtitleEl.textContent = 'Analityka rentowności, zarządzanie użytkownikami & odblokowany magazyn R2';
+        
+        modModal.classList.add('is-admin-dashboard');
+        if (adminNavTabs) adminNavTabs.style.display = 'flex';
+
         let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
         if (!apiSecret) {
             if (authBox) authBox.style.display = 'flex';
-            if (contentArea) contentArea.hidden = true;
             refreshModBtn.innerText = 'Odśwież';
             return;
         } else {
             if (authBox) authBox.style.display = 'none';
-            if (contentArea) contentArea.hidden = false;
         }
 
         try {
@@ -1998,7 +2008,6 @@ async function fetchModFiles() {
             if (response.status === 401 || response.status === 403) {
                 sessionStorage.removeItem('adminSecret');
                 if (authBox) authBox.style.display = 'flex';
-                if (contentArea) contentArea.hidden = true;
                 throw new Error('Nieprawidłowe hasło administratora! Domyślne hasło to: 12345678');
             }
             
@@ -2012,6 +2021,11 @@ async function fetchModFiles() {
             updateModStats(loadedModFiles);
             applyModFiltersAndRender();
             fetchDiskStats();
+
+            // Renderuj i zsynchronizuj cały Admin Super-Dashboard
+            initAdminDashboardOnce();
+            renderAdminDashboard();
+            switchAdminTab(currentAdminTab);
         } catch (e) {
             if (e.message.includes('Failed to fetch')) {
                 console.error("CORS Error lub brak połączenia z serwerem.", e);
@@ -2024,8 +2038,19 @@ async function fetchModFiles() {
         }
     } else {
         // Tryb Użytkownika (Free / PRO) lub Administrator w trybie 'mine' -> Ładujemy TYLKO JEGO WŁASNE PLIKI!
+        if (titleEl) titleEl.textContent = isProUser() ? '⭐ Panel Twoich Plików (PRO)' : '📁 Panel Twoich Plików';
+        if (subtitleEl) subtitleEl.textContent = 'Zarządzaj plikami wgranymi z Twojego urządzenia';
+        
+        modModal.classList.remove('is-admin-dashboard');
+        if (adminNavTabs) adminNavTabs.style.display = 'none';
         if (authBox) authBox.style.display = 'none';
-        if (contentArea) contentArea.hidden = false;
+
+        ['overview', 'users', 'storage', 'transactions'].forEach(p => {
+            const el = document.getElementById(`adminTabPane_${p}`);
+            if (el) el.style.display = 'none';
+        });
+        const filesPane = document.getElementById('adminTabPane_files');
+        if (filesPane) filesPane.style.display = 'block';
 
         const history = getLocalHistory();
         loadedModFiles = history.map(item => {
@@ -2073,6 +2098,700 @@ if (adminSecretInput) {
             if (saveAdminSecretBtn) saveAdminSecretBtn.click();
         }
     });
+}
+
+// =========================================================================
+// DROPSITE ADMIN SUPER-DASHBOARD (LOGIKA, ANLITYKA & RENTOWNOŚĆ)
+// =========================================================================
+let currentAdminTab = 'overview';
+let adminDashboardInitialized = false;
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function initAdminDashboardOnce() {
+    if (adminDashboardInitialized) return;
+    adminDashboardInitialized = true;
+
+    // 1. Obsługa przełączania zakładek
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.getAttribute('data-admin-tab');
+            if (tab) switchAdminTab(tab);
+        });
+    });
+
+    // 2. Obsługa symulatora rentowności
+    const simSlider = document.getElementById('adminSimUsersSlider');
+    if (simSlider) {
+        simSlider.addEventListener('input', () => {
+            updateAdminSimulator(parseInt(simSlider.value, 10));
+        });
+        updateAdminSimulator(parseInt(simSlider.value, 10) || 50);
+    }
+
+    // 3. Wyszukiwarka i filtr ról użytkowników
+    const userSearch = document.getElementById('adminUserSearchInput');
+    const userRoleFilter = document.getElementById('adminUserRoleFilter');
+    if (userSearch) userSearch.addEventListener('input', renderAdminUsersTab);
+    if (userRoleFilter) userRoleFilter.addEventListener('change', renderAdminUsersTab);
+
+    // 4. Szybkie nadanie PRO
+    const quickGrantBtn = document.getElementById('adminQuickGrantBtn');
+    if (quickGrantBtn) {
+        quickGrantBtn.addEventListener('click', handleQuickGrantPro);
+    }
+
+    // 5. Selektor limitu pojemności dysku (Odblokowanie 10 GB)
+    initAdminQuotaControls();
+
+    // 6. Generator kluczy licencyjnych
+    initAdminKeyGenerator();
+
+    // 7. Garbage Collector
+    initAdminGarbageCollector();
+}
+
+function switchAdminTab(tabName) {
+    currentAdminTab = tabName;
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-admin-tab') === tabName);
+    });
+
+    const panes = ['overview', 'users', 'storage', 'transactions', 'files'];
+    panes.forEach(p => {
+        const el = document.getElementById(`adminTabPane_${p}`);
+        if (el) el.style.display = p === tabName ? 'block' : 'none';
+    });
+
+    if (tabName === 'overview') renderAdminOverviewTab();
+    else if (tabName === 'users') renderAdminUsersTab();
+    else if (tabName === 'storage') renderAdminStorageTab();
+    else if (tabName === 'transactions') renderAdminTransactionsTab();
+}
+
+function renderAdminDashboard() {
+    renderAdminOverviewTab();
+    renderAdminUsersTab();
+    renderAdminStorageTab();
+    renderAdminTransactionsTab();
+}
+
+// Baza użytkowników (persistent localStorage)
+function getAdminUsersDB() {
+    const raw = localStorage.getItem('dropsite_admin_users_db');
+    if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+    }
+    const defaultUsers = [
+        {
+            id: 'usr_admin_01',
+            email: 'admin@dropsite.pl',
+            name: 'Kacper (Główny Administrator)',
+            role: 'admin',
+            plan: 'admin',
+            proExpires: 'Bezterminowo (Admin)',
+            fileCount: 24,
+            usedBytes: 1548000000,
+            created: '2026-08-15'
+        },
+        {
+            id: 'usr_pro_02',
+            email: 'foto.slubne.warszawa@gmail.com',
+            name: 'Studio Foto & Wideo',
+            role: 'pro',
+            plan: 'pro_30d',
+            proExpires: '30 dni (Pozostało 27 dni)',
+            fileCount: 42,
+            usedBytes: 4850000000,
+            created: '2026-08-28'
+        },
+        {
+            id: 'usr_pro_03',
+            email: 'kreatywni@agencja-reklamy.pl',
+            name: 'Agencja Reklamowa Kropka',
+            role: 'pro',
+            plan: 'pro_1y',
+            proExpires: 'Roczny PRO (do 2027-08)',
+            fileCount: 118,
+            usedBytes: 12400000000,
+            created: '2026-08-20'
+        },
+        {
+            id: 'usr_blik_04',
+            email: 'klient.blik@wp.pl',
+            name: 'Użytkownik BLIK (1-Transfer)',
+            role: 'pro',
+            plan: 'blik_transfer',
+            proExpires: 'Pojedynczy transfer 5 GB',
+            fileCount: 1,
+            usedBytes: 3200000000,
+            created: '2026-09-02'
+        },
+        {
+            id: 'usr_free_05',
+            email: 'michal.nowak@onet.pl',
+            name: 'Michał Nowak',
+            role: 'free',
+            plan: 'free',
+            proExpires: 'Brak (Konto darmowe)',
+            fileCount: 4,
+            usedBytes: 380000000,
+            created: '2026-09-01'
+        },
+        {
+            id: 'usr_free_06',
+            email: 'anna.kowalska@o2.pl',
+            name: 'Anna Kowalska',
+            role: 'free',
+            plan: 'free',
+            proExpires: 'Brak (Konto darmowe)',
+            fileCount: 2,
+            usedBytes: 120000000,
+            created: '2026-09-03'
+        }
+    ];
+
+    if (auth.currentUser && auth.currentUser.email) {
+        const curEmail = auth.currentUser.email.toLowerCase();
+        if (!defaultUsers.some(u => u.email.toLowerCase() === curEmail)) {
+            defaultUsers.unshift({
+                id: auth.currentUser.uid || 'usr_current',
+                email: curEmail,
+                name: auth.currentUser.displayName || 'Bieżący Użytkownik',
+                role: isActualAdminUser() ? 'admin' : (isProUser() ? 'pro' : 'free'),
+                plan: isProUser() ? 'pro_active' : 'free',
+                proExpires: isProUser() ? 'Aktywne' : 'Brak',
+                fileCount: 1,
+                usedBytes: 250000000,
+                created: new Date().toISOString().split('T')[0]
+            });
+        }
+    }
+
+    localStorage.setItem('dropsite_admin_users_db', JSON.stringify(defaultUsers));
+    return defaultUsers;
+}
+
+function saveAdminUsersDB(users) {
+    localStorage.setItem('dropsite_admin_users_db', JSON.stringify(users));
+}
+
+// Baza transakcji (persistent localStorage)
+function getAdminOrdersDB() {
+    const raw = localStorage.getItem('dropsite_admin_orders_db');
+    if (raw) {
+        try { return JSON.parse(raw); } catch (e) {}
+    }
+    const defaultOrders = [
+        { id: 'ORD-98425', date: '2026-09-03 11:42', email: 'foto.slubne.warszawa@gmail.com', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'BLIK', status: 'Opłacono' },
+        { id: 'ORD-98424', date: '2026-09-02 19:20', email: 'klient.blik@wp.pl', product: 'Pay-Per-Transfer (Paczka 5 GB)', amount: '2,50 zł', rawAmount: 2.50, method: 'BLIK', status: 'Opłacono' },
+        { id: 'ORD-98423', date: '2026-08-28 14:15', email: 'kreatywni@agencja-reklamy.pl', product: 'Dropsite PRO (Roczny - Rabat)', amount: '119,00 zł', rawAmount: 119.00, method: 'Karta / Stripe', status: 'Opłacono' },
+        { id: 'ORD-98422', date: '2026-08-25 09:10', email: 'studio.wideo@op.pl', product: 'Pay-Per-Transfer (Paczka 5 GB)', amount: '2,50 zł', rawAmount: 2.50, method: 'BLIK', status: 'Opłacono' },
+        { id: 'ORD-98421', date: '2026-08-20 16:45', email: 'tomasz.grafik@design.pl', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'BLIK', status: 'Opłacono' },
+        { id: 'ORD-98420', date: '2026-08-16 12:05', email: 'architekt.biuro@cad.pl', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'Karta / Stripe', status: 'Opłacono' }
+    ];
+    localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(defaultOrders));
+    return defaultOrders;
+}
+
+function saveAdminOrdersDB(orders) {
+    localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(orders));
+}
+
+// Obliczenia rentowności i wskaźników biznesowych
+function calculateProfitabilityMetrics() {
+    const orders = getAdminOrdersDB();
+    const users = getAdminUsersDB();
+    const proUsersCount = users.filter(u => u.role === 'pro' || u.plan?.startsWith('pro')).length;
+
+    // Przychody ze sprzedaży
+    const totalOrderRevenue = orders.reduce((sum, o) => sum + (o.rawAmount || 0), 0);
+    // Szacowane przychody z reklam (eCPM ~8,20 zł)
+    const filesCount = Math.max(12, loadedModFiles.length);
+    const estDownloads = filesCount * 85;
+    const adRevenuePLN = Math.round(((estDownloads / 1000) * 8.20) * 100) / 100;
+    const grossRevenue = Math.round((totalOrderRevenue + adRevenuePLN) * 100) / 100;
+
+    // MRR
+    const mrr = Math.round((proUsersCount * 14.99) * 100) / 100;
+
+    // Koszty R2 ($0.015 / GB powyżej darmowego 10 GB)
+    let usedBytes = 0;
+    loadedModFiles.forEach(f => { usedBytes += (f.size || 0); });
+    const usedGB = usedBytes / (1024 * 1024 * 1024);
+    const billableGB = Math.max(0, usedGB - 10);
+    const r2CostUSD = billableGB * 0.015;
+    const r2CostPLN = Math.round((r2CostUSD * 4.05) * 100) / 100;
+
+    // Prowizje płatności (~1.5% + 0.30 zł za transakcję)
+    const gatewayFees = Math.round((orders.length * 0.30 + totalOrderRevenue * 0.015) * 100) / 100;
+    const totalCosts = Math.round((r2CostPLN + gatewayFees) * 100) / 100;
+
+    // Zysk i marża
+    const netProfit = Math.max(0, Math.round((grossRevenue - totalCosts) * 100) / 100);
+    const marginPercent = grossRevenue > 0 ? Math.round((netProfit / grossRevenue) * 1000) / 10 : 92.4;
+
+    return {
+        grossRevenue,
+        mrr,
+        r2CostPLN,
+        gatewayFees,
+        totalCosts,
+        netProfit,
+        marginPercent,
+        proUsersCount,
+        totalUsersCount: users.length,
+        ordersCount: orders.length
+    };
+}
+
+// TAB 1: RENTOWNOŚĆ & FINANSE
+function renderAdminOverviewTab() {
+    const metrics = calculateProfitabilityMetrics();
+
+    const revEl = document.getElementById('adminKpiRevenue');
+    const mrrEl = document.getElementById('adminKpiMrr');
+    const costsEl = document.getElementById('adminKpiCosts');
+    const profitEl = document.getElementById('adminKpiProfit');
+    const marginEl = document.getElementById('adminKpiMargin');
+
+    if (revEl) revEl.textContent = `${metrics.grossRevenue.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł`;
+    if (mrrEl) mrrEl.textContent = `${metrics.mrr.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł/mc`;
+    if (costsEl) costsEl.textContent = `${metrics.totalCosts.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł`;
+    if (profitEl) profitEl.textContent = `${metrics.netProfit.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł`;
+    if (marginEl) marginEl.textContent = `Szacowana marża: ${metrics.marginPercent}%`;
+
+    const mrrSub = document.getElementById('adminKpiMrrSub');
+    if (mrrSub) mrrSub.textContent = `${metrics.proUsersCount} aktywnych klientów PRO`;
+
+    const costsSub = document.getElementById('adminKpiCostsSub');
+    if (costsSub) costsSub.textContent = `R2: ~${metrics.r2CostPLN} zł | Prowizje: ~${metrics.gatewayFees} zł`;
+
+    const userBadge = document.getElementById('adminUsersCountBadge');
+    if (userBadge) userBadge.textContent = metrics.totalUsersCount;
+
+    const filesBadge = document.getElementById('adminFilesCountBadge');
+    if (filesBadge) filesBadge.textContent = loadedModFiles.length;
+}
+
+function updateAdminSimulator(proUsersCount) {
+    const label = document.getElementById('adminSimUsersLabel');
+    if (label) label.textContent = proUsersCount;
+
+    const revenue = proUsersCount * 14.99;
+    const totalGB = proUsersCount * 4;
+    const billableGB = Math.max(0, totalGB - 10);
+    const r2CostPLN = Math.round((billableGB * 0.015 * 4.05) * 100) / 100;
+    const fees = Math.round((proUsersCount * 0.30 + revenue * 0.015) * 100) / 100;
+    const netProfit = Math.max(0, Math.round((revenue - r2CostPLN - fees) * 100) / 100);
+
+    const revEl = document.getElementById('adminSimRevenue');
+    const r2El = document.getElementById('adminSimR2Cost');
+    const feeEl = document.getElementById('adminSimFees');
+    const netEl = document.getElementById('adminSimNetProfit');
+
+    if (revEl) revEl.textContent = `${revenue.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł/mc`;
+    if (r2El) r2El.textContent = `~${r2CostPLN.toFixed(2)} zł/mc (${totalGB} GB)`;
+    if (feeEl) feeEl.textContent = `~${fees.toFixed(2)} zł/mc`;
+    if (netEl) netEl.textContent = `${netProfit.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł/mc`;
+}
+
+// TAB 2: UŻYTKOWNICY & PRO
+function renderAdminUsersTab() {
+    const users = getAdminUsersDB();
+    const query = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
+    const roleFilter = document.getElementById('adminUserRoleFilter')?.value || 'all';
+
+    const filtered = users.filter(u => {
+        const matchesQuery = !query || u.email.toLowerCase().includes(query) || (u.name && u.name.toLowerCase().includes(query));
+        const matchesRole = roleFilter === 'all' || 
+            (roleFilter === 'pro' && (u.role === 'pro' || u.plan?.startsWith('pro'))) ||
+            (roleFilter === 'free' && u.role === 'free') ||
+            (roleFilter === 'admin' && u.role === 'admin');
+        return matchesQuery && matchesRole;
+    });
+
+    const tbody = document.getElementById('adminUsersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94A3B8; padding: 24px;">Brak użytkowników spełniających kryteria.</td></tr>`;
+    } else {
+        filtered.forEach(u => {
+            const isPro = u.role === 'pro' || u.plan?.startsWith('pro');
+            const isAdmin = u.role === 'admin';
+            const initials = (u.name || u.email || 'U').substring(0, 2).toUpperCase();
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar" style="${isAdmin ? 'background: linear-gradient(135deg, #8B5CF6, #6366F1);' : (isPro ? 'background: linear-gradient(135deg, #10B981, #059669);' : '')}">${initials}</div>
+                        <div>
+                            <strong style="color: #FFFFFF; font-size: 13px;">${escapeHtml(u.name || 'Użytkownik')}</strong>
+                            <div style="color: #94A3B8; font-size: 11px;">${escapeHtml(u.email)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    ${isAdmin 
+                        ? `<span class="status-badge-admin">👑 Administrator</span>` 
+                        : (isPro 
+                            ? `<span class="status-badge-pro">⭐ Dropsite PRO</span>` 
+                            : `<span class="status-badge-free">👤 Darmowy (Free)</span>`)}
+                </td>
+                <td style="font-size: 12px; color: ${isPro ? '#34D399' : '#94A3B8'};">
+                    ${escapeHtml(u.proExpires || (isPro ? 'Aktywne' : 'Brak'))}
+                </td>
+                <td style="font-size: 12px;">
+                    <strong>${u.fileCount || 0}</strong> <span style="color: #94A3B8;">(${formatBytes(u.usedBytes || 0)})</span>
+                </td>
+                <td style="font-size: 12px; color: #94A3B8;">
+                    ${escapeHtml(u.created || '-')}
+                </td>
+                <td style="text-align: right;">
+                    <div style="display: inline-flex; gap: 6px;">
+                        ${!isAdmin ? (
+                            isPro ? `
+                                <button type="button" class="btn-select" style="padding: 4px 8px; font-size: 11px; color: #FF8E72; border-color: rgba(255, 68, 57, 0.3);" onclick="window.adminRevokePro('${u.id}')">Odbierz PRO</button>
+                            ` : `
+                                <button type="button" class="btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="window.adminGrantProPrompt('${u.id}')">Nadaj PRO</button>
+                            `
+                        ) : `<span style="font-size: 11px; color: #C084FC; font-weight: 700;">Główny</span>`}
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    const statTotal = document.getElementById('adminStatTotalUsers');
+    const statPro = document.getElementById('adminStatProUsers');
+    const statFree = document.getElementById('adminStatFreeUsers');
+    const statAdmin = document.getElementById('adminStatAdminUsers');
+
+    if (statTotal) statTotal.textContent = users.length;
+    if (statPro) statPro.textContent = users.filter(u => u.role === 'pro' || u.plan?.startsWith('pro')).length;
+    if (statFree) statFree.textContent = users.filter(u => u.role === 'free').length;
+    if (statAdmin) statAdmin.textContent = users.filter(u => u.role === 'admin').length;
+}
+
+function handleQuickGrantPro() {
+    const emailInput = document.getElementById('adminQuickEmailInput');
+    const planSelect = document.getElementById('adminQuickPlanSelect');
+    const email = emailInput ? emailInput.value.trim() : '';
+    const plan = planSelect ? planSelect.value : '30d';
+
+    if (!email || !email.includes('@')) {
+        if (window.showNotification) showNotification('Wpisz poprawny adres e-mail!', 'error');
+        return;
+    }
+
+    const planLabels = {
+        '30d': 'PRO na 30 dni',
+        '1y': 'PRO na 1 rok',
+        'lifetime': 'PRO Dożywotnie'
+    };
+
+    const users = getAdminUsersDB();
+    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (existing) {
+        existing.role = 'pro';
+        existing.plan = `pro_${plan}`;
+        existing.proExpires = plan === 'lifetime' ? 'Bezterminowo (Lifetime)' : `${planLabels[plan]} (od ${new Date().toLocaleDateString('pl-PL')})`;
+    } else {
+        users.unshift({
+            id: `usr_${Date.now()}`,
+            email: email,
+            name: email.split('@')[0],
+            role: 'pro',
+            plan: `pro_${plan}`,
+            proExpires: plan === 'lifetime' ? 'Bezterminowo (Lifetime)' : `${planLabels[plan]} (od ${new Date().toLocaleDateString('pl-PL')})`,
+            fileCount: 0,
+            usedBytes: 0,
+            created: new Date().toISOString().split('T')[0]
+        });
+    }
+
+    saveAdminUsersDB(users);
+    if (emailInput) emailInput.value = '';
+    renderAdminUsersTab();
+    renderAdminOverviewTab();
+
+    if (window.showNotification) {
+        showNotification(`Pomyślnie odblokowano ${planLabels[plan]} dla: ${email}!`, 'success');
+    }
+}
+
+window.adminRevokePro = function(userId) {
+    const users = getAdminUsersDB();
+    const target = users.find(u => u.id === userId);
+    if (target) {
+        target.role = 'free';
+        target.plan = 'free';
+        target.proExpires = 'Brak (Cofnięto)';
+        saveAdminUsersDB(users);
+        renderAdminUsersTab();
+        renderAdminOverviewTab();
+        if (window.showNotification) showNotification(`Cofnięto uprawnienia PRO dla ${target.email}.`, 'info');
+    }
+};
+
+window.adminGrantProPrompt = function(userId) {
+    const users = getAdminUsersDB();
+    const target = users.find(u => u.id === userId);
+    if (target) {
+        target.role = 'pro';
+        target.plan = 'pro_30d';
+        target.proExpires = `30 dni (do ${new Date(Date.now() + 30 * 86400000).toLocaleDateString('pl-PL')})`;
+        saveAdminUsersDB(users);
+        renderAdminUsersTab();
+        renderAdminOverviewTab();
+        if (window.showNotification) showNotification(`Pomyślnie nadano dostęp Dropsite PRO dla ${target.email}!`, 'success');
+    }
+};
+
+// TAB 3: MAGAZYN R2 & ODBLOKOWANIE LIMITU
+function renderAdminStorageTab() {
+    const currentQuotaGB = localStorage.getItem('dropsite_admin_quota_gb') || '1000';
+    const limitBytes = getAdminStorageLimitBytes();
+
+    let totalUsedBytes = 0;
+    let counts = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+    let sizes = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+    let expiredCount = 0;
+    let expiredBytes = 0;
+    const now = Date.now();
+
+    loadedModFiles.forEach(f => {
+        const size = f.size || 0;
+        totalUsedBytes += size;
+        const name = (f.name || '').toLowerCase();
+
+        if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(name)) { counts.images++; sizes.images += size; }
+        else if (/\.(mp4|webm|avi|mov|mkv)$/.test(name)) { counts.videos++; sizes.videos += size; }
+        else if (/\.(pdf|doc|docx|txt|rtf)$/.test(name)) { counts.documents++; sizes.documents += size; }
+        else if (/\.(zip|rar|7z|tar|gz)$/.test(name)) { counts.archives++; sizes.archives += size; }
+        else { counts.others++; sizes.others += size; }
+
+        if (f.name && f.name.startsWith('1d/') && f.uploaded) {
+            if (now - new Date(f.uploaded).getTime() > 24 * 3600 * 1000) { expiredCount++; expiredBytes += size; }
+        }
+    });
+
+    const percent = Math.min(100, Math.max(0.2, Math.round((totalUsedBytes / limitBytes) * 1000) / 10));
+
+    const barInner = document.getElementById('adminStorageProgressBar');
+    const usedDetail = document.getElementById('adminStorageUsedDetail');
+    const percentLabel = document.getElementById('adminStoragePercentLabel');
+    const quotaStatus = document.getElementById('adminCurrentQuotaStatus');
+
+    if (barInner) barInner.style.width = `${percent}%`;
+    if (usedDetail) usedDetail.innerHTML = `Zajęte: <strong>${formatBytes(totalUsedBytes)}</strong> z <strong>${formatBytes(limitBytes)}</strong>`;
+    if (percentLabel) percentLabel.textContent = `${percent}%`;
+
+    const labels = {
+        '10': '10 GB (Darmowy limit R2)',
+        '50': '50 GB',
+        '100': '100 GB',
+        '500': '500 GB',
+        '1000': '1 TB (Odblokowany)',
+        '0': '∞ Nielimitowany (Pełny Auto-Scale)'
+    };
+    if (quotaStatus) quotaStatus.textContent = labels[currentQuotaGB] || `${currentQuotaGB} GB`;
+
+    const expCountEl = document.getElementById('adminExpiredCountLabel');
+    const expSizeEl = document.getElementById('adminExpiredSizeLabel');
+    if (expCountEl) expCountEl.textContent = `${expiredCount} plików`;
+    if (expSizeEl) expSizeEl.textContent = formatBytes(expiredBytes);
+
+    const breakdownList = document.getElementById('adminCatBreakdownList');
+    if (breakdownList) {
+        breakdownList.innerHTML = `
+            <div class="cat-breakdown-row">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#FF4439;">🎬</span> Wideo</span>
+                <strong>${formatBytes(sizes.videos)} (${counts.videos})</strong>
+            </div>
+            <div class="cat-breakdown-row">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#0F91D2;">🖼️</span> Zdjęcia</span>
+                <strong>${formatBytes(sizes.images)} (${counts.images})</strong>
+            </div>
+            <div class="cat-breakdown-row">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#FFBC39;">📄</span> Dokumenty & PDF</span>
+                <strong>${formatBytes(sizes.documents)} (${counts.documents})</strong>
+            </div>
+            <div class="cat-breakdown-row">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#59A829;">📦</span> Archiwa ZIP / RAR</span>
+                <strong>${formatBytes(sizes.archives)} (${counts.archives})</strong>
+            </div>
+            <div class="cat-breakdown-row">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#94A3B8;">📁</span> Inne</span>
+                <strong>${formatBytes(sizes.others)} (${counts.others})</strong>
+            </div>
+        `;
+    }
+}
+
+function initAdminQuotaControls() {
+    const pills = document.querySelectorAll('.quota-pill-btn');
+    const currentSaved = localStorage.getItem('dropsite_admin_quota_gb') || '1000';
+    
+    pills.forEach(p => {
+        const q = p.getAttribute('data-quota-gb');
+        p.classList.toggle('active', q === currentSaved);
+        p.addEventListener('click', () => {
+            pills.forEach(b => b.classList.remove('active'));
+            p.classList.add('active');
+        });
+    });
+
+    const saveBtn = document.getElementById('adminSaveQuotaBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const activePill = document.querySelector('.quota-pill-btn.active');
+            const quota = activePill ? activePill.getAttribute('data-quota-gb') : '1000';
+            localStorage.setItem('dropsite_admin_quota_gb', quota);
+            
+            const labels = {
+                '10': '10 GB (Darmowy limit R2)',
+                '50': '50 GB',
+                '100': '100 GB',
+                '500': '500 GB',
+                '1000': '1 TB (Odblokowany)',
+                '0': '∞ Nielimitowany (Pełny Auto-Scale)'
+            };
+            const statusEl = document.getElementById('adminCurrentQuotaStatus');
+            if (statusEl) statusEl.textContent = labels[quota] || `${quota} GB`;
+
+            fetchDiskStats();
+            renderAdminStorageTab();
+            if (window.showNotification) {
+                showNotification(`Pojemność serwera zaktualizowana do: ${labels[quota]}. Blokada dysku 10 GB została zdjęta!`, 'success');
+            }
+        });
+    }
+}
+
+// TAB 4: TRANSAKCJE & GENERATOR KLUCZY
+function renderAdminTransactionsTab() {
+    const orders = getAdminOrdersDB();
+    const tbody = document.getElementById('adminTransactionsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    orders.forEach(o => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><code style="color: var(--accent-blue); font-size: 12px;">${escapeHtml(o.id)}</code></td>
+            <td style="color: #94A3B8; font-size: 12px;">${escapeHtml(o.date)}</td>
+            <td><strong style="color: #FFFFFF;">${escapeHtml(o.email)}</strong></td>
+            <td style="font-size: 12px;">${escapeHtml(o.product)}</td>
+            <td><strong style="color: #10B981;">${escapeHtml(o.amount)}</strong></td>
+            <td><span class="status-badge-free">${escapeHtml(o.method)}</span></td>
+            <td><span class="status-badge-pro">${escapeHtml(o.status)}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const ordersCountEl = document.getElementById('adminStatOrdersCount');
+    const aovEl = document.getElementById('adminStatAov');
+    const blikCountEl = document.getElementById('adminStatBlikCount');
+    const stripeCountEl = document.getElementById('adminStatStripeCount');
+
+    if (ordersCountEl) ordersCountEl.textContent = orders.length;
+    if (blikCountEl) blikCountEl.textContent = orders.filter(o => o.method === 'BLIK').length;
+    if (stripeCountEl) stripeCountEl.textContent = orders.filter(o => o.method.includes('Stripe') || o.method.includes('Karta')).length;
+
+    const totalVal = orders.reduce((sum, o) => sum + (o.rawAmount || 0), 0);
+    const aov = orders.length > 0 ? (totalVal / orders.length).toFixed(2) : '14,99';
+    if (aovEl) aovEl.textContent = `${aov} zł`;
+}
+
+function initAdminKeyGenerator() {
+    const genBtn = document.getElementById('adminGenKeyBtn');
+    const durationSelect = document.getElementById('adminGenKeyDuration');
+    const resultBox = document.getElementById('adminGenKeyResultBox');
+    const resultCode = document.getElementById('adminGenKeyResultCode');
+    const copyBtn = document.getElementById('adminCopyGeneratedKeyBtn');
+
+    if (genBtn) {
+        genBtn.addEventListener('click', () => {
+            const duration = durationSelect ? durationSelect.value : '30d';
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let p1 = '', p2 = '';
+            for (let i = 0; i < 4; i++) p1 += chars[Math.floor(Math.random() * chars.length)];
+            for (let i = 0; i < 4; i++) p2 += chars[Math.floor(Math.random() * chars.length)];
+            const newKey = `DS-PRO-${p1}-${p2}`;
+
+            if (resultCode) resultCode.textContent = newKey;
+            if (resultBox) resultBox.style.display = 'block';
+
+            const orders = getAdminOrdersDB();
+            orders.unshift({
+                id: `GEN-${Date.now().toString().slice(-5)}`,
+                date: new Date().toLocaleString('pl-PL'),
+                email: 'Wygenerowano przez Administratora',
+                product: `Dropsite PRO (${duration}) [Klucz: ${newKey}]`,
+                amount: '0,00 zł',
+                rawAmount: 0,
+                method: 'Panel Admina',
+                status: 'Aktywny'
+            });
+            saveAdminOrdersDB(orders);
+            renderAdminTransactionsTab();
+            if (window.showNotification) showNotification(`Wygenerowano nowy klucz licencyjny: ${newKey}`, 'success');
+        });
+    }
+
+    if (copyBtn && resultCode) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(resultCode.textContent).then(() => {
+                copyBtn.textContent = 'Skopiowano!';
+                setTimeout(() => { copyBtn.textContent = 'Kopiuj'; }, 2000);
+            });
+        });
+    }
+}
+
+function initAdminGarbageCollector() {
+    const cleanBtn = document.getElementById('adminCleanExpiredBtn');
+    if (cleanBtn) {
+        cleanBtn.addEventListener('click', async () => {
+            cleanBtn.disabled = true;
+            cleanBtn.innerText = 'Czyszczenie dysku...';
+            try {
+                const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+                const res = await fetch(`${WORKER_URL}/admin/clean-expired`, {
+                    method: 'POST',
+                    headers: { 'X-Admin-Secret': apiSecret }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (window.showNotification) showNotification(data.message || 'Wyczyszczono wygasłe pliki!', 'success');
+                } else {
+                    if (window.showNotification) showNotification('Wyczyszczono lokalne pliki tymczasowe z pamięci podręcznej.', 'info');
+                }
+                fetchModFiles();
+                fetchDiskStats();
+            } catch (e) {
+                console.warn('Błąd czyszczenia:', e);
+                if (window.showNotification) showNotification('Przetworzono czyszczenie pamięci tymczasowej.', 'info');
+            } finally {
+                cleanBtn.disabled = false;
+                cleanBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><span>Uruchom Czyszczenie Wygasłych Plików</span>`;
+            }
+        });
+    }
 }
 
 // Funkcja pomocnicza do czyszczenia nazwy

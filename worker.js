@@ -499,13 +499,14 @@ export default {
         }
 
         // --- ZABEZPIECZENIE BACKENDOWE POJEMNOŚCI DYSKU ---
-        if (env.BUCKET) {
+        // Konta PRO nigdy nie są blokowane pojemnością darmowego tieru serwera
+        if (env.BUCKET && !isPro) {
             let totalUsedBytes = 0;
             const list = await env.BUCKET.list({ limit: 1000 });
             list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-            const MAX_BYTES = 10737418240; // 10 GB
+            const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB (zniesienie blokady 10 GB)
             if (totalUsedBytes + fileSize > MAX_BYTES) {
-                return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze. Spróbuj ponownie później." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+                return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze dla kont darmowych. Przejdź na Dropsite PRO, aby przesyłać bez limitów." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         }
 
@@ -589,13 +590,14 @@ export default {
               }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
 
-            if (env.BUCKET) {
+            // Konta PRO przesyłają bez blokowania pojemnością serwera
+            if (env.BUCKET && !isPro) {
                 let totalUsedBytes = 0;
                 const list = await env.BUCKET.list({ limit: 1000 });
                 list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-                const MAX_BYTES = 10737418240; 
+                const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB 
                 if (totalUsedBytes + fileSize > MAX_BYTES) {
-                    return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+                    return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera dla kont darmowych. Odblokuj Dropsite PRO." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
                 }
             }
 
@@ -952,7 +954,7 @@ export default {
 
       let totalUsedBytes = 0;
       let categories = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
-      const MAX_BYTES = 10737418240; 
+      const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB domyślnie
       
       try {
           const list = await env.BUCKET.list();
@@ -978,13 +980,120 @@ export default {
           return new Response(JSON.stringify({
               totalBytes: MAX_BYTES,
               usedBytes: totalUsedBytes,
-              categories: categories
+              categories: categories,
+              fileCount: list.objects.length
           }), { 
               headers: { "Content-Type": "application/json", ...corsHeaders } 
           });
 
       } catch (err) {
           return new Response(JSON.stringify({ error: "Błąd zliczania dysku", msg: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 6. ANALITYKA I ZARZĄDZANIE DLA ADMIN SUPER-DASHBOARD
+    if (url.pathname === "/admin/analytics" && request.method === "GET") {
+      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak dostępu administratora." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      if (!env.BUCKET) return new Response(JSON.stringify({ error: "Brak bucketu" }), { status: 500, headers: corsHeaders });
+
+      try {
+          const list = await env.BUCKET.list();
+          let totalBytes = 0;
+          let counts = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+          let sizes = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+          let retentionStats = { permanent: 0, '30d': 0, '1d': 0, burn: 0, root: 0 };
+          let expiredCount = 0;
+          const now = Date.now();
+
+          list.objects.forEach(obj => {
+              totalBytes += obj.size;
+              const k = obj.key;
+              const lower = k.toLowerCase();
+
+              // Klasyfikacja typów
+              if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(lower)) { counts.images++; sizes.images += obj.size; }
+              else if (/\.(mp4|webm|avi|mov|mkv)$/.test(lower)) { counts.videos++; sizes.videos += obj.size; }
+              else if (/\.(pdf|doc|docx|txt|rtf)$/.test(lower)) { counts.documents++; sizes.documents += obj.size; }
+              else if (/\.(zip|rar|7z|tar|gz)$/.test(lower)) { counts.archives++; sizes.archives += obj.size; }
+              else { counts.others++; sizes.others += obj.size; }
+
+              // Klasyfikacja retencji
+              if (k.startsWith('1d/')) {
+                  retentionStats['1d']++;
+                  if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000)) expiredCount++;
+              } else if (k.startsWith('30d/')) {
+                  retentionStats['30d']++;
+                  if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000)) expiredCount++;
+              } else if (k.startsWith('burn/')) {
+                  retentionStats.burn++;
+              } else {
+                  retentionStats.permanent++;
+              }
+          });
+
+          const MAX_STORAGE = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776;
+          // Koszt Cloudflare R2: $0.015 / GB powyżej 10 GB darmowych
+          const usedGB = totalBytes / (1024 * 1024 * 1024);
+          const billableGB = Math.max(0, usedGB - 10);
+          const r2CostUSD = Math.round(billableGB * 0.015 * 100) / 100;
+          const r2CostPLN = Math.round(r2CostUSD * 4.05 * 100) / 100;
+
+          return new Response(JSON.stringify({
+              success: true,
+              totalFiles: list.objects.length,
+              totalBytes: totalBytes,
+              maxStorageBytes: MAX_STORAGE,
+              usedGB: Math.round(usedGB * 100) / 100,
+              r2CostUSD,
+              r2CostPLN,
+              counts,
+              sizes,
+              retentionStats,
+              expiredCount
+          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 7. CZYSZCZENIE WYGASŁYCH PLIKÓW (GARBAGE COLLECTOR)
+    if (url.pathname === "/admin/clean-expired" && request.method === "POST") {
+      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak uprawnień." }), { status: 403, headers: corsHeaders });
+      }
+
+      if (!env.BUCKET) return new Response(JSON.stringify({ error: "Brak bucketu" }), { status: 500, headers: corsHeaders });
+
+      try {
+          const list = await env.BUCKET.list();
+          const now = Date.now();
+          const toDelete = [];
+
+          list.objects.forEach(obj => {
+              const k = obj.key;
+              if (k.startsWith('1d/') && obj.uploaded) {
+                  if (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000) toDelete.push(k);
+              } else if (k.startsWith('30d/') && obj.uploaded) {
+                  if (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000) toDelete.push(k);
+              }
+          });
+
+          for (const key of toDelete) {
+              await env.BUCKET.delete(key);
+          }
+
+          return new Response(JSON.stringify({
+              success: true,
+              deletedCount: toDelete.length,
+              message: `Usunięto ${toDelete.length} wygasłych plików.`
+          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 

@@ -1517,7 +1517,358 @@
                 <button type="button" id="saveAdminSecretBtn" class="btn-secondary"
                     style="padding: 12px 20px;">Zaloguj</button>
             </div>
-            <div id="modContentArea">
+            <!-- Nawigacja zakładek Administratora -->
+            <div id="adminNavTabs" class="admin-nav-tabs" style="display: none;">
+                <button type="button" class="admin-tab-btn active" data-admin-tab="overview">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+                    <span>Rentowność & Finanse</span>
+                </button>
+                <button type="button" class="admin-tab-btn" data-admin-tab="users">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>Użytkownicy & PRO</span>
+                    <span class="admin-tab-badge" id="adminUsersCountBadge">0</span>
+                </button>
+                <button type="button" class="admin-tab-btn" data-admin-tab="storage">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                    <span>Magazyn R2 & Limity</span>
+                    <span class="admin-tab-badge-alert" id="adminStorageAlertBadge" style="display: none;">Limit</span>
+                </button>
+                <button type="button" class="admin-tab-btn" data-admin-tab="transactions">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                    <span>Płatności & Transakcje</span>
+                </button>
+                <button type="button" class="admin-tab-btn" data-admin-tab="files">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    <span>Moderacja Plików</span>
+                    <span class="admin-tab-badge" id="adminFilesCountBadge">0</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: RENTOWNOŚĆ & FINANSE -->
+            <div id="adminTabPane_overview" class="admin-tab-pane" style="display: none;">
+                <div class="admin-kpi-grid">
+                    <div class="admin-kpi-card highlight-green">
+                        <div class="admin-kpi-header">
+                            <span class="admin-kpi-title">Przychód Całkowity (Gross)</span>
+                            <span class="admin-kpi-icon">💰</span>
+                        </div>
+                        <div class="admin-kpi-val" id="adminKpiRevenue">0,00 zł</div>
+                        <div class="admin-kpi-sub">PRO Subskrypcje + BLIK + Reklamy</div>
+                    </div>
+                    <div class="admin-kpi-card highlight-blue">
+                        <div class="admin-kpi-header">
+                            <span class="admin-kpi-title">Miesięczny Przychód (MRR)</span>
+                            <span class="admin-kpi-icon">📈</span>
+                        </div>
+                        <div class="admin-kpi-val" id="adminKpiMrr">0,00 zł</div>
+                        <div class="admin-kpi-sub" id="adminKpiMrrSub">Stałe abonamenty PRO</div>
+                    </div>
+                    <div class="admin-kpi-card highlight-amber">
+                        <div class="admin-kpi-header">
+                            <span class="admin-kpi-title">Koszty Chmury & Prowizje</span>
+                            <span class="admin-kpi-icon">☁️</span>
+                        </div>
+                        <div class="admin-kpi-val" id="adminKpiCosts">0,00 zł</div>
+                        <div class="admin-kpi-sub" id="adminKpiCostsSub">R2 ($0.015/GB) + bramki ~1.5%</div>
+                    </div>
+                    <div class="admin-kpi-card highlight-purple">
+                        <div class="admin-kpi-header">
+                            <span class="admin-kpi-title">Czysty Zysk Netto</span>
+                            <span class="admin-kpi-icon">🏆</span>
+                        </div>
+                        <div class="admin-kpi-val" id="adminKpiProfit">0,00 zł</div>
+                        <div class="admin-kpi-sub" id="adminKpiMargin">Szacowana marża: 92.4%</div>
+                    </div>
+                </div>
+
+                <!-- Symulator / Prognoza Wzrostu SaaS -->
+                <div class="admin-card-box" style="margin-top: 20px;">
+                    <div class="admin-card-title-wrap">
+                        <h3>📊 Symulator Rentowności Dropsite (Prognoza Zysków)</h3>
+                        <span class="admin-card-badge">Kalkulator Biznesowy</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Sprawdź, ile zarobisz na czysto przy określonej skali subskrybentów PRO (14,99 zł/mc) i mikropłatnościach BLIK (2,50 zł), po odliczeniu kosztów magazynu R2:</p>
+                    
+                    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                        <span style="font-size: 13px; font-weight: 600;">Liczba klientów PRO:</span>
+                        <input type="range" id="adminSimUsersSlider" min="5" max="1000" step="5" value="50" style="flex: 1; accent-color: var(--accent-blue); cursor: pointer;">
+                        <span id="adminSimUsersLabel" style="font-size: 15px; font-weight: 800; color: var(--accent-blue); min-width: 60px;">50</span>
+                    </div>
+
+                    <div class="admin-sim-results-grid">
+                        <div class="sim-metric-item">
+                            <span class="sim-metric-label">Prognozowany Przychód</span>
+                            <span class="sim-metric-val" id="adminSimRevenue">749,50 zł/mc</span>
+                        </div>
+                        <div class="sim-metric-item">
+                            <span class="sim-metric-label">Koszt Magazynu R2</span>
+                            <span class="sim-metric-val" style="color: #FFBC39;" id="adminSimR2Cost">~12,50 zł/mc</span>
+                        </div>
+                        <div class="sim-metric-item">
+                            <span class="sim-metric-label">Prowizje bramek płatności</span>
+                            <span class="sim-metric-val" style="color: #FF8E72;" id="adminSimFees">~22,50 zł/mc</span>
+                        </div>
+                        <div class="sim-metric-item">
+                            <span class="sim-metric-label">Twój Czysty Zysk</span>
+                            <span class="sim-metric-val" style="color: #10B981; font-size: 1.25rem;" id="adminSimNetProfit">714,50 zł/mc</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: UŻYTKOWNICY & PRO -->
+            <div id="adminTabPane_users" class="admin-tab-pane" style="display: none;">
+                <div class="admin-stats-mini-row">
+                    <div class="admin-mini-stat">
+                        <span>Wszyscy użytkownicy:</span>
+                        <strong id="adminStatTotalUsers">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Konta PRO:</span>
+                        <strong style="color: #10B981;" id="adminStatProUsers">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Konta Darmowe (Free):</span>
+                        <strong style="color: #0F91D2;" id="adminStatFreeUsers">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Administratorzy:</span>
+                        <strong style="color: #8B5CF6;" id="adminStatAdminUsers">1</strong>
+                    </div>
+                </div>
+
+                <!-- Formularz szybkiego nadawania PRO -->
+                <div class="admin-card-box" style="margin-bottom: 20px;">
+                    <div class="admin-card-title-wrap">
+                        <h4>⚡ Szybkie nadanie dostępu PRO (dla klienta lub testów)</h4>
+                    </div>
+                    <div class="admin-quick-grant-row">
+                        <input type="email" id="adminQuickEmailInput" placeholder="Wpisz adres e-mail klienta (np. jan@firma.pl)..." class="dropsite-input" style="flex: 2; margin: 0;">
+                        <select id="adminQuickPlanSelect" class="dropsite-input" style="flex: 1; margin: 0;">
+                            <option value="30d">PRO na 30 dni</option>
+                            <option value="1y">PRO na 1 rok (119 zł)</option>
+                            <option value="lifetime">PRO Dożywotnie (Lifetime)</option>
+                        </select>
+                        <button type="button" id="adminQuickGrantBtn" class="btn-primary" style="padding: 10px 18px; white-space: nowrap;">Odblokuj PRO</button>
+                    </div>
+                </div>
+
+                <!-- Tabela Użytkowników -->
+                <div class="admin-card-box">
+                    <div class="admin-table-toolbar">
+                        <div class="mod-search-wrap" style="max-width: 320px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mod-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="adminUserSearchInput" placeholder="Szukaj po e-mailu..." class="mod-search-input">
+                        </div>
+                        <select id="adminUserRoleFilter" class="dropsite-input" style="width: auto; margin: 0; padding: 6px 12px; font-size: 13px;">
+                            <option value="all">Wszystkie role</option>
+                            <option value="pro">Tylko PRO</option>
+                            <option value="free">Tylko Free</option>
+                            <option value="admin">Administratorzy</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-table-responsive">
+                        <table class="admin-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Użytkownik</th>
+                                    <th>Plan & Status</th>
+                                    <th>Ważność PRO</th>
+                                    <th>Wgrane pliki</th>
+                                    <th>Data rejestracji</th>
+                                    <th style="text-align: right;">Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                                <!-- Generowane dynamicznie przez app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MAGAZYN R2 & ODBLOKOWANIE LIMITU -->
+            <div id="adminTabPane_storage" class="admin-tab-pane" style="display: none;">
+                <div class="admin-card-box" style="margin-bottom: 20px;">
+                    <div class="admin-card-title-wrap">
+                        <h3>💾 Status Magazynu Danych Cloudflare R2</h3>
+                        <span class="admin-card-badge" id="adminStorageBadge">Dysk Aktywny</span>
+                    </div>
+
+                    <!-- Pasek zużycia R2 -->
+                    <div class="admin-storage-visual-box">
+                        <div class="admin-storage-bar-outer">
+                            <div class="admin-storage-bar-inner" id="adminStorageProgressBar" style="width: 2%;"></div>
+                        </div>
+                        <div class="admin-storage-labels-row">
+                            <span id="adminStorageUsedDetail">Zajęte: <strong>0 MB</strong> z <strong>1 TB</strong></span>
+                            <span id="adminStoragePercentLabel" style="color: var(--accent-blue); font-weight: 700;">0.2%</span>
+                        </div>
+                    </div>
+
+                    <!-- Centum Odblokowania Pojemności Serwera -->
+                    <div class="admin-quota-unlock-section">
+                        <div style="margin-bottom: 12px;">
+                            <h4 style="margin: 0 0 6px 0; color: #FFFFFF;">🔓 Zarządzanie Pojemnością & Odblokowanie Blokady 10 GB</h4>
+                            <p style="margin: 0; font-size: 13px; color: var(--text-muted);">
+                                Domyślny darmowy limit Cloudflare R2 wynosi 10 GB. Aby Twoi klienci PRO i użytkownicy mogli wgrywać duże pliki bez odrzucania przez serwer, wybierz preferowany limit pojemności bucketu lub włącz pełną skalowalność Pay-As-You-Go ($0.015/GB):
+                            </p>
+                        </div>
+
+                        <div class="admin-quota-pills" id="adminQuotaPills">
+                            <button type="button" class="quota-pill-btn" data-quota-gb="10">
+                                <strong>10 GB</strong>
+                                <span>Darmowy Tier R2</span>
+                            </button>
+                            <button type="button" class="quota-pill-btn" data-quota-gb="50">
+                                <strong>50 GB</strong>
+                                <span>~2,40 zł/mc</span>
+                            </button>
+                            <button type="button" class="quota-pill-btn" data-quota-gb="100">
+                                <strong>100 GB</strong>
+                                <span>~5,40 zł/mc</span>
+                            </button>
+                            <button type="button" class="quota-pill-btn" data-quota-gb="500">
+                                <strong>500 GB</strong>
+                                <span>~27 zł/mc</span>
+                            </button>
+                            <button type="button" class="quota-pill-btn active" data-quota-gb="1000">
+                                <strong>1 TB</strong>
+                                <span>~54 zł/mc (Zalecane)</span>
+                            </button>
+                            <button type="button" class="quota-pill-btn" data-quota-gb="0">
+                                <strong>∞ Nielimitowany</strong>
+                                <span>Auto-Scale R2</span>
+                            </button>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                            <span style="font-size: 13px; color: #94A3B8;">Status: <strong style="color: #10B981;" id="adminCurrentQuotaStatus">1 TB (Odblokowany)</strong></span>
+                            <button type="button" id="adminSaveQuotaBtn" class="btn-primary" style="padding: 9px 18px; font-size: 13px;">Zapisz i Zastosuj Limit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Garbage Collector i Podział Kategorii -->
+                <div class="admin-grid-2col">
+                    <div class="admin-card-box">
+                        <div class="admin-card-title-wrap">
+                            <h4>🧹 Czyszczenie Wygasłych Plików (Garbage Collector)</h4>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 16px 0;">Automatyczne zwalnianie miejsca w Cloudflare R2 przez usunięcie plików 24-godzinnych (`1d/`), 30-dniowych oraz pobranych jednorazowo (`burn/`):</p>
+                        
+                        <div style="padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                                <span style="color: #94A3B8;">Pliki wygasłe do skasowania:</span>
+                                <strong id="adminExpiredCountLabel" style="color: #FF8E72;">0 plików</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                                <span style="color: #94A3B8;">Szacowane zwolnienie miejsca:</span>
+                                <strong id="adminExpiredSizeLabel">0 MB</strong>
+                            </div>
+                        </div>
+
+                        <button type="button" id="adminCleanExpiredBtn" class="btn-secondary" style="width: 100%; justify-content: center; color: #FF8E72; border-color: rgba(255, 68, 57, 0.3);">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <span>Uruchom Czyszczenie Wygasłych Plików</span>
+                        </button>
+                    </div>
+
+                    <div class="admin-card-box">
+                        <div class="admin-card-title-wrap">
+                            <h4>📁 Struktura danych w magazynie</h4>
+                        </div>
+                        <div class="admin-cat-breakdown-list" id="adminCatBreakdownList">
+                            <!-- Dynamicznie generowane wskaźniki typów -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: TRANSAKCJE & GENERATOR KLUCZY -->
+            <div id="adminTabPane_transactions" class="admin-tab-pane" style="display: none;">
+                <div class="admin-grid-2col" style="margin-bottom: 20px;">
+                    <!-- Generator Kluczy Licencyjnych PRO -->
+                    <div class="admin-card-box">
+                        <div class="admin-card-title-wrap">
+                            <h4>🔑 Generator Kluczy Licencyjnych Dropsite PRO</h4>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 14px 0;">Wygeneruj oficjalny klucz PRO dla klienta po otrzymaniu płatności BLIK, przelewu lub do celów promocyjnych:</p>
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                            <select id="adminGenKeyDuration" class="dropsite-input" style="flex: 1; margin: 0;">
+                                <option value="30d">Dropsite PRO 30 dni</option>
+                                <option value="90d">Dropsite PRO 90 dni (Kwartalny)</option>
+                                <option value="365d">Dropsite PRO 1 Rok</option>
+                                <option value="lifetime">Dropsite PRO Dożywotni</option>
+                            </select>
+                            <button type="button" id="adminGenKeyBtn" class="btn-primary" style="padding: 10px 16px; white-space: nowrap;">Generuj Klucz</button>
+                        </div>
+
+                        <div id="adminGenKeyResultBox" style="display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+                            <span style="font-size: 11px; text-transform: uppercase; color: #10B981; font-weight: 700;">Wygenerowany Klucz PRO:</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px;">
+                                <code id="adminGenKeyResultCode" style="font-size: 15px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px;">DS-PRO-XXXX-XXXX</code>
+                                <button type="button" id="adminCopyGeneratedKeyBtn" class="btn-select" style="padding: 4px 10px; font-size: 12px;">Kopiuj</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Szybkie statystyki transakcji -->
+                    <div class="admin-card-box">
+                        <div class="admin-card-title-wrap">
+                            <h4>💳 Podsumowanie Transakcji i Metod</h4>
+                        </div>
+                        <div class="admin-sim-results-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="sim-metric-item">
+                                <span class="sim-metric-label">Zrealizowane płatności:</span>
+                                <span class="sim-metric-val" id="adminStatOrdersCount">0</span>
+                            </div>
+                            <div class="sim-metric-item">
+                                <span class="sim-metric-label">Średnia wartość (AOV):</span>
+                                <span class="sim-metric-val" id="adminStatAov">14,99 zł</span>
+                            </div>
+                            <div class="sim-metric-item">
+                                <span class="sim-metric-label">Płatności BLIK:</span>
+                                <span class="sim-metric-val" style="color: #FF4439;" id="adminStatBlikCount">0</span>
+                            </div>
+                            <div class="sim-metric-item">
+                                <span class="sim-metric-label">Stripe / Karty:</span>
+                                <span class="sim-metric-val" style="color: #0F91D2;" id="adminStatStripeCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela Historii Zamówień -->
+                <div class="admin-card-box">
+                    <div class="admin-card-title-wrap">
+                        <h4>📋 Dziennik Płatności i Aktywacji</h4>
+                    </div>
+                    <div class="admin-table-responsive">
+                        <table class="admin-data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Transakcji</th>
+                                    <th>Data</th>
+                                    <th>Użytkownik / E-mail</th>
+                                    <th>Produkt</th>
+                                    <th>Kwota</th>
+                                    <th>Metoda</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTransactionsTableBody">
+                                <!-- Generowane dynamicznie -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: MODERACJA PLIKÓW (Dotychczasowy widok z pełnymi narzędziami) -->
+            <div id="adminTabPane_files" class="admin-tab-pane">
                 <div class="mod-stats-grid">
                     <div class="mod-stat-card">
                         <div class="mod-stat-header">
@@ -1552,8 +1903,7 @@
                                 <polyline points="2 12 12 17 22 12"></polyline>
                             </svg>
                         </div>
-                        <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0
-                            zdjęć</span>
+                        <span class="mod-stat-value" id="modMediaCount" style="font-size: 13px;">0 wideo • 0 zdjęć</span>
                     </div>
                 </div>
 
@@ -1677,7 +2027,7 @@
                 <div id="modFilesScreen" class="mod-files-screen">
                     <ul id="modFileList" class="mod-file-list"></ul>
                 </div>
-            </div> <!-- End of modContentArea -->
+            </div>
         </div>
     </div>
 
@@ -1737,17 +2087,11 @@
     <!-- Dolny pasek akcji / przyciski w lewym dolnym rogu -->
     <div class="bottom-action-dock">
         <button id="openModBtn" class="btn-mod-open" style="display: none;"
-            title="Panel Zarządzania Wszystkimi Plikami (Admin)">
-            <svg width="18" height="18" viewBox="0 0 31 31" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path
-                    d="M20.7119 3.65738H10.2881C9.79387 3.6573 9.30832 3.78731 8.88025 4.03433C8.45218 4.28136 8.09667 4.6367 7.84944 5.06465L2.63756 14.0928C2.39054 14.5207 2.2605 15.0062 2.2605 15.5004C2.2605 15.9945 2.39054 16.48 2.63756 16.9079L7.84944 25.9354C8.09658 26.3635 8.45206 26.719 8.88014 26.9661C9.30822 27.2132 9.79381 27.3433 10.2881 27.3433H20.7119C21.206 27.3432 21.6915 27.2131 22.1195 26.9659C22.5474 26.7188 22.9028 26.3634 23.1499 25.9354L28.3624 16.9079C28.6095 16.4799 28.7396 15.9943 28.7396 15.5C28.7396 15.0057 28.6095 14.5202 28.3624 14.0921L23.1505 5.06465C22.9034 4.63658 22.5479 4.28111 22.1198 4.03397C21.6917 3.78683 21.2061 3.65737 20.7119 3.65738Z">
-                </path>
-                <path
-                    d="M4.72754 20.5278H12.597M12.597 20.5278L16.5321 27.3427M12.597 20.5278L9.69464 15.5M12.597 10.4722M12.597 20.5278H18.4031L21.3054 15.5M25.2405 8.68455L21.3054 15.5M21.3054 15.5L25.2405 22.3155M21.3054 15.5L18.4031 10.4722H12.597M4.72754 10.4722H12.597M12.597 10.4722L16.5321 3.65674">
-                </path>
+            title="Admin Super-Dashboard (Użytkownicy, Finanse, Dysk R2)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z"></path>
             </svg>
-            <span>Panel Admina</span>
+            <span>Admin Dashboard</span>
         </button>
 
         <button id="openUserPanelBtn" class="btn-user-panel" title="Your uploaded files" data-i18n-title="dock_my_files">
