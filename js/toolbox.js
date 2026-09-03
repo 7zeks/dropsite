@@ -36,7 +36,54 @@
         initEditModule();
         initConvertModule();
         initCompressModule();
+
+        // Obsługa bezpośrednich linków marketingowych (?tool=merge / ?tool=edit / ?tool=compress / #narzedzia)
+        setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            const toolParam = params.get('tool') || params.get('tab');
+            const hash = window.location.hash.toLowerCase();
+
+            if (toolParam && ['merge', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
+                window.switchToolTab(toolParam.toLowerCase(), false);
+            } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
+                const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
+                if (navToolsBtn) navToolsBtn.click();
+            }
+        }, 120);
     });
+
+    // === GLOBALNA FUNKCJA PRZEŁĄCZANIA NARZĘDZI (DEEP-LINKING & MARKETING) ===
+    window.switchToolTab = function(toolName, doScroll = true) {
+        if (!toolName) return;
+        const normalized = toolName.toLowerCase().trim();
+
+        // 1. Aktywuj widok narzędzi w głównym routerze SPA
+        const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
+        if (navToolsBtn) {
+            navToolsBtn.click();
+        }
+
+        // 2. Kliknij odpowiednią zakładkę narzędzia
+        const targetBtn = document.querySelector(`.toolbox-tab-btn[data-tool="${normalized}"]`);
+        if (targetBtn) {
+            targetBtn.click();
+        }
+
+        // 3. Zaktualizuj URL bez przeładowania strony (?tool=...)
+        try {
+            const url = new URL(window.location);
+            url.searchParams.set('tool', normalized);
+            window.history.replaceState({}, '', url);
+        } catch (_) {}
+
+        // 4. Płynnie przewiń do kontenera narzędzia
+        if (doScroll) {
+            const toolboxBox = document.querySelector('.toolbox-container');
+            if (toolboxBox) {
+                toolboxBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    };
 
     // === PRZEŁĄCZANIE ZAKŁADEK NARZĘDZI ===
     function initToolTabs() {
@@ -55,6 +102,13 @@
                     if (isTarget) p.style.display = 'block';
                     else p.style.display = 'none';
                 });
+
+                // Aktualizuj URL
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.set('tool', targetTool);
+                    window.history.replaceState({}, '', url);
+                } catch (_) {}
             });
         });
     }
