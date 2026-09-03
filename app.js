@@ -652,6 +652,22 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('dropsite_pro_type', 'blik_30d');
         localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
 
+        try {
+            const rawOrders = localStorage.getItem('dropsite_admin_orders_db');
+            let orders = rawOrders ? JSON.parse(rawOrders) : [];
+            orders.unshift({
+                id: `BLIK-${randomHash}`,
+                date: new Date().toLocaleString('pl-PL'),
+                email: (window.auth?.currentUser?.email) || 'Klient BLIK',
+                product: 'Dropsite PRO (Subskrypcja 30 dni)',
+                amount: '14,99 zł',
+                rawAmount: 14.99,
+                method: 'BLIK',
+                status: 'Opłacono'
+            });
+            localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(orders));
+        } catch (e) {}
+
         updateProUI();
         window.openProModal();
 
@@ -2184,160 +2200,116 @@ function renderAdminDashboard() {
     renderAdminTransactionsTab();
 }
 
-// Baza użytkowników (persistent localStorage)
+// Baza użytkowników (tylko rzeczywiści zarejestrowani i autoryzowani użytkownicy)
 function getAdminUsersDB() {
-    const raw = localStorage.getItem('dropsite_admin_users_db');
-    if (raw) {
-        try { return JSON.parse(raw); } catch (e) {}
-    }
-    const defaultUsers = [
-        {
-            id: 'usr_admin_01',
-            email: 'admin@dropsite.pl',
-            name: 'Kacper (Główny Administrator)',
-            role: 'admin',
-            plan: 'admin',
-            proExpires: 'Bezterminowo (Admin)',
-            fileCount: 24,
-            usedBytes: 1548000000,
-            created: '2026-08-15'
-        },
-        {
-            id: 'usr_pro_02',
-            email: 'foto.slubne.warszawa@gmail.com',
-            name: 'Studio Foto & Wideo',
-            role: 'pro',
-            plan: 'pro_30d',
-            proExpires: '30 dni (Pozostało 27 dni)',
-            fileCount: 42,
-            usedBytes: 4850000000,
-            created: '2026-08-28'
-        },
-        {
-            id: 'usr_pro_03',
-            email: 'kreatywni@agencja-reklamy.pl',
-            name: 'Agencja Reklamowa Kropka',
-            role: 'pro',
-            plan: 'pro_1y',
-            proExpires: 'Roczny PRO (do 2027-08)',
-            fileCount: 118,
-            usedBytes: 12400000000,
-            created: '2026-08-20'
-        },
-        {
-            id: 'usr_blik_04',
-            email: 'klient.blik@wp.pl',
-            name: 'Użytkownik BLIK (1-Transfer)',
-            role: 'pro',
-            plan: 'blik_transfer',
-            proExpires: 'Pojedynczy transfer 5 GB',
-            fileCount: 1,
-            usedBytes: 3200000000,
-            created: '2026-09-02'
-        },
-        {
-            id: 'usr_free_05',
-            email: 'michal.nowak@onet.pl',
-            name: 'Michał Nowak',
-            role: 'free',
-            plan: 'free',
-            proExpires: 'Brak (Konto darmowe)',
-            fileCount: 4,
-            usedBytes: 380000000,
-            created: '2026-09-01'
-        },
-        {
-            id: 'usr_free_06',
-            email: 'anna.kowalska@o2.pl',
-            name: 'Anna Kowalska',
-            role: 'free',
-            plan: 'free',
-            proExpires: 'Brak (Konto darmowe)',
-            fileCount: 2,
-            usedBytes: 120000000,
-            created: '2026-09-03'
+    // Natychmiastowe usunięcie starych ślepaków z pamięci lokalnej
+    try {
+        const rawUsers = localStorage.getItem('dropsite_admin_users_db');
+        if (rawUsers && (rawUsers.includes('usr_admin_01') || rawUsers.includes('foto.slubne') || rawUsers.includes('agencja-reklamy'))) {
+            localStorage.removeItem('dropsite_admin_users_db');
         }
-    ];
+    } catch (e) {}
 
+    const raw = localStorage.getItem('dropsite_admin_users_db');
+    let users = [];
+    if (raw) {
+        try { users = JSON.parse(raw); } catch (e) { users = []; }
+    }
+
+    // Dodaj aktualnie zalogowanego użytkownika Firebase (jeśli istnieje)
     if (auth.currentUser && auth.currentUser.email) {
         const curEmail = auth.currentUser.email.toLowerCase();
-        if (!defaultUsers.some(u => u.email.toLowerCase() === curEmail)) {
-            defaultUsers.unshift({
-                id: auth.currentUser.uid || 'usr_current',
+        const existing = users.find(u => u.email && u.email.toLowerCase() === curEmail);
+        const myLocalFiles = getLocalHistory();
+        const myUsedBytes = myLocalFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+
+        if (!existing) {
+            users.unshift({
+                id: auth.currentUser.uid || `usr_${Date.now()}`,
                 email: curEmail,
-                name: auth.currentUser.displayName || 'Bieżący Użytkownik',
+                name: auth.currentUser.displayName || curEmail.split('@')[0],
                 role: isActualAdminUser() ? 'admin' : (isProUser() ? 'pro' : 'free'),
-                plan: isProUser() ? 'pro_active' : 'free',
-                proExpires: isProUser() ? 'Aktywne' : 'Brak',
-                fileCount: 1,
-                usedBytes: 250000000,
+                plan: isActualAdminUser() ? 'admin' : (isProUser() ? 'pro_active' : 'free'),
+                proExpires: isActualAdminUser() ? 'Bezterminowo (Admin)' : (isProUser() ? 'Aktywne' : 'Brak'),
+                fileCount: myLocalFiles.length,
+                usedBytes: myUsedBytes,
                 created: new Date().toISOString().split('T')[0]
             });
+            localStorage.setItem('dropsite_admin_users_db', JSON.stringify(users));
+        } else {
+            // Zaktualizuj stan na żywo
+            existing.fileCount = myLocalFiles.length;
+            existing.usedBytes = myUsedBytes;
+            existing.role = isActualAdminUser() ? 'admin' : (isProUser() ? 'pro' : 'free');
+            existing.plan = isActualAdminUser() ? 'admin' : (isProUser() ? 'pro_active' : 'free');
         }
     }
 
-    localStorage.setItem('dropsite_admin_users_db', JSON.stringify(defaultUsers));
-    return defaultUsers;
+    return users;
 }
 
 function saveAdminUsersDB(users) {
     localStorage.setItem('dropsite_admin_users_db', JSON.stringify(users));
 }
 
-// Baza transakcji (persistent localStorage)
+// Baza transakcji (tylko rzeczywiste transakcje i wygenerowane klucze)
 function getAdminOrdersDB() {
+    // Natychmiastowe usunięcie starych ślepaków z pamięci lokalnej
+    try {
+        const rawOrders = localStorage.getItem('dropsite_admin_orders_db');
+        if (rawOrders && (rawOrders.includes('ORD-98425') || rawOrders.includes('ORD-98424'))) {
+            localStorage.removeItem('dropsite_admin_orders_db');
+        }
+    } catch (e) {}
+
     const raw = localStorage.getItem('dropsite_admin_orders_db');
     if (raw) {
-        try { return JSON.parse(raw); } catch (e) {}
+        try { return JSON.parse(raw); } catch (e) { return []; }
     }
-    const defaultOrders = [
-        { id: 'ORD-98425', date: '2026-09-03 11:42', email: 'foto.slubne.warszawa@gmail.com', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'BLIK', status: 'Opłacono' },
-        { id: 'ORD-98424', date: '2026-09-02 19:20', email: 'klient.blik@wp.pl', product: 'Pay-Per-Transfer (Paczka 5 GB)', amount: '2,50 zł', rawAmount: 2.50, method: 'BLIK', status: 'Opłacono' },
-        { id: 'ORD-98423', date: '2026-08-28 14:15', email: 'kreatywni@agencja-reklamy.pl', product: 'Dropsite PRO (Roczny - Rabat)', amount: '119,00 zł', rawAmount: 119.00, method: 'Karta / Stripe', status: 'Opłacono' },
-        { id: 'ORD-98422', date: '2026-08-25 09:10', email: 'studio.wideo@op.pl', product: 'Pay-Per-Transfer (Paczka 5 GB)', amount: '2,50 zł', rawAmount: 2.50, method: 'BLIK', status: 'Opłacono' },
-        { id: 'ORD-98421', date: '2026-08-20 16:45', email: 'tomasz.grafik@design.pl', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'BLIK', status: 'Opłacono' },
-        { id: 'ORD-98420', date: '2026-08-16 12:05', email: 'architekt.biuro@cad.pl', product: 'Dropsite PRO (Subskrypcja 30 dni)', amount: '14,99 zł', rawAmount: 14.99, method: 'Karta / Stripe', status: 'Opłacono' }
-    ];
-    localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(defaultOrders));
-    return defaultOrders;
+    return []; // Pusty rejestr na starcie - żadnych sztucznych zamówień!
 }
 
 function saveAdminOrdersDB(orders) {
     localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(orders));
 }
 
-// Obliczenia rentowności i wskaźników biznesowych
+function recordAdminOrder(order) {
+    const orders = getAdminOrdersDB();
+    orders.unshift(order);
+    localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(orders));
+}
+
+// Obliczenia rentowności w 100% na podstawie RZECZYWISTYCH danych
 function calculateProfitabilityMetrics() {
     const orders = getAdminOrdersDB();
     const users = getAdminUsersDB();
     const proUsersCount = users.filter(u => u.role === 'pro' || u.plan?.startsWith('pro')).length;
 
-    // Przychody ze sprzedaży
+    // Rzeczywisty przychód z opłaconych zamówień (0 zł jeśli brak)
     const totalOrderRevenue = orders.reduce((sum, o) => sum + (o.rawAmount || 0), 0);
-    // Szacowane przychody z reklam (eCPM ~8,20 zł)
-    const filesCount = Math.max(12, loadedModFiles.length);
-    const estDownloads = filesCount * 85;
-    const adRevenuePLN = Math.round(((estDownloads / 1000) * 8.20) * 100) / 100;
-    const grossRevenue = Math.round((totalOrderRevenue + adRevenuePLN) * 100) / 100;
+    const grossRevenue = Math.round(totalOrderRevenue * 100) / 100;
 
-    // MRR
+    // Rzeczywisty MRR ze stałych klientów PRO
     const mrr = Math.round((proUsersCount * 14.99) * 100) / 100;
 
-    // Koszty R2 ($0.015 / GB powyżej darmowego 10 GB)
-    let usedBytes = 0;
-    loadedModFiles.forEach(f => { usedBytes += (f.size || 0); });
-    const usedGB = usedBytes / (1024 * 1024 * 1024);
+    // Rzeczywisty koszt Cloudflare R2 wyliczony z realnych plików
+    let realUsedBytes = 0;
+    loadedModFiles.forEach(f => { realUsedBytes += (f.size || 0); });
+    const usedGB = realUsedBytes / (1024 * 1024 * 1024);
+    // Cloudflare R2 daje 10 GB bezpłatnie każdego miesiąca.
     const billableGB = Math.max(0, usedGB - 10);
     const r2CostUSD = billableGB * 0.015;
     const r2CostPLN = Math.round((r2CostUSD * 4.05) * 100) / 100;
 
-    // Prowizje płatności (~1.5% + 0.30 zł za transakcję)
-    const gatewayFees = Math.round((orders.length * 0.30 + totalOrderRevenue * 0.015) * 100) / 100;
+    // Rzeczywiste prowizje bramek płatności (tylko od faktycznych zamówień)
+    const gatewayFees = orders.length > 0 
+        ? Math.round((orders.length * 0.30 + totalOrderRevenue * 0.015) * 100) / 100
+        : 0;
     const totalCosts = Math.round((r2CostPLN + gatewayFees) * 100) / 100;
 
-    // Zysk i marża
+    // Zysk netto i marża
     const netProfit = Math.max(0, Math.round((grossRevenue - totalCosts) * 100) / 100);
-    const marginPercent = grossRevenue > 0 ? Math.round((netProfit / grossRevenue) * 1000) / 10 : 92.4;
+    const marginPercent = grossRevenue > 0 ? Math.round((netProfit / grossRevenue) * 1000) / 10 : 0;
 
     return {
         grossRevenue,
@@ -2353,7 +2325,7 @@ function calculateProfitabilityMetrics() {
     };
 }
 
-// TAB 1: RENTOWNOŚĆ & FINANSE
+// TAB 1: RENTOWNOŚĆ & FINANSE (W 100% REALNE DANE)
 function renderAdminOverviewTab() {
     const metrics = calculateProfitabilityMetrics();
 
@@ -2367,13 +2339,21 @@ function renderAdminOverviewTab() {
     if (mrrEl) mrrEl.textContent = `${metrics.mrr.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł/mc`;
     if (costsEl) costsEl.textContent = `${metrics.totalCosts.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł`;
     if (profitEl) profitEl.textContent = `${metrics.netProfit.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} zł`;
-    if (marginEl) marginEl.textContent = `Szacowana marża: ${metrics.marginPercent}%`;
+    if (marginEl) {
+        marginEl.textContent = metrics.grossRevenue > 0 
+            ? `Rzeczywista marża: ${metrics.marginPercent}%` 
+            : 'Brak zrealizowanych płatności';
+    }
 
     const mrrSub = document.getElementById('adminKpiMrrSub');
-    if (mrrSub) mrrSub.textContent = `${metrics.proUsersCount} aktywnych klientów PRO`;
+    if (mrrSub) mrrSub.textContent = `${metrics.proUsersCount} zarejestrowanych klientów PRO`;
 
     const costsSub = document.getElementById('adminKpiCostsSub');
-    if (costsSub) costsSub.textContent = `R2: ~${metrics.r2CostPLN} zł | Prowizje: ~${metrics.gatewayFees} zł`;
+    if (costsSub) {
+        costsSub.textContent = metrics.r2CostPLN > 0 
+            ? `R2: ${metrics.r2CostPLN} zł | Prowizje: ${metrics.gatewayFees} zł` 
+            : 'R2: 0,00 zł (mieścisz się w darmowych 10 GB)';
+    }
 
     const userBadge = document.getElementById('adminUsersCountBadge');
     if (userBadge) userBadge.textContent = metrics.totalUsersCount;
@@ -2689,19 +2669,30 @@ function renderAdminTransactionsTab() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    orders.forEach(o => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><code style="color: var(--accent-blue); font-size: 12px;">${escapeHtml(o.id)}</code></td>
-            <td style="color: #94A3B8; font-size: 12px;">${escapeHtml(o.date)}</td>
-            <td><strong style="color: #FFFFFF;">${escapeHtml(o.email)}</strong></td>
-            <td style="font-size: 12px;">${escapeHtml(o.product)}</td>
-            <td><strong style="color: #10B981;">${escapeHtml(o.amount)}</strong></td>
-            <td><span class="status-badge-free">${escapeHtml(o.method)}</span></td>
-            <td><span class="status-badge-pro">${escapeHtml(o.status)}</span></td>
+    if (orders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94A3B8; padding: 36px 16px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #E2E8F0; margin-bottom: 4px;">Brak zarejestrowanych transakcji</div>
+                    <div style="font-size: 12px; color: #64748B;">Płatności pojawią się tutaj w czasie rzeczywistym po zakupie pakietu PRO lub wygenerowaniu klucza.</div>
+                </td>
+            </tr>
         `;
-        tbody.appendChild(tr);
-    });
+    } else {
+        orders.forEach(o => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code style="color: var(--accent-blue); font-size: 12px;">${escapeHtml(o.id)}</code></td>
+                <td style="color: #94A3B8; font-size: 12px;">${escapeHtml(o.date)}</td>
+                <td><strong style="color: #FFFFFF;">${escapeHtml(o.email)}</strong></td>
+                <td style="font-size: 12px;">${escapeHtml(o.product)}</td>
+                <td><strong style="color: #10B981;">${escapeHtml(o.amount)}</strong></td>
+                <td><span class="status-badge-free">${escapeHtml(o.method)}</span></td>
+                <td><span class="status-badge-pro">${escapeHtml(o.status)}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 
     const ordersCountEl = document.getElementById('adminStatOrdersCount');
     const aovEl = document.getElementById('adminStatAov');
@@ -2713,7 +2704,7 @@ function renderAdminTransactionsTab() {
     if (stripeCountEl) stripeCountEl.textContent = orders.filter(o => o.method.includes('Stripe') || o.method.includes('Karta')).length;
 
     const totalVal = orders.reduce((sum, o) => sum + (o.rawAmount || 0), 0);
-    const aov = orders.length > 0 ? (totalVal / orders.length).toFixed(2) : '14,99';
+    const aov = orders.length > 0 ? (totalVal / orders.length).toFixed(2) : '0,00';
     if (aovEl) aovEl.textContent = `${aov} zł`;
 }
 
