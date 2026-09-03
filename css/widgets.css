@@ -4413,7 +4413,7 @@ body.is-admin .ad-container {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     background: rgba(8, 11, 20, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -4425,13 +4425,27 @@ body.is-admin .ad-container {
 
 @media (max-width: 820px) {
     .toolbox-nav-bar {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 520px) {
     .toolbox-nav-bar {
-        grid-template-columns: 1fr;
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding: 5px;
+    }
+    .toolbox-nav-bar::-webkit-scrollbar {
+        display: none;
+    }
+    .toolbox-tab-btn {
+        flex: 0 0 auto;
+        min-width: max-content;
+        padding: 10px 12px;
+        font-size: 12px;
     }
 }
 

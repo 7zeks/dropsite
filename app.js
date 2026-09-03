@@ -3736,6 +3736,73 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
+
+    // === HAMBURGER MENU (MOBILE NAVIGATION DRAWER) ===
+    const hamburgerBtn = document.getElementById('mobileMenuBtn');
+    const mobileDrawer = document.getElementById('mobileNavDrawer');
+    const drawerClose = document.getElementById('mobileDrawerClose');
+    const drawerLinks = document.querySelectorAll('.mobile-drawer-link');
+
+    function openMobileDrawer() {
+        if (!mobileDrawer) return;
+        mobileDrawer.classList.add('open');
+        if (hamburgerBtn) hamburgerBtn.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileDrawer() {
+        if (!mobileDrawer) return;
+        mobileDrawer.classList.remove('open');
+        if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', () => {
+            if (mobileDrawer && mobileDrawer.classList.contains('open')) {
+                closeMobileDrawer();
+            } else {
+                // Sync drawer active states with current nav state
+                const currentActiveNav = document.querySelector('.nav-btn.active');
+                const currentTarget = currentActiveNav ? currentActiveNav.getAttribute('data-target') : 'view-glowna';
+                drawerLinks.forEach(dl => {
+                    dl.classList.toggle('active', dl.getAttribute('data-target') === currentTarget);
+                });
+                openMobileDrawer();
+            }
+        });
+    }
+
+    if (drawerClose) {
+        drawerClose.addEventListener('click', closeMobileDrawer);
+    }
+
+    // Close drawer when clicking overlay background
+    if (mobileDrawer) {
+        mobileDrawer.addEventListener('click', (e) => {
+            if (e.target === mobileDrawer) closeMobileDrawer();
+        });
+    }
+
+    // Handle drawer link clicks → route SPA + close drawer
+    drawerLinks.forEach(dLink => {
+        dLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = dLink.getAttribute('data-target');
+
+            // Find corresponding .nav-btn and simulate its click
+            const correspondingNav = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
+            if (correspondingNav) {
+                correspondingNav.click();
+            }
+
+            // Update drawer active states
+            drawerLinks.forEach(dl => dl.classList.remove('active'));
+            dLink.classList.add('active');
+
+            closeMobileDrawer();
+        });
+    });
 });
 
 // ============================================================================

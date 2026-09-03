@@ -257,9 +257,31 @@
 }
 
 @media (max-width: 768px) {
-    .nav-logo { left: 16px; top: 16px; font-size: 18px; }
-    .nav-right { right: 16px; top: 16px; gap: 8px; }
-    .nav-links { display: none; }
+    .nav-logo {
+        position: relative;
+        left: auto;
+        top: auto;
+        font-size: 18px;
+        justify-content: center;
+        display: flex;
+        margin: 60px auto 12px auto;
+        z-index: 10;
+    }
+
+    .nav-right {
+        right: 16px;
+        top: 16px;
+        gap: 6px;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    /* Hamburger button visible on mobile */
+    .nav-hamburger {
+        display: flex !important;
+    }
     
     .value-title { font-size: 24px; }
     .value-description { font-size: 13px; line-height: 20px; }
@@ -268,5 +290,150 @@
 
     .btn-login { left: 16px; bottom: 16px; padding: 8px 14px; font-size: 12px; }
     body.is-admin .btn-login { left: 106px; bottom: 16px; }
+}
+
+/* ========================================================================
+   HAMBURGER MENU (MOBILE NAVIGATION DRAWER)
+   ======================================================================== */
+.nav-hamburger {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-main);
+    transition: all 0.22s ease;
+    font-family: inherit;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.nav-hamburger:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-blue);
+}
+
+.nav-hamburger svg {
+    transition: transform 0.2s ease;
+}
+
+.nav-hamburger.active svg {
+    transform: rotate(90deg);
+}
+
+/* Mobile slide-down drawer */
+.mobile-nav-drawer {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9990;
+    background: rgba(9, 10, 15, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-nav-drawer.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-drawer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 4px;
+    padding: 40px 20px;
+}
+
+.mobile-drawer-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    color: #94A3B8;
+    font-size: 17px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.mobile-drawer-link:hover,
+.mobile-drawer-link.active {
+    background: rgba(15, 145, 210, 0.12);
+    border-color: rgba(15, 145, 210, 0.4);
+    color: #FFFFFF;
+    transform: translateX(4px);
+}
+
+.mobile-drawer-link.active {
+    border-left: 3px solid var(--accent-blue);
+}
+
+.mobile-drawer-link svg {
+    width: 20px;
+    height: 20px;
+    color: #64748B;
+    flex-shrink: 0;
+}
+
+.mobile-drawer-link:hover svg,
+.mobile-drawer-link.active svg {
+    color: var(--accent-blue);
+}
+
+.mobile-drawer-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #94A3B8;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.mobile-drawer-close:hover {
+    background: rgba(255, 68, 57, 0.15);
+    border-color: rgba(255, 68, 57, 0.4);
+    color: #FF4439;
+}
+
+@media (min-width: 769px) {
+    .mobile-nav-drawer {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-nav-drawer {
+        display: block;
+    }
 }
 
