@@ -2194,7 +2194,8 @@
         }
 
         const closeModal = () => {
-            modal.style.display = 'none';
+            if (window.smoothCloseModal) window.smoothCloseModal(modal);
+            else modal.style.display = 'none';
         };
 
         if (btnClose) btnClose.addEventListener('click', closeModal);
@@ -2233,7 +2234,8 @@
         const modal = document.getElementById('signatureModal');
         const canvas = document.getElementById('sigPadCanvas');
         if (modal) {
-            modal.style.display = 'flex';
+            if (window.smoothOpenModal) window.smoothOpenModal(modal);
+            else modal.style.display = 'flex';
             if (canvas) {
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2397,7 +2399,8 @@
             inputEl.placeholder = placeholder || '';
 
             const cleanup = () => {
-                modal.style.display = 'none';
+                if (window.smoothCloseModal) window.smoothCloseModal(modal);
+                else modal.style.display = 'none';
                 btnClose?.removeEventListener('click', onCancel);
                 btnCancel?.removeEventListener('click', onCancel);
                 btnApply?.removeEventListener('click', onApply);
@@ -2430,7 +2433,8 @@
             btnApply?.addEventListener('click', onApply);
             inputEl.addEventListener('keydown', onKeyDown);
 
-            modal.style.display = 'flex';
+            if (window.smoothOpenModal) window.smoothOpenModal(modal);
+            else modal.style.display = 'flex';
             setTimeout(() => {
                 inputEl.focus();
                 inputEl.select();
@@ -2498,7 +2502,10 @@
             });
         });
 
-        const closeModal = () => { modal.style.display = 'none'; };
+        const closeModal = () => {
+            if (window.smoothCloseModal) window.smoothCloseModal(modal);
+            else modal.style.display = 'none';
+        };
         if (btnClose) btnClose.addEventListener('click', closeModal);
         if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
@@ -2546,7 +2553,8 @@
     function openCompanyStampModal() {
         const modal = document.getElementById('companyStampModal');
         if (modal) {
-            modal.style.display = 'flex';
+            if (window.smoothOpenModal) window.smoothOpenModal(modal);
+            else modal.style.display = 'flex';
             const canvas = document.getElementById('companyStampCanvas');
             if (canvas) {
                 const inName = document.getElementById('cStampName');
@@ -2633,7 +2641,10 @@
             });
         });
 
-        const closeModal = () => { modal.style.display = 'none'; };
+        const closeModal = () => {
+            if (window.smoothCloseModal) window.smoothCloseModal(modal);
+            else modal.style.display = 'none';
+        };
         if (btnClose) btnClose.addEventListener('click', closeModal);
         if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
@@ -2675,7 +2686,8 @@
             if (val) val.textContent = `${Math.round(studioWatermark.opacity * 100)}%`;
             if (select) select.value = `${studioWatermark.angle}`;
 
-            modal.style.display = 'flex';
+            if (window.smoothOpenModal) window.smoothOpenModal(modal);
+            else modal.style.display = 'flex';
         }
     }
 
@@ -2695,7 +2707,10 @@
 
         if (!modal) return;
 
-        const closeModal = () => { modal.style.display = 'none'; };
+        const closeModal = () => {
+            if (window.smoothCloseModal) window.smoothCloseModal(modal);
+            else modal.style.display = 'none';
+        };
         if (btnClose) btnClose.addEventListener('click', closeModal);
         if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
@@ -2733,7 +2748,8 @@
             if (pos) pos.value = studioPageNumbers.position;
             if (skip) skip.checked = studioPageNumbers.skipFirst;
 
-            modal.style.display = 'flex';
+            if (window.smoothOpenModal) window.smoothOpenModal(modal);
+            else modal.style.display = 'flex';
         }
     }
 

@@ -372,6 +372,72 @@ body.is-admin .storage-widget {
 }
 
 /* --- Panel Moderacji (Modal) - Głębia UI & Glassmorphism --- */
+/* --- Ultra-Smooth Modern Glassmorphism Animations --- */
+@keyframes smoothBackdropIn {
+    0% {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+    }
+    100% {
+        opacity: 1;
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+}
+
+@keyframes smoothBackdropOut {
+    0% {
+        opacity: 1;
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+    100% {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+    }
+}
+
+@keyframes smoothModalIn {
+    0% { 
+        opacity: 0; 
+        transform: scale(0.965) translateY(14px);
+        filter: blur(4px);
+    }
+    60% {
+        filter: blur(0px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0);
+        filter: blur(0px);
+    }
+}
+
+@keyframes smoothModalOut {
+    0% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0);
+        filter: blur(0px);
+    }
+    100% { 
+        opacity: 0; 
+        transform: scale(0.975) translateY(8px);
+        filter: blur(2px);
+    }
+}
+
+/* Kompatybilność wsteczna */
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes popUpModalDepth {
+    from { opacity: 0; transform: scale(0.965) translateY(14px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .mod-modal {
     position: fixed;
     inset: 0;
@@ -380,32 +446,23 @@ body.is-admin .storage-widget {
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     z-index: 999;
     display: none;
-    perspective: 1200px;
-}
-
-/* Animacja dla ciemnego tła */
-@keyframes fadeInModal {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Dynamiczny wjazd z głębią 3D */
-@keyframes popUpModalDepth {
-    0% { 
-        opacity: 0; 
-        transform: scale(0.92) translateY(24px) rotateX(4deg); 
-    }
-    100% { 
-        opacity: 1; 
-        transform: scale(1) translateY(0) rotateX(0deg); 
-    }
+    will-change: opacity, backdrop-filter;
+    -webkit-font-smoothing: antialiased;
 }
 
 .mod-modal:not([hidden]) { 
     display: flex; 
     justify-content: center; 
     align-items: center; 
-    animation: fadeInModal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: smoothBackdropIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mod-modal.is-closing {
+    animation: smoothBackdropOut 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+}
+
+.mod-modal.is-closing .mod-container {
+    animation: smoothModalOut 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 .mod-container {
@@ -429,7 +486,10 @@ body.is-admin .storage-widget {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    animation: popUpModalDepth 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    animation: smoothModalIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Ambient beam - miękkie, kinowe oświetlenie */
@@ -1645,11 +1705,19 @@ body.is-admin .storage-widget {
     justify-content: center;
     box-sizing: border-box;
     padding: 24px;
-    animation: fadeInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: smoothBackdropIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .dl-lightbox-modal:not([hidden]) {
     display: flex;
+}
+
+.dl-lightbox-modal.is-closing {
+    animation: smoothBackdropOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+}
+
+.dl-lightbox-modal.is-closing .dl-lightbox-wrap {
+    animation: smoothModalOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 .dl-lightbox-backdrop {
@@ -1678,7 +1746,10 @@ body.is-admin .storage-widget {
         0 0 80px rgba(196, 231, 212, 0.12),
         inset 0 1px 0 rgba(255, 255, 255, 0.12);
     overflow: hidden;
-    animation: popUpModalDepth 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    animation: smoothModalIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .dl-lightbox-header {
@@ -5277,19 +5348,29 @@ body.is-admin .ad-container {
     margin-top: 18px;
 }
 
-/* Modal Signature Pad */
+/* Modal Signature Pad & Studio Modals */
 .signature-modal-backdrop {
     position: fixed;
     inset: 0;
     z-index: 10050;
     background: rgba(5, 7, 12, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
     box-sizing: border-box;
+    will-change: opacity, backdrop-filter;
+    animation: smoothBackdropIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.signature-modal-backdrop.is-closing {
+    animation: smoothBackdropOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+}
+
+.signature-modal-backdrop.is-closing .signature-modal-box {
+    animation: smoothModalOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 .signature-modal-box {
@@ -5298,14 +5379,12 @@ body.is-admin .ad-container {
     border-radius: 20px;
     width: 100%;
     max-width: 620px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
     overflow: hidden;
-    animation: modalPop 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes modalPop {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    animation: smoothModalIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .sig-modal-header {
@@ -7028,6 +7107,42 @@ body.studio-fullscreen-active {
     font-size: 13px;
     padding: 6px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* --- Studio Workspace Smooth Entrance --- */
+#editWorkspace:not([style*="display: none"]) {
+    animation: smoothWorkspaceIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+}
+
+@keyframes smoothWorkspaceIn {
+    0% {
+        opacity: 0;
+        transform: translateY(16px) scale(0.992);
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0px);
+    }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .mod-modal:not([hidden]),
+    .signature-modal-backdrop,
+    .dl-lightbox-modal:not([hidden]),
+    .mod-container,
+    .signature-modal-box,
+    .dl-lightbox-wrap,
+    #editWorkspace {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        transform: none !important;
+        filter: none !important;
+    }
 }
 
 

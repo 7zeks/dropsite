@@ -13,6 +13,50 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
+// =========================================================================
+// ULTRA-SMOOTH MODAL TRANSITIONS (APPLE / MODERN WEB SPEC)
+// =========================================================================
+window.smoothOpenModal = function(modalEl, displayType = 'flex') {
+    if (!modalEl) return;
+    modalEl.classList.remove('is-closing');
+    modalEl.removeAttribute('hidden');
+    modalEl.hidden = false;
+    modalEl.style.display = displayType;
+};
+
+window.smoothCloseModal = function(modalEl, callback) {
+    if (!modalEl) {
+        if (callback) callback();
+        return;
+    }
+    const isHidden = modalEl.hidden || modalEl.hasAttribute('hidden') || (modalEl.style.display === 'none' && !modalEl.classList.contains('is-closing'));
+    if (isHidden) {
+        if (callback) callback();
+        return;
+    }
+
+    modalEl.classList.add('is-closing');
+    let finished = false;
+
+    const done = () => {
+        if (finished) return;
+        finished = true;
+        modalEl.classList.remove('is-closing');
+        modalEl.hidden = true;
+        modalEl.setAttribute('hidden', '');
+        if (modalEl.style.display && modalEl.style.display !== 'none') {
+            modalEl.style.display = 'none';
+        }
+        if (callback) callback();
+    };
+
+    modalEl.addEventListener('animationend', (e) => {
+        if (e.target === modalEl) done();
+    }, { once: true });
+
+    setTimeout(done, 220);
+};
+
 // 2. Obsługa okienka logowania i rejestracji (Google + E-mail)
 const auth = firebase.auth();
 const loginBtn = document.getElementById('loginBtn');
@@ -35,23 +79,25 @@ if (loginBtn) {
             });
         } else {
             loginError.textContent = '';
-            loginModalWrap.removeAttribute('hidden');
+            window.smoothOpenModal(loginModalWrap);
         }
     });
 }
 
 if (closeLoginModal) {
     closeLoginModal.addEventListener('click', () => {
-        loginModalWrap.setAttribute('hidden', '');
-        loginError.textContent = '';
+        window.smoothCloseModal(loginModalWrap, () => {
+            loginError.textContent = '';
+        });
     });
 }
 
 if (loginModalWrap) {
     loginModalWrap.addEventListener('click', (e) => {
         if (e.target === loginModalWrap) {
-            loginModalWrap.setAttribute('hidden', '');
-            loginError.textContent = '';
+            window.smoothCloseModal(loginModalWrap, () => {
+                loginError.textContent = '';
+            });
         }
     });
 }
@@ -442,13 +488,15 @@ window.openProModal = function() {
         updateProUI();
         const proKeyStatus = document.getElementById('proKeyStatus');
         if (proKeyStatus) proKeyStatus.textContent = '';
-        modal.removeAttribute('hidden');
+        window.smoothOpenModal(modal);
     }
 };
 
 window.closeProModal = function() {
     const modal = document.getElementById('proModalWrap');
-    if (modal) modal.setAttribute('hidden', '');
+    if (modal) {
+        window.smoothCloseModal(modal);
+    }
 };
 
 // Inicjalizacja przycisków PRO
@@ -1854,7 +1902,7 @@ if (openModBtn) {
         document.querySelectorAll('.scope-btn').forEach(b => {
             b.classList.toggle('active', b.getAttribute('data-scope') === 'all');
         });
-        modModal.hidden = false;
+        window.smoothOpenModal(modModal);
         fetchModFiles();
     });
 }
@@ -1865,19 +1913,19 @@ if (openUserPanelBtn) {
         document.querySelectorAll('.scope-btn').forEach(b => {
             b.classList.toggle('active', b.getAttribute('data-scope') === 'mine');
         });
-        modModal.hidden = false;
+        window.smoothOpenModal(modModal);
         fetchModFiles();
     });
 }
 
 closeModBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    modModal.hidden = true;
+    window.smoothCloseModal(modModal);
 });
 
 modModal.addEventListener('click', (e) => {
     if (e.target === modModal) {
-        modModal.hidden = true;
+        window.smoothCloseModal(modModal);
     }
 });
 
@@ -3380,9 +3428,10 @@ window.openDownloadImageLightbox = function(url, title) {
     };
 
     const closeModal = () => {
-        modal.hidden = true;
-        img.src = '';
-        img.classList.remove('zoomed');
+        window.smoothCloseModal(modal, () => {
+            img.src = '';
+            img.classList.remove('zoomed');
+        });
         document.removeEventListener('keydown', handleKeyDown);
     };
 
@@ -3398,7 +3447,7 @@ window.openDownloadImageLightbox = function(url, title) {
     if (backdrop) backdrop.onclick = closeModal;
 
     document.addEventListener('keydown', handleKeyDown);
-    modal.hidden = false;
+    window.smoothOpenModal(modal);
 };
 
 window.openImagePreview = function(url, title) {
@@ -3412,12 +3461,11 @@ window.openVideoPreview = function(url) {
     if (!previewModal) {
         previewModal = document.createElement('div');
         previewModal.id = 'videoPreviewModal';
+        previewModal.className = 'signature-modal-backdrop';
         previewModal.style.cssText = `
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(8px);
             z-index: 99999;
             justify-content: center;
             align-items: center;
@@ -3425,28 +3473,40 @@ window.openVideoPreview = function(url) {
         `;
 
         const videoContainer = document.createElement('div');
+        videoContainer.className = 'signature-modal-box';
         videoContainer.style.cssText = `
             position: relative;
             width: 90%;
             max-width: 1000px;
+            background: #0B0D14;
+            border-radius: var(--radius-md, 14px);
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.85);
         `;
 
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '&times;';
         closeBtn.style.cssText = `
             position: absolute;
-            top: -40px;
-            right: 0;
-            background: none;
-            border: none;
-            color: var(--text-muted, #8A8F98);
-            font-size: 36px;
+            top: 8px;
+            right: 12px;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-size: 20px;
             cursor: pointer;
             line-height: 1;
-            transition: color 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         `;
-        closeBtn.onmouseover = () => closeBtn.style.color = '#FF4439';
-        closeBtn.onmouseout = () => closeBtn.style.color = '#8A8F98';
+        closeBtn.onmouseover = () => { closeBtn.style.background = '#FF4439'; closeBtn.style.transform = 'scale(1.08)'; };
+        closeBtn.onmouseout = () => { closeBtn.style.background = 'rgba(0,0,0,0.5)'; closeBtn.style.transform = 'scale(1)'; };
 
         const videoPlayer = document.createElement('video');
         videoPlayer.id = 'videoPreviewSrc';
@@ -3455,16 +3515,16 @@ window.openVideoPreview = function(url) {
         videoPlayer.style.cssText = `
             width: 100%;
             max-height: 80vh;
-            border-radius: var(--radius-md, 14px);
-            box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+            display: block;
             background: #000;
             outline: none;
         `;
 
         const closeModal = () => {
-            previewModal.style.display = 'none';
-            videoPlayer.pause(); 
-            videoPlayer.src = ''; 
+            window.smoothCloseModal(previewModal, () => {
+                videoPlayer.pause(); 
+                videoPlayer.src = ''; 
+            });
         };
 
         closeBtn.onclick = closeModal;
@@ -3481,7 +3541,7 @@ window.openVideoPreview = function(url) {
 
     const videoElement = document.getElementById('videoPreviewSrc');
     videoElement.src = url;
-    previewModal.style.display = 'flex';
+    window.smoothOpenModal(previewModal);
 };
 
 // === SYSTEM ZATRZYMYWANIA MULTIMEDIÓW I RESETOWANIA NAWIGACJI (SPA) ===
@@ -3830,15 +3890,15 @@ window.openQrModal = function(customUrl) {
             }
         }, function (error) {
             if (error) console.error("Błąd generowania QR:", error);
-            else if (qrModalWrap) qrModalWrap.hidden = false;
+            else if (qrModalWrap) window.smoothOpenModal(qrModalWrap);
         });
     }
 };
 
 if (closeQrModal && qrModalWrap) {
-    closeQrModal.addEventListener('click', () => { qrModalWrap.hidden = true; });
+    closeQrModal.addEventListener('click', () => { window.smoothCloseModal(qrModalWrap); });
     qrModalWrap.addEventListener('click', (e) => {
-        if (e.target === qrModalWrap) qrModalWrap.hidden = true;
+        if (e.target === qrModalWrap) window.smoothCloseModal(qrModalWrap);
     });
 }
 
@@ -3937,14 +3997,14 @@ function renderUserHistory() {
 if (openHistoryBtn && historyModalWrap) {
     openHistoryBtn.addEventListener('click', () => {
         renderUserHistory();
-        historyModalWrap.hidden = false;
+        window.smoothOpenModal(historyModalWrap);
     });
 }
 
 if (closeHistoryModal && historyModalWrap) {
-    closeHistoryModal.addEventListener('click', () => { historyModalWrap.hidden = true; });
+    closeHistoryModal.addEventListener('click', () => { window.smoothCloseModal(historyModalWrap); });
     historyModalWrap.addEventListener('click', (e) => {
-        if (e.target === historyModalWrap) historyModalWrap.hidden = true;
+        if (e.target === historyModalWrap) window.smoothCloseModal(historyModalWrap);
     });
 }
 
