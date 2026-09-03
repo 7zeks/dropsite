@@ -612,6 +612,16 @@
         const isFs = workspace.classList.contains('studio-fullscreen');
 
         if (!isFs) {
+            // Przeniesienie obszaru roboczego bezpośrednio do <body>, aby uciec z containing block kontenera z backdrop-filter
+            let placeholder = document.getElementById('studioWorkspacePlaceholder');
+            if (!placeholder) {
+                placeholder = document.createElement('div');
+                placeholder.id = 'studioWorkspacePlaceholder';
+                placeholder.style.display = 'none';
+                workspace.parentNode.insertBefore(placeholder, workspace);
+            }
+            document.body.appendChild(workspace);
+
             workspace.classList.add('studio-fullscreen');
             document.body.classList.add('studio-fullscreen-active');
             if (iconExpand) iconExpand.style.display = 'none';
@@ -619,12 +629,22 @@
             if (btnText) btnText.textContent = 'Wyjdź (Esc)';
             if (fsBtn) fsBtn.title = 'Zamknij pełny ekran (Esc)';
 
-            if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+            // Próba natywnego HTML5 Fullscreen na samym elemencie workspace lub dokumencie
+            if (workspace.requestFullscreen && !document.fullscreenElement) {
+                workspace.requestFullscreen().catch(() => {});
+            } else if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
 
             if (window.showNotification) window.showNotification('Tryb pełnoekranowy aktywny. Klawisz Esc przywraca normalny widok.', 'info');
         } else {
+            // Przywrócenie elementu na pierwotne miejsce w drzewie DOM
+            const placeholder = document.getElementById('studioWorkspacePlaceholder');
+            if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(workspace, placeholder);
+                placeholder.remove();
+            }
+
             workspace.classList.remove('studio-fullscreen');
             document.body.classList.remove('studio-fullscreen-active');
             if (iconExpand) iconExpand.style.display = 'inline-block';
@@ -639,7 +659,7 @@
 
         setTimeout(() => {
             renderCurrentPdfPage();
-        }, 120);
+        }, 150);
     }
 
     function resetStudioWorkspace() {

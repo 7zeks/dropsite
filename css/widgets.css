@@ -4148,79 +4148,126 @@ body.is-admin .ad-container {
    DROPSITE TOOLBOX (PDF & MEDIA TOOLS) DESIGN SYSTEM
    ======================================================= */
 #view-narzedzia .main-wrapper {
-    max-width: 760px !important;
+    max-width: 980px !important;
+    width: 100% !important;
 }
 
 .toolbox-container {
-    max-width: 760px !important;
+    position: relative;
+    max-width: 980px !important;
     width: 100% !important;
     margin: 0 auto !important;
     text-align: left !important;
+    background: radial-gradient(120% 120% at 50% 0%, rgba(20, 26, 44, 0.88) 0%, rgba(10, 14, 25, 0.96) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 
+        0 35px 90px -20px rgba(0, 0, 0, 0.85),
+        0 0 60px -10px rgba(15, 145, 210, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+    border-radius: 24px !important;
+    padding: 38px 34px !important;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+}
+
+.toolbox-container::before {
+    content: '';
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 520px;
+    height: 180px;
+    background: radial-gradient(ellipse at center, rgba(15, 145, 210, 0.22) 0%, transparent 72%);
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(35px);
 }
 
 .toolbox-container .upload-header {
+    position: relative;
+    z-index: 1;
     text-align: center !important;
-    margin-bottom: 24px !important;
+    margin-bottom: 26px !important;
 }
 
 .toolbox-header-badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(15, 145, 210, 0.1);
-    border: 1px solid rgba(15, 145, 210, 0.3);
+    background: rgba(15, 145, 210, 0.12);
+    border: 1px solid rgba(15, 145, 210, 0.35);
     border-radius: 999px;
-    padding: 5px 14px;
+    padding: 6px 16px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--accent-blue);
-    margin-bottom: 12px;
-    box-shadow: 0 2px 10px rgba(15, 145, 210, 0.15);
+    letter-spacing: 0.3px;
+    color: #38BDF8;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(15, 145, 210, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .toolbox-nav-bar {
-    display: flex;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(8, 11, 20, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 6px;
-    margin-bottom: 24px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 26px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 820px) {
+    .toolbox-nav-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .toolbox-nav-bar {
+        grid-template-columns: 1fr;
+    }
 }
 
 .toolbox-tab-btn {
-    flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 12px 14px;
-    color: var(--text-muted, #94A3B8);
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 12px 10px;
+    color: #94A3B8;
     font-size: 13.5px;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
     outline: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .toolbox-tab-btn:hover {
-    color: #FFFFFF;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
+    color: #F1F5F9;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
 }
 
 .toolbox-tab-btn.active {
-    background: rgba(15, 145, 210, 0.15) !important;
     color: #FFFFFF !important;
-    border: 1px solid var(--accent-blue, #0F91D2) !important;
-    box-shadow: 0 4px 16px rgba(15, 145, 210, 0.25) !important;
+    background: linear-gradient(180deg, rgba(15, 145, 210, 0.28) 0%, rgba(15, 145, 210, 0.12) 100%) !important;
+    border: 1px solid rgba(15, 145, 210, 0.6) !important;
+    box-shadow: 
+        0 4px 20px rgba(15, 145, 210, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
 .toolbox-tab-btn svg {
@@ -4228,45 +4275,65 @@ body.is-admin .ad-container {
 }
 
 .tool-card-box {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 18px;
-    padding: 24px;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(17, 22, 38, 0.65) 0%, rgba(11, 14, 25, 0.85) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 
+        0 20px 50px -10px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 /* Strefa upuszczania w narzędziach */
 .tool-dropzone {
-    border: 2px dashed rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
-    padding: 34px 20px;
+    position: relative;
+    border: 2px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    padding: 38px 24px;
     text-align: center;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.015);
-    transition: all 0.25s ease;
-    margin-bottom: 20px;
+    background: radial-gradient(ellipse at 50% 30%, rgba(15, 145, 210, 0.06) 0%, rgba(255, 255, 255, 0.015) 100%);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-bottom: 22px;
 }
 
 .tool-dropzone:hover, .tool-dropzone.drag-over {
-    border-color: var(--accent-blue);
-    background: rgba(15, 145, 210, 0.05);
-    transform: translateY(-1px);
+    border-color: #0F91D2;
+    background: radial-gradient(ellipse at 50% 30%, rgba(15, 145, 210, 0.15) 0%, rgba(15, 145, 210, 0.03) 100%);
+    box-shadow: 0 0 35px rgba(15, 145, 210, 0.22), inset 0 2px 12px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
 }
 
 .tool-drop-icon {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s ease;
+}
+
+.tool-dropzone:hover .tool-drop-icon {
+    transform: scale(1.08) translateY(-2px);
 }
 
 .tool-drop-title {
     display: block;
-    font-size: 15px;
-    color: var(--text-main);
-    margin-bottom: 4px;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #F8FAFC;
+    margin-bottom: 6px;
 }
 
 .tool-drop-sub {
     display: block;
-    font-size: 12.5px;
-    color: var(--text-muted);
+    font-size: 13px;
+    color: #94A3B8;
 }
 
 /* Manager listy plików PDF do łączenia */
@@ -6148,61 +6215,92 @@ body.studio-fullscreen-active {
     overflow: hidden !important;
 }
 
+#editWorkspace:fullscreen,
 #editWorkspace.studio-fullscreen {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     max-width: none !important;
-    z-index: 99990 !important;
-    background: #080B12 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    z-index: 2147483647 !important;
+    background: #070A14 !important;
     display: flex !important;
     flex-direction: column !important;
-    padding: 12px 18px 14px 18px !important;
+    padding: 14px 20px 16px 20px !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
     box-shadow: none !important;
 }
 
+#editWorkspace:fullscreen .studio-doc-bar,
 #editWorkspace.studio-fullscreen .studio-doc-bar {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+#editWorkspace:fullscreen .studio-ribbon,
 #editWorkspace.studio-fullscreen .studio-ribbon {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
+#editWorkspace:fullscreen .studio-prop-bar,
 #editWorkspace.studio-fullscreen .studio-prop-bar {
     flex-shrink: 0;
 }
 
+#editWorkspace:fullscreen .studio-viewport-stage,
 #editWorkspace.studio-fullscreen .studio-viewport-stage {
-    flex: 1 !important;
+    flex: 1 1 auto !important;
     min-height: 0 !important;
     max-height: none !important;
     height: 100% !important;
-    border-radius: 12px;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: auto !important;
+    border-radius: 16px !important;
+    padding: 34px 20px !important;
+    box-sizing: border-box !important;
+    background: radial-gradient(circle at 50% 30%, rgba(15, 145, 210, 0.05) 0%, #06080F 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.8) !important;
 }
 
+#editWorkspace:fullscreen .studio-sheet-wrap,
+#editWorkspace.studio-fullscreen .studio-sheet-wrap {
+    margin: 0 auto !important;
+    transform-origin: top center !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
+}
+
+#editWorkspace:fullscreen .studio-bottom-actions,
 #editWorkspace.studio-fullscreen .studio-bottom-actions {
-    margin-top: 8px;
-    padding-top: 6px;
+    margin-top: 10px;
+    padding-top: 8px;
     flex-shrink: 0;
 }
 
+#editWorkspace:fullscreen .btn-studio-fs,
 #editWorkspace.studio-fullscreen .btn-studio-fs {
-    background: rgba(239, 68, 68, 0.16);
-    border-color: rgba(239, 68, 68, 0.45);
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
     color: #F87171;
 }
 
+#editWorkspace:fullscreen .btn-studio-fs:hover,
 #editWorkspace.studio-fullscreen .btn-studio-fs:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.32);
     border-color: #EF4444;
     color: #FFFFFF;
 }
