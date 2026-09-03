@@ -5,6 +5,16 @@
 
 const translations = {
     en: {
+        "tool_tab_split": "Split PDF",
+        "tool_split_drop_title": "Select or drop a PDF file to split",
+        "tool_split_drop_sub": "Extract selected pages or split document into separate PDF files",
+        "tool_split_mode_extract": "Extract selected pages",
+        "tool_split_mode_extract_desc": "Combines only chosen pages into a single new PDF document",
+        "tool_split_mode_separate": "Split all pages into separate PDFs (ZIP)",
+        "tool_split_mode_separate_desc": "Saves every page as an individual PDF inside a .ZIP archive",
+        "tool_split_range_label": "Page range to extract (e.g. 1-3, 5, 8):",
+        "tool_btn_split_action": "Split and Export PDF",
+
         // Navigation & Dock
         "nav_home": "Home",
         "nav_tools": "Tools",
@@ -253,6 +263,16 @@ const translations = {
         "notify_error_network": "Network error. Please try again."
     },
     pl: {
+        "tool_tab_split": "Rozdziel PDF",
+        "tool_split_drop_title": "Wybierz lub upuść plik PDF do rozdzielenia",
+        "tool_split_drop_sub": "Wyodrębnij wybrane strony lub podziel dokument na pojedyncze pliki PDF",
+        "tool_split_mode_extract": "Wyodrębnij wybrane strony",
+        "tool_split_mode_extract_desc": "Łączy tylko wskazane strony w jeden nowy plik PDF",
+        "tool_split_mode_separate": "Rozbij na pojedyncze strony (ZIP)",
+        "tool_split_mode_separate_desc": "Zapisuje każdą stronę jako osobny plik PDF w archiwum .ZIP",
+        "tool_split_range_label": "Zakres stron do wyciągnięcia (np. 1-3, 5, 8):",
+        "tool_btn_split_action": "Rozdziel dokument PDF",
+
         // Navigation & Dock
         "nav_home": "Główna",
         "nav_tools": "Narzędzia",
@@ -501,6 +521,16 @@ const translations = {
         "notify_error_network": "Błąd połączenia z serwerem."
     },
     de: {
+        "tool_tab_split": "PDF Teilen",
+        "tool_split_drop_title": "PDF-Datei zum Teilen hierher ziehen",
+        "tool_split_drop_sub": "Ausgewählte Seiten extrahieren oder in einzelne PDFs aufteilen",
+        "tool_split_mode_extract": "Ausgewählte Seiten extrahieren",
+        "tool_split_mode_extract_desc": "Fügt nur ausgewählte Seiten zu einem neuen PDF zusammen",
+        "tool_split_mode_separate": "In Einzelseiten aufteilen (ZIP)",
+        "tool_split_mode_separate_desc": "Speichert jede Seite als separates PDF in einem .ZIP-Archiv",
+        "tool_split_range_label": "Seitenbereich zum Extrahieren (z.B. 1-3, 5, 8):",
+        "tool_btn_split_action": "PDF teilen und exportieren",
+
         // Missing DE keys
         "nav_tools": "Werkzeuge",
         "toolbox_title": "Dropsite Werkzeuge",
@@ -690,6 +720,16 @@ const translations = {
         "notify_unlocked": "Datei erfolgreich entsperrt!"
     },
     es: {
+        "tool_tab_split": "Dividir PDF",
+        "tool_split_drop_title": "Selecciona o arrastra un archivo PDF para dividir",
+        "tool_split_drop_sub": "Extrae páginas seleccionadas o divide en archivos PDF individuales",
+        "tool_split_mode_extract": "Extraer páginas seleccionadas",
+        "tool_split_mode_extract_desc": "Combina solo las páginas elegidas en un nuevo PDF",
+        "tool_split_mode_separate": "Dividir en páginas individuales (ZIP)",
+        "tool_split_mode_separate_desc": "Guarda cada página como un PDF separado dentro de un archivo .ZIP",
+        "tool_split_range_label": "Rango de páginas a extraer (ej. 1-3, 5, 8):",
+        "tool_btn_split_action": "Dividir y exportar PDF",
+
         // Missing ES keys
         "nav_tools": "Herramientas",
         "toolbox_title": "Dropsite Herramientas",
@@ -879,6 +919,16 @@ const translations = {
         "notify_unlocked": "¡Archivo desbloqueado con éxito!"
     },
     fr: {
+        "tool_tab_split": "Diviser PDF",
+        "tool_split_drop_title": "Déposez un fichier PDF à diviser",
+        "tool_split_drop_sub": "Extrayez les pages sélectionnées ou séparez en fichiers PDF individuels",
+        "tool_split_mode_extract": "Extraire les pages sélectionnées",
+        "tool_split_mode_extract_desc": "Combine uniquement les pages choisies dans un nouveau PDF",
+        "tool_split_mode_separate": "Diviser en pages individuelles (ZIP)",
+        "tool_split_mode_separate_desc": "Enregistre chaque page en tant que PDF séparé dans une archive .ZIP",
+        "tool_split_range_label": "Plage de pages à extraire (ex. 1-3, 5, 8) :",
+        "tool_btn_split_action": "Diviser et exporter le PDF",
+
         // Missing FR keys
         "nav_tools": "Outils",
         "toolbox_title": "Boîte à outils Dropsite",
@@ -1068,6 +1118,16 @@ const translations = {
         "notify_unlocked": "Fichier déverrouillé avec succès!"
     },
     uk: {
+        "tool_tab_split": "Розділити PDF",
+        "tool_split_drop_title": "Виберіть або перетягніть PDF для розділення",
+        "tool_split_drop_sub": "Витягуйте вибрані сторінки або розбивайте на окремі PDF файли",
+        "tool_split_mode_extract": "Витягти вибрані сторінки",
+        "tool_split_mode_extract_desc": "Об'єднує лише вибрані сторінки в один новий PDF",
+        "tool_split_mode_separate": "Розбити на окремі сторінки (ZIP)",
+        "tool_split_mode_separate_desc": "Зберігає кожну сторінку як окремий PDF в архіві .ZIP",
+        "tool_split_range_label": "Діапазон сторінок для витягу (напр., 1-3, 5, 8):",
+        "tool_btn_split_action": "Розділити та експортувати PDF",
+
         // Missing UK keys
         "nav_tools": "Інструменти",
         "toolbox_title": "Dropsite Набір інструментів",

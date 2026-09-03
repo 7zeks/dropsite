@@ -754,6 +754,16 @@
                             </svg>
                             <span data-i18n="tool_tab_merge">Łączenie PDF</span>
                         </button>
+                        <button type="button" class="toolbox-tab-btn" data-tool="split">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                            </svg>
+                            <span data-i18n="tool_tab_split">Rozdziel PDF</span>
+                        </button>
                         <button type="button" class="toolbox-tab-btn" data-tool="edit">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -812,6 +822,108 @@
                             </button>
 
                             <div id="mergeResultBox" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL: ROZDZIELANIE PDF (SPLIT & EXTRACT) -->
+                    <div id="toolPanel_split" class="tool-panel" style="display: none;">
+                        <div class="tool-card-box split-card-box">
+                            <!-- Dropzone -->
+                            <div class="tool-dropzone" id="splitDropzone">
+                                <input type="file" id="splitFileInput" accept=".pdf,application/pdf" style="display: none;">
+                                <div class="tool-drop-icon">
+                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#FFA751" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="6" cy="6" r="3"></circle>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                        <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                        <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                                    </svg>
+                                </div>
+                                <strong class="tool-drop-title" data-i18n="tool_split_drop_title">Wybierz lub upuść plik PDF do rozdzielenia</strong>
+                                <span class="tool-drop-sub" data-i18n="tool_split_drop_sub">Wyodrębnij wybrane strony lub podziel dokument na pojedyncze pliki PDF</span>
+                            </div>
+
+                            <!-- Obszar roboczy po wczytaniu pliku -->
+                            <div id="splitWorkspace" style="display: none;">
+                                <!-- Pasek informacji o dokumencie -->
+                                <div class="studio-doc-bar">
+                                    <div class="studio-doc-info">
+                                        <span class="tool-pdf-icon-mini">📑</span>
+                                        <strong id="splitLoadedFileName" class="studio-filename">dokument.pdf</strong>
+                                        <span id="splitLoadedFileSize" class="studio-filesize">0 KB</span>
+                                        <span id="splitLoadedPageCount" class="split-page-badge">0 stron</span>
+                                        <div class="studio-doc-actions">
+                                            <button type="button" class="btn-studio-file" id="btnSplitChangeFile" title="Wczytaj inny plik PDF">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path></svg>
+                                                <span>Zmień plik</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Przełącznik trybu: Ekstrakcja vs Rozbicie na osobne -->
+                                <div class="split-mode-container">
+                                    <div class="split-mode-selector">
+                                        <label class="split-mode-option active" id="modeOptionExtract">
+                                            <input type="radio" name="splitMode" value="extract" checked>
+                                            <div class="split-mode-card-content">
+                                                <div class="split-mode-icon">📑</div>
+                                                <div class="split-mode-text-col">
+                                                    <strong data-i18n="tool_split_mode_extract">Wyodrębnij wybrane strony</strong>
+                                                    <p data-i18n="tool_split_mode_extract_desc">Łączy tylko wskazane strony w jeden nowy plik PDF</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="split-mode-option" id="modeOptionSeparate">
+                                            <input type="radio" name="splitMode" value="separate">
+                                            <div class="split-mode-card-content">
+                                                <div class="split-mode-icon">🗂️</div>
+                                                <div class="split-mode-text-col">
+                                                    <strong data-i18n="tool_split_mode_separate">Rozbij na pojedyncze strony (ZIP)</strong>
+                                                    <p data-i18n="tool_split_mode_separate_desc">Zapisuje każdą stronę jako osobny plik PDF w archiwum .ZIP</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Kontrolki zakresu stron i szybkich filtrów -->
+                                <div class="split-controls-panel">
+                                    <div class="split-range-input-group">
+                                        <label for="splitRangeInput" class="split-range-label" data-i18n="tool_split_range_label">Zakres stron do wyciągnięcia (np. 1-3, 5, 8):</label>
+                                        <div class="split-input-wrapper">
+                                            <input type="text" id="splitRangeInput" class="dropsite-input split-text-input" placeholder="np. 1-3, 5, 7-9" spellcheck="false" autocomplete="off">
+                                            <span id="splitSelectedCountBadge" class="split-count-badge">0 stron zaznaczonych</span>
+                                        </div>
+                                    </div>
+                                    <div class="split-quick-buttons">
+                                        <span class="split-quick-label">Szybki wybór:</span>
+                                        <button type="button" class="btn-split-quick" id="btnSplitSelectAll">Wszystkie</button>
+                                        <button type="button" class="btn-split-quick" id="btnSplitDeselectAll">Odznacz</button>
+                                        <button type="button" class="btn-split-quick" id="btnSplitSelectOdd">Tylko nieparzyste</button>
+                                        <button type="button" class="btn-split-quick" id="btnSplitSelectEven">Tylko parzyste</button>
+                                    </div>
+                                </div>
+
+                                <!-- Wizualna siatka stron (PDF.js) -->
+                                <div class="split-grid-wrapper">
+                                    <div class="split-grid-title-row">
+                                        <span>Kliknij miniatury stron, aby je wybrać lub odznaczyć:</span>
+                                    </div>
+                                    <div class="split-pages-grid" id="splitPagesGrid">
+                                        <!-- Renderowane dynamicznie kafelki stron -->
+                                    </div>
+                                </div>
+
+                                <!-- Przycisk wykonania akcji -->
+                                <button type="button" class="btn-primary tool-action-btn" id="btnExecuteSplit">
+                                    <span class="btn-text" data-i18n="tool_btn_split_action">Rozdziel dokument PDF</span>
+                                </button>
+
+                                <!-- Box wyniku -->
+                                <div id="splitResultBox" style="display: none;"></div>
+                            </div>
                         </div>
                     </div>
 

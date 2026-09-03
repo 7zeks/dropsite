@@ -33,6 +33,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         initToolTabs();
         initMergeModule();
+        initSplitModule();
         initEditModule();
         initConvertModule();
         initCompressModule();
@@ -272,7 +273,418 @@
     }
 
     // ==========================================
-    // 2. MODUŁ: DROPSITE PDF STUDIO (ZAAWANSOWANY EDYTOR)
+    // 2. MODUŁ: ROZDZIELANIE PDF (SPLIT & EXTRACT)
+    // ==========================================
+    let splitFile = null;
+    let splitBytes = null;
+    let splitPdfJsDoc = null;
+    let splitTotalPages = 0;
+    let splitSelectedPages = new Set();
+    let splitMode = 'extract'; // 'extract' | 'separate'
+
+    function initSplitModule() {
+        const dropzone = document.getElementById('splitDropzone');
+        const fileInput = document.getElementById('splitFileInput');
+        const workspace = document.getElementById('splitWorkspace');
+        const btnChangeFile = document.getElementById('btnSplitChangeFile');
+        const rangeInput = document.getElementById('splitRangeInput');
+        const countBadge = document.getElementById('splitSelectedCountBadge');
+        const btnAction = document.getElementById('btnExecuteSplit');
+        const modeExtractOpt = document.getElementById('modeOptionExtract');
+        const modeSeparateOpt = document.getElementById('modeOptionSeparate');
+        const radioExtract = modeExtractOpt ? modeExtractOpt.querySelector('input[type="radio"]') : null;
+        const radioSeparate = modeSeparateOpt ? modeSeparateOpt.querySelector('input[type="radio"]') : null;
+
+        const btnSelectAll = document.getElementById('btnSplitSelectAll');
+        const btnDeselectAll = document.getElementById('btnSplitDeselectAll');
+        const btnSelectOdd = document.getElementById('btnSplitSelectOdd');
+        const btnSelectEven = document.getElementById('btnSplitSelectEven');
+
+        if (!dropzone || !fileInput) return;
+
+        // Kliknięcie dropzone
+        dropzone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                loadSplitPdfFile(e.target.files[0]);
+                fileInput.value = '';
+            }
+        });
+
+        // Przeciąganie pliku (drag & drop)
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('drag-over');
+        });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                loadSplitPdfFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Zmiana pliku
+        if (btnChangeFile) {
+            btnChangeFile.addEventListener('click', () => fileInput.click());
+        }
+
+        // Zmiana trybu podziału
+        if (modeExtractOpt && modeSeparateOpt) {
+            modeExtractOpt.addEventListener('click', () => {
+                splitMode = 'extract';
+                modeExtractOpt.classList.add('active');
+                modeSeparateOpt.classList.remove('active');
+                if (radioExtract) radioExtract.checked = true;
+                updateSplitActionBtnText();
+            });
+
+            modeSeparateOpt.addEventListener('click', () => {
+                splitMode = 'separate';
+                modeSeparateOpt.classList.add('active');
+                modeExtractOpt.classList.remove('active');
+                if (radioSeparate) radioSeparate.checked = true;
+                updateSplitActionBtnText();
+            });
+        }
+
+        function updateSplitActionBtnText() {
+            if (!btnAction) return;
+            const textSpan = btnAction.querySelector('.btn-text');
+            if (!textSpan) return;
+            if (splitMode === 'separate') {
+                textSpan.textContent = 'Rozbij na pojedyncze pliki (.ZIP)';
+            } else {
+                textSpan.textContent = typeof t === 'function' ? t('tool_btn_split_action', 'Rozdziel dokument PDF') : 'Rozdziel dokument PDF';
+            }
+        }
+
+        // Szybkie przyciski wyboru stron
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', () => {
+                splitSelectedPages.clear();
+                for (let i = 1; i <= splitTotalPages; i++) splitSelectedPages.add(i);
+                syncSplitSelectionToUI();
+            });
+        }
+
+        if (btnDeselectAll) {
+            btnDeselectAll.addEventListener('click', () => {
+                splitSelectedPages.clear();
+                syncSplitSelectionToUI();
+            });
+        }
+
+        if (btnSelectOdd) {
+            btnSelectOdd.addEventListener('click', () => {
+                splitSelectedPages.clear();
+                for (let i = 1; i <= splitTotalPages; i += 2) splitSelectedPages.add(i);
+                syncSplitSelectionToUI();
+            });
+        }
+
+        if (btnSelectEven) {
+            btnSelectEven.addEventListener('click', () => {
+                splitSelectedPages.clear();
+                for (let i = 2; i <= splitTotalPages; i += 2) splitSelectedPages.add(i);
+                syncSplitSelectionToUI();
+            });
+        }
+
+        // Wpisywanie zakresu stron z klawiatury
+        if (rangeInput) {
+            rangeInput.addEventListener('input', (e) => {
+                const parsed = parsePageRangeString(e.target.value, splitTotalPages);
+                splitSelectedPages = new Set(parsed);
+                updateSplitCardsSelectionOnly();
+                updateSplitCountBadge();
+            });
+        }
+
+        // Wykonanie podziału
+        if (btnAction) {
+            btnAction.addEventListener('click', executePdfSplit);
+        }
+    }
+
+    // Wczytanie pliku PDF do rozdzielania
+    async function loadSplitPdfFile(file) {
+        if (!file || (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf'))) {
+            if (window.showNotification) window.showNotification('Wybierz poprawny plik w formacie PDF.', 'error');
+            return;
+        }
+
+        splitFile = file;
+        const dropzone = document.getElementById('splitDropzone');
+        const workspace = document.getElementById('splitWorkspace');
+        const fileNameEl = document.getElementById('splitLoadedFileName');
+        const fileSizeEl = document.getElementById('splitLoadedFileSize');
+        const pageCountEl = document.getElementById('splitLoadedPageCount');
+
+        if (fileNameEl) fileNameEl.textContent = file.name;
+        if (fileSizeEl) fileSizeEl.textContent = formatBytes(file.size);
+
+        try {
+            splitBytes = await file.arrayBuffer();
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('Biblioteka PDF.js nie jest dostępna');
+            }
+
+            const loadingTask = pdfjsLib.getDocument({ data: splitBytes });
+            splitPdfJsDoc = await loadingTask.promise;
+            splitTotalPages = splitPdfJsDoc.numPages;
+
+            if (pageCountEl) {
+                pageCountEl.textContent = `${splitTotalPages} ${splitTotalPages === 1 ? 'strona' : (splitTotalPages < 5 ? 'strony' : 'stron')}`;
+            }
+
+            // Domyślnie zaznaczamy wszystkie strony
+            splitSelectedPages.clear();
+            for (let i = 1; i <= splitTotalPages; i++) {
+                splitSelectedPages.add(i);
+            }
+
+            if (dropzone) dropzone.style.display = 'none';
+            if (workspace) workspace.style.display = 'block';
+
+            syncSplitSelectionToUI();
+            await renderSplitPagesGrid();
+        } catch (err) {
+            console.error('Błąd wczytywania PDF do podziału:', err);
+            if (window.showNotification) window.showNotification('Nie udało się wczytać pliku PDF: ' + err.message, 'error');
+        }
+    }
+
+    // Renderowanie siatki stron z miniaturkami
+    async function renderSplitPagesGrid() {
+        const grid = document.getElementById('splitPagesGrid');
+        if (!grid || !splitPdfJsDoc) return;
+
+        grid.innerHTML = '';
+
+        for (let p = 1; p <= splitTotalPages; p++) {
+            const card = document.createElement('div');
+            const isSelected = splitSelectedPages.has(p);
+            card.className = `split-page-card ${isSelected ? 'selected' : ''}`;
+            card.dataset.page = p;
+
+            card.innerHTML = `
+                <div class="split-page-check">✓</div>
+                <div class="split-page-canvas-wrap">
+                    <canvas id="splitCanvas_${p}"></canvas>
+                </div>
+                <span class="split-page-num">Strona ${p}</span>
+            `;
+
+            card.addEventListener('click', () => {
+                if (splitSelectedPages.has(p)) {
+                    splitSelectedPages.delete(p);
+                } else {
+                    splitSelectedPages.add(p);
+                }
+                syncSplitSelectionToUI();
+            });
+
+            grid.appendChild(card);
+
+            // Render miniatury PDF.js w tle
+            try {
+                const pdfPage = await splitPdfJsDoc.getPage(p);
+                const unscaled = pdfPage.getViewport({ scale: 1.0 });
+                const thumbScale = Math.min(120 / unscaled.width, 160 / unscaled.height);
+                const viewport = pdfPage.getViewport({ scale: thumbScale });
+
+                const canvas = document.getElementById(`splitCanvas_${p}`);
+                if (canvas) {
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    await pdfPage.render({ canvasContext: ctx, viewport }).promise;
+                }
+            } catch (e) {
+                console.warn(`Błąd renderowania miniatury ${p}:`, e);
+            }
+        }
+    }
+
+    // Synchronizacja stanu zaznaczenia stron z polem tekstowym, licznikiem i kafelkami
+    function syncSplitSelectionToUI() {
+        const rangeInput = document.getElementById('splitRangeInput');
+        if (rangeInput) {
+            rangeInput.value = formatPageRanges(splitSelectedPages);
+        }
+        updateSplitCardsSelectionOnly();
+        updateSplitCountBadge();
+    }
+
+    function updateSplitCardsSelectionOnly() {
+        const cards = document.querySelectorAll('.split-page-card');
+        cards.forEach(card => {
+            const pageNum = parseInt(card.dataset.page, 10);
+            card.classList.toggle('selected', splitSelectedPages.has(pageNum));
+        });
+    }
+
+    function updateSplitCountBadge() {
+        const badge = document.getElementById('splitSelectedCountBadge');
+        if (badge) {
+            const count = splitSelectedPages.size;
+            badge.textContent = `${count} ${count === 1 ? 'strona' : (count < 5 ? 'strony' : 'stron')} z ${splitTotalPages}`;
+        }
+    }
+
+    // Parsowanie ciągu znaków (np. "1-3, 5, 8-10")
+    function parsePageRangeString(str, total) {
+        if (!str || !str.trim()) return [];
+        const parts = str.split(',');
+        const result = new Set();
+
+        parts.forEach(part => {
+            const trimmed = part.trim();
+            if (!trimmed) return;
+
+            if (trimmed.includes('-')) {
+                const sub = trimmed.split('-');
+                let start = parseInt(sub[0], 10);
+                let end = parseInt(sub[1], 10);
+
+                if (isNaN(start)) start = 1;
+                if (isNaN(end)) end = total;
+
+                start = Math.max(1, Math.min(start, total));
+                end = Math.max(1, Math.min(end, total));
+
+                if (start <= end) {
+                    for (let i = start; i <= end; i++) result.add(i);
+                } else {
+                    for (let i = end; i <= start; i++) result.add(i);
+                }
+            } else {
+                const num = parseInt(trimmed, 10);
+                if (!isNaN(num) && num >= 1 && num <= total) {
+                    result.add(num);
+                }
+            }
+        });
+
+        return Array.from(result).sort((a, b) => a - b);
+    }
+
+    // Formatowanie Set([1, 2, 3, 5, 7, 8]) -> "1-3, 5, 7-8"
+    function formatPageRanges(pageSet) {
+        if (!pageSet || pageSet.size === 0) return '';
+        const sorted = Array.from(pageSet).sort((a, b) => a - b);
+        const ranges = [];
+        let start = sorted[0];
+        let prev = sorted[0];
+
+        for (let i = 1; i < sorted.length; i++) {
+            const cur = sorted[i];
+            if (cur === prev + 1) {
+                prev = cur;
+            } else {
+                ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                start = cur;
+                prev = cur;
+            }
+        }
+        ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+        return ranges.join(', ');
+    }
+
+    // Wykonanie procesu rozdzielania / ekstrakcji
+    async function executePdfSplit() {
+        if (!splitBytes || splitSelectedPages.size === 0) {
+            if (window.showNotification) {
+                window.showNotification('Wybierz co najmniej jedną stronę do wyodrębnienia.', 'warning');
+            }
+            return;
+        }
+
+        const btnAction = document.getElementById('btnExecuteSplit');
+        const textSpan = btnAction ? btnAction.querySelector('.btn-text') : null;
+        const origText = textSpan ? textSpan.textContent : 'Rozdziel dokument PDF';
+        if (textSpan) textSpan.textContent = 'Przetwarzanie stron PDF...';
+        if (btnAction) btnAction.disabled = true;
+
+        try {
+            const sortedPages = Array.from(splitSelectedPages).sort((a, b) => a - b);
+            const baseName = (splitFile ? splitFile.name : 'dokument').replace(/\.[^/.]+$/, '');
+
+            if (splitMode === 'extract') {
+                // TRYB A: Połączenie wybranych stron w jeden nowy plik PDF
+                const newDoc = await PDFLib.PDFDocument.create();
+                const srcDoc = await PDFLib.PDFDocument.load(splitBytes, { ignoreEncryption: true });
+                const pageIndices = sortedPages.map(p => p - 1);
+                const copiedPages = await newDoc.copyPages(srcDoc, pageIndices);
+                copiedPages.forEach(p => newDoc.addPage(p));
+
+                const outBytes = await newDoc.save();
+                const outBlob = new Blob([outBytes], { type: 'application/pdf' });
+                const outName = `${baseName}_wyodrebnione_${sortedPages.length}str.pdf`;
+
+                showToolResult(
+                    'splitResultBox',
+                    outBlob,
+                    outName,
+                    `Wyodrębniono pomyślnie ${sortedPages.length} ${sortedPages.length === 1 ? 'stronę' : (sortedPages.length < 5 ? 'strony' : 'stron')}! Rozmiar pliku: ${formatBytes(outBlob.size)}.`
+                );
+            } else {
+                // TRYB B: Rozbicie na pojedyncze pliki PDF w paczce ZIP (fflate)
+                if (typeof fflate === 'undefined') {
+                    throw new Error('Biblioteka kompresji ZIP nie jest dostępna');
+                }
+
+                const zipFiles = {};
+                const srcDoc = await PDFLib.PDFDocument.load(splitBytes, { ignoreEncryption: true });
+                const padLen = String(splitTotalPages).length;
+
+                for (let i = 0; i < sortedPages.length; i++) {
+                    const pageNum = sortedPages[i];
+                    if (textSpan) textSpan.textContent = `Generowanie strony ${i + 1} z ${sortedPages.length}...`;
+
+                    const singleDoc = await PDFLib.PDFDocument.create();
+                    const [copied] = await singleDoc.copyPages(srcDoc, [pageNum - 1]);
+                    singleDoc.addPage(copied);
+                    const singleBytes = await singleDoc.save();
+
+                    const padNum = String(pageNum).padStart(padLen, '0');
+                    zipFiles[`${baseName}_strona_${padNum}.pdf`] = singleBytes;
+                }
+
+                if (textSpan) textSpan.textContent = 'Pakowanie do pliku ZIP...';
+
+                await new Promise((resolve, reject) => {
+                    fflate.zip(zipFiles, { level: 0 }, (err, zippedData) => {
+                        if (err) return reject(err);
+                        const zipBlob = new Blob([zippedData], { type: 'application/zip' });
+                        const zipName = `${baseName}_strony_PDF.zip`;
+
+                        showToolResult(
+                            'splitResultBox',
+                            zipBlob,
+                            zipName,
+                            `Rozbito na ${sortedPages.length} osobnych plików PDF i spakowano w archiwum ZIP (${formatBytes(zipBlob.size)}).`
+                        );
+                        resolve();
+                    });
+                });
+            }
+
+            if (window.playSound) window.playSound('success');
+            if (window.showNotification) window.showNotification('Dokument został pomyślnie rozdzielony!', 'success');
+        } catch (err) {
+            console.error('Błąd podczas rozdzielania PDF:', err);
+            if (window.showNotification) window.showNotification('Błąd rozdzielania PDF: ' + err.message, 'error');
+        } finally {
+            if (textSpan) textSpan.textContent = origText;
+            if (btnAction) btnAction.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // 3. MODUŁ: DROPSITE PDF STUDIO (ZAAWANSOWANY EDYTOR)
     // ==========================================
     let studioFile = null;
     let studioBytes = null;
