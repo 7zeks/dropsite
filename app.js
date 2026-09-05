@@ -482,12 +482,31 @@ function updateProUI() {
     }
 }
 
-window.openProModal = function() {
+window.openProModal = function(context = null) {
     const modal = document.getElementById('proModalWrap');
     if (modal) {
         updateProUI();
         const proKeyStatus = document.getElementById('proKeyStatus');
         if (proKeyStatus) proKeyStatus.textContent = '';
+
+        const convBanner = document.getElementById('proModalConversionBanner');
+        const convTitle = document.getElementById('proModalConvTitle');
+        const convDesc = document.getElementById('proModalConvDesc');
+
+        if (context && context.reason === 'file_limit') {
+            if (convBanner) convBanner.hidden = false;
+            if (convTitle) {
+                const name = context.fileName || 'Wybrany plik';
+                const size = typeof formatBytes === 'function' ? formatBytes(context.fileSize || 0) : `${Math.round((context.fileSize || 0) / 1048576)} MB`;
+                convTitle.textContent = `Plik "${name}" (${size}) przekracza darmowy limit 250 MB`;
+            }
+            if (convDesc) {
+                convDesc.textContent = 'Odblokuj konto Dropsite PRO (14,99 zł), aby przesyłać potężne pliki do 10 GB bez ograniczeń prędkości.';
+            }
+        } else {
+            if (convBanner) convBanner.hidden = true;
+        }
+
         window.smoothOpenModal(modal);
     }
 };
@@ -499,9 +518,237 @@ window.closeProModal = function() {
     }
 };
 
+let currentBlikConfig = { amount: 14.99, type: 'pro' };
+let blikCountdownInterval = null;
+
+window.openBlikModal = function(amount = 14.99, type = 'pro') {
+    currentBlikConfig = { amount, type };
+    const modal = document.getElementById('blikModalWrap');
+    if (!modal) return;
+
+    const amountLabel = document.getElementById('blikModalAmount');
+    if (amountLabel) {
+        amountLabel.textContent = `${amount.toFixed(2)} PLN`;
+    }
+
+    const titleLabel = document.getElementById('blikModalTitle');
+    if (titleLabel && window.t) {
+        titleLabel.textContent = window.t('blik_modal_title') || 'Płatność kodem BLIK';
+    }
+
+    const inputSection = document.getElementById('blikInputSection');
+    const waitingState = document.getElementById('blikWaitingState');
+    const successState = document.getElementById('blikSuccessState');
+    const submitBtn = document.getElementById('btnSubmitBlikCode');
+
+    if (inputSection) inputSection.hidden = false;
+    if (waitingState) waitingState.hidden = true;
+    if (successState) successState.hidden = true;
+
+    // Wyczyszczenie pól na cyfry
+    const digitInputs = modal.querySelectorAll('.blik-digit-input');
+    digitInputs.forEach(input => {
+        input.value = '';
+        input.disabled = false;
+    });
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        const btnText = submitBtn.querySelector('.btn-text');
+        if (btnText) {
+            btnText.textContent = `Zatwierdź kod BLIK (${amount.toFixed(2).replace('.', ',')} zł)`;
+        }
+    }
+
+    if (blikCountdownInterval) {
+        clearInterval(blikCountdownInterval);
+        blikCountdownInterval = null;
+    }
+
+    window.smoothOpenModal(modal);
+
+    setTimeout(() => {
+        const firstInput = modal.querySelector('.blik-digit-input[data-index="0"]');
+        if (firstInput) firstInput.focus();
+    }, 150);
+};
+
+window.closeBlikModal = function() {
+    const modal = document.getElementById('blikModalWrap');
+    if (modal) {
+        if (blikCountdownInterval) {
+            clearInterval(blikCountdownInterval);
+            blikCountdownInterval = null;
+        }
+        window.smoothCloseModal(modal);
+    }
+};
+
+function initBlikModalListeners() {
+    const modal = document.getElementById('blikModalWrap');
+    if (!modal) return;
+
+    const closeBtn = document.getElementById('closeBlikModal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => window.closeBlikModal());
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) window.closeBlikModal();
+    });
+
+    const digitInputs = modal.querySelectorAll('.blik-digit-input');
+    const submitBtn = document.getElementById('btnSubmitBlikCode');
+
+    function checkDigitsComplete() {
+        let code = '';
+        digitInputs.forEach(i => code += i.value.trim());
+        if (submitBtn) {
+            submitBtn.disabled = (code.length !== 6);
+        }
+        return code;
+    }
+
+    digitInputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+            const val = input.value.replace(/\D/g, '');
+            input.value = val ? val.charAt(0) : '';
+
+            if (input.value && index < digitInputs.length - 1) {
+                digitInputs[index + 1].focus();
+            }
+
+            const fullCode = checkDigitsComplete();
+            if (fullCode.length === 6) {
+                submitBtn?.focus();
+            }
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+                digitInputs[index - 1].focus();
+            } else if (e.key === 'ArrowLeft' && index > 0) {
+                digitInputs[index - 1].focus();
+            } else if (e.key === 'ArrowRight' && index < digitInputs.length - 1) {
+                digitInputs[index + 1].focus();
+            } else if (e.key === 'Enter') {
+                const fullCode = checkDigitsComplete();
+                if (fullCode.length === 6 && submitBtn && !submitBtn.disabled) {
+                    submitBtn.click();
+                }
+            }
+        });
+
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+            const cleanDigits = pastedData.replace(/\D/g, '').slice(0, 6);
+            if (cleanDigits.length > 0) {
+                for (let i = 0; i < digitInputs.length; i++) {
+                    digitInputs[i].value = cleanDigits[i] || '';
+                }
+                const focusIdx = Math.min(cleanDigits.length, digitInputs.length - 1);
+                digitInputs[focusIdx].focus();
+                checkDigitsComplete();
+            }
+        });
+    });
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', () => {
+            const code = checkDigitsComplete();
+            if (code.length !== 6) {
+                if (typeof showNotification === 'function') {
+                    showNotification('Wpisz pełny 6-cyfrowy kod BLIK z aplikacji bankowej.', 'error');
+                }
+                return;
+            }
+
+            const inputSection = document.getElementById('blikInputSection');
+            const waitingState = document.getElementById('blikWaitingState');
+            const successState = document.getElementById('blikSuccessState');
+            const countdownEl = document.getElementById('blikCountdownTimer');
+
+            if (inputSection) inputSection.hidden = true;
+            if (waitingState) waitingState.hidden = false;
+
+            let remainingSeconds = 45;
+            if (countdownEl) countdownEl.textContent = `${remainingSeconds}s`;
+
+            if (blikCountdownInterval) clearInterval(blikCountdownInterval);
+            blikCountdownInterval = setInterval(() => {
+                remainingSeconds--;
+                if (countdownEl) countdownEl.textContent = `${remainingSeconds}s`;
+                if (remainingSeconds <= 0) {
+                    clearInterval(blikCountdownInterval);
+                    blikCountdownInterval = null;
+                }
+            }, 1000);
+
+            // Symulacja akceptacji transakcji w aplikacji banku (3.2 sekundy)
+            setTimeout(() => {
+                if (blikCountdownInterval) {
+                    clearInterval(blikCountdownInterval);
+                    blikCountdownInterval = null;
+                }
+
+                if (waitingState) waitingState.hidden = true;
+                if (successState) successState.hidden = false;
+
+                const randomHash = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+                const blikProKey = `DS-PRO-BLIK-${randomHash}`;
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + 30);
+
+                localStorage.setItem('dropsite_pro_key', blikProKey);
+                localStorage.setItem('dropsite_pro_type', 'blik_30d');
+                localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
+
+                try {
+                    let orders = JSON.parse(localStorage.getItem('dropsite_admin_orders_db') || '[]');
+                    orders.unshift({
+                        id: `BLIK-${randomHash}`,
+                        date: new Date().toLocaleString('pl-PL'),
+                        email: (window.auth?.currentUser?.email) || 'Klient BLIK (PRO 30D)',
+                        product: 'Dropsite PRO (Dostęp 30 Dni)',
+                        amount: '14,99 zł',
+                        rawAmount: 14.99,
+                        method: 'BLIK',
+                        status: 'Opłacono'
+                    });
+                    localStorage.setItem('dropsite_admin_orders_db', JSON.stringify(orders));
+                } catch (e) {}
+
+                updateProUI();
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
+                }
+                if (typeof playSound === 'function') playSound('success');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(`🎉 Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
+                }
+
+                setTimeout(() => {
+                    window.closeBlikModal();
+                    window.closeProModal();
+                    if (selectedFile) {
+                        const uploadBtn = document.getElementById('uploadBtn');
+                        if (uploadBtn && !uploadBtn.disabled) {
+                            uploadBtn.click();
+                        }
+                    }
+                }, 1600);
+            }, 3200);
+        });
+    }
+}
+
 // Inicjalizacja przycisków PRO
 document.addEventListener('DOMContentLoaded', () => {
     updateAdminRoleUI();
+    initBlikModalListeners();
 
     const openProBtn = document.getElementById('openProBtn');
     const closeProModalBtn = document.getElementById('closeProModal');
@@ -611,10 +858,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Oficjalny link kasy Stripe (BLIK na 30 dni)
-    const STRIPE_PRO_BLIK_URL = 'https://buy.stripe.com/test_00w00jbPz3MgeLC0Zp2go01';
+    // Konfiguracja oficjalnego linku płatności Stripe dla BLIK (30 Dni)
+    // Wklej tutaj wygenerowany link ze Stripe (np. tryb testowy https://buy.stripe.com/test_... lub produkcyjny)
+    const STRIPE_PRO_BLIK_URL = 'https://buy.stripe.com/dRmcN53j3gz246Y5fF2go00';
 
-    // Obsługa zakupu PRO (BLIK 30 Dni) przez bezpośredni Stripe Payment Link
+    // Obsługa zakupu PRO (BLIK 30 Dni - 14,99 zł)
     const btnBuyProBlik = document.getElementById('btnBuyProBlik');
     if (btnBuyProBlik) {
         btnBuyProBlik.addEventListener('click', (e) => {
@@ -625,10 +873,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            const btnText = btnBuyProBlik.querySelector('.btn-text');
-            if (btnText) btnText.textContent = 'Przekierowanie do BLIK...';
-            btnBuyProBlik.style.pointerEvents = 'none';
-            window.location.href = STRIPE_PRO_BLIK_URL;
+
+            if (STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
+                const btnText = btnBuyProBlik.querySelector('.btn-text');
+                if (btnText) btnText.textContent = 'Przekierowanie do Stripe...';
+                btnBuyProBlik.style.pointerEvents = 'none';
+                window.location.href = STRIPE_PRO_BLIK_URL.trim();
+            } else {
+                // Gdy link Stripe nie jest jeszcze podpięty, otwórz wbudowany modal natywny BLIK
+                window.openBlikModal(14.99, 'pro');
+            }
         });
     }
 
@@ -954,6 +1208,35 @@ if (slugToggleBtn && customSlugBox) {
     });
 }
 
+// === TRYB SZPIEGOWSKI (MISSION: IMPOSSIBLE 007 - VIRAL TOGGLE) ===
+const spyModeCheckbox = document.getElementById('spyModeCheckbox');
+if (spyModeCheckbox) {
+    spyModeCheckbox.addEventListener('change', () => {
+        if (spyModeCheckbox.checked) {
+            const burnRadio = document.querySelector('input[name="duration"][value="burn"]');
+            if (burnRadio) {
+                burnRadio.checked = true;
+                if (typeof triggerBurnFireAnimation === 'function') {
+                    triggerBurnFireAnimation(burnRadio);
+                }
+            }
+            playSound('copy');
+            if (typeof showNotification === 'function') {
+                showNotification('🕵️‍♂️ Włączono Tryb Szpiegowski (007) — plik ulegnie samozniszczeniu po odsłonięciu!', 'warning');
+            }
+        }
+    });
+
+    const durationRadios = document.querySelectorAll('input[name="duration"]');
+    durationRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.value !== 'burn' && spyModeCheckbox && spyModeCheckbox.checked) {
+                spyModeCheckbox.checked = false;
+            }
+        });
+    });
+}
+
 // === EFEKT ANIMACJI OGNIA DLA OPCJI "BURN AFTER READ" ===
 function triggerBurnFireAnimation(targetElement) {
     const parentLabel = (targetElement && targetElement.closest('.option-item-burn')) || document.querySelector('.option-item-burn');
@@ -1246,7 +1529,11 @@ async function updateSelectedFile(filesList) {
         fsProgressBar.style.width = '0%';
         
         fsName.textContent = file.name;
-        fsSizeOrProgress.innerText = formatBytes(file.size);
+        if (!isProUser() && file.size > 250 * 1024 * 1024) {
+            fsSizeOrProgress.innerHTML = `<span style="color:#FF4D6D; font-weight:700;">${formatBytes(file.size)} ⚡ (Wymaga konta PRO)</span>`;
+        } else {
+            fsSizeOrProgress.innerText = formatBytes(file.size);
+        }
         
         uploadBtn.disabled = false;
         statusDiv.textContent = '';
@@ -1443,7 +1730,13 @@ async function uploadFile() {
     if (!selectedFile) return;
 
     let file = selectedFile;
-    const duration = document.querySelector('input[name="duration"]:checked')?.value || '1d';
+    let duration = document.querySelector('input[name="duration"]:checked')?.value || '1d';
+    const isSpyMode = Boolean(document.getElementById('spyModeCheckbox')?.checked);
+    if (isSpyMode) {
+        duration = 'burn';
+    }
+    window._activeSpyMode = isSpyMode;
+
     const customSlug = document.getElementById('customSlugInput')?.value.trim() || '';
     const filePassword = document.getElementById('filePasswordInput')?.value.trim() || '';
     const fileNote = document.getElementById('fileNoteInput')?.value.trim() || '';
@@ -1458,9 +1751,13 @@ async function uploadFile() {
     if (!isPro && file.size > FREE_LIMIT) {
         showError(`Plik (${formatBytes(file.size)}) przekracza limit 250 MB dla konta darmowego.`);
         if (typeof showNotification === 'function') {
-            showNotification('Wysyłanie plików do 10 GB wymaga konta Dropsite PRO!', 'info');
+            showNotification('Wysyłanie plików powyżej 250 MB wymaga odblokowania konta Dropsite PRO (14,99 zł)!', 'info');
         }
-        window.openProModal();
+        window.openProModal({
+            reason: 'file_limit',
+            fileName: file.name,
+            fileSize: file.size
+        });
         return;
     }
 
@@ -1720,6 +2017,12 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     if (window._activeCreatorBrand) {
         pageUrl += `&brand=${encodeURIComponent(window._activeCreatorBrand)}`;
         smartShareUrl += `&brand=${encodeURIComponent(window._activeCreatorBrand)}`;
+    }
+
+    // Dołącz flagę Trybu Szpiegowskiego do linku
+    if (window._activeSpyMode) {
+        pageUrl += `&spy=1`;
+        smartShareUrl += `&spy=1`;
     }
 
     // Dołącz klucz deszyfrujący AES-256 do hasha (Zero-Knowledge: hash nigdy nie trafia na serwer!)
@@ -4146,6 +4449,242 @@ async function initDownloadRouter() {
     const dlUnlockPasswordInput = document.getElementById('dlUnlockPasswordInput');
     const dlPasswordError = document.getElementById('dlPasswordError');
 
+    // =========================================================================
+    // SMART ZIP EXPLORER & LIGHTBOX HELPERS
+    // =========================================================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getMimeTypeForFilename(fileName) {
+        const ext = (fileName || '').split('.').pop().toLowerCase();
+        const map = {
+            'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif',
+            'webp': 'image/webp', 'svg': 'image/svg+xml', 'bmp': 'image/bmp',
+            'mp4': 'video/mp4', 'webm': 'video/webm', 'mov': 'video/quicktime',
+            'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'ogg': 'audio/ogg', 'm4a': 'audio/mp4', 'flac': 'audio/flac',
+            'pdf': 'application/pdf', 'txt': 'text/plain; charset=utf-8', 'json': 'application/json',
+            'js': 'text/javascript', 'html': 'text/html', 'css': 'text/css', 'md': 'text/markdown',
+            'zip': 'application/zip'
+        };
+        return map[ext] || 'application/octet-stream';
+    }
+
+    function getMiniFileSvg(filename) {
+        const ext = (filename || '').split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+        }
+        if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`;
+        }
+        if (['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'].includes(ext)) {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+        }
+        if (ext === 'pdf') {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>`;
+        }
+        if (['txt', 'json', 'js', 'html', 'css', 'md', 'py', 'java', 'c', 'cpp', 'xml', 'yaml', 'yml'].includes(ext)) {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+        }
+        if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+            return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+        }
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+    }
+
+    // Pobieranie pojedynczego pliku z rozpakowanego archiwum ZIP w locie
+    window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
+        const path = decodeURIComponent(encodedPath);
+        const filename = decodeURIComponent(encodedFilename);
+        const unzipped = window._activeUnzippedArchive;
+        if (!unzipped || !unzipped[path]) {
+            if (typeof showNotification === 'function') {
+                showNotification('Nie znaleziono pliku w pamięci archiwum.', 'error');
+            }
+            return;
+        }
+
+        const uint8 = unzipped[path];
+        const mime = getMimeTypeForFilename(filename);
+        const blob = new Blob([uint8], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+
+        if (typeof playSound === 'function') playSound('drop');
+        if (typeof showNotification === 'function') {
+            showNotification(`Pobrano plik: ${filename} (${formatBytes(uint8.length)})!`, 'success');
+        }
+    };
+
+    // Podgląd pojedynczego pliku z archiwum w oknie modalnym (tekst, kod, grafika, audio)
+    window.previewSingleFromArchive = function(encodedPath, encodedFilename) {
+        const path = decodeURIComponent(encodedPath);
+        const filename = decodeURIComponent(encodedFilename);
+        const unzipped = window._activeUnzippedArchive;
+        if (!unzipped || !unzipped[path]) return;
+
+        const uint8 = unzipped[path];
+        const ext = filename.split('.').pop().toLowerCase();
+        const mime = getMimeTypeForFilename(filename);
+
+        const modal = document.getElementById('archiveQuickPreviewModal');
+        const content = document.getElementById('archivePreviewContent');
+        const title = document.getElementById('archivePreviewTitle');
+        const sizeBadge = document.getElementById('archivePreviewSizeBadge');
+        const iconSpan = document.getElementById('archivePreviewIcon');
+        const copyBtn = document.getElementById('archivePreviewCopyBtn');
+        const dlBtn = document.getElementById('archivePreviewDownloadBtn');
+        const closeBtn = document.getElementById('archivePreviewCloseBtn');
+        const backdrop = document.getElementById('archivePreviewBackdrop');
+
+        if (!modal || !content) return;
+
+        title.textContent = filename;
+        title.title = path;
+        sizeBadge.textContent = formatBytes(uint8.length);
+        iconSpan.innerHTML = getMiniFileSvg(filename);
+
+        dlBtn.onclick = () => window.downloadSingleFromArchive(encodedPath, encodedFilename);
+
+        // Obraz
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) {
+            copyBtn.style.display = 'none';
+            const blob = new Blob([uint8], { type: mime });
+            const blobUrl = URL.createObjectURL(blob);
+            content.innerHTML = `<img src="${blobUrl}" alt="${filename}" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">`;
+            modal._cleanupBlob = () => URL.revokeObjectURL(blobUrl);
+        } 
+        // Kod / Tekst
+        else if (['txt', 'json', 'js', 'html', 'css', 'md', 'py', 'java', 'c', 'cpp', 'xml', 'yaml', 'yml'].includes(ext)) {
+            copyBtn.style.display = 'inline-flex';
+            const text = new TextDecoder().decode(uint8.slice(0, 100000));
+            content.innerHTML = `<pre class="archive-preview-code">${escapeHtml(text)}</pre>`;
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(text).then(() => {
+                    if (typeof playSound === 'function') playSound('copy');
+                    if (typeof showNotification === 'function') {
+                        showNotification(typeof t === 'function' ? t('zip_text_copied') : 'Skopiowano tekst do schowka!', 'success');
+                    }
+                });
+            };
+        } 
+        // Audio
+        else if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) {
+            copyBtn.style.display = 'none';
+            const blob = new Blob([uint8], { type: mime });
+            const blobUrl = URL.createObjectURL(blob);
+            content.innerHTML = `
+                <div style="text-align: center; padding: 24px;">
+                    <div style="font-size: 40px; margin-bottom: 12px;">🎵</div>
+                    <audio controls autoplay src="${blobUrl}" style="width: 100%; max-width: 400px;"></audio>
+                </div>
+            `;
+            modal._cleanupBlob = () => URL.revokeObjectURL(blobUrl);
+        } 
+        // Plik bez podglądu
+        else {
+            copyBtn.style.display = 'none';
+            content.innerHTML = `
+                <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+                    <div style="font-size: 48px; margin-bottom: 12px;">📦</div>
+                    <p style="font-size: 14px; margin-bottom: 16px;">Plik binarny (brak bezpośredniego podglądu w przeglądarce).</p>
+                    <button type="button" class="btn-primary" onclick="window.downloadSingleFromArchive('${encodedPath}', '${encodedFilename}')" style="margin: 0 auto;">
+                        Pobierz ten plik (${formatBytes(uint8.length)})
+                    </button>
+                </div>
+            `;
+        }
+
+        const closeModal = () => {
+            modal.hidden = true;
+            modal.style.display = 'none';
+            content.innerHTML = '';
+            if (modal._cleanupBlob) {
+                modal._cleanupBlob();
+                modal._cleanupBlob = null;
+            }
+            document.removeEventListener('keydown', handleEsc);
+        };
+
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') closeModal();
+        };
+
+        closeBtn.onclick = closeModal;
+        backdrop.onclick = closeModal;
+        document.addEventListener('keydown', handleEsc);
+
+        modal.hidden = false;
+        modal.style.display = 'flex';
+    };
+
+    // Podgląd powiększenia obrazu (Lightbox)
+    window.openDownloadImageLightbox = function(imageUrl, title) {
+        const modal = document.getElementById('dlLightboxModal');
+        const img = document.getElementById('dlLightboxImg');
+        const titleEl = document.getElementById('dlLightboxTitle');
+        const openNewTab = document.getElementById('dlLightboxOpenNewTab');
+        const closeBtn = document.getElementById('dlLightboxCloseBtn');
+        const backdrop = document.getElementById('dlLightboxBackdrop');
+        const zoomToggle = document.getElementById('dlLightboxZoomToggle');
+        const zoomInIcon = document.getElementById('dlZoomInIcon');
+        const zoomOutIcon = document.getElementById('dlZoomOutIcon');
+        const zoomStatus = document.getElementById('dlZoomStatusText');
+
+        if (!modal || !img) return;
+
+        img.src = imageUrl;
+        if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
+        if (openNewTab) openNewTab.href = imageUrl;
+
+        let isZoomed = false;
+        const updateZoom = (zoomed) => {
+            isZoomed = zoomed;
+            img.style.maxHeight = isZoomed ? 'none' : '75vh';
+            img.style.cursor = isZoomed ? 'zoom-out' : 'zoom-in';
+            if (zoomInIcon) zoomInIcon.style.display = isZoomed ? 'none' : 'block';
+            if (zoomOutIcon) zoomOutIcon.style.display = isZoomed ? 'block' : 'none';
+            if (zoomStatus) zoomStatus.textContent = isZoomed ? 'Dopasuj' : 'Powiększ';
+        };
+        updateZoom(false);
+
+        if (zoomToggle) {
+            zoomToggle.onclick = () => updateZoom(!isZoomed);
+        }
+        img.onclick = () => updateZoom(!isZoomed);
+
+        const closeModal = () => {
+            modal.hidden = true;
+            modal.style.display = 'none';
+            img.src = '';
+            document.removeEventListener('keydown', handleEsc);
+        };
+
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') closeModal();
+        };
+
+        if (closeBtn) closeBtn.onclick = closeModal;
+        if (backdrop) backdrop.onclick = closeModal;
+        document.addEventListener('keydown', handleEsc);
+
+        modal.hidden = false;
+        modal.style.display = 'flex';
+    };
+
     // Funkcja do renderowania podglądów i odtwarzacza audio
     function renderDownloadPreview(cleanName, directUrl) {
         if (!dlPreviewContainer || !directUrl) return;
@@ -4318,13 +4857,18 @@ async function initDownloadRouter() {
                         </div>
                         <div class="archive-title-box">
                             <strong class="archive-bundle-title">${cleanName}</strong>
-                            <span class="archive-bundle-sub" id="archiveSubLabel">Odczytywanie zawartości archiwum...</span>
+                            <span class="archive-bundle-sub" id="archiveSubLabel">Odczytywanie zawartości archiwum (Smart ZIP)...</span>
                         </div>
                     </div>
+                    <div class="archive-search-wrap" id="archiveSearchWrap" style="display: none;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="archiveSearchInput" placeholder="Szukaj pliku w archiwum (np. .jpg, umowa)..." class="archive-search-input">
+                        <span class="archive-count-badge" id="archiveFilterCount">0 plików</span>
+                    </div>
                     <div class="archive-file-list" id="archiveFileList">
-                        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">
-                            <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #C4E7D4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
-                            Odczyt spisu plików w paczce...
+                        <div style="text-align: center; padding: 22px; color: var(--text-muted); font-size: 12.5px;">
+                            <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
+                            Analizowanie drzewa plików ZIP w pamięci RAM...
                         </div>
                     </div>
                 </div>
@@ -4342,36 +4886,83 @@ async function initDownloadRouter() {
                         fflate.unzip(uint8, (err, unzipped) => {
                             const listEl = document.getElementById('archiveFileList');
                             const subLabel = document.getElementById('archiveSubLabel');
+                            const searchWrap = document.getElementById('archiveSearchWrap');
+                            const searchInput = document.getElementById('archiveSearchInput');
+                            const filterCount = document.getElementById('archiveFilterCount');
+
                             if (err || !unzipped || !listEl) {
                                 if (subLabel) subLabel.textContent = 'Kliknij poniżej, aby pobrać całe archiwum';
-                                if (listEl) listEl.innerHTML = '<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Archiwum gotowe do pobrania całości</div>';
+                                if (listEl) listEl.innerHTML = '<div style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px;">Archiwum gotowe do bezpośredniego pobrania</div>';
                                 return;
                             }
 
                             const fileEntries = Object.keys(unzipped).filter(k => !k.endsWith('/') && unzipped[k].length > 0);
-                            if (subLabel) subLabel.textContent = `Zawiera ${fileEntries.length} ${fileEntries.length === 1 ? 'plik' : 'plików'}`;
+                            let totalUncompressedSize = 0;
+                            fileEntries.forEach(k => { totalUncompressedSize += unzipped[k].length; });
+
+                            if (subLabel) {
+                                subLabel.textContent = `Zawiera ${fileEntries.length} ${fileEntries.length === 1 ? 'plik' : 'plików'} • ${formatBytes(totalUncompressedSize)} po rozpakowaniu`;
+                            }
 
                             window._activeUnzippedArchive = unzipped;
 
-                            listEl.innerHTML = fileEntries.map(path => {
-                                const size = unzipped[path].length;
-                                const filename = path.split('/').pop() || path;
-                                return `
-                                    <div class="archive-file-row">
-                                        <div class="archive-file-left">
-                                            <span class="archive-file-icon">${getMiniFileSvg(filename)}</span>
-                                            <span class="archive-file-name" title="${path}">${path}</span>
+                            if (searchWrap && fileEntries.length > 3) {
+                                searchWrap.style.display = 'flex';
+                            }
+                            if (filterCount) {
+                                filterCount.textContent = `${fileEntries.length} ${fileEntries.length === 1 ? 'plik' : 'plików'}`;
+                            }
+
+                            const canPreview = (fname) => {
+                                const ext = fname.split('.').pop().toLowerCase();
+                                return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'txt', 'json', 'js', 'html', 'css', 'md', 'py', 'mp3', 'wav', 'ogg'].includes(ext);
+                            };
+
+                            const renderFileList = (entriesToRender) => {
+                                if (entriesToRender.length === 0) {
+                                    listEl.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Nie znaleziono plików pasujących do zapytania</div>';
+                                    return;
+                                }
+
+                                listEl.innerHTML = entriesToRender.map(path => {
+                                    const size = unzipped[path].length;
+                                    const filename = path.split('/').pop() || path;
+                                    const hasPreview = canPreview(filename);
+                                    return `
+                                        <div class="archive-file-row">
+                                            <div class="archive-file-left">
+                                                <span class="archive-file-icon">${getMiniFileSvg(filename)}</span>
+                                                <span class="archive-file-name" title="${path}">${path}</span>
+                                            </div>
+                                            <div class="archive-file-right">
+                                                <span class="archive-size-badge">${formatBytes(size)}</span>
+                                                ${hasPreview ? `
+                                                <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                    Podgląd
+                                                </button>
+                                                ` : ''}
+                                                <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')">
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                    Pobierz
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="archive-file-right">
-                                            <span class="archive-size-badge">${formatBytes(size)}</span>
-                                            <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')">
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                                Pobierz
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('');
+                                    `;
+                                }).join('');
+                            };
+
+                            renderFileList(fileEntries);
+
+                            // Podpięcie wyszukiwarki na żywo
+                            if (searchInput) {
+                                searchInput.oninput = () => {
+                                    const q = searchInput.value.toLowerCase().trim();
+                                    const filtered = fileEntries.filter(p => p.toLowerCase().includes(q));
+                                    if (filterCount) filterCount.textContent = `${filtered.length} z ${fileEntries.length}`;
+                                    renderFileList(filtered);
+                                };
+                            }
                         });
                     })
                     .catch(() => {
@@ -4438,9 +5029,162 @@ async function initDownloadRouter() {
             dlNoteBox.hidden = false;
         }
 
+        // =========================================================================
+        // OBSŁUGA TRYBU SZPIEGOWSKIEGO (MISSION: IMPOSSIBLE 007 - HOLD TO REVEAL)
+        // =========================================================================
+        const isSpy = urlParams.get('spy') === '1' || window.location.hash.includes('spy=1') || Boolean(data.isSpy);
+        const dlCard = document.querySelector('.download-card');
+        const dlSpyOverlay = document.getElementById('dlSpyOverlay');
+        const dlSpyCountdownHUD = document.getElementById('dlSpyCountdownHUD');
+        const dlSpyTimerNumber = document.getElementById('dlSpyTimerNumber');
+        const dlSpyProgressBar = document.getElementById('dlSpyProgressBar');
+        const dlSpyDestroyedCard = document.getElementById('dlSpyDestroyedCard');
+        const btnSpyHold = document.getElementById('btnSpyHold');
+        const spyRingProgress = document.getElementById('spyRingProgress');
+
+        let spyCountdownInterval = null;
+        let isSpyDestroyed = false;
+
+        function executeSpySelfDestruct() {
+            if (isSpyDestroyed) return;
+            isSpyDestroyed = true;
+            if (spyCountdownInterval) clearInterval(spyCountdownInterval);
+
+            if (dlCard) dlCard.classList.add('spy-disintegrating');
+            playSound('error');
+
+            // Natychmiastowe usunięcie pliku z serwera R2
+            fetch(`${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}`).catch(()=>{});
+
+            setTimeout(() => {
+                if (dlCard) {
+                    dlCard.classList.remove('spy-disintegrating');
+                    // Ukryj wszystkie standardowe elementy karty
+                    const uploadHeader = dlCard.querySelector('.upload-header');
+                    if (uploadHeader) uploadHeader.style.display = 'none';
+                    if (dlContentWrap) dlContentWrap.style.display = 'none';
+                    if (dlBadgeWrap) dlBadgeWrap.style.display = 'none';
+                    if (dlSpyOverlay) dlSpyOverlay.style.display = 'none';
+                    if (dlSpyCountdownHUD) dlSpyCountdownHUD.style.display = 'none';
+                    if (dlPasswordLockBox) dlPasswordLockBox.style.display = 'none';
+                    if (dlNoteBox) dlNoteBox.style.display = 'none';
+                    const burnWarn = document.getElementById('dlBurnWarning');
+                    if (burnWarn) burnWarn.style.display = 'none';
+                    const promoCard = dlCard.querySelector('.dl-promo-card');
+                    if (promoCard) promoCard.style.display = 'none';
+                    const brandBanner = document.getElementById('dlCreatorBrandBanner');
+                    if (brandBanner) brandBanner.style.display = 'none';
+                }
+
+                if (dlSpyDestroyedCard) {
+                    dlSpyDestroyedCard.hidden = false;
+                    dlSpyDestroyedCard.style.display = 'flex';
+                }
+
+                if (typeof showNotification === 'function') {
+                    showNotification(typeof t === 'function' ? t('spy_destroyed_title') : 'Plik uległ samozniszczeniu i został bezpowrotnie usunięty z serwera.', 'error');
+                }
+            }, 750);
+        }
+
+        if (isSpy) {
+            if (dlCard) dlCard.classList.add('is-spy-active');
+            if (dlSpyOverlay) {
+                dlSpyOverlay.hidden = false;
+                dlSpyOverlay.style.display = 'flex';
+            }
+
+            // Inicjalizacja mechaniki Hold-to-Reveal
+            if (btnSpyHold && spyRingProgress) {
+                const TOTAL_PERIMETER = 326.7; // 2 * PI * 52
+                const REQUIRED_HOLD_MS = 1200; // 1.2 sekundy
+                let holdStartTime = null;
+                let holdAnimFrame = null;
+                let isRevealed = false;
+
+                function updateHoldProgress() {
+                    if (!holdStartTime || isRevealed) return;
+                    const elapsed = Date.now() - holdStartTime;
+                    const progress = Math.min(1, elapsed / REQUIRED_HOLD_MS);
+                    const offset = TOTAL_PERIMETER * (1 - progress);
+                    spyRingProgress.style.strokeDashoffset = offset;
+
+                    if (progress >= 1) {
+                        isRevealed = true;
+                        if (navigator.vibrate) {
+                            try { navigator.vibrate([40, 70, 40]); } catch(_) {}
+                        }
+                        playSound('success');
+
+                        dlSpyOverlay.classList.add('revealed');
+                        setTimeout(() => {
+                            dlSpyOverlay.style.display = 'none';
+                        }, 500);
+
+                        // Uruchomienie licznika samozniszczenia (30 sekund)
+                        if (dlSpyCountdownHUD) {
+                            dlSpyCountdownHUD.hidden = false;
+                            dlSpyCountdownHUD.style.display = 'flex';
+                        }
+
+                        let secondsLeft = 30;
+                        if (dlSpyTimerNumber) dlSpyTimerNumber.textContent = `${secondsLeft}s`;
+                        if (dlSpyProgressBar) dlSpyProgressBar.style.width = '100%';
+
+                        spyCountdownInterval = setInterval(() => {
+                            secondsLeft--;
+                            if (dlSpyTimerNumber) dlSpyTimerNumber.textContent = `${secondsLeft}s`;
+                            if (dlSpyProgressBar) {
+                                dlSpyProgressBar.style.width = `${(secondsLeft / 30) * 100}%`;
+                            }
+
+                            if (secondsLeft <= 5) {
+                                if (dlSpyCountdownHUD) dlSpyCountdownHUD.classList.add('critical');
+                                playSound('error');
+                            }
+
+                            if (secondsLeft <= 0) {
+                                clearInterval(spyCountdownInterval);
+                                executeSpySelfDestruct();
+                            }
+                        }, 1000);
+
+                        return;
+                    }
+
+                    holdAnimFrame = requestAnimationFrame(updateHoldProgress);
+                }
+
+                function startHold(e) {
+                    if (isRevealed || isSpyDestroyed) return;
+                    e.preventDefault();
+                    btnSpyHold.classList.add('is-pressing');
+                    holdStartTime = Date.now();
+                    playSound('copy');
+                    holdAnimFrame = requestAnimationFrame(updateHoldProgress);
+                }
+
+                function stopHold(e) {
+                    if (isRevealed) return;
+                    btnSpyHold.classList.remove('is-pressing');
+                    holdStartTime = null;
+                    if (holdAnimFrame) cancelAnimationFrame(holdAnimFrame);
+                    spyRingProgress.style.strokeDashoffset = TOTAL_PERIMETER;
+                }
+
+                btnSpyHold.addEventListener('pointerdown', startHold);
+                btnSpyHold.addEventListener('pointerup', stopHold);
+                btnSpyHold.addEventListener('pointercancel', stopHold);
+                btnSpyHold.addEventListener('mouseleave', stopHold);
+            }
+        }
+
         // Badges
         let badgeHtml = '';
-        if (data.isBurn) {
+        if (isSpy) {
+            badgeHtml = '<span class="badge-spy-viral-pill" style="font-size: 11px; padding: 4px 10px;">🕵️‍♂️ Tryb Szpiegowski 007</span> <span class="dl-badge burn" style="margin-left: 6px;">Samozniszczenie (Hold to Reveal)</span>';
+            if (dlBurnWarning) dlBurnWarning.hidden = true;
+        } else if (data.isBurn) {
             badgeHtml = '<span class="dl-badge burn">Jednorazowy (Burn after download)</span>';
             if (dlBurnWarning) dlBurnWarning.hidden = false;
         } else if (data.expiryType === 'permanent') {
@@ -4579,7 +5323,11 @@ async function initDownloadRouter() {
                 dlDownloadCount.textContent = current + 1;
             }
 
-            if (data.isBurn) {
+            if (isSpy) {
+                setTimeout(() => {
+                    executeSpySelfDestruct();
+                }, 1200);
+            } else if (data.isBurn) {
                 setTimeout(() => {
                     const btnText = dlDownloadBtn.querySelector('.btn-text');
                     if (btnText) btnText.textContent = '🔥 Plik pobrany i zniszczony z serwera';

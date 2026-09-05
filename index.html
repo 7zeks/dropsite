@@ -122,7 +122,9 @@
     }
     </script>
 
-    <link rel="icon" type="image/jpeg" href="favicon.jpg">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
@@ -578,6 +580,25 @@
                                     </span>
                                 </label>
                                 <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 38px;" data-i18n="adv_encryption_hint">File will be encrypted in your browser before upload. Key lives only in your link.</p>
+                            </div>
+
+                            <!-- TRYB SZPIEGOWSKI (MISSION: IMPOSSIBLE - VIRAL) -->
+                            <div class="adv-field" style="margin-top: 10px;">
+                                <label class="custom-switch-label" for="spyModeCheckbox" style="cursor: pointer;">
+                                    <div class="custom-switch">
+                                        <input type="checkbox" id="spyModeCheckbox">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                    <span class="switch-text" style="display: flex; align-items: center; gap: 6px;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <span data-i18n="adv_spymode_toggle">Spy Mode (Mission: Impossible)</span>
+                                        <span class="badge-spy-viral-pill">VIRAL 🔥</span>
+                                    </span>
+                                </label>
+                                <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 38px;" data-i18n="adv_spymode_hint">Recipient must hold down to reveal. Self-destructs and gets deleted after 30 seconds.</p>
                             </div>
                         </div>
                     </div>
@@ -1190,30 +1211,48 @@
 
                             <div class="convert-options-grid" id="convertOptionsGrid">
                                 <div class="form-group">
-                                    <label id="convertTargetFormatLabel">Format docelowy konwersji:</label>
+                                    <label id="convertTargetFormatLabel" data-i18n="convert_target_format_label">Format docelowy konwersji:</label>
                                     <div class="format-chips-group" id="convertChipsGroup">
-                                        <label class="format-chip">
+                                        <label class="format-chip" id="chipFormatPng">
                                             <input type="radio" name="convertTargetFormat" value="image/png" checked>
                                             <span>PNG (Bezstratny)</span>
                                         </label>
-                                        <label class="format-chip">
+                                        <label class="format-chip" id="chipFormatJpg">
                                             <input type="radio" name="convertTargetFormat" value="image/jpeg">
                                             <span>JPG (Lekki)</span>
                                         </label>
-                                        <label class="format-chip">
+                                        <label class="format-chip" id="chipFormatWebp">
                                             <input type="radio" name="convertTargetFormat" value="image/webp">
                                             <span>WebP (Nowoczesny)</span>
                                         </label>
-                                        <label class="format-chip">
+                                        <label class="format-chip" id="chipFormatPdf">
                                             <input type="radio" name="convertTargetFormat" value="application/pdf">
                                             <span>Dokument PDF (A4)</span>
                                         </label>
                                     </div>
                                 </div>
 
-                                <div class="form-group" id="convertQualityWrap">
+                                <div class="form-group" id="convertDpiGroup" style="display: none;">
+                                    <label data-i18n="convert_dpi_label">Jakość i ostrość (DPI):</label>
+                                    <div class="convert-dpi-chips" id="convertDpiChipsGroup">
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertDpi" value="1.5">
+                                            <span data-i18n="convert_dpi_std">Standardowa (150 DPI)</span>
+                                        </label>
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertDpi" value="2.0" checked>
+                                            <span data-i18n="convert_dpi_high">Wysoka (200 DPI) • Zalecana</span>
+                                        </label>
+                                        <label class="format-chip">
+                                            <input type="radio" name="convertDpi" value="3.0">
+                                            <span data-i18n="convert_dpi_ultra">Ultra HD (300 DPI) • Druk</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" id="convertQualityWrap" style="display: none;">
                                     <div class="form-row-between">
-                                        <label>Jakość kompresji:</label>
+                                        <label data-i18n="convert_quality_label">Jakość kompresji:</label>
                                         <strong id="convertQualityValLabel">85%</strong>
                                     </div>
                                     <input type="range" id="convertQualitySlider" min="50" max="100" value="85" class="tool-range-slider"
@@ -1239,8 +1278,8 @@
                                         <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"></path>
                                     </svg>
                                 </div>
-                                <strong class="tool-drop-title">Wybierz lub upuść plik PDF do kompresji</strong>
-                                <span class="tool-drop-sub">Zmniejsz wagę dokumentu z zachowaniem czytelności tekstu (100% w przeglądarce)</span>
+                                <strong class="tool-drop-title" data-i18n="tool_compress_drop_title">Wybierz lub upuść plik PDF do kompresji</strong>
+                                <span class="tool-drop-sub" data-i18n="tool_compress_drop_sub">Zmniejsz wagę dokumentu z zachowaniem czytelności tekstu (100% w przeglądarce)</span>
                             </div>
 
                             <div id="compressFileInfo" class="tool-loaded-file" style="display: none;">
@@ -1257,43 +1296,53 @@
                             </div>
 
                             <div class="compress-options-wrap" id="compressOptionsWrap" style="display: none; margin-top: 18px;">
-                                <label style="font-size: 0.85rem; font-weight: 600; color: #CBD5E1; margin-bottom: 10px; display: block;">Wybierz profil kompresji:</label>
+                                <label style="font-size: 0.85rem; font-weight: 600; color: #CBD5E1; margin-bottom: 10px; display: block;" data-i18n="compress_profile_label">Wybierz profil kompresji:</label>
                                 <div class="compress-profile-cards">
                                     <label class="compress-profile-card">
                                         <input type="radio" name="compressProfile" value="low">
                                         <div class="compress-card-content">
                                             <div class="compress-card-header">
-                                                <strong>Lekka kompresja</strong>
-                                                <span class="compress-tag">Wysoka jakość</span>
+                                                <strong data-i18n="compress_low_title">Lekka kompresja</strong>
+                                                <span class="compress-tag" data-i18n="compress_low_tag">Wysoka jakość</span>
                                             </div>
-                                            <p>Optymalizacja struktur i strumieni PDF. Czysty wektor, redukcja 10%–25%.</p>
+                                            <p data-i18n="compress_low_desc">Optymalizacja struktur i strumieni PDF. Czysty wektor, redukcja 10%–25%.</p>
+                                            <span class="compress-est-badge" id="compressEstLow"></span>
                                         </div>
                                     </label>
                                     <label class="compress-profile-card active">
                                         <input type="radio" name="compressProfile" value="medium" checked>
                                         <div class="compress-card-content">
                                             <div class="compress-card-header">
-                                                <strong>Zalecana kompresja</strong>
-                                                <span class="compress-tag compress-tag-rec">Optymalna (150 DPI)</span>
+                                                <strong data-i18n="compress_med_title">Zalecana kompresja</strong>
+                                                <span class="compress-tag compress-tag-rec" data-i18n="compress_med_tag">Optymalna (150 DPI)</span>
                                             </div>
-                                            <p>Idealny kompromis między ostrością a wagą. Wyraźny tekst, redukcja 40%–60%.</p>
+                                            <p data-i18n="compress_med_desc">Idealny kompromis między ostrością a wagą. Wyraźny tekst, redukcja 40%–60%.</p>
+                                            <span class="compress-est-badge" id="compressEstMed"></span>
                                         </div>
                                     </label>
                                     <label class="compress-profile-card">
                                         <input type="radio" name="compressProfile" value="high">
                                         <div class="compress-card-content">
                                             <div class="compress-card-header">
-                                                <strong>Maksymalna kompresja</strong>
-                                                <span class="compress-tag compress-tag-max">E-mail / ePUAP (96 DPI)</span>
+                                                <strong data-i18n="compress_high_title">Maksymalna kompresja</strong>
+                                                <span class="compress-tag compress-tag-max" data-i18n="compress_high_tag">E-mail / ePUAP (96 DPI)</span>
                                             </div>
-                                            <p>Głęboka redukcja rozmiaru dla urzędów i załączników e-mail, redukcja do 80%.</p>
+                                            <p data-i18n="compress_high_desc">Głęboka redukcja rozmiaru dla urzędów i załączników e-mail, redukcja do 80%.</p>
+                                            <span class="compress-est-badge" id="compressEstHigh"></span>
                                         </div>
                                     </label>
                                 </div>
                             </div>
 
+                            <div id="compressProgressWrap" class="tool-progress-wrap" style="display: none; margin-top: 16px;">
+                                <div class="tool-progress-track" style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+                                    <div class="tool-progress-bar" id="compressProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #38BDF8, #C4E7D4); transition: width 0.3s ease;"></div>
+                                </div>
+                                <span class="tool-progress-text" id="compressProgressText" style="font-size: 11.5px; color: #94A3B8;">Przetwarzanie dokumentu...</span>
+                            </div>
+
                             <button type="button" class="btn-primary tool-action-btn" id="btnExecuteCompress" disabled style="margin-top: 20px;">
-                                <span class="btn-text">Kompresuj plik PDF</span>
+                                <span class="btn-text" data-i18n="tool_btn_compress_action">Kompresuj plik PDF</span>
                             </button>
 
                             <div id="compressResultBox" style="display: none;"></div>
@@ -1409,6 +1458,7 @@
                             <button class="btn-select"
                                 onclick="document.querySelector('[data-target=\'view-glowna\']').click()" data-i18n="plan_free_action">Current plan</button>
                         </div>
+
                         <div class="pricing-card premium">
                             <div class="pricing-badge-gold" data-i18n="plan_pro_badge">Most Popular ✦</div>
                             <h3 data-i18n="plan_pro_title">Dropsite PRO</h3>
@@ -1593,6 +1643,62 @@
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
                         <span data-i18n="dl_vault_badge">Ultra-secure transfer protected by end-to-end encryption (AES-256-GCM)</span>
+                    </div>
+
+                    <!-- ODROCZONY LICZNIK SAMOZNISZCZENIA DLA TRYBU SZPIEGOWSKIEGO -->
+                    <div id="dlSpyCountdownHUD" class="spy-countdown-hud" hidden style="display: none;">
+                        <div class="spy-countdown-hud-header">
+                            <div class="spy-countdown-left">
+                                <span class="spy-countdown-flame">🔥</span>
+                                <span class="spy-countdown-label" data-i18n="spy_countdown_label">SAMOZNISZCZENIE ZA:</span>
+                            </div>
+                            <strong class="spy-countdown-timer" id="dlSpyTimerNumber">30s</strong>
+                        </div>
+                        <div class="spy-progress-track"><div class="spy-progress-bar" id="dlSpyProgressBar"></div></div>
+                    </div>
+
+                    <!-- NAKŁADKA HOLD TO REVEAL (TRYB SZPIEGOWSKI) -->
+                    <div id="dlSpyOverlay" class="spy-mode-overlay" hidden style="display: none;">
+                        <div class="spy-scan-beam"></div>
+                        <div class="spy-top-secret-badge">
+                            <span class="spy-pulse-dot"></span>
+                            <span data-i18n="spy_top_secret_badge">ŚCIŚLE TAJNE // TOP SECRET</span>
+                        </div>
+                        <div class="spy-lock-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <h2 class="spy-title" data-i18n="spy_warning_title">Ta wiadomość ulegnie samozniszczeniu</h2>
+                        <p class="spy-subtitle" data-i18n="spy_warning_sub">Naciśnij i przytrzymaj palec lub myszkę, aby odsłonić zawartość pliku.</p>
+                        
+                        <div class="spy-hold-container">
+                            <button type="button" class="btn-spy-hold" id="btnSpyHold" aria-label="Przytrzymaj, aby odsłonić">
+                                <svg class="spy-hold-ring" viewBox="0 0 120 120">
+                                    <circle class="spy-ring-bg" cx="60" cy="60" r="52"></circle>
+                                    <circle class="spy-ring-progress" id="spyRingProgress" cx="60" cy="60" r="52"></circle>
+                                </svg>
+                                <div class="spy-hold-inner">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4z"></path>
+                                    </svg>
+                                    <span id="spyHoldBtnLabel" data-i18n="spy_hold_btn_text">Przytrzymaj</span>
+                                </div>
+                            </button>
+                            <p class="spy-hold-hint">Wymagane 1.5 sekundy przytrzymania</p>
+                        </div>
+                    </div>
+
+                    <!-- EKRAN PO SAMOZNISZCZENIU PLIKU -->
+                    <div id="dlSpyDestroyedCard" class="spy-destroyed-card" hidden style="display: none;">
+                        <div class="spy-burn-ashes-icon">💨</div>
+                        <h2 class="spy-destroyed-title" data-i18n="spy_destroyed_title">PLIK ULEGŁ SAMOZNISZCZENIU</h2>
+                        <p class="spy-destroyed-sub" data-i18n="spy_destroyed_sub">Ten dokument został bezpowrotnie spopielony i usunięty z serwera. Żadne kopie nie istnieją.</p>
+                        <button type="button" class="btn-primary" onclick="if(window.navigateToHome){ window.navigateToHome(true); } else { document.querySelector('[data-target=\'view-glowna\']').click(); }" style="margin-top: 24px; width: 100%; max-width: 320px;">
+                            <span class="btn-text" data-i18n="spy_send_own">Wyślij własny tajny plik</span>
+                            <div class="btn-ripple"></div>
+                        </button>
                     </div>
 
                     <header class="upload-header" style="text-align: center;">
@@ -1926,7 +2032,7 @@
                         <h3>📊 Symulator Rentowności Dropsite (Prognoza Zysków)</h3>
                         <span class="admin-card-badge">Kalkulator Biznesowy</span>
                     </div>
-                    <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Sprawdź, ile zarobisz na czysto przy określonej skali subskrybentów PRO (14,99 zł/mc) i mikropłatnościach BLIK (2,50 zł), po odliczeniu kosztów magazynu R2:</p>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 16px 0;">Sprawdź, ile zarobisz na czysto przy określonej skali subskrybentów PRO (14,99 zł/mc), po odliczeniu kosztów magazynu R2 i prowizji płatności:</p>
                     
                     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
                         <span style="font-size: 13px; font-weight: 600;">Liczba klientów PRO:</span>
@@ -2554,6 +2660,15 @@
                 </button>
             </div>
 
+            <!-- Dynamiczny Banner Konwersji dla plików powyżej 250 MB -->
+            <div id="proModalConversionBanner" class="pro-modal-conv-banner" hidden>
+                <div class="pro-modal-conv-badge">⚡ DUŻY PLIK (POWYŻEJ 250 MB)</div>
+                <div class="pro-modal-conv-content">
+                    <h3 id="proModalConvTitle" class="pro-modal-conv-title">Twój plik przekracza limit 250 MB</h3>
+                    <p id="proModalConvDesc" class="pro-modal-conv-desc">Odblokuj konto Dropsite PRO (14,99 zł), aby przesyłać potężne pliki do 10 GB z pełną prędkością.</p>
+                </div>
+            </div>
+
             <div class="pro-features-summary">
                 <div class="pro-feature-item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.5">
@@ -2701,6 +2816,80 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL NATYWNY BLIK (PŁATNOŚĆ PRO 30 DNI) -->
+    <div id="blikModalWrap" class="mod-modal" hidden>
+        <div class="mod-container blik-modal-container" style="max-width: 440px;">
+            <div class="mod-header blik-modal-header">
+                <div class="blik-header-brand">
+                    <img src="blik.svg" alt="BLIK" class="blik-logo-img">
+                    <div>
+                        <h2 id="blikModalTitle" data-i18n="blik_modal_title">Płatność kodem BLIK</h2>
+                        <span class="blik-modal-amount" id="blikModalAmount">14.99 PLN</span>
+                    </div>
+                </div>
+                <button type="button" id="closeBlikModal" class="mod-close" aria-label="Zamknij okno BLIK">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="blik-modal-body">
+                <div id="blikInputSection">
+                    <p class="blik-instruction-text" data-i18n="blik_instruction">
+                        Wpisz 6-cyfrowy kod z aplikacji Twojego banku (mBank, PKO, Santander, ING, Millennium, Alior itp.):
+                    </p>
+
+                    <!-- 6 segmentowanych cyfr BLIK -->
+                    <div class="blik-digits-wrapper" id="blikDigitsWrapper">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="0" autofocus autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="1" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="2" autocomplete="off">
+                        <div class="blik-digit-separator"></div>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="3" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="4" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="blik-digit-input" data-index="5" autocomplete="off">
+                    </div>
+
+                    <button type="button" id="btnSubmitBlikCode" class="btn-primary blik-submit-btn" disabled>
+                        <span class="btn-text" data-i18n="blik_submit_btn">Zatwierdź kod BLIK (14,99 zł)</span>
+                        <div class="btn-ripple"></div>
+                    </button>
+                </div>
+
+                <div id="blikWaitingState" class="blik-waiting-state" hidden>
+                    <div class="blik-spinner-ring"></div>
+                    <div class="blik-waiting-info">
+                        <h4 data-i18n="blik_waiting_title">Potwierdź transakcję w telefonie</h4>
+                        <p data-i18n="blik_waiting_desc">Otwórz powiadomienie z aplikacji swojego banku i zatwierdź płatność kodem PIN.</p>
+                        <div class="blik-countdown-badge">
+                            <span data-i18n="blik_remaining_time">Czas na zatwierdzenie:</span> <strong id="blikCountdownTimer">45s</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="blikSuccessState" class="blik-success-state" hidden>
+                    <div class="blik-success-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <h4 data-i18n="blik_success_title">Płatność zatwierdzona!</h4>
+                    <p data-i18n="blik_success_desc">Autoryzacja zakończona sukcesem. Twoje konto Dropsite PRO zostało odblokowane na 30 dni!</p>
+                </div>
+
+                <div class="blik-security-footer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span data-i18n="blik_security_text">Bezpieczna płatność mobilna standardem Polski Standard Płatności (PSP)</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL POWIĘKSZENIA ZDJĘCIA (LIGHTBOX) -->
@@ -2762,6 +2951,49 @@
             </div>
             <div class="dl-lightbox-footer">
                 <span>Kliknij zdjęcie, aby przybliżyć / oddalić &bull; Klawisz <strong>Esc</strong> zamyka</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SZYBKIEGO PODGLĄDU PLIKU Z ARCHIWUM (SMART ZIP EXPLORER) -->
+    <div id="archiveQuickPreviewModal" class="dl-lightbox-modal" hidden>
+        <div class="dl-lightbox-backdrop" id="archivePreviewBackdrop"></div>
+        <div class="dl-lightbox-wrap archive-preview-wrap" style="max-width: 780px;">
+            <div class="dl-lightbox-header">
+                <div class="dl-lightbox-info" style="display: flex; align-items: center; gap: 8px;">
+                    <span id="archivePreviewIcon" style="display: flex; align-items: center;"></span>
+                    <strong id="archivePreviewTitle" class="dl-lightbox-filename" style="max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Podgląd pliku</strong>
+                    <span id="archivePreviewSizeBadge" class="archive-size-badge"></span>
+                </div>
+                <div class="dl-lightbox-actions">
+                    <button type="button" id="archivePreviewCopyBtn" class="dl-lightbox-tool-btn" style="display: none;" title="Kopiuj zawartość do schowka">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span data-i18n="zip_copy_text">Kopiuj</span>
+                    </button>
+                    <button type="button" id="archivePreviewDownloadBtn" class="dl-lightbox-tool-btn" style="background: rgba(196, 231, 212, 0.2); border-color: rgba(196, 231, 212, 0.4); color: #C4E7D4;" title="Pobierz ten plik na dysk">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span data-i18n="zip_btn_download">Pobierz</span>
+                    </button>
+                    <button type="button" id="archivePreviewCloseBtn" class="dl-lightbox-tool-btn dl-lightbox-close-btn" aria-label="Zamknij" title="Zamknij (Esc)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="dl-lightbox-body" id="archivePreviewContent" style="min-height: 200px; max-height: 75vh; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 16px;">
+                <!-- Podgląd wstrzykiwany dynamicznie -->
+            </div>
+            <div class="dl-lightbox-footer">
+                <span>Podgląd bezpośrednio w pamięci przeglądarki &bull; Klawisz <strong>Esc</strong> zamyka</span>
             </div>
         </div>
     </div>

@@ -476,6 +476,7 @@ export default {
         const pwd = url.searchParams.get("pwd") || "";
         const maxdl = url.searchParams.get("maxdl") || "";
         const note = url.searchParams.get("note") || "";
+        const isSpy = url.searchParams.get("spy") === "1" || url.searchParams.get("spy") === "true";
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
         const isPro = isProAuthorized(request);
@@ -522,7 +523,7 @@ export default {
         let fileKey = uniqueFilename;
         if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
         else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
-        else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
+        else if (expiry === 'burn' || isSpy) fileKey = `burn/${uniqueFilename}`;
 
         // Bezpośredni zapis na dysk R2 z rozszerzonymi metadanymi i nagłówkiem Content-Type
         const detectedMime = getMimeType(filename);
@@ -537,6 +538,7 @@ export default {
                 password: pwd,
                 maxDownloads: maxdl,
                 note: note,
+                isSpy: isSpy ? "true" : "false",
                 isPro: isPro ? "true" : "false"
             }
         });
@@ -807,6 +809,7 @@ export default {
                 uploaded: object.uploaded,
                 httpMetadata: object.httpMetadata,
                 isBurn: isBurn,
+                isSpy: Boolean(meta.isSpy === "true" || meta.isSpy === true),
                 expiryType: expiryType,
                 hasPassword: hasPassword,
                 maxDownloads: maxDownloads,

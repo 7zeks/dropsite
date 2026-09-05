@@ -24,6 +24,7 @@
     // Stan Konwertera
     let convertFile = null;
     let convertFiles = [];
+    let convertRenderedUrls = [];
 
     // Stan Kompresora
     let compressFile = null;
@@ -3851,6 +3852,54 @@
     // ==========================================
     // 3. MODUŁ: KONWERTER FORMATÓW
     // ==========================================
+    function cleanupConvertRenderedUrls() {
+        if (convertRenderedUrls && convertRenderedUrls.length > 0) {
+            convertRenderedUrls.forEach(url => {
+                try { URL.revokeObjectURL(url); } catch (_) {}
+            });
+            convertRenderedUrls = [];
+        }
+    }
+
+    function updateConvertControlsState() {
+        const isPdf = convertFile && (convertFile.name.toLowerCase().endsWith('.pdf') || convertFile.type === 'application/pdf');
+        const dpiGroup = document.getElementById('convertDpiGroup');
+        const chipPdf = document.getElementById('chipFormatPdf');
+        const qualityWrap = document.getElementById('convertQualityWrap');
+        const currentTarget = document.querySelector('input[name="convertTargetFormat"]:checked')?.value || 'image/png';
+
+        if (isPdf) {
+            if (dpiGroup) dpiGroup.style.display = 'block';
+            if (chipPdf) {
+                chipPdf.style.display = 'none';
+                const pdfRadio = chipPdf.querySelector('input');
+                if (pdfRadio) pdfRadio.disabled = true;
+            }
+            // Jeśli format docelowy był ustawiony na PDF, przełącz na PNG
+            if (currentTarget === 'application/pdf') {
+                const pngRadio = document.querySelector('input[name="convertTargetFormat"][value="image/png"]');
+                if (pngRadio) pngRadio.checked = true;
+            }
+        } else {
+            if (dpiGroup) dpiGroup.style.display = 'none';
+            if (chipPdf) {
+                chipPdf.style.display = 'inline-flex';
+                const pdfRadio = chipPdf.querySelector('input');
+                if (pdfRadio) pdfRadio.disabled = false;
+            }
+        }
+
+        // Suwak jakości jest istotny dla formatów stratnych JPG i WebP
+        const effectiveTarget = document.querySelector('input[name="convertTargetFormat"]:checked')?.value || currentTarget;
+        if (qualityWrap) {
+            if (effectiveTarget === 'image/jpeg' || effectiveTarget === 'image/webp') {
+                qualityWrap.style.display = 'block';
+            } else {
+                qualityWrap.style.display = 'none';
+            }
+        }
+    }
+
     function initConvertModule() {
         const dropzone = document.getElementById('convertDropzone');
         const fileInput = document.getElementById('convertFileInput');
@@ -3885,6 +3934,12 @@
             });
         }
 
+        // Zmiana formatu docelowego aktualizuje widoczność suwaka jakości i formatów
+        const formatRadios = document.querySelectorAll('input[name="convertTargetFormat"]');
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', updateConvertControlsState);
+        });
+
         // Drag & drop
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -3905,6 +3960,7 @@
     }
 
     function resetConvertWorkspace() {
+        cleanupConvertRenderedUrls();
         const infoEl = document.getElementById('convertFileInfo');
         const multiWrap = document.getElementById('convertMultiListWrap');
         const dropzone = document.getElementById('convertDropzone');
@@ -3919,6 +3975,8 @@
             resultBox.style.display = 'none';
             resultBox.innerHTML = '';
         }
+
+        updateConvertControlsState();
     }
 
     function handleConvertFilesSelected(files) {
@@ -3944,6 +4002,7 @@
     }
 
     function renderConvertMultiList() {
+        cleanupConvertRenderedUrls();
         const wrap = document.getElementById('convertMultiListWrap');
         const grid = document.getElementById('convertThumbsGrid');
         const countEl = document.getElementById('convertMultiCount');
@@ -3952,7 +4011,10 @@
         const btnAction = document.getElementById('btnExecuteConvert');
         const resultBox = document.getElementById('convertResultBox');
 
-        if (resultBox) resultBox.style.display = 'none';
+        if (resultBox) {
+            resultBox.style.display = 'none';
+            resultBox.innerHTML = '';
+        }
 
         if (!wrap || !grid) return;
 
@@ -3975,6 +4037,8 @@
         // Automatyczne zaznaczenie PDF jako formatu docelowego dla pakietu zdjęć
         const pdfRadio = document.querySelector('input[name="convertTargetFormat"][value="application/pdf"]');
         if (pdfRadio) pdfRadio.checked = true;
+
+        updateConvertControlsState();
 
         grid.innerHTML = '';
         convertFiles.forEach((file, idx) => {
@@ -4013,6 +4077,7 @@
     }
 
     function loadConvertFile(file) {
+        cleanupConvertRenderedUrls();
         convertFile = file;
         convertFiles = [file];
         const infoEl = document.getElementById('convertFileInfo');
@@ -4023,7 +4088,10 @@
         const btnAction = document.getElementById('btnExecuteConvert');
         const resultBox = document.getElementById('convertResultBox');
 
-        if (resultBox) resultBox.style.display = 'none';
+        if (resultBox) {
+            resultBox.style.display = 'none';
+            resultBox.innerHTML = '';
+        }
         if (multiWrap) multiWrap.style.display = 'none';
         if (infoEl) infoEl.style.display = 'flex';
         if (dropzone) dropzone.style.display = 'none';
@@ -4031,18 +4099,89 @@
         if (sizeEl) sizeEl.textContent = formatBytes(file.size);
         if (btnAction) btnAction.disabled = false;
 
-        // Jeśli wgrano PDF, docelowym formatem są obrazy (PNG)
-        if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
-            const pngRadio = document.querySelector('input[name="convertTargetFormat"][value="image/png"]');
-            if (pngRadio) pngRadio.checked = true;
-            const pdfRadio = document.querySelector('input[name="convertTargetFormat"][value="application/pdf"]');
-            if (pdfRadio) pdfRadio.disabled = true;
-        } else {
-            const pdfRadio = document.querySelector('input[name="convertTargetFormat"][value="application/pdf"]');
-            if (pdfRadio) pdfRadio.disabled = false;
-        }
+        updateConvertControlsState();
 
         if (window.playSound) window.playSound('pop');
+    }
+
+    function renderConvertPdfGallery(renderedPages, outExt) {
+        const resultBox = document.getElementById('convertResultBox');
+        if (!resultBox || !renderedPages || renderedPages.length === 0) return;
+
+        const galleryWrap = document.createElement('div');
+        galleryWrap.className = 'convert-gallery-wrap';
+
+        const tGalleryTitle = window.t ? window.t('convert_pages_gallery_title') : 'Wyrenderowane strony';
+        const tGallerySub = window.t ? window.t('convert_pages_gallery_sub') : 'Pobierz dowolną stronę pojedynczo w pełnej rozdzielczości';
+        const tPage = window.t ? window.t('convert_page_num') : 'Strona';
+        const tDlSingle = window.t ? window.t('convert_dl_single') : 'Pobierz stronę';
+
+        galleryWrap.innerHTML = `
+            <div class="convert-gallery-header">
+                <span class="convert-gallery-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    ${tGalleryTitle} (${renderedPages.length})
+                </span>
+                <span class="convert-gallery-sub">${tGallerySub}</span>
+            </div>
+            <div class="convert-gallery-grid" id="convertGalleryGrid"></div>
+        `;
+
+        const grid = galleryWrap.querySelector('#convertGalleryGrid');
+
+        renderedPages.forEach((p) => {
+            const card = document.createElement('div');
+            card.className = 'convert-page-card';
+
+            card.innerHTML = `
+                <div class="convert-page-preview" title="Podgląd w pełnej rozdzielczości">
+                    <img src="${p.thumbUrl}" alt="${p.fileName}" loading="lazy">
+                    <div class="convert-page-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                        ${tPage} ${p.pageNum}
+                    </div>
+                    <div class="convert-page-zoom-hint">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Podgląd
+                    </div>
+                </div>
+                <div class="convert-page-body">
+                    <div class="convert-page-meta">
+                        <span class="convert-page-res">${p.width} × ${p.height} px</span>
+                        <span class="convert-page-size">${formatBytes(p.size)}</span>
+                    </div>
+                    <button type="button" class="btn-convert-page-dl">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>${tDlSingle} ${p.pageNum} (.${outExt.toUpperCase()})</span>
+                    </button>
+                </div>
+            `;
+
+            const preview = card.querySelector('.convert-page-preview');
+            preview.addEventListener('click', () => {
+                window.open(p.thumbUrl, '_blank');
+            });
+
+            const btnDl = card.querySelector('.btn-convert-page-dl');
+            btnDl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const a = document.createElement('a');
+                a.href = p.thumbUrl;
+                a.download = p.fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                if (window.playSound) window.playSound('drop');
+            });
+
+            grid.appendChild(card);
+        });
+
+        resultBox.appendChild(galleryWrap);
     }
 
     async function executeConvert() {
@@ -4058,6 +4197,7 @@
         try {
             // SCENARIUSZ A: Wiele obrazów połączonych w jeden wielostronicowy dokument PDF A4
             if (convertFiles.length > 1 && targetFormat === 'application/pdf') {
+                cleanupConvertRenderedUrls();
                 if (textSpan) textSpan.textContent = `Generowanie PDF (${convertFiles.length} stron)...`;
                 if (typeof PDFLib === 'undefined') throw new Error('Biblioteka PDF nie została jeszcze załadowana.');
 
@@ -4097,76 +4237,119 @@
                 return;
             }
 
-            // SCENARIUSZ B: Plik PDF do obrazów (Pojedynczy PNG lub ZIP ze wszystkimi stronami)
+            // SCENARIUSZ B: Plik PDF do obrazów (JPG / PNG / WebP z wyborem DPI i galerią stron)
             const isInputPdf = convertFile && (convertFile.type === 'application/pdf' || convertFile.name.toLowerCase().endsWith('.pdf'));
             if (isInputPdf) {
+                cleanupConvertRenderedUrls();
+                if (typeof pdfjsLib === 'undefined') throw new Error('Biblioteka PDF.js nie została załadowana.');
+
+                const dpiInput = document.querySelector('input[name="convertDpi"]:checked');
+                const scale = dpiInput ? (parseFloat(dpiInput.value) || 2.0) : 2.0;
+
+                const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
+                const outMime = validMimes.includes(targetFormat) ? targetFormat : 'image/png';
+                const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+                const outExt = extMap[outMime] || 'png';
+
                 if (textSpan) textSpan.textContent = 'Renderowanie stron PDF...';
                 const pdfData = new Uint8Array(await convertFile.arrayBuffer());
                 const pdfjsDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
                 const totalPages = pdfjsDoc.numPages;
                 const baseName = convertFile.name.replace(/\.pdf$/i, '');
 
-                if (totalPages === 1) {
-                    // Pojedyncza strona PDF -> bezpośrednio plik graficzny PNG/JPG
-                    const page = await pdfjsDoc.getPage(1);
-                    const viewport = page.getViewport({ scale: 2.0 }); // 2x DPR dla ostrości
+                const renderedPages = [];
+                const zipFiles = {};
+
+                for (let p = 1; p <= totalPages; p++) {
+                    if (textSpan) textSpan.textContent = `Renderowanie strony ${p} z ${totalPages}...`;
+                    const page = await pdfjsDoc.getPage(p);
+                    const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+                    canvas.width = Math.floor(viewport.width);
+                    canvas.height = Math.floor(viewport.height);
                     const ctx = canvas.getContext('2d');
+
+                    // Białe tło - zapobiega czarnemu tłu przy przezroczystościach w PDF dla JPG/WebP
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     await page.render({ canvasContext: ctx, viewport }).promise;
 
-                    const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-                    const outExt = extMap[targetFormat] || 'png';
-                    const outMime = targetFormat === 'application/pdf' ? 'image/png' : targetFormat;
-                    const outDataUrl = canvas.toDataURL(outMime, qualityVal);
-                    const outBlob = new Blob([dataUrlToUint8(outDataUrl)], { type: outMime });
-                    const outName = `${baseName}_strona_1.${outExt}`;
+                    const pageBlob = await new Promise((resolve) => {
+                        canvas.toBlob((blob) => resolve(blob), outMime, qualityVal);
+                    });
 
-                    showToolResult('convertResultBox', outBlob, outName, `Strona PDF została wyeksportowana jako obraz wysokiej rozdzielczości (.${outExt.toUpperCase()}).`);
+                    const pageThumbUrl = URL.createObjectURL(pageBlob);
+                    convertRenderedUrls.push(pageThumbUrl);
+
+                    const pageBuffer = await pageBlob.arrayBuffer();
+                    const pageBytes = new Uint8Array(pageBuffer);
+                    const pageFileName = `${baseName}_strona_${p}.${outExt}`;
+
+                    zipFiles[pageFileName] = pageBytes;
+                    renderedPages.push({
+                        pageNum: p,
+                        fileName: pageFileName,
+                        blob: pageBlob,
+                        thumbUrl: pageThumbUrl,
+                        width: canvas.width,
+                        height: canvas.height,
+                        size: pageBlob.size
+                    });
+                }
+
+                const dpiLabels = { '1.5': '150 DPI', '2': '200 DPI', '2.0': '200 DPI', '3': '300 DPI', '3.0': '300 DPI' };
+                const dpiText = dpiLabels[scale.toString()] || `${Math.round(scale * 100)} DPI`;
+
+                if (totalPages === 1) {
+                    // Pojedyncza strona PDF -> bezpośrednio plik graficzny
+                    const singlePage = renderedPages[0];
+                    const statusMsg = `Strona PDF została wyrenderowana jako plik .${outExt.toUpperCase()} (${dpiText}, ${singlePage.width} × ${singlePage.height} px, ${formatBytes(singlePage.size)}).`;
+                    showToolResult('convertResultBox', singlePage.blob, singlePage.fileName, statusMsg);
+                    renderConvertPdfGallery(renderedPages, outExt);
                 } else {
-                    // Wiele stron PDF -> Paczka ZIP z ponumerowanymi grafikami
-                    if (textSpan) textSpan.textContent = `Generowanie paczki ZIP (${totalPages} stron)...`;
-                    const zipFiles = {};
-
-                    for (let p = 1; p <= totalPages; p++) {
-                        if (textSpan) textSpan.textContent = `Eksport strony ${p} z ${totalPages}...`;
-                        const page = await pdfjsDoc.getPage(p);
-                        const viewport = page.getViewport({ scale: 2.0 });
-                        const canvas = document.createElement('canvas');
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        await page.render({ canvasContext: ctx, viewport }).promise;
-
-                        const pagePngData = dataUrlToUint8(canvas.toDataURL('image/png', 0.92));
-                        zipFiles[`${baseName}_strona_${p}.png`] = pagePngData;
-                    }
-
+                    // Wielostronicowy PDF -> Tworzymy archiwum ZIP ze wszystkimi stronami
+                    if (textSpan) textSpan.textContent = `Pakowanie archiwum ZIP (${totalPages} stron)...`;
                     let outBlob;
                     let outName = `${baseName}_strony.zip`;
+
                     if (typeof fflate !== 'undefined' && fflate.zipSync) {
-                        const zippedData = fflate.zipSync(zipFiles);
+                        const zippedData = fflate.zipSync(zipFiles, { level: 6 });
                         outBlob = new Blob([zippedData], { type: 'application/zip' });
+                    } else if (typeof fflate !== 'undefined' && fflate.zip) {
+                        outBlob = await new Promise((resolve, reject) => {
+                            fflate.zip(zipFiles, { level: 6 }, (err, data) => {
+                                if (err) reject(err);
+                                else resolve(new Blob([data], { type: 'application/zip' }));
+                            });
+                        });
                     } else {
-                        // Fallback: jeśli biblioteka fflate nie załadowała się, pobierz pierwszą stronę jako PNG
-                        outBlob = new Blob([zipFiles[`${baseName}_strona_1.png`]], { type: 'image/png' });
-                        outName = `${baseName}_strona_1.png`;
+                        // Fallback
+                        outBlob = renderedPages[0].blob;
+                        outName = renderedPages[0].fileName;
                     }
 
-                    showToolResult('convertResultBox', outBlob, outName, `Wszystkie ${totalPages} stron dokumentu PDF zostało wyeksportowanych do archiwum .ZIP!`);
+                    const statusMsg = `Pomyślnie wyrenderowano wszystkie ${totalPages} stron w formacie .${outExt.toUpperCase()} (${dpiText}). Gotowe archiwum .ZIP: ${formatBytes(outBlob.size)}.`;
+                    showToolResult('convertResultBox', outBlob, outName, statusMsg);
+
+                    // Dostosuj etykietę przycisku głównego pobierania na ZIP
+                    const dlBtn = document.getElementById('convertResultBox_dlBtn');
+                    if (dlBtn) {
+                        const btnText = dlBtn.querySelector('.btn-text');
+                        if (btnText) {
+                            btnText.textContent = window.t ? window.t('convert_dl_all_zip') : 'Pobierz wszystkie strony (.ZIP)';
+                        }
+                    }
+
+                    renderConvertPdfGallery(renderedPages, outExt);
                 }
 
                 if (window.playSound) window.playSound('success');
-                if (window.showNotification) window.showNotification('Pomyślnie przekonwertowano dokument PDF!', 'success');
+                if (window.showNotification) window.showNotification(`Pomyślnie przekonwertowano dokument PDF (${totalPages} ${totalPages === 1 ? 'strona' : 'stron'})!`, 'success');
                 return;
             }
 
             // SCENARIUSZ C: Pojedynczy obraz do PDF A4
+            cleanupConvertRenderedUrls();
             const baseName = convertFile.name.replace(/\.[^/.]+$/, '');
             if (targetFormat === 'application/pdf') {
                 if (typeof PDFLib === 'undefined') throw new Error('Biblioteka PDF nie została jeszcze załadowana.');
@@ -4299,6 +4482,20 @@
         if (nameEl) nameEl.textContent = file.name;
         if (sizeEl) sizeEl.textContent = formatBytes(file.size);
         if (btnAction) btnAction.disabled = false;
+
+        // Szacunki rozmiaru dla poszczególnych profili
+        const estLow = Math.max(1, Math.round(file.size * 0.85));
+        const estMed = Math.max(1, Math.round(file.size * 0.50));
+        const estHigh = Math.max(1, Math.round(file.size * 0.25));
+
+        const badgeLow = document.getElementById('compressEstLow');
+        const badgeMed = document.getElementById('compressEstMed');
+        const badgeHigh = document.getElementById('compressEstHigh');
+
+        if (badgeLow) badgeLow.textContent = `Szac.: ~${formatBytes(estLow)} (-15%)`;
+        if (badgeMed) badgeMed.textContent = `Szac.: ~${formatBytes(estMed)} (-50%)`;
+        if (badgeHigh) badgeHigh.textContent = `Szac.: ~${formatBytes(estHigh)} (-75%)`;
+
         if (window.playSound) window.playSound('pop');
     }
 
@@ -4311,6 +4508,14 @@
         const origText = textSpan ? textSpan.textContent : 'Kompresuj plik PDF';
         btnAction.disabled = true;
 
+        const progressWrap = document.getElementById('compressProgressWrap');
+        const progressBar = document.getElementById('compressProgressBar');
+        const progressText = document.getElementById('compressProgressText');
+
+        if (progressWrap) progressWrap.style.display = 'block';
+        if (progressBar) progressBar.style.width = '10%';
+        if (progressText) progressText.textContent = 'Inicjalizacja dokumentu PDF...';
+
         try {
             const rawBytes = await compressFile.arrayBuffer();
             const origSize = rawBytes.byteLength;
@@ -4319,10 +4524,17 @@
 
             if (profile === 'low') {
                 if (textSpan) textSpan.textContent = 'Optymalizacja struktur dokumentu...';
+                if (progressBar) progressBar.style.width = '40%';
+                if (progressText) progressText.textContent = 'Analiza struktur wektorowych...';
+
                 // Lekka optymalizacja struktur PDF-lib
                 const pdfDoc = await PDFLib.PDFDocument.load(rawBytes, { ignoreEncryption: true });
+                if (progressBar) progressBar.style.width = '75%';
+                if (progressText) progressText.textContent = 'Kompaktowanie strumieni danych...';
+
                 const optBytes = await pdfDoc.save({ useObjectStreams: true });
                 compressedBlob = new Blob([optBytes], { type: 'application/pdf' });
+                if (progressBar) progressBar.style.width = '95%';
             } else {
                 // Średnia (140 DPI) lub wysoka kompresja (90 DPI) z optymalizacją strumieni
                 const targetDpi = profile === 'medium' ? 140 : 90;
@@ -4333,7 +4545,11 @@
                 const newPdfDoc = await PDFLib.PDFDocument.create();
 
                 for (let p = 1; p <= totalPages; p++) {
+                    const pct = Math.round(15 + ((p - 0.5) / totalPages) * 75);
+                    if (progressBar) progressBar.style.width = `${pct}%`;
+                    if (progressText) progressText.textContent = `Kompresowanie strony ${p} z ${totalPages} (${pct}%)...`;
                     if (textSpan) textSpan.textContent = `Kompresowanie strony ${p} z ${totalPages}...`;
+
                     const page = await pdfjsDoc.getPage(p);
                     const viewport = page.getViewport({ scale: targetDpi / 72 });
 
@@ -4360,6 +4576,9 @@
                     });
                 }
 
+                if (progressBar) progressBar.style.width = '92%';
+                if (progressText) progressText.textContent = 'Zapisywanie zoptymalizowanego dokumentu...';
+
                 const outBytes = await newPdfDoc.save({ useObjectStreams: true });
                 compressedBlob = new Blob([outBytes], { type: 'application/pdf' });
             }
@@ -4370,6 +4589,9 @@
                 const optBytes = await pdfDoc.save({ useObjectStreams: true });
                 compressedBlob = new Blob([optBytes], { type: 'application/pdf' });
             }
+
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.textContent = 'Kompresja zakończona sukcesem!';
 
             const newSize = compressedBlob.size;
             const savingsPct = Math.max(5, Math.round((1 - newSize / origSize) * 100));
@@ -4390,6 +4612,12 @@
         } finally {
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;
+            if (progressWrap) {
+                setTimeout(() => {
+                    progressWrap.style.display = 'none';
+                    if (progressBar) progressBar.style.width = '0%';
+                }, 700);
+            }
         }
     }
 
@@ -4541,7 +4769,7 @@
             const pdf = fileList.find(f => f.name.toLowerCase().endsWith('.pdf')) || fileList[0];
             loadEditPdfFile(pdf);
         } else if (activeTool === 'convert') {
-            loadConvertFile(fileList[0]);
+            handleConvertFilesSelected(fileList);
         }
     };
 })();

@@ -1,37 +1,43 @@
 # 🚀 KOMPLEKSOWY MASTER PLAN MONETYZACJI: DROPSITE
 **Projekt:** Dropsite — Prywatny i Szybki Transfer Plików (Micro-SaaS)  
-**Model biznesowy:** Hybrydowy (Subskrypcje PRO + Pay-Per-Transfer BLIK + Reklamy)  
+**Model biznesowy:** Skoncentrowany PRO (Subskrypcje PRO / BLIK 30 Dni za 14,99 zł + Reklamy dla Free + Paywall Twórcy)  
 **Koszt stały infrastruktury:** **0 zł / miesiąc** (Cloudflare Pages + Workers + R2)  
 
 ---
 
 ## 📑 SPIS TREŚCI
-1. [Status Projektu & Podsumowanie Postępów](#-status-projektu--podsumowanie-postępów)
+1. [Status Projektu & Audyt Istniejących Funkcji](#-status-projektu--audyt-istniejących-funkcji)
 2. [Etap 0: Architektura Bezpieczeństwa (Zero-Trust)](#-etap-0-architektura-bezpieczeństwa-zero-trust)
 3. [Etap 1: Audyt UI/UX & Psychologia Konwersji (Triggery Zakupowe)](#-etap-1-audyt-uiux--psychologia-konwersji)
 4. [Etap 2: Hosting i Domena (Cloudflare Pages + Własna Domena)](#-etap-2-hosting-i-domena)
 5. [Etap 3: Wdrożenie Płatności & BLIK (Architektura)](#-etap-3-wdrożenie-płatności--blik)
-6. [Etap 4: Modele Monetyzacji: Subskrypcja vs Pay-Per-Transfer BLIK](#-etap-4-modele-monetyzacji)
+6. [Etap 4: Modele Monetyzacji: Dropsite PRO 14,99 zł & Paywall Twórcy](#-etap-4-modele-monetyzacji)
 7. [Etap 5: Monetyzacja z Wyświetleń & Reklam (Model Hybrydowy)](#-etap-5-monetyzacja-z-wyświetleń--reklam)
 8. [Etap 6: Kwestie Prawne i Podatkowe (Regulamin, RODO, Działalność Nierejestrowana)](#-etap-6-kwestie-prawne-i-podatkowe)
-9. [Etap 7: Playbook Dystrybucji & Kampanie Marketingowe (Gotowe Posty i Haki)](#-etap-7-playbook-dystrybucji--kampanie-marketingowe)
+9. [Etap 7: Playbook Dystrybucji & Przewaga UI nad WeTransfer](#-etap-7-playbook-dystrybucji--przewaga-ui-nad-wetransfer)
 10. [Etap 8: Ekonomia Jednostkowa i Prognoza Zysków](#-etap-8-ekonomia-jednostkowa-i-prognoza-zysków)
-11. [📋 Checklista Przedstartowa (Pre-Launch Checklist)](#-checklista-przedstartowa-pre-launch-checklist)
+11. [Etap 9: Strategiczny Roadmap Rozwoju (Wersje v1.1 – v2.0)](#-etap-9-strategiczny-roadmap-rozwoju)
+12. [Etap 10: Przełomowe Innowacje Produktowe (Efekt WOW & Przewaga nad Rynkiem)](#-etap-10-przełomowe-innowacje-produktowe)
+13. [📋 Checklista Przedstartowa (Pre-Launch Checklist)](#-checklista-przedstartowa-pre-launch-checklist)
 
 ---
 
-## 📊 STATUS PROJEKTU & PODSUMOWANIE POSTĘPÓW
+## 📊 STATUS PROJEKTU & AUDYT ISTNIEJĄCYCH FUNKCJI
 
-| Element | Status | Uwagi |
+| Element | Status | Szczegóły implementacji |
 | :--- | :--- | :--- |
-| **Rdzeń aplikacji (Upload/Download/Worker)** | ✅ Ukończone | Silnik R2, limity 250 MB / 10 GB, weryfikacja kluczy. |
-| **Branding & Favicon** | ✅ Ukończone | Nowoczesna miętowo-ciemna estetyka, ikona wpięta w kod. |
+| **Rdzeń aplikacji (Upload/Download/Worker)** | ✅ Ukończone | Silnik R2, limity 250 MB / 10 GB, weryfikacja kluczy PRO. |
+| **Branding & Złoty Favicon PRO** | ✅ Ukończone | Luksusowa złota chmura wpięta jako `favicon.ico`, `favicon.png`, `favicon.jpg` i PWA. |
 | **Migracja na Cloudflare Pages** | ✅ Ukończone | 100% darmowy, komercyjny hosting bez limitu transferu. |
-| **Konto Polar.sh (Produkt PRO)** | 🟡 W trakcie | Wstępnie skonfigurowane, przygotowanie pod integrację BLIK / EasyCart. |
-| **Własna Domena (.pl / .app)** | ❌ Do zrobienia | Niezbędna do zaufania i płatności. |
-| **Regulamin i Polityka Prywatności** | ❌ Do zrobienia | Wymóg prawny dla sprzedaży w PL/UE. |
-| **Sloty Reklamowe (AdSense / EthicalAds)** | ❌ Do zrobienia | Przygotowanie konta i wdrożenie banerów dla darmowych pobrań. |
-| **Kampania Startowa (Dystrybucja)** | ❌ Do zrobienia | Gotowe scenariusze postów (Wykop, FB, TikTok, Reddit). |
+| **Player Multimediów (Podgląd)** | ✅ Ukończone | Wbudowany odtwarzacz wideo, audio i podgląd grafik na stronie pobierania. |
+| **Pancerne Szyfrowanie (Zero-Knowledge)** | ✅ Ukończone | Klient szyfruje plik algorytmem AES-256-GCM bezpośrednio w pamięci RAM przeglądarki. |
+| **Zestaw Narzędzi PDF (Toolbox)** | ✅ Ukończone | Podpis cyfrowy, scalanie, rozdzielanie, kompresja i konwersja obrazów bez wysyłania na serwer. |
+| **Tryb Szpiegowski (007 Samozniszczenie)** | ✅ Ukończone | Przytrzymanie 1.5s, licznik 30s, animacja spopielenia i permanentne usunięcie z R2. |
+| **Smart ZIP Explorer** | ✅ Ukończone | Podgląd struktury w RAM, wyszukiwarka plików i selektywne pobieranie z archiwum. |
+| **Branding Twórcy (Signature)** | ✅ Ukończone | Pole podpisu twórcy na stronie pobierania (`Materials crafted by...`). |
+| **Regulamin i Polityka Prywatności** | ✅ Ukończone | Gotowe widoki `#view-regulamin` i `#view-polityka` zaktualizowane na 01.09.2026. |
+| **Płatności BLIK & Polar.sh** | ✅ Ukończone | Natywny modal BLIK (14,99 zł za 30 dni PRO), Polar.sh (14,99 zł/mc) i auto-aktywacja z kluczem licencyjnym. |
+| **Oficjalna Domena (dropsite.pages.dev)** | ✅ Ukończone | Zintegrowany globalny adres Cloudflare Pages z SSL i DDoS Shield. |
 
 ---
 
@@ -52,83 +58,48 @@
 
 ## 🎨 ETAP 1: Audyt UI/UX & Psychologia Konwersji
 
-Mechanizmy konwersji wbudowane bezpośrednio w moment, w którym użytkownik napotyka limit darmowy:
+### Przewaga Czystego Interfejsu:
+Interfejs Dropsite bije WeTransfer na głowę:
+1. **Zero zbędnych kroków:** Wejście ➔ Upuszczenie pliku ➔ Natychmiastowy link. Bez konieczności wpisywania maila i czekania na kod weryfikacyjny.
+2. **Nowoczesny Glassmorphism:** Eleganckie, ciemne tło z miętowo-złotymi akcentami nie męczy oczu i buduje prestiż.
+3. **Płynne przejścia:** Szklane modale, subtelne animacje mikrointerakcji.
 
-```mermaid
-flowchart LR
-    A[Użytkownik wgrywa plik np. 1.8 GB] --> B{Wybór w modalu limitu}
-    B --> C[Opcja 1: Jednorazowy BLIK 2,50 zł]
-    B --> D[Opcja 2: Subskrypcja PRO 14,99 zł/mc]
-    C --> E[Wpisanie 6 cyfr BLIK ➔ Błyskawiczny Upload]
-    D --> F[Nielimitowane konto PRO]
-```
-
-### 🎯 Komunikaty w oknie konwersji (Modal Dropsite PRO):
-* Gdy darmowy użytkownik upuści plik o wadze np. **1.8 GB (film z wakacji, zdjęcia z wesela)**:
+### Komunikat Konwersji (Modal Dropsite PRO):
+* Gdy darmowy użytkownik upuści plik o wadze np. **1.8 GB**:
   * **Nagłówek:** *„Ten plik ma 1.8 GB. Darmowy transfer obsługuje do 250 MB.”*
-  * **Główny Call to Action (Impulsowy BLIK):**  
-    👉 **[ ⚡ Wyślij ten jeden plik (do 5 GB) za 2,50 zł kodem BLIK ]**  
-    *(Bez rejestracji, bez subskrypcji, transfer startuje natychmiast)*
-  * **Drugorzędny Call to Action (Dla regularnych twórców):**  
-    👉 *„Wysyłasz regularnie? [Odblokuj nielimitowane Dropsite PRO za 14,99 zł/mc]”*
+  * **Główny Call to Action (Dropsite PRO):**  
+    👉 **[ ⚡ Odblokuj Dropsite PRO za 14,99 zł kodem BLIK lub kartą ]**  
+    *(Transfer do 10 GB, wojskowe szyfrowanie AES-256, branding twórcy, brak reklam)*
 
 ---
 
 ## 🌐 ETAP 2: Hosting i Domena
 
-### 1. Hosting (Cloudflare Pages) — ✅ ZREALIZOWANO
-* Zero kosztów stałych, brak limitu pasma (Bandwidth).
-* Zgodność z komercyjnym wykorzystaniem (w przeciwieństwie do Vercel Hobby).
-
-### 2. Własna Domena (Krok do wykonania)
-* **Rekomendacje:** `dropsite.pl` (dla rynku PL) lub `dropsite.app` (dla rynku globalnego).
-* **Koszt:** ~12–15 zł brutto za pierwszy rok w Seohost / OVH.
-* **Podpięcie:** Błyskawiczne przez Cloudflare DNS z darmowym certyfikatem SSL.
+* **Hosting:** Cloudflare Pages (darmowy, ultra-szybki globalny CDN).
+* **Własna Domena:** Zakup `dropsite.pages.dev` (koszt ok. 12 zł za 1. rok). Połączenie z Cloudflare DNS gwarantuje darmowy certyfikat SSL, ochronę DDoS oraz pełną wiarygodność przed płacącymi klientami.
 
 ---
 
 ## 💳 ETAP 3: Wdrożenie Płatności & BLIK
 
-Dla polskiego użytkownika **BLIK to bezwzględny król konwersji** (zwłaszcza przy mikropłatnościach 2,50 zł).
-
-### Ścieżki wdrożenia BLIK:
-1. **Ścieżka Szybka (Polar.sh / Stripe):**
-   * Polar.sh obsługuje karty, Apple Pay, Google Pay i metody Stripe w PLN.
-   * Zaleta: Automatyczne generowanie licencji i zero problemów z VAT.
-2. **Ścieżka Dedykowana pod Polski Rynek (EasyCart.pl):**
-   * Prawdziwy, natywny BLIK (klient wpisuje 6 cyfr w okienku na stronie).
-   * Idealny pod model mikropłatności `2,50 zł za 1 plik`.
+Dla polskiego użytkownika **BLIK to metoda płatności #1**:
+1. **Ścieżka Szybka (Polar.sh):** Bezobsługowe licencje i automatyczne rozliczenia VAT.
+2. **Ścieżka Dedykowana (Natywny BLIK):** Klasyczny natywny BLIK (klient wpisuje 6 cyfr bezpośrednio w Dropsite) – natychmiastowe odblokowanie PRO na 30 dni za 14,99 zł.
 
 ---
 
-## 💡 ETAP 4: Modele Monetyzacji (Miks Przychodów)
+## 💡 ETAP 4: Modele Monetyzacji
 
-```mermaid
-pie title Szacowany podział przychodów Dropsite
-    "Pay-Per-Transfer BLIK (2,50 zł/plik)" : 50
-    "Subskrypcje PRO (14,99 zł/mc)" : 30
-    "Reklamy na stronach darmowych pobrań" : 15
-    "Freelancer / B2B Branding" : 5
-```
+### 1. Dropsite PRO (14,99 PLN / miesiąc lub 30 Dni BLIK)
+* **Zasada:** Brak zbierania drobnych po 2,50 zł – 15 zł to i tak bardzo niska, bezkonkurencyjna cena na rynku za pełne konto PRO.
+* **Co zyskuje klient:** Transfery do 10 GB (4K wideo, archiwa), personalizowany branding twórcy na stronie pobierania, szyfrowanie AES-256 w RAM, streaming w locie, retencja do 30 dni lub permanentna, 100% brak reklam.
+* **Elastyczność:** Subskrypcja z karty (Polar.sh) lub jednorazowy dostęp na 30 dni kodem BLIK bez podpinania karty.
 
-### 1. "Pay-Per-Transfer" BLIK (2,50 PLN jednorazowo) — GŁÓWNY MOTOR NAPĘDOWY
-* **Sytuacja życiowa klienta:** *Gdy ktoś raz na jakiś czas musi pilnie wysłać film z wakacji (2 GB), paczkę zdjęć z wesela czy projekt dla klienta.*
-* **Dlaczego to działa:** Taki użytkownik **nigdy** nie kupi miesięcznego abonamentu za 15 zł, bo potrzebuje wysłać tylko ten jeden plik tu i teraz. Ale 2,50 zł kodem BLIK zapłaci bez wahania.
-* **Parametry oferty:**
-  * Plik do 5 GB.
-  * Czas przechowywania: 7 dni.
-  * Brak reklam na stronie pobierania dla odbiorcy.
+### 3. "Płatny Plik" / Paywall Twórcy (Prowizja 5% od sprzedaży)
+* Użytkownik wrzuca plik (np. presety, kurs, paczkę grafik) i ustawia cenę dla odbiorcy. Ty zarabiasz prowizję od każdej transakcji bez konieczności prowadzenia magazynu.
 
-### 2. Subskrypcja Dropsite PRO (14,99 PLN / miesiąc)
-* **Dla kogo:** Montażyści wideo, fotografowie, graficy, agencje, programiści.
-* **Korzyści:**
-  * Paczki do 10 GB bez limitu ilości transferów.
-  * Czas przechowywania: 30 dni lub bezterminowo.
-  * Własny alias linku (np. `dropsite.pl/wesele-ani-i-tomasza`).
-  * Ochrona hasłem i powiadomienia e-mail o pobraniu.
-
-### 3. Reklamy dla darmowych pobrań (95% ruchu)
-* Czysty baner technologiczny (np. **EthicalAds** lub **Google AdSense**) pod przyciskiem pobierania dla darmowych plików.
+### 4. Wyświetlenia Reklamowe
+* Czysty baner pod przyciskiem pobierania dla darmowych plików (Google AdSense / EthicalAds).
 
 ---
 
@@ -137,7 +108,7 @@ pie title Szacowany podział przychodów Dropsite
 * **Strona pobierania darmowego pliku (`?f=...`):**
   * Odbiorca pliku darmowego widzi 1 estetyczny baner reklamowy.
   * Stawki: **\$2.00 – \$4.50 CPM** (~8 – 18 zł za 1 000 wyświetleń).
-* **Pliki przesłane przez PRO lub Pay-Per-Transfer (2,50 zł):**
+* **Pliki przesłane przez użytkowników PRO (14,99 zł):**
   * Strona w 100% czysta, bez reklam.
 
 ---
@@ -154,69 +125,169 @@ pie title Szacowany podział przychodów Dropsite
 
 ---
 
-## 📣 ETAP 7: Playbook Dystrybucji & Kampanie Marketingowe
+## 📣 ETAP 7: Playbook Dystrybucji & Przewaga UI nad WeTransfer
 
-Gotowe scenariusze i haki marketingowe oparte na realnych potrzebach użytkowników:
-
----
-
-### 🔥 Kąt Marketingowy #1: "Pilny transfer raz na jakiś czas"
-> **Główny przekaz:**  
-> *„Musisz pilnie wysłać film z wakacji (2 GB), paczkę zdjęć z wesela czy duży projekt dla klienta, a Dysk Google każe Ci płacić za abonament?  
-> Wyślij ten jeden plik (do 5 GB) za 2,50 zł kodem BLIK. Bez rejestracji, bez subskrypcji, plik leci w 5 sekund.”*
+Główna oś komunikacji marketingowej: **"Dropsite to WeTransfer bez zbędnego syfu i z czystym interfejsem"**.
 
 ---
 
-### 📱 1. Gotowe Scenariusze na Wykop.pl & Reddit:
+### 🔥 Główny Kąt Marketingowy: "Dlaczego WeTransfer stał się nieznośny?"
+> **Porównanie, które sprzedaje produkt w 5 sekund:**  
+> **WeTransfer w 2026 r.:**  
+> ❌ Pełnoekranowe, krzykliwe reklamy w tle,  
+> ❌ Wymóg podania maila i przepisywania 6-cyfrowego kodu weryfikacyjnego,  
+> ❌ Zgody na śledzenie ciasteczek,  
+> ❌ Wciskanie drogiego abonamentu za 50 zł/mc.  
+>  
+> **Dropsite:**  
+> ✅ Czysty, ciemny, szklany interfejs,  
+> ✅ Zero logowania i zero czekania na maile – przeciągasz plik i masz link,  
+> ✅ Wbudowany podgląd wideo/audio i edytor PDF,  
+> ✅ Potrzebujesz wysłać 3–10 GB? Odblokowujesz PRO za 14,99 zł (BLIK lub karta) i masz pełne możliwości bez limitów.
 
-#### Post na Wykop.pl (Kategoria: Technologia / Ciekawostki):
+---
+
+### 🎬 60-Sekundowy Dynamiczny Trailer AI (Plan Produkcji & Prompty)
+
+#### 🎵 Kwestia Muzyki: TikTok Trending vs Suno AI
+* **Wrzutka organiczna na TikToku / Reels (Darmowy post na profilu):**  
+  👉 **Możesz użyć dowolnego trendującego dźwięku / muzyki z biblioteki TikToka**. Algorytm TikToka premiuje filmy z popularnymi audio (daje dodatkowe zasięgi).
+* **Płatna reklama (TikTok Ads / Meta Ads / wideo na stronie `dropsite.pages.dev`):**  
+  👉 **NIE WOLNO używać komercyjnych hitów** (reklama zostanie odrzucona przez prawa autorskie). Wtedy generujesz własny podkład w **Suno AI** lub bierzesz darmowy z biblioteki *Pixabay / YouTube Audio Library*.
+  * *Prompt do Suno:* `dark cyberpunk synthwave, driving distorted bassline, fast energetic tempo 135 bpm, punchy drums, tech product launch trailer, futuristic atmospheric drop, no vocals`.
+
+---
+
+#### ⏱️ Scenariusz Trailera Sekunda po Sekundzie (100% Kinowe CGI 3D — Bez Ludzi):
+
+| Czas | Co widać na ekranie (Czysta animacja 3D / CGI) | Głos Lektora (ElevenLabs / AI Voice) | Dźwięk / Efekty |
+| :--- | :--- | :--- | :--- |
+| **0:00 - 0:08** | Ciemna cyfrowa otchłań. Czerwone, pękające szklane panele z napisem: *„STORAGE FULL / 50 PLN/MO”*, wirujące błędy, eksplozja cyfrowego szkła. | *„Przepłacasz za powolne chmury i skomplikowane formularze?”* | Głęboki basowy sub-bass, trzask pękającego szkła (*cinematic hit*). |
+| **0:08 - 0:18** | **[Start ze screena Dropsite]**: Z czerni wyłania się lewitujący w 3D szklany interfejs ze screena. Kamera przelatuje nad szlifowanymi krawędziami szkła i pulsującym złotym symbolem chmury. | *„Oto Dropsite. Czysty, bezkompromisowy transfer nowej generacji.”* | Potężny cyberpunkowy drop (*whoosh + synth pulse*). |
+| **0:18 - 0:30** | Świecąca kula danych (plik 5 GB) wpada w szklany portal ➔ Wokół niej materializuje się szmaragdowa, kryształowa tarcza AES-256 z kodami binarnymi. | *„Zero spamu. Szyfrowanie wojskowe AES-256. Prędkość ograniczona tylko Twoim łączem.”* | Dźwięk ładowania reaktora / lasera, mechaniczny zatrzask tarczy. |
+| **0:30 - 0:42** | Ekran odbiorcy: z kuli danych w ułamku sekundy rozwija się holograficzny odtwarzacz wideo 4K z podglądem w locie. | *„Natychmiastowy podgląd wideo i audio bez konieczności pobierania gigabajtów.”* | Krystaliczny dźwięk aktywacji hologramu (*chime*). |
+| **0:42 - 0:52** | Wokół kryształu danych zapalają się złote pierścienie energii z pulsującym symbolem „DROPSITE PRO 14,99 PLN” ➔ Eksplozja złotych cząsteczek. | *„Odblokuj pełne konto PRO za 14,99 zł. Błyskawiczny BLIK lub karta.”* | Złoty rezonans dźwiękowy, głęboki basowy impuls. |
+| **0:52 - 1:00** | Luksusowy złoty monolit ze szklanym logo Dropsite, adres `dropsite.pages.dev` jarzący się na ciemnym obsydianie. | *„Dropsite. Po prostu upuść plik.”* | Wygasający kinowy akord smyczkowy z syntetykiem. |
+
+---
+
+#### 🤖 Gotowe Prompty Kinowe 3D (Bez Ludzi / Octane Render Style)
+
+* **Scena 1 (Część 1: 0:00 - 0:30) — Start ze zrzutu ekranu Dropsite:**
+  * *Tryb:* Image-to-Video (wgrywasz screen strony głównej Dropsite).
+  * *Prompt do skopiowania:* `Cinematic 3D CGI product reveal, strictly NO humans. Starting from this dark frosted glass web interface, camera executes an IMAX-style sweeping orbit around floating glass panels with photorealistic obsidian reflections. Glowing neon mint and gold UI circuits pulse with energy. Floating ambient volumetric micro-particles, anamorphic blue and amber lens flare, futuristic science fiction tech commercial, Unreal Engine 5 cinematic render, Raytracing, 8k ultra detail, 60fps.`
+* **Scena 2 (Część 2: 0:30 - 1:00) — Finał z BLIKiem i Złotym Logo:**
+  * *Prompt do skopiowania:* `Cinematic CGI sequence, NO humans. A massive glowing 5GB holographic data sphere surrounded by an emerald green crystal force field of AES-256 binary streams. Three concentric rings of liquid gold energy with glowing neon digits 'PRO 14.99 PLN' rotate and lock into place with a radiant gold burst. Final shot: iconic obsidian glass black cube with radiant glowing golden cloud logo floating in void. Cinematic Hollywood movie trailer aesthetic, photorealistic 8k, Octane Render.`
+
+---
+
+### 💬 Post na Wykop.pl i Grupy Montażystów / Fotografów:
 ```text
-Tytuł: Zbudowałem prostą alternatywę dla WeTransfer bez rejestracji i drogich abonamentów. Co myślicie?
+Tytuł: Zrobiłem minimalistyczną alternatywę dla WeTransfer – bez pełnoekranowych reklam i bez kodów na maila
 
-Cześć Mirki! 
-Często miałem problem: muszę pilnie przesłać komuś film z wakacji (2 GB) albo paczkę zdjęć z wesela w pełnej jakości, a WeTransfer czy Dysk Google od razu wciskają drogie miesięczne subskrypcje. 
+Cześć! Też irytuje Was, że żeby wysłać komuś jeden plik przez WeTransfer, musicie podawać swój e-mail, czekać na kod weryfikacyjny, przeklikiwać zgody marketingowe i oglądać wielkie banery reklamowe w tle?
 
-Zrobiłem Dropsite – szybki, minimalistyczny transfer oparty o infrastrukturę Cloudflare:
-- Do 250 MB całkowicie za darmo (bez reklam i bez logowania)
-- Funkcja "Burn after read" (plik znika po pierwszym pobraniu)
-- A jak ktoś raz na pół roku potrzebuje wysłać paczkę do 5 GB: opcja szybkiego BLIKa za 2,50 zł bez wiązania się żadnym abonamentem.
+Postanowiłem stworzyć Dropsite z myślą o prostocie:
+- Czysty, intuicyjny interfejs bez śmieci i zbędnych kroków.
+- Przeciągasz plik -> dostajesz natychmiastowy link.
+- Wbudowany podgląd wideo i audio (odbiorca może sprawdzić materiał bez pobierania całego gigabajta).
+- A jak ktoś potrzebuje przesyłać potężne pliki do 10 GB: pełne konto PRO za jedyne 14,99 zł (wygodny BLIK na 30 dni lub subskrypcja) bez wciskania drogich zagranicznych abonamentów za 50 zł.
 
-Strona stoi na chmurze bez limitu prędkości. Będę wdzięczny za feedback co można ulepszyć!
-[Link do strony]
+Link do testów: [dropsite.pages.dev]
+Dajcie znać jak oceniacie prostotę i prędkość!
 ```
-
----
-
-### 👥 2. Gotowe Posty na Grupy Facebookowe (Precyzyjne Nisze):
-
-#### Grupa: *„Fotografowie Ślubni Polska” / „Filmowcy i Montażyści Polska”*:
-```text
-Cześć! Jak przesyłacie klientom duże surówki wideo i paczki RAW, gdy nie chcecie płacić 50 zł/mc za WeTransfer Pro?
-Stworzyłem proste narzędzie Dropsite – pozwala wysłać paczkę do 5 GB za 2,50 zł szybkim BLIKiem, a klient pobiera materiały z maksymalną prędkością łącza na czystej stronie.
-Dla regularnych twórców jest też plan z własnym brandingiem. Dajcie znać jak oceniacie prędkość transferu!
-```
-
----
-
-### 🎥 3. Krótkie Wideo (TikTok / Instagram Reels / YouTube Shorts):
-* **Hook (0-3s):** Nagranie ekranu z komunikatem WeTransfer: *„Brak miejsca na dysku / Kup plan Pro za 12 EUR”*.
-* **Problem (3-6s):** *„Kiedy musisz wysłać babci 3 GB filmu z wesela, a serwisy chcą od Ciebie 50 zł za miesięczny abonament...”*
-* **Rozwiązanie (6-15s):** Przeciągnięcie pliku na Dropsite ➔ Wpisanie 6 cyfr BLIK (2,50 zł) ➔ Wygenerowany natychmiast link ➔ *„Bez logowania, bez abonamentu, leci pełnym łączem.”*
 
 ---
 
 ## 💰 ETAP 8: Ekonomia Jednostkowa i Prognoza Zysków
 
-### Scenariusz Realistyczny (Po wdrożeniu BLIK 2,50 zł):
-* **200 mikropłatności Pay-Per-Transfer BLIK (200 x 2,50 zł):** **500 zł**
-* **40 stałych subskrypcji PRO (40 x 14,99 zł):** **~600 zł**
+### Scenariusz Realistyczny (Skoncentrowany na PRO 14,99 zł):
+* **80 kont PRO (subskrypcje + 30-dniowe doładowania BLIK: 80 x 14,99 zł):** **~1 200 zł**
 * **25 000 darmowych pobrań z reklamami (eCPM $2.00):** **~200 zł**
-* **Łączny przychód:** **~1 300 zł / miesiąc**
+* **Łączny przychód:** **~1 400 zł / miesiąc**
 
-### Koszty:
+### Koszty stałe:
 * Cloudflare (Pages, Workers, R2): **~20 zł**
-* Prowizje płatności: **~90 zł**
+* Prowizje bramek płatności: **~90 zł**
 * **Czysty zysk netto:** **~1 190 zł / miesiąc (Marża: >91%)**
+
+---
+
+## 🗺️ ETAP 9: Strategiczny Roadmap Rozwoju
+
+Rozwój serwisu podzielony na konkretne etapy produktowe:
+
+```mermaid
+timeline
+    title Roadmap Rozwoju Dropsite
+    Faza 1 (v1.1) : Wdrożenie PRO BLIK (14.99 zł) : Zakup domeny dropsite.pages.dev : Kampania Split-Screen na TikToku
+    Faza 2 (v1.2) : Powiadomienia E-mail o pobraniu pliku : Chmurowy Dashboard dla PRO : Płatny Plik (Paywall dla twórców)
+    Faza 3 (v2.0) : WebRTC P2P (nielimitowany transfer 0 zł) : CNAME dla domen agencji
+```
+
+### Faza 1 (v1.1) — Start i Monetyzacja
+1. Podpięcie natywnego BLIKa (14,99 zł za 30 dni PRO) + Polar.sh (14,99 zł/mc subskrypcja z karty).
+2. Zakup i wpięcie domeny `dropsite.pages.dev`.
+3. Start kampanii porównawczej "Dropsite vs WeTransfer: Czysty UX".
+
+### Faza 2 (v1.2) — Narzędzie dla Twórców & E-Commerce
+1. **Powiadomienia E-mail o pobraniu:** Nadawca opcjonalnie podaje mail i otrzymuje informację, w sekundzie gdy odbiorca ściągnie plik.
+2. **Chmurowy Manager Plików:** Zalogowany użytkownik PRO zarządza wszystkimi aktywnymi linkami w jednym pulpicie (usuwanie, przedłużanie, zmiana haseł).
+3. **Paywall dla Twórców:** Możliwość ustawienia ceny za pobranie pliku (sprzedaż presetów, grafik, e-booków).
+
+### Faza 3 (v2.0) — Skalowanie bez Kosztów
+1. **WebRTC P2P Transfer:** Bezpośredni przesył przeglądarka-przeglądarka dla paczek 20–50 GB (zero obciążenia serwera R2).
+2. **Własna domena dla agencji (CNAME):** Agencja może podpiąć `transfer.agencja.pl` i wysyłać pliki pod własnym adresem.
+
+---
+
+## ⚡ ETAP 10: Przełomowe Innowacje Produktowe (Efekt WOW & Przewaga nad Rynkiem)
+
+Unikalne funkcje, które deklasują konkurencję i wywołują u użytkowników efekt „zbierania szczęki z podłogi”:
+
+```mermaid
+graph TD
+    WOW[Innowacje Efektu WOW Dropsite] --> F1[1. Digital Unboxing - Wideo powitanie]
+    WOW --> F2[2. Cinematic Delivery - Galeria z muzyką]
+    WOW --> F3[3. Tryb Szpiegowski - Samozniszczenie 007]
+    WOW --> F4[4. Smart Clip Extractor - Wycinek wideo]
+    WOW --> F5[5. Dropsite Beam - Web AirDrop P2P]
+    WOW --> F6[6. Client Proofing - Pinezki i uwagi do klatek]
+    WOW --> F7[7. Smart ZIP Explorer - Wybiórcze pobieranie]
+    WOW --> F8[8. Kapsuła Czasu - Zaplanowany transfer]
+```
+
+### 1. 🎬 „Digital Unboxing” (Wideo lub Głosowe Powitanie od Nadawcy)
+* **Mechanika:** Podczas wgrywania pliku, nadawca jednym kliknięciem nagrywa 15-sekundowe wideo z kamerki lub notatkę głosową.
+* **Doświadczenie odbiorcy:** Po otwarciu linku na szklanym panelu pojawia się pulsujący, zaokrąglony avatar z nagraniem nadawcy (np. montażysta tłumaczy klientowi, na co zwrócić uwagę w pliku).
+* **Zastosowanie:** Agencje reklamowe, fotografowie, montażyści, a także zwykli ludzie wysyłający życzenia wideo wraz z prezentem.
+
+### 2. 🎵 „Cinematic Delivery” (Klimatyczna Galeria z Muzyką dla Fotografów)
+* **Mechanika:** Przy wysyłce paczki zdjęć nadawca włącza „Tryb Prezentacji” i wybiera nastrojowy podkład muzyczny (np. lofi beat lub łagodny fortepian).
+* **Doświadczenie odbiorcy:** Zdjęcia wyświetlają się w pełnoekranowym, kinowym pokazie slajdów na ciemnym szkle z płynną muzyką. Na końcu pojawia się przycisk pobrania całej paczki.
+* **Dlaczego to sprzedaje PRO:** Fotografowie sesji ślubnych i biznesowych chętnie płacą abonament, bo ich oddanie materiałów wygląda 100x bardziej prestiżowo niż surowy ZIP.
+
+### 3. 🕵️‍♂️ „Tryb Szpiegowski (Mission: Impossible)” — TikTok Viral Engine
+* **Mechanika:** Przełącznik dla ultra-poufnych plików (hasła, skany dokumentów, poufne umowy).
+* **Doświadczenie odbiorcy:** Ekran jest zamazany. Odbiorca musi **przytrzymać palec/myszkę**, aby odsłonić treść. W rogu ekranu tyka licznik: *„Plik ulegnie samozniszczeniu za 10... 9... 8...”*. Po upływie czasu animacja dymu usuwa plik na zawsze z serwera.
+* **Marketing:** Gotowy temat na wirusowe wideo: *„Jak wysyłać poufne pliki jak agent wywiadu?”*.
+
+### 4. ✂️ „Smart Video Scrub & Clip Extractor”
+* **Mechanika:** Odbiorca 5-gigabajtowej surówki wideo nie musi pobierać całego pliku. Na osi czasu wbudowanego playera zaznacza interesujące go 15 sekund i pobiera **tylko ten fragment** (kilkanaście megabajtów wyrenderowanych w locie w przeglądarce).
+
+### 5. 📡 „Dropsite Beam / Web AirDrop” (Transfer Lokalny bez Internetu)
+* **Mechanika:** Parowanie urządzeń (np. iPhone i laptop z Windows) 4-cyfrowym kodem PIN lub lokalną siecią Wi-Fi.
+* **Zaleta:** Przesyłanie paczek 50 GB z telefonu na komputer bez zużywania transferu internetowego, bezpośrednio z prędkością sieci lokalnej (300–500 Mb/s).
+
+### 6. ✍️ „Client Proofing & Revision Pins” (Mini-Frame.io dla Twórców)
+* **Mechanika:** Klient przeglądający wideo lub grafikę na stronie pobierania może kliknąć w dowolny punkt ekranu i dodać pinezkę: *„Zmień ten napis na żółty”* lub *„Przytnij to ujęcie o 1 sekundę”*.
+* **Wartość:** Eliminuje potrzebę drogich narzędzi do feedbacku (jak Frame.io kosztujące $15/mc).
+
+### 7. 📦 „Smart ZIP Explorer & Selective Download”
+* **Mechanika:** Gdy ktoś wysyła archiwum ZIP z 300 plikami (np. 2 GB), odbiorca widzi drzewo katalogów i może pobrać **tylko jeden wybrany plik** bez konieczności ściągania i rozpakowywania całego archiwum.
+
+### 8. ⏳ „Kapsuła Czasu (Zaplanowany Transfer)”
+* **Mechanika:** Możliwość ustawienia daty aktywacji linku (np. *„Aktywuj ten transfer w Wigilię o 18:00”* lub *„Wyślij życzenia urodzinowe za 3 miesiące”*).
 
 ---
 
@@ -225,22 +296,17 @@ Dla regularnych twórców jest też plan z własnym brandingiem. Dajcie znać ja
 ### Faza 1: Fundamenty Techniczne & UI
 - [x] Backend Cloudflare Worker (`uploud-api`) z limitami 250 MB / 10 GB.
 - [x] Szklany interfejs, modal PRO i weryfikacja kluczy w `app.js`.
-- [x] Nowoczesny miętowy branding i favicon `favicon.jpg`.
+- [x] Luksusowy złoty favicon na obsydianowym szkle (`favicon.jpg`).
 - [x] Migracja frontendu na **Cloudflare Pages** (darmowy komercyjny hosting).
+- [x] Regulamin i Polityka Prywatności w widokach serwisu.
 
-### Faza 2: Płatności & Zaufanie (W trakcie)
-- [ ] Zakup i podpięcie własnej domeny (np. `dropsite.pl` w Cloudflare DNS).
-- [ ] Ostateczny wybór bramki płatności (Polar.sh vs EasyCart pod natywny BLIK).
-- [ ] Podpięcie linku do kasy pod przyciski "Kup PRO" i "Wyślij za 2,50 zł BLIK".
-- [ ] Przygotowanie podstron: `/regulamin` i `/polityka-prywatnosci`.
+### Faza 2: Płatności & Zaufanie
+- [x] Wdrożenie płatności natywnym BLIKiem (14,99 zł za 30 dni PRO) z walidacją 6 cyfr i autoryzacją.
+- [x] Podpięcie linków zakupu (Stripe BLIK 14,99 zł i Polar.sh 14,99 zł/mc).
+- [x] Automatyczna aktywacja licencji PRO po powrocie z bramki płatności.
+- [x] Podpięcie domeny `dropsite.pages.dev` w Cloudflare Pages.
 
-### Faza 3: Reklamy & Monetyzacja Wyświetleń (ZREALIZOWANO ✅)
-- [x] Wdrożenie inteligentnego silnika `js/ads-engine.js` (Tryb Hybrydowy: AdSense + Fallback na Afiliację CPA).
-- [x] Ominięcie blokad AdBlock / Brave Shields przez natywne kafelki partnerskie (NordVPN, pCloud, Cloud Hosting, NordPass).
-- [x] Automatyczne ukrywanie reklam dla subskrybentów PRO oraz integracja wielojęzyczna (PL, EN, DE, ES, FR, UK).
-- [ ] Podmiana docelowych linków partnerskich w `js/ads-engine.js` na własne kody z sieci afiliacyjnych.
-
-### Faza 4: Dystrybucja & Start
-- [ ] Przygotowanie grafik OpenGraph (miniatury social media).
+### Faza 3: Dystrybucja & Start
+- [ ] Opublikowanie porównania WeTransfer vs Dropsite (Wideo / Post).
 - [ ] Publikacja postu na Wykop.pl i branżowych grupach FB.
-- [ ] Publikacja na Product Hunt i TikToku / Reels.
+- [ ] Nagranie virału na TikToka z "Trybem Szpiegowskim 007".
