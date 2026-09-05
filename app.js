@@ -749,6 +749,7 @@ function initBlikModalListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     updateAdminRoleUI();
     initBlikModalListeners();
+    initFeedbackSystem();
 
     const openProBtn = document.getElementById('openProBtn');
     const closeProModalBtn = document.getElementById('closeProModal');
@@ -2530,6 +2531,9 @@ function initAdminDashboardOnce() {
 
     // 7. Garbage Collector
     initAdminGarbageCollector();
+
+    // 8. Zgłoszenia i uwagi użytkowników
+    initAdminFeedbackControls();
 }
 
 function switchAdminTab(tabName) {
@@ -2538,7 +2542,7 @@ function switchAdminTab(tabName) {
         btn.classList.toggle('active', btn.getAttribute('data-admin-tab') === tabName);
     });
 
-    const panes = ['overview', 'users', 'storage', 'transactions', 'files'];
+    const panes = ['overview', 'users', 'storage', 'transactions', 'files', 'feedback'];
     panes.forEach(p => {
         const el = document.getElementById(`adminTabPane_${p}`);
         if (el) el.style.display = p === tabName ? 'block' : 'none';
@@ -2548,6 +2552,7 @@ function switchAdminTab(tabName) {
     else if (tabName === 'users') renderAdminUsersTab();
     else if (tabName === 'storage') renderAdminStorageTab();
     else if (tabName === 'transactions') renderAdminTransactionsTab();
+    else if (tabName === 'feedback') renderAdminFeedbackTab();
 }
 
 function renderAdminDashboard() {
@@ -2555,6 +2560,7 @@ function renderAdminDashboard() {
     renderAdminUsersTab();
     renderAdminStorageTab();
     renderAdminTransactionsTab();
+    fetchAdminFeedback();
 }
 
 // Baza użytkowników (tylko rzeczywiści zarejestrowani i autoryzowani użytkownicy)
@@ -3141,6 +3147,410 @@ function initAdminGarbageCollector() {
         });
     }
 }
+
+// =========================================================================
+// SYSTEM ZGŁASZANIA BŁĘDÓW I UWAG (FEEDBACK & BUG REPORTS)
+// =========================================================================
+let selectedFeedbackCategory = 'bug';
+let adminFeedbackList = [];
+let feedbackControlsInitialized = false;
+
+function initFeedbackSystem() {
+    const bugReportPin = document.getElementById('bugReportPin');
+    const feedbackModalWrap = document.getElementById('feedbackModalWrap');
+    const closeFeedbackModal = document.getElementById('closeFeedbackModal');
+    const feedbackCatGrid = document.getElementById('feedbackCatGrid');
+    const btnSubmitFeedback = document.getElementById('btnSubmitFeedback');
+    const feedbackMessageInput = document.getElementById('feedbackMessageInput');
+    const feedbackEmailInput = document.getElementById('feedbackEmailInput');
+    const feedbackForm = document.getElementById('feedbackForm');
+    const feedbackSuccessState = document.getElementById('feedbackSuccessState');
+
+    if (bugReportPin && feedbackModalWrap) {
+        bugReportPin.addEventListener('click', () => {
+            if (feedbackForm) feedbackForm.hidden = false;
+            if (feedbackSuccessState) feedbackSuccessState.hidden = true;
+            if (feedbackMessageInput) feedbackMessageInput.value = '';
+            
+            if (feedbackEmailInput && auth.currentUser && auth.currentUser.email) {
+                feedbackEmailInput.value = auth.currentUser.email;
+            }
+
+            window.smoothOpenModal(feedbackModalWrap);
+            if (feedbackMessageInput) feedbackMessageInput.focus();
+        });
+    }
+
+    if (closeFeedbackModal && feedbackModalWrap) {
+        closeFeedbackModal.addEventListener('click', () => {
+            window.smoothCloseModal(feedbackModalWrap);
+        });
+    }
+
+    if (feedbackModalWrap) {
+        feedbackModalWrap.addEventListener('click', (e) => {
+            if (e.target === feedbackModalWrap) {
+                window.smoothCloseModal(feedbackModalWrap);
+            }
+        });
+    }
+
+    if (feedbackCatGrid) {
+        feedbackCatGrid.querySelectorAll('.feedback-cat-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                feedbackCatGrid.querySelectorAll('.feedback-cat-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedFeedbackCategory = btn.getAttribute('data-category') || 'bug';
+            });
+        });
+    }
+
+    if (btnSubmitFeedback && feedbackMessageInput) {
+        btnSubmitFeedback.addEventListener('click', async () => {
+            const message = (feedbackMessageInput.value || '').trim();
+            if (!message || message.length < 3) {
+                if (typeof showNotification === 'function') {
+                    showNotification('Wpisz treść wiadomości przed wysłaniem.', 'error');
+                }
+                feedbackMessageInput.focus();
+                return;
+            }
+
+            const email = (feedbackEmailInput ? feedbackEmailInput.value : '').trim();
+            btnSubmitFeedback.disabled = true;
+            const origText = btnSubmitFeedback.querySelector('.btn-text')?.textContent;
+            if (btnSubmitFeedback.querySelector('.btn-text')) {
+                btnSubmitFeedback.querySelector('.btn-text').textContent = 'Wysyłanie...';
+            }
+
+            const payload = {
+                category: selectedFeedbackCategory,
+                message: message,
+                email: email,
+                userAgent: navigator.userAgent,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                pageUrl: window.location.href,
+                timestamp: Date.now()
+            };
+
+            try {
+                const response = await fetch(`${WORKER_URL}/api/feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                let data = {};
+                try { data = await response.json(); } catch(e) {}
+
+                const localId = data.entry?.id || `fb_${Date.now()}`;
+                const localEntry = {
+                    id: localId,
+                    ...payload,
+                    createdAt: new Date().toISOString(),
+                    resolved: false,
+                    resolvedAt: null
+                };
+
+                try {
+                    let localDB = JSON.parse(localStorage.getItem('dropsite_admin_feedback_db') || '[]');
+                    localDB.unshift(localEntry);
+                    if (localDB.length > 200) localDB = localDB.slice(0, 200);
+                    localStorage.setItem('dropsite_admin_feedback_db', JSON.stringify(localDB));
+                } catch(e) {}
+
+                if (feedbackForm) feedbackForm.hidden = true;
+                if (feedbackSuccessState) feedbackSuccessState.hidden = false;
+                if (typeof playSound === 'function') playSound('success');
+                if (typeof showNotification === 'function') {
+                    showNotification('Dziękujemy! Zgłoszenie trafiło do administratora.', 'success');
+                }
+
+                if (isActualAdminUser()) {
+                    fetchAdminFeedback();
+                }
+
+                setTimeout(() => {
+                    window.smoothCloseModal(feedbackModalWrap);
+                    btnSubmitFeedback.disabled = false;
+                    if (btnSubmitFeedback.querySelector('.btn-text') && origText) {
+                        btnSubmitFeedback.querySelector('.btn-text').textContent = origText;
+                    }
+                }, 2000);
+
+            } catch (err) {
+                console.warn('Feedback send fallback:', err);
+                try {
+                    let localDB = JSON.parse(localStorage.getItem('dropsite_admin_feedback_db') || '[]');
+                    localDB.unshift({
+                        id: `fb_offline_${Date.now()}`,
+                        ...payload,
+                        createdAt: new Date().toISOString(),
+                        resolved: false,
+                        resolvedAt: null
+                    });
+                    localStorage.setItem('dropsite_admin_feedback_db', JSON.stringify(localDB));
+                } catch(e) {}
+
+                if (feedbackForm) feedbackForm.hidden = true;
+                if (feedbackSuccessState) feedbackSuccessState.hidden = false;
+                if (typeof showNotification === 'function') {
+                    showNotification('Zgłoszenie zapisane.', 'success');
+                }
+                setTimeout(() => {
+                    window.smoothCloseModal(feedbackModalWrap);
+                    btnSubmitFeedback.disabled = false;
+                    if (btnSubmitFeedback.querySelector('.btn-text') && origText) {
+                        btnSubmitFeedback.querySelector('.btn-text').textContent = origText;
+                    }
+                }, 1800);
+            }
+        });
+    }
+}
+
+function initAdminFeedbackControls() {
+    if (feedbackControlsInitialized) return;
+    feedbackControlsInitialized = true;
+
+    const searchInput = document.getElementById('adminFeedbackSearchInput');
+    const catFilter = document.getElementById('adminFeedbackCategoryFilter');
+    const statusFilter = document.getElementById('adminFeedbackStatusFilter');
+    const refreshBtn = document.getElementById('adminRefreshFeedbackBtn');
+
+    if (searchInput) searchInput.addEventListener('input', renderAdminFeedbackTab);
+    if (catFilter) catFilter.addEventListener('change', renderAdminFeedbackTab);
+    if (statusFilter) statusFilter.addEventListener('change', renderAdminFeedbackTab);
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchAdminFeedback);
+}
+
+async function fetchAdminFeedback() {
+    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    let remoteItems = [];
+
+    try {
+        const res = await fetch(`${WORKER_URL}/admin/feedback`, {
+            headers: { 'X-Admin-Secret': apiSecret }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.feedback)) {
+                remoteItems = data.feedback;
+            }
+        }
+    } catch(e) {
+        console.warn('Cannot fetch remote feedback:', e);
+    }
+
+    let localDB = [];
+    try {
+        localDB = JSON.parse(localStorage.getItem('dropsite_admin_feedback_db') || '[]');
+    } catch(e) {}
+
+    const map = new Map();
+    remoteItems.forEach(item => map.set(item.id, item));
+    localDB.forEach(item => {
+        if (!map.has(item.id)) map.set(item.id, item);
+    });
+
+    adminFeedbackList = Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    const pendingCount = adminFeedbackList.filter(f => !f.resolved).length;
+    const countBadge = document.getElementById('adminFeedbackCountBadge');
+    if (countBadge) {
+        countBadge.textContent = pendingCount;
+        countBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+    }
+
+    renderAdminFeedbackTab();
+}
+
+function renderAdminFeedbackTab() {
+    const container = document.getElementById('adminFeedbackListContainer');
+    if (!container) return;
+
+    const searchInput = document.getElementById('adminFeedbackSearchInput');
+    const catFilter = document.getElementById('adminFeedbackCategoryFilter');
+    const statusFilter = document.getElementById('adminFeedbackStatusFilter');
+
+    const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const catVal = catFilter ? catFilter.value : 'all';
+    const statusVal = statusFilter ? statusFilter.value : 'all';
+
+    const statTotal = document.getElementById('adminStatFeedbackTotal');
+    const statPending = document.getElementById('adminStatFeedbackPending');
+    const statResolved = document.getElementById('adminStatFeedbackResolved');
+    const statBugs = document.getElementById('adminStatFeedbackBugs');
+
+    const totalCount = adminFeedbackList.length;
+    const pendingCount = adminFeedbackList.filter(f => !f.resolved).length;
+    const resolvedCount = adminFeedbackList.filter(f => f.resolved).length;
+    const bugsCount = adminFeedbackList.filter(f => f.category === 'bug').length;
+
+    if (statTotal) statTotal.textContent = totalCount;
+    if (statPending) statPending.textContent = pendingCount;
+    if (statResolved) statResolved.textContent = resolvedCount;
+    if (statBugs) statBugs.textContent = bugsCount;
+
+    const filtered = adminFeedbackList.filter(item => {
+        if (catVal !== 'all' && item.category !== catVal) return false;
+        if (statusVal === 'pending' && item.resolved) return false;
+        if (statusVal === 'resolved' && !item.resolved) return false;
+        if (query) {
+            const textMatch = (item.message || '').toLowerCase().includes(query);
+            const emailMatch = (item.email || '').toLowerCase().includes(query);
+            const idMatch = (item.id || '').toLowerCase().includes(query);
+            if (!textMatch && !emailMatch && !idMatch) return false;
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="admin-feedback-empty">
+                <div style="font-size: 28px; margin-bottom: 8px;">✨</div>
+                <div style="font-size: 14px; font-weight: 600; color: #E2E8F0; margin-bottom: 4px;">Brak zgłoszeń w tej kategorii</div>
+                <div style="font-size: 12px; color: #64748B;">Nowe uwagi od użytkowników lub błędy pojawią się tutaj w czasie rzeczywistym.</div>
+            </div>
+        `;
+        return;
+    }
+
+    const catLabels = {
+        bug: { label: 'Błąd', icon: '🐞', cls: 'cat-bug' },
+        suggestion: { label: 'Sugestia', icon: '💡', cls: 'cat-suggestion' },
+        payment: { label: 'Płatność', icon: '💳', cls: 'cat-payment' },
+        other: { label: 'Uwaga', icon: '💬', cls: 'cat-other' }
+    };
+
+    container.innerHTML = filtered.map(f => {
+        const cat = catLabels[f.category] || catLabels.other;
+        const dateStr = f.createdAt ? new Date(f.createdAt).toLocaleString('pl-PL') : (f.timestamp ? new Date(f.timestamp).toLocaleString('pl-PL') : '');
+        const isResolved = !!f.resolved;
+        const cleanEmail = escapeHtml(f.email || '');
+
+        return `
+            <div class="admin-feedback-card ${isResolved ? 'is-resolved' : ''}" data-id="${escapeHtml(f.id)}">
+                <div class="admin-feedback-header">
+                    <div class="admin-feedback-badges">
+                        <span class="feedback-cat-badge ${cat.cls}">
+                            <span>${cat.icon}</span>
+                            <span>${cat.label}</span>
+                        </span>
+                        <span class="feedback-status-pill ${isResolved ? 'resolved' : 'pending'}">
+                            ${isResolved ? '🟢 Rozwiązane' : '🟡 Oczekujące'}
+                        </span>
+                    </div>
+                    <span class="admin-feedback-date">${dateStr}</span>
+                </div>
+
+                <div class="admin-feedback-body">${escapeHtml(f.message || '')}</div>
+
+                <div class="admin-feedback-meta">
+                    <div class="admin-feedback-user">
+                        ${cleanEmail ? `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            <a href="mailto:${cleanEmail}" style="color: var(--accent-blue); text-decoration: underline;">${cleanEmail}</a>
+                        ` : `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <span style="color: #64748B;">Anonimowy użytkownik</span>
+                        `}
+                    </div>
+
+                    <div class="admin-feedback-diag">
+                        ${f.screen ? `<span>📐 ${escapeHtml(f.screen)}</span>` : ''}
+                        ${f.pageUrl ? `<span title="${escapeHtml(f.pageUrl)}">🔗 ${escapeHtml(f.pageUrl.replace(window.location.origin, ''))}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="admin-feedback-actions">
+                    <button type="button" class="btn-fb-action btn-resolve" onclick="toggleFeedbackResolved('${escapeHtml(f.id)}', ${!isResolved})">
+                        ${isResolved ? '↩️ Przywróć do nowych' : '✅ Oznacz jako rozwiązane'}
+                    </button>
+                    ${cleanEmail ? `
+                        <a href="mailto:${cleanEmail}?subject=Dropsite: Odpowiedź na Twoje zgłoszenie" class="btn-fb-action">
+                            ✉️ Odpowiedz
+                        </a>
+                    ` : ''}
+                    <button type="button" class="btn-fb-action btn-delete" onclick="deleteFeedbackItem('${escapeHtml(f.id)}')">
+                        🗑️ Usuń
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleFeedbackResolved = async function(id, resolved) {
+    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    
+    const item = adminFeedbackList.find(f => f.id === id);
+    if (item) {
+        item.resolved = resolved;
+        item.resolvedAt = resolved ? new Date().toISOString() : null;
+    }
+
+    try {
+        localStorage.setItem('dropsite_admin_feedback_db', JSON.stringify(adminFeedbackList));
+    } catch(e) {}
+
+    renderAdminFeedbackTab();
+
+    const pendingCount = adminFeedbackList.filter(f => !f.resolved).length;
+    const countBadge = document.getElementById('adminFeedbackCountBadge');
+    if (countBadge) {
+        countBadge.textContent = pendingCount;
+        countBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+    }
+
+    try {
+        await fetch(`${WORKER_URL}/admin/feedback/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': apiSecret
+            },
+            body: JSON.stringify({ id, resolved })
+        });
+        if (typeof showNotification === 'function') {
+            showNotification(resolved ? 'Oznaczono jako rozwiązane.' : 'Przywrócono do oczekujących.', 'success');
+        }
+    } catch (e) {
+        console.warn('Error updating remote status:', e);
+    }
+};
+
+window.deleteFeedbackItem = async function(id) {
+    if (!confirm('Czy na pewno chcesz usunąć to zgłoszenie?')) return;
+
+    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    adminFeedbackList = adminFeedbackList.filter(f => f.id !== id);
+
+    try {
+        localStorage.setItem('dropsite_admin_feedback_db', JSON.stringify(adminFeedbackList));
+    } catch(e) {}
+
+    renderAdminFeedbackTab();
+
+    const pendingCount = adminFeedbackList.filter(f => !f.resolved).length;
+    const countBadge = document.getElementById('adminFeedbackCountBadge');
+    if (countBadge) {
+        countBadge.textContent = pendingCount;
+        countBadge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+    }
+
+    try {
+        await fetch(`${WORKER_URL}/admin/feedback/delete/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: { 'X-Admin-Secret': apiSecret }
+        });
+        if (typeof showNotification === 'function') {
+            showNotification('Zgłoszenie zostało usunięte.', 'info');
+        }
+    } catch (e) {
+        console.warn('Error deleting remote item:', e);
+    }
+};
 
 // Funkcja pomocnicza do czyszczenia nazwy
 function cleanFileName(filename) {

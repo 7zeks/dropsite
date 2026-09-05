@@ -867,6 +867,192 @@ export default {
     }
 
     // =========================================================================
+    // SYSTEM ZGŁASZANIA BŁĘDÓW I UWAG (FEEDBACK & BUG REPORTS)
+    // =========================================================================
+
+    // 1. WYSYŁANIE ZGŁOSZENIA PRZEZ UŻYTKOWNIKA (PUBLICZNE API)
+    if (url.pathname === "/api/feedback" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const message = (body.message || "").trim();
+        if (!message || message.length < 3) {
+          return new Response(JSON.stringify({ success: false, message: "Wiadomość jest wymagana (min. 3 znaki)." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        let feedbackList = [];
+        if (env.BUCKET) {
+          try {
+            const existingObj = await env.BUCKET.get("_system/feedback.json");
+            if (existingObj) {
+              const text = await existingObj.text();
+              feedbackList = JSON.parse(text);
+              if (!Array.isArray(feedbackList)) feedbackList = [];
+            }
+          } catch (e) {}
+        }
+
+        const newEntry = {
+          id: "fb_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+          category: (body.category || "bug").trim(), // 'bug' | 'suggestion' | 'payment' | 'other'
+          message: message.substring(0, 5000),
+          email: (body.email || "").trim().substring(0, 200),
+          userAgent: (body.userAgent || request.headers.get("User-Agent") || "").substring(0, 300),
+          pageUrl: (body.pageUrl || "").substring(0, 500),
+          screen: (body.screen || "").substring(0, 50),
+          ip: request.headers.get("CF-Connecting-IP") || "",
+          country: request.headers.get("CF-IPCountry") || "",
+          createdAt: new Date().toISOString(),
+          timestamp: Date.now(),
+          resolved: false,
+          resolvedAt: null
+        };
+
+        feedbackList.unshift(newEntry);
+        if (feedbackList.length > 500) feedbackList = feedbackList.slice(0, 500);
+
+        if (env.BUCKET) {
+          await env.BUCKET.put("_system/feedback.json", JSON.stringify(feedbackList), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, message: "Zgłoszenie zostało pomyślnie zapisane.", entry: newEntry }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd zapisu zgłoszenia: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 2. ODCZYT ZGŁOSZEŃ DLA ADMINISTRATORA
+    if (url.pathname === "/admin/feedback" && request.method === "GET") {
+      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      let feedbackList = [];
+      if (env.BUCKET) {
+        try {
+          const existingObj = await env.BUCKET.get("_system/feedback.json");
+          if (existingObj) {
+            const text = await existingObj.text();
+            feedbackList = JSON.parse(text);
+            if (!Array.isArray(feedbackList)) feedbackList = [];
+          }
+        } catch (e) {}
+      }
+
+      return new Response(JSON.stringify({ success: true, feedback: feedbackList }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    // 3. ZMIANA STATUSU ZGŁOSZENIA (ROZWIĄZANE / AKTYWNE)
+    if (url.pathname === "/admin/feedback/toggle-status" && request.method === "POST") {
+      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const { id, resolved } = body;
+        if (!id) {
+          return new Response(JSON.stringify({ success: false, message: "Brak ID zgłoszenia." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        let feedbackList = [];
+        if (env.BUCKET) {
+          const existingObj = await env.BUCKET.get("_system/feedback.json");
+          if (existingObj) {
+            feedbackList = JSON.parse(await existingObj.text());
+          }
+        }
+
+        const item = feedbackList.find(f => f.id === id);
+        if (item) {
+          item.resolved = !!resolved;
+          item.resolvedAt = resolved ? new Date().toISOString() : null;
+
+          if (env.BUCKET) {
+            await env.BUCKET.put("_system/feedback.json", JSON.stringify(feedbackList), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          }
+          return new Response(JSON.stringify({ success: true, item }), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        } else {
+          return new Response(JSON.stringify({ success: false, message: "Zgłoszenie nie zostało znalezione." }), {
+            status: 404,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 4. USUNIĘCIE ZGŁOSZENIA PRZEZ ADMINA
+    if (url.pathname.startsWith("/admin/feedback/delete/") && request.method === "DELETE") {
+      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      try {
+        const id = decodeURIComponent(url.pathname.split("/admin/feedback/delete/")[1]);
+        let feedbackList = [];
+        if (env.BUCKET) {
+          const existingObj = await env.BUCKET.get("_system/feedback.json");
+          if (existingObj) {
+            feedbackList = JSON.parse(await existingObj.text());
+          }
+        }
+
+        const initialLength = feedbackList.length;
+        feedbackList = feedbackList.filter(f => f.id !== id);
+
+        if (env.BUCKET && feedbackList.length !== initialLength) {
+          await env.BUCKET.put("_system/feedback.json", JSON.stringify(feedbackList), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, deleted: feedbackList.length !== initialLength }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // =========================================================================
     // ZABEZPIECZENIE PANELU MODERACJI
     // =========================================================================
     const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; 
@@ -879,7 +1065,9 @@ export default {
 
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       const list = await env.BUCKET.list();
-      const files = list.objects.map(obj => ({ name: obj.key, size: obj.size, uploaded: obj.uploaded }));
+      const files = list.objects
+        .filter(obj => !obj.key.startsWith("_system/"))
+        .map(obj => ({ name: obj.key, size: obj.size, uploaded: obj.uploaded }));
       return new Response(JSON.stringify({ files }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -961,8 +1149,9 @@ export default {
       
       try {
           const list = await env.BUCKET.list();
+          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
 
-          list.objects.forEach(obj => {
+          validObjects.forEach(obj => {
               const size = obj.size;
               const name = obj.key.toLowerCase();
               totalUsedBytes += size;
@@ -984,7 +1173,7 @@ export default {
               totalBytes: MAX_BYTES,
               usedBytes: totalUsedBytes,
               categories: categories,
-              fileCount: list.objects.length
+              fileCount: validObjects.length
           }), { 
               headers: { "Content-Type": "application/json", ...corsHeaders } 
           });
@@ -1005,6 +1194,7 @@ export default {
 
       try {
           const list = await env.BUCKET.list();
+          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
           let totalBytes = 0;
           let counts = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
           let sizes = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
@@ -1012,7 +1202,7 @@ export default {
           let expiredCount = 0;
           const now = Date.now();
 
-          list.objects.forEach(obj => {
+          validObjects.forEach(obj => {
               totalBytes += obj.size;
               const k = obj.key;
               const lower = k.toLowerCase();
@@ -1047,7 +1237,7 @@ export default {
 
           return new Response(JSON.stringify({
               success: true,
-              totalFiles: list.objects.length,
+              totalFiles: validObjects.length,
               totalBytes: totalBytes,
               maxStorageBytes: MAX_STORAGE,
               usedGB: Math.round(usedGB * 100) / 100,
@@ -1074,10 +1264,11 @@ export default {
 
       try {
           const list = await env.BUCKET.list();
+          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
           const now = Date.now();
           const toDelete = [];
 
-          list.objects.forEach(obj => {
+          validObjects.forEach(obj => {
               const k = obj.key;
               if (k.startsWith('1d/') && obj.uploaded) {
                   if (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000) toDelete.push(k);
@@ -1117,6 +1308,7 @@ export default {
         const list = await env.BUCKET.list();
 
         for (const obj of list.objects) {
+            if (obj.key.startsWith("_system/")) continue;
             const uploadTime = new Date(obj.uploaded).getTime();
             const ageMs = now - uploadTime;
 

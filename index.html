@@ -1985,6 +1985,14 @@
                     <span>Moderacja Plików</span>
                     <span class="admin-tab-badge" id="adminFilesCountBadge">0</span>
                 </button>
+                <button type="button" class="admin-tab-btn" data-admin-tab="feedback">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="17" x2="12" y2="22"></line>
+                        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                    </svg>
+                    <span>Zgłoszenia & Uwagi 📌</span>
+                    <span class="admin-tab-badge" id="adminFeedbackCountBadge" style="display: none;">0</span>
+                </button>
             </div>
 
             <!-- TAB 1: RENTOWNOŚĆ & FINANSE -->
@@ -2473,6 +2481,59 @@
                     <ul id="modFileList" class="mod-file-list"></ul>
                 </div>
             </div>
+
+            <!-- TAB 6: ZGŁOSZENIA & BŁĘDY OD UŻYTKOWNIKÓW -->
+            <div id="adminTabPane_feedback" class="admin-tab-pane" style="display: none;">
+                <!-- Statystyki zgłoszeń -->
+                <div class="admin-stats-mini-row" style="margin-bottom: 20px;">
+                    <div class="admin-mini-stat">
+                        <span>Wszystkie uwagi:</span>
+                        <strong id="adminStatFeedbackTotal">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Oczekujące (Nowe):</span>
+                        <strong style="color: #FFBC39;" id="adminStatFeedbackPending">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Rozwiązane:</span>
+                        <strong style="color: #10B981;" id="adminStatFeedbackResolved">0</strong>
+                    </div>
+                    <div class="admin-mini-stat">
+                        <span>Błędy (Bugi):</span>
+                        <strong style="color: #FF4439;" id="adminStatFeedbackBugs">0</strong>
+                    </div>
+                </div>
+
+                <!-- Pasek filtrów zgłoszeń -->
+                <div class="admin-card-box">
+                    <div class="admin-table-toolbar" style="margin-bottom: 16px;">
+                        <div class="mod-search-wrap" style="max-width: 320px;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mod-search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="adminFeedbackSearchInput" placeholder="Szukaj w treści lub po e-mailu..." class="mod-search-input">
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <select id="adminFeedbackCategoryFilter" class="dropsite-input" style="width: auto; margin: 0; padding: 6px 12px; font-size: 13px;">
+                                <option value="all">Wszystkie kategorie</option>
+                                <option value="bug">🐞 Tylko Błędy</option>
+                                <option value="suggestion">💡 Tylko Sugestie</option>
+                                <option value="payment">💳 Płatności / PRO</option>
+                                <option value="other">💬 Inne</option>
+                            </select>
+                            <select id="adminFeedbackStatusFilter" class="dropsite-input" style="width: auto; margin: 0; padding: 6px 12px; font-size: 13px;">
+                                <option value="all">Wszystkie statusy</option>
+                                <option value="pending" selected>Oczekujące (Nowe)</option>
+                                <option value="resolved">Rozwiązane</option>
+                            </select>
+                            <button type="button" id="adminRefreshFeedbackBtn" class="btn-secondary" style="padding: 6px 14px; font-size: 13px;">Odśwież</button>
+                        </div>
+                    </div>
+
+                    <!-- Lista zgłoszeń -->
+                    <div id="adminFeedbackListContainer" class="admin-feedback-list-container">
+                        <div class="admin-feedback-empty">Ładowanie zgłoszeń...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2556,6 +2617,109 @@
             </svg>
             <span data-i18n="dock_login">Login</span>
         </button>
+    </div>
+
+    <!-- Pływająca pinezka zgłaszania błędu / uwag (Prawy dolny róg) -->
+    <button id="bugReportPin" class="bug-report-pin" type="button" aria-label="Zgłoś błąd lub uwagę" title="Zgłoś uwagę lub błąd" data-i18n-title="bug_report_pin_title">
+        <span class="pin-icon-wrap">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="17" x2="12" y2="22"></line>
+                <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+            </svg>
+            <span class="pin-pulse-dot"></span>
+        </span>
+        <span class="pin-label" data-i18n="bug_report_pin">Zgłoś błąd</span>
+    </button>
+
+    <!-- MODAL: ZGŁOŚ BŁĄD LUB UWAGĘ -->
+    <div id="feedbackModalWrap" class="mod-modal" hidden>
+        <div class="mod-container feedback-modal-container" style="max-width: 480px; padding: 32px 28px;">
+            <div class="mod-header" style="justify-content: space-between; position: relative; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="feedback-icon-badge">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="17" x2="12" y2="22"></line>
+                            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 19px; font-weight: 700; color: var(--text-main); margin: 0;" data-i18n="feedback_modal_title">Zgłoś uwagę lub błąd</h2>
+                        <span style="font-size: 12.5px; color: var(--text-muted);" data-i18n="feedback_modal_sub">Zauważyłeś problem lub masz pomysł? Daj nam znać!</span>
+                    </div>
+                </div>
+                <button type="button" id="closeFeedbackModal" class="mod-close" aria-label="Zamknij">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Formularz zgłoszenia -->
+            <form id="feedbackForm" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Kategoria błędu -->
+                <div>
+                    <label style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 8px; display: block;" data-i18n="feedback_category_label">Typ zgłoszenia</label>
+                    <div class="feedback-cat-grid" id="feedbackCatGrid">
+                        <button type="button" class="feedback-cat-pill active" data-category="bug">
+                            <span>🐞</span>
+                            <span data-i18n="feedback_cat_bug">Błąd na stronie</span>
+                        </button>
+                        <button type="button" class="feedback-cat-pill" data-category="suggestion">
+                            <span>💡</span>
+                            <span data-i18n="feedback_cat_suggestion">Sugestia / Pomysł</span>
+                        </button>
+                        <button type="button" class="feedback-cat-pill" data-category="payment">
+                            <span>💳</span>
+                            <span data-i18n="feedback_cat_payment">Płatności & PRO</span>
+                        </button>
+                        <button type="button" class="feedback-cat-pill" data-category="other">
+                            <span>💬</span>
+                            <span data-i18n="feedback_cat_other">Inna uwaga</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Treść wiadomości -->
+                <div>
+                    <label for="feedbackMessageInput" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 6px; display: block;" data-i18n="feedback_msg_label">Opis sytuacji</label>
+                    <textarea id="feedbackMessageInput" class="dropsite-input feedback-textarea" rows="4" placeholder="Opisz dokładnie, co poszło nie tak lub jak możemy ulepszyć Dropsite..." data-i18n-placeholder="feedback_msg_placeholder" required></textarea>
+                </div>
+
+                <!-- Opcjonalny e-mail do kontaktu -->
+                <div>
+                    <label for="feedbackEmailInput" style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 6px; display: block;" data-i18n="feedback_email_label">Twój e-mail (opcjonalnie do odpowiedzi)</label>
+                    <input type="email" id="feedbackEmailInput" class="dropsite-input" placeholder="np. kontakt@twojadomena.pl" data-i18n-placeholder="feedback_email_placeholder">
+                </div>
+
+                <!-- Diagnostyka -->
+                <div class="feedback-diag-notice">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span data-i18n="feedback_diag_hint">Do zgłoszenia automatycznie dołączymy dane przeglądarki i adres URL, by admin mógł szybko zdiagnozować usterkę.</span>
+                </div>
+
+                <!-- Przycisk wysyłki -->
+                <button type="button" id="btnSubmitFeedback" class="btn-primary" style="margin-top: 4px; padding: 13px; border-radius: 12px;">
+                    <span class="btn-text" data-i18n="feedback_submit_btn">Wyślij zgłoszenie do admina 🚀</span>
+                    <div class="btn-ripple"></div>
+                </button>
+            </form>
+
+            <!-- Stan sukcesu -->
+            <div id="feedbackSuccessState" class="feedback-success-box" hidden>
+                <div class="feedback-success-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h3 data-i18n="feedback_success_title">Dziękujemy za zgłoszenie!</h3>
+                <p data-i18n="feedback_success_desc">Twoja uwaga trafiła bezpośrednio do panelu administratora. Dzięki Tobie Dropsite staje się jeszcze lepszy!</p>
+            </div>
+        </div>
     </div>
 
     <div id="loginModalWrap" class="mod-modal" hidden>
