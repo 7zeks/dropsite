@@ -31,7 +31,10 @@
     let compressProfile = 'medium';
 
     // === INICJALIZACJA ===
-    document.addEventListener('DOMContentLoaded', () => {
+    let _toolboxInitialized = false;
+    function initToolboxAll() {
+        if (_toolboxInitialized) return;
+        _toolboxInitialized = true;
         initToolTabs();
         initMergeModule();
         initSplitModule();
@@ -52,7 +55,13 @@
                 if (navToolsBtn) navToolsBtn.click();
             }
         }, 120);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initToolboxAll);
+    } else {
+        initToolboxAll();
+    }
 
     // === GLOBALNA FUNKCJA PRZEŁĄCZANIA NARZĘDZI (DEEP-LINKING & MARKETING) ===
     window.switchToolTab = function(toolName, doScroll = true) {
@@ -266,7 +275,11 @@
             if (window.showNotification) window.showNotification('Pliki PDF zostały pomyślnie połączone!', 'success');
         } catch (err) {
             console.error('Merge error:', err);
-            if (window.showNotification) window.showNotification('Błąd łączenia PDF: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Jeden z plików PDF jest zabezpieczony hasłem. Odblokuj go przed połączeniem.' 
+                : ('Błąd łączenia PDF: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         } finally {
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;
@@ -453,7 +466,11 @@
             await renderSplitPagesGrid();
         } catch (err) {
             console.error('Błąd wczytywania PDF do podziału:', err);
-            if (window.showNotification) window.showNotification('Nie udało się wczytać pliku PDF: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Plik PDF jest zabezpieczony hasłem. Usuń hasło przed próbą podziału.' 
+                : ('Nie udało się wczytać pliku PDF: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         }
     }
 
@@ -656,28 +673,37 @@
 
                 if (textSpan) textSpan.textContent = 'Pakowanie do pliku ZIP...';
 
-                await new Promise((resolve, reject) => {
-                    fflate.zip(zipFiles, { level: 0 }, (err, zippedData) => {
-                        if (err) return reject(err);
-                        const zipBlob = new Blob([zippedData], { type: 'application/zip' });
-                        const zipName = `${baseName}_strony_PDF.zip`;
-
-                        showToolResult(
-                            'splitResultBox',
-                            zipBlob,
-                            zipName,
-                            `Rozbito na ${sortedPages.length} osobnych plików PDF i spakowano w archiwum ZIP (${formatBytes(zipBlob.size)}).`
-                        );
-                        resolve();
+                let zippedData;
+                if (typeof fflate !== 'undefined' && typeof fflate.zipSync === 'function') {
+                    zippedData = fflate.zipSync(zipFiles, { level: 0 });
+                } else {
+                    zippedData = await new Promise((resolve, reject) => {
+                        fflate.zip(zipFiles, { level: 0 }, (err, data) => {
+                            if (err) return reject(err);
+                            resolve(data);
+                        });
                     });
-                });
+                }
+                const zipBlob = new Blob([zippedData], { type: 'application/zip' });
+                const zipName = `${baseName}_strony_PDF.zip`;
+
+                showToolResult(
+                    'splitResultBox',
+                    zipBlob,
+                    zipName,
+                    `Rozbito na ${sortedPages.length} osobnych plików PDF i spakowano w archiwum ZIP (${formatBytes(zipBlob.size)}).`
+                );
             }
 
             if (window.playSound) window.playSound('success');
             if (window.showNotification) window.showNotification('Dokument został pomyślnie rozdzielony!', 'success');
         } catch (err) {
             console.error('Błąd podczas rozdzielania PDF:', err);
-            if (window.showNotification) window.showNotification('Błąd rozdzielania PDF: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Plik PDF jest zabezpieczony hasłem. Usuń hasło przed próbą rozdzielenia.' 
+                : ('Błąd rozdzielania PDF: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         } finally {
             if (textSpan) textSpan.textContent = origText;
             if (btnAction) btnAction.disabled = false;
@@ -1447,7 +1473,11 @@
             if (window.showNotification) window.showNotification(`Wczytano dokument (${studioTotalPages} ${studioTotalPages === 1 ? 'strona' : 'stron'})`, 'success');
         } catch (err) {
             console.error('Błąd wczytywania PDF:', err);
-            if (window.showNotification) window.showNotification('Błąd odczytu PDF: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Plik PDF jest zabezpieczony hasłem. Usuń hasło przed próbą edycji w Dropsite Studio.' 
+                : ('Błąd odczytu PDF: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         }
     }
 
@@ -3883,7 +3913,7 @@
         } else {
             if (dpiGroup) dpiGroup.style.display = 'none';
             if (chipPdf) {
-                chipPdf.style.display = 'inline-flex';
+                chipPdf.style.display = 'flex';
                 const pdfRadio = chipPdf.querySelector('input');
                 if (pdfRadio) pdfRadio.disabled = false;
             }
@@ -4398,7 +4428,11 @@
             if (window.showNotification) window.showNotification('Plik został pomyślnie przekonwertowany!', 'success');
         } catch (err) {
             console.error('Convert error:', err);
-            if (window.showNotification) window.showNotification('Błąd konwersji: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Plik PDF jest zabezpieczony hasłem. Usuń hasło przed próbą konwersji.' 
+                : ('Błąd konwersji: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         } finally {
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;
@@ -4608,7 +4642,11 @@
             if (window.showNotification) window.showNotification(`Zmniejszono rozmiar o ${savingsPct}%!`, 'success');
         } catch (err) {
             console.error('Błąd kompresji PDF:', err);
-            if (window.showNotification) window.showNotification('Błąd kompresji PDF: ' + err.message, 'error');
+            const isEncrypted = err && err.message && (err.message.toLowerCase().includes('encrypt') || err.message.toLowerCase().includes('password'));
+            const userMsg = isEncrypted 
+                ? 'Plik PDF jest zabezpieczony hasłem. Usuń hasło przed próbą kompresji.' 
+                : ('Błąd kompresji PDF: ' + err.message);
+            if (window.showNotification) window.showNotification(userMsg, 'error');
         } finally {
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;

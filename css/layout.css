@@ -32,8 +32,8 @@
 
 /* --- Value Proposition Section (Lewy górny tekst) --- */
 .value-prop-section {
-    position: fixed;
-    top: 130px; 
+    position: absolute;
+    top: 25px; 
     left: 40px;
     width: 380px;
     z-index: 20;

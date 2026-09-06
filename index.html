@@ -130,9 +130,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Równoległe ładowanie stylów CSS (eliminacja blokującego @import waterfall) -->
+    <link rel="stylesheet" href="css/vars.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/upload.css">
+    <link rel="stylesheet" href="css/success.css">
+    <link rel="stylesheet" href="css/widgets.css">
     <link rel="manifest" href="manifest.json">
-    <script src="js/i18n.js"></script>
+    <script src="js/i18n.js" defer></script>
 
     <!-- Google AdSense Verification & Auto Ads -->
     <meta name="google-adsense-account" content="ca-pub-5653151226207684">
@@ -373,8 +378,8 @@
                         <div class="drop-text" data-i18n="drop_title">Select files or drop here</div>
                         <div class="drop-subtext" data-i18n="drop_subtext">Folder support • Ctrl+V • All formats</div>
 
-                        <button type="button" class="btn-select" onclick="document.getElementById('fileInput').click()" data-i18n="btn_select_files">Select files</button>
-                        <input type="file" id="fileInput" aria-label="Select files to upload" multiple>
+                        <button type="button" class="btn-select" id="btnSelectFiles" data-i18n="btn_select_files">Select files</button>
+                        <input type="file" id="fileInput" aria-label="Select files to upload" multiple style="display: none;">
                     </div>
 
                     <div class="file-status-box" id="fileStatusBox">
@@ -397,13 +402,13 @@
                             <div class="fs-track" id="fsTrack" hidden>
                                 <div class="fs-fill" id="fsProgressBar"></div>
                             </div>
-                            <div class="fs-telemetry" id="fsTelemetry" hidden>
+                            <div class="fs-telemetry is-hidden" id="fsTelemetry" hidden>
                                 <span class="telemetry-item speed-item">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                     </svg>
-                                    <span id="fsSpeed">0.0 MB/s</span>
+                                    <span id="fsSpeed">-- MB/s</span>
                                 </span>
                                 <span class="telemetry-dot">&bull;</span>
                                 <span class="telemetry-item eta-item">
@@ -412,7 +417,7 @@
                                         <circle cx="12" cy="12" r="10"></circle>
                                         <polyline points="12 6 12 12 16 14"></polyline>
                                     </svg>
-                                    <span id="fsEta">Obliczanie...</span>
+                                    <span id="fsEta">Szacowanie...</span>
                                 </span>
                             </div>
                         </div>
@@ -600,6 +605,64 @@
                                 </label>
                                 <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 38px;" data-i18n="adv_spymode_hint">Recipient must hold down to reveal. Self-destructs and gets deleted after 30 seconds.</p>
                             </div>
+
+                            <!-- CINEMATIC DELIVERY (POKAZ ZDJĘĆ Z MUZYKĄ - DLA KOLEKCJI ZDJĘĆ / ALBUMU) -->
+                            <div class="adv-field" id="cinematicOptionCard" style="display: none; margin-top: 10px;">
+                                <label class="custom-switch-label" for="chkCinematicDelivery" style="cursor: pointer;">
+                                    <div class="custom-switch">
+                                        <input type="checkbox" id="chkCinematicDelivery">
+                                        <span class="switch-slider"></span>
+                                    </div>
+                                    <span class="switch-text" style="display: flex; align-items: center; gap: 6px;">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M9 18V5l12-2v13"></path>
+                                            <circle cx="6" cy="18" r="3"></circle>
+                                            <circle cx="18" cy="16" r="3"></circle>
+                                        </svg>
+                                        <span data-i18n="adv_cinematic_title">Cinematic Delivery (Pokaz zdjęć z muzyką)</span>
+                                        <span class="badge-spy-viral-pill" style="background: rgba(167, 139, 250, 0.2); color: #C4B5FD; border-color: rgba(167, 139, 250, 0.4);">ALBUM ✨</span>
+                                    </span>
+                                </label>
+                                <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 0 38px;" data-i18n="adv_cinematic_desc">Pełnoekranowy pokaz slajdów na ciemnym szkle z nastrojową muzyką w tle</p>
+                                
+                                <div id="cinematicTrackPicker" class="cinematic-track-picker" style="display: none; margin-top: 10px; margin-left: 38px;">
+                                    <span class="cinematic-picker-label" data-i18n="cinematic_select_track" style="font-size: 11.5px; color: #94A3B8; display: block; margin-bottom: 6px;">Wybierz nastrojowy podkład muzyczny:</span>
+                                    <div class="cinematic-track-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                        <label class="cinematic-track-item active" data-track="piano" style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                                            <input type="radio" name="cinematicTrack" value="piano" checked>
+                                            <span style="font-size: 11.5px; font-weight: 600;">🎹 Gentle Piano</span>
+                                        </label>
+                                        <label class="cinematic-track-item" data-track="lofi" style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                                            <input type="radio" name="cinematicTrack" value="lofi">
+                                            <span style="font-size: 11.5px; font-weight: 600;">☕ Lo-Fi Sunset</span>
+                                        </label>
+                                        <label class="cinematic-track-item" data-track="ambient" style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                                            <input type="radio" name="cinematicTrack" value="ambient">
+                                            <span style="font-size: 11.5px; font-weight: 600;">🌌 Cinematic Ambient</span>
+                                        </label>
+                                        <label class="cinematic-track-item" data-track="acoustic" style="display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                                            <input type="radio" name="cinematicTrack" value="acoustic">
+                                            <span style="font-size: 11.5px; font-weight: 600;">🎸 Acoustic Breeze</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PASEK ZATWIERDZENIA I AUTO-ZAPISU USTAWIEŃ TRANSFERU -->
+                            <div class="adv-apply-row" id="advApplyRow">
+                                <button type="button" id="btnApplyTransferSettings" class="btn-apply-settings" title="Zatwierdź i zaktualizuj link do pobierania">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="apply-icon">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    <span class="btn-apply-text" data-i18n="btn_apply_transfer_settings">Save and apply to link</span>
+                                </button>
+                                <div id="advSyncStatusBadge" class="adv-sync-badge">
+                                    <span class="adv-sync-dot"></span>
+                                    <span class="adv-sync-text" data-i18n="adv_sync_auto_saved">Auto-saved • Link updated</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -644,6 +707,10 @@
 
                         <div class="success-link-box">
                             <a href="#" id="finalLink" class="clickable-link">https://link...</a>
+                        </div>
+
+                        <div class="success-settings-status" id="successSettingsStatus">
+                            <div id="successAppliedBadges" class="success-applied-badges"></div>
                         </div>
 
                         <div class="success-actions">
@@ -1630,11 +1697,14 @@
                 <div class="upload-container download-card">
                     <!-- BRANDING TWÓRCY (PRO) -->
                     <div id="dlCreatorBrandBanner" class="creator-branding-banner" hidden style="display: none;">
-                        <div class="brand-avatar-icon">✦</div>
-                        <div class="brand-meta">
-                            <span class="brand-label" data-i18n="dl_creator_brand_title">Materials crafted by</span>
-                            <strong id="dlCreatorBrandName" class="brand-title"></strong>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="brand-avatar-icon">✦</div>
+                            <div class="brand-meta">
+                                <span class="brand-label" data-i18n="dl_creator_brand_title">Materials crafted by</span>
+                                <strong id="dlCreatorBrandName" class="brand-title"></strong>
+                            </div>
                         </div>
+                        <span class="brand-verified-pill">✓ Zweryfikowany twórca</span>
                     </div>
 
                     <!-- TARCZA SZYFROWANIA AES-256 (ZERO-KNOWLEDGE) -->
@@ -1701,42 +1771,6 @@
                         </button>
                     </div>
 
-                    <header class="upload-header" style="text-align: center;">
-                        <div id="dlBadgeWrap" style="margin-bottom: 12px;"></div>
-                        <h1 id="dlFileName" class="dl-title" style="word-break: break-all; font-size: 22px;" data-i18n="dl_loading_title">Loading file info...</h1>
-                        <p id="dlFileSize" class="dl-subtitle"
-                            style="color: var(--text-muted); font-size: 14px; margin-top: 4px;" data-i18n="dl_loading_subtitle">Fetching metadata from server...</p>
-                        <div id="dlStatsCounter" class="dl-stats-counter"
-                            style="margin-top: 10px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14"
-                                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg> <span id="dlViewCount">1</span> <span data-i18n="dl_views_label">views</span></span>
-                            <span>&bull;</span>
-                            <span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14"
-                                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg> <span id="dlDownloadCount">0</span> <span data-i18n="dl_downloads_label">downloads</span></span>
-                        </div>
-                    </header>
-
-                    <!-- KARTA NOTATKI OD NADAWCY -->
-                    <div id="dlNoteBox" class="dl-note-card" hidden>
-                        <div class="dl-note-header">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            <span data-i18n="dl_sender_note">Message from sender:</span>
-                        </div>
-                        <p id="dlNoteText" class="dl-note-body"></p>
-                    </div>
-
                     <!-- BLOKADA HASŁEM -->
                     <div id="dlPasswordLockBox" class="dl-password-box" hidden>
                         <div class="pwd-lock-icon">
@@ -1759,10 +1793,93 @@
                         <p id="dlPasswordError" class="pwd-error-text"></p>
                     </div>
 
-                    <!-- ZAWARTOŚĆ PO ODBLOKOWANIU -->
-                    <div id="dlContentWrap">
-                        <!-- SLOT REKLAMOWY TOP (UKRYWANY DLA PRO) -->
-                        <div class="ad-container ad-slot-top" id="adSlotTop">
+                    <!-- ZAWARTOŚĆ DLA ODBIORCY PO ODBLOKOWANIU (DESKTOP MASTER GRID) -->
+                    <!-- ZAWARTOŚĆ DLA ODBIORCY PO ODBLOKOWANIU (ZUNIFIKOWANA, SPÓJNA KARTA) -->
+                    <div id="dlContentWrap" class="dl-unified-container">
+                        <!-- JEDEN GŁÓWNY NAGŁÓWEK (BEZ DUBELKÓW) -->
+                        <header class="upload-header dl-header-unified">
+                            <div id="dlBadgeWrap" style="margin-bottom: 8px;"></div>
+                            <h1 id="dlFileName" class="dl-title" style="word-break: break-word; font-size: 22px; font-weight: 700; line-height: 1.35; color: #F8FAFC;" data-i18n="dl_loading_title">Loading file info...</h1>
+                            <p id="dlFileSize" class="dl-subtitle" style="color: var(--text-muted); font-size: 13.5px; margin-top: 4px;" data-i18n="dl_loading_subtitle">Fetching metadata from server...</p>
+                        </header>
+
+                        <!-- SCENA MULTIMEDIÓW (POKAZ KINOWY / WIDEO / ZDJĘCIA) -->
+                        <div class="dl-showcase-stage">
+                            <!-- CINEMATIC DELIVERY - BANER PREZENTACJI DLA ODBIORCY -->
+                            <div id="cinematicRecipientSection" class="cinematic-recipient-section" hidden style="display: none;">
+                                <div class="cinematic-hero-card" id="cinematicHeroCard">
+                                    <div class="cinematic-hero-left">
+                                        <div class="cinematic-hero-icon-box">
+                                            <span class="cinematic-film-icon">🎬</span>
+                                            <div class="cinematic-hero-pulse"></div>
+                                        </div>
+                                        <div class="cinematic-hero-texts">
+                                            <div class="cinematic-hero-badge">
+                                                <span class="cinematic-badge-dot"></span>
+                                                <span data-i18n="cinematic_hero_badge">Prezentacja Fotograficzna</span>
+                                            </div>
+                                            <strong class="cinematic-hero-title" data-i18n="cinematic_hero_title">Pokaz slajdów ze ścieżką dźwiękową</strong>
+                                            <p class="cinematic-hero-sub" data-i18n="cinematic_hero_sub">Obejrzyj pełnoekranowy pokaz przygotowany specjalnie dla Ciebie</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="btnStartCinematicShow" class="btn-cinematic-start">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                        <span data-i18n="cinematic_btn_start">Uruchom pokaz z muzyką</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- KONTENER NA WIDEO / ZDJĘCIA / GALERIĘ ALBUMU -->
+                            <div id="dlPreviewContainer" class="dl-preview-container">
+                                <!-- Podgląd wideo/obrazu/audio generowany przez app.js -->
+                            </div>
+                        </div>
+
+                        <!-- KARTA NOTATKI OD NADAWCY -->
+                        <div id="dlNoteBox" class="dl-note-card" hidden>
+                            <div class="dl-note-header">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <span data-i18n="dl_sender_note">Message from sender:</span>
+                            </div>
+                            <p id="dlNoteText" class="dl-note-body"></p>
+                        </div>
+
+                        <!-- OSTRZEŻENIE O SAMOZNISZCZENIU -->
+                        <div id="dlBurnWarning" class="burn-warning-box" hidden>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            <span data-i18n="dl_burn_warning">Single-use file: This file will be immediately and permanently destroyed from server after download!</span>
+                        </div>
+
+                        <!-- GŁÓWNA AKCJA POBRANIA -->
+                        <div class="dl-actions">
+                            <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span class="btn-text" data-i18n="dl_btn_download">Download File</span>
+                                <div class="btn-ripple"></div>
+                            </a>
+
+                            <button type="button" class="btn-subtle-upload-own" onclick="if(window.navigateToHome){ window.navigateToHome(true); } else { document.querySelector('[data-target=\'view-glowna\']').click(); }">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span data-i18n="dl_btn_upload_own">Prześlij własny plik za darmo na Dropsite</span>
+                            </button>
+                        </div>
+
+                        <!-- SLOT REKLAMOWY (UKRYWANY DLA PRO) - PRZENIESIONY POD PRZYCISK POBIERANIA -->
+                        <div class="ad-container ad-slot-bottom" id="adSlotTop" style="margin-top: 24px; margin-bottom: 12px;">
                             <span class="ad-label" data-i18n="ad_label">Advertisement</span>
                             <div class="ad-content" id="adContentTop">
                                 <div class="ad-placeholder-banner">
@@ -1775,69 +1892,26 @@
                             </div>
                         </div>
 
-                        <div id="dlPreviewContainer" class="dl-preview-container">
-                            <!-- Podgląd wideo/obrazu/audio/ikona generowany przez app.js -->
-                        </div>
-
-                        <div id="dlBurnWarning" class="burn-warning-box" hidden>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF4439"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                style="vertical-align: -2px; margin-right: 6px; flex-shrink: 0;">
-                                <path
-                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                                </path>
-                                <line x1="12" y1="9" x2="12" y2="13"></line>
-                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                            </svg>
-                            <span data-i18n="dl_burn_warning">Single-use file: This file will be immediately and permanently destroyed from server after download!</span>
-                        </div>
-
-                        <div class="dl-actions">
-                            <a href="#" id="dlDownloadBtn" class="btn-primary dl-btn-large">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- DYSKRETNY LICZNIK NA DOLE -->
+                        <div id="dlStatsCounter" class="dl-stats-counter">
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg> 
+                                <span id="dlViewCount">1</span> <span data-i18n="dl_views_label">views</span>
+                            </span>
+                            <span>&bull;</span>
+                            <span style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="7 10 12 15 17 10"></polyline>
                                     <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                <span class="btn-text" data-i18n="dl_btn_download">Download File</span>
-                                <div class="btn-ripple"></div>
-                            </a>
-
-                            <button type="button" class="btn-secondary dl-btn-secondary"
-                                onclick="if(window.navigateToHome){ window.navigateToHome(true); } else { document.querySelector('[data-target=\'view-glowna\']').click(); }">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                                <span data-i18n="dl_btn_upload_own">Upload your own file for free</span>
-                            </button>
+                                </svg> 
+                                <span id="dlDownloadCount">0</span> <span data-i18n="dl_downloads_label">downloads</span>
+                            </span>
                         </div>
-
-                        <!-- SLOT REKLAMOWY BOTTOM (UKRYWANY DLA PRO) -->
-                        <div class="ad-container ad-slot-bottom" id="adSlotBottom">
-                            <span class="ad-label" data-i18n="ad_label">Advertisement</span>
-                            <div class="ad-content" id="adContentBottom">
-                                <div class="ad-placeholder-banner">
-                                    <div class="ad-placeholder-inner">
-                                        <span class="ad-badge-subtle">✦</span>
-                                        <span data-i18n="ad_pro_teaser_2">Support Dropsite & remove ads permanently</span>
-                                        <button type="button" class="btn-ad-upgrade" onclick="window.openProModal()" data-i18n="ad_btn_upgrade_2">Remove Ads</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- VIRAL PROMO PRO -->
-                        <div class="dl-promo-card">
-                            <div class="dl-promo-left">
-                                <div class="dl-promo-tag" data-i18n="dl_promo_title">✦ Dropsite PRO</div>
-                                <p data-i18n="dl_promo_desc">Send huge packages up to 10 GB with zero ads and unlimited time.</p>
-                            </div>
-                            <button type="button" class="btn-promo-action" onclick="window.openProModal()" data-i18n="dl_promo_btn">Check PRO offer</button>
-                        </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -1927,23 +2001,38 @@
                     </div>
                 </div>
 
-                <!-- Przełącznik zakresu dla Administratora (Wszystkie vs Moje) -->
-                <div id="adminPanelScopeWrap" class="admin-scope-wrap" style="display: none;">
-                    <button type="button" class="scope-btn active" data-scope="all">
-                        <span>🌐 Wszystkie (Serwer)</span>
+                <!-- Prawy róg nagłówka: Przełącznik dla admina, Kapsułka Zgłoś błąd, Zamknij panel -->
+                <div class="mod-header-actions">
+                    <!-- Przełącznik zakresu dla Administratora (Wszystkie vs Moje) -->
+                    <div id="adminPanelScopeWrap" class="admin-scope-wrap" style="display: none;">
+                        <button type="button" class="scope-btn active" data-scope="all">
+                            <span>🌐 Wszystkie (Serwer)</span>
+                        </button>
+                        <button type="button" class="scope-btn" data-scope="mine">
+                            <span>👤 Tylko moje pliki</span>
+                        </button>
+                    </div>
+
+                    <!-- Kapsułka Zgłoś błąd przeniesiona do panelu Moje Pliki (w rogu) -->
+                    <button id="bugReportPin" class="bug-report-pin" type="button" aria-label="Zgłoś błąd lub uwagę" title="Zgłoś uwagę lub błąd" data-i18n-title="bug_report_pin_title">
+                        <span class="pin-icon-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="17" x2="12" y2="22"></line>
+                                <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                            </svg>
+                            <span class="pin-pulse-dot"></span>
+                        </span>
+                        <span class="pin-label" data-i18n="bug_report_pin">Zgłoś błąd</span>
                     </button>
-                    <button type="button" class="scope-btn" data-scope="mine">
-                        <span>👤 Tylko moje pliki</span>
+
+                    <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
                     </button>
                 </div>
-
-                <button id="closeModBtn" class="mod-close" aria-label="Zamknij panel">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
             </div>
 
             <!-- Mini-statystyki u góry -->
@@ -2619,18 +2708,6 @@
         </button>
     </div>
 
-    <!-- Pływająca pinezka zgłaszania błędu / uwag (Prawy dolny róg) -->
-    <button id="bugReportPin" class="bug-report-pin" type="button" aria-label="Zgłoś błąd lub uwagę" title="Zgłoś uwagę lub błąd" data-i18n-title="bug_report_pin_title">
-        <span class="pin-icon-wrap">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="17" x2="12" y2="22"></line>
-                <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
-            </svg>
-            <span class="pin-pulse-dot"></span>
-        </span>
-        <span class="pin-label" data-i18n="bug_report_pin">Zgłoś błąd</span>
-    </button>
-
     <!-- MODAL: ZGŁOŚ BŁĄD LUB UWAGĘ -->
     <div id="feedbackModalWrap" class="mod-modal" hidden>
         <div class="mod-container feedback-modal-container" style="max-width: 480px; padding: 32px 28px;">
@@ -3100,6 +3177,14 @@
                         </svg>
                         <span>Otwórz w nowej karcie</span>
                     </a>
+                    <button type="button" id="dlLightboxDownloadSingle" class="dl-lightbox-tool-btn" style="display: none; background: rgba(196, 231, 212, 0.18); border-color: rgba(196, 231, 212, 0.4); color: #C4E7D4;" title="Pobierz to zdjęcie">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Pobierz zdjęcie</span>
+                    </button>
                     <button type="button" id="dlLightboxCloseBtn" class="dl-lightbox-tool-btn dl-lightbox-close-btn"
                         aria-label="Zamknij podgląd" title="Zamknij (Esc)">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3111,10 +3196,16 @@
                 </div>
             </div>
             <div class="dl-lightbox-body" id="dlLightboxBody">
+                <button type="button" class="dl-lightbox-nav-btn dl-lightbox-prev" id="dlLightboxPrevBtn" title="Poprzednie zdjęcie (←)" style="display: none;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
                 <img id="dlLightboxImg" src="" alt="" class="dl-lightbox-img">
+                <button type="button" class="dl-lightbox-nav-btn dl-lightbox-next" id="dlLightboxNextBtn" title="Następne zdjęcie (→)" style="display: none;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
             </div>
             <div class="dl-lightbox-footer">
-                <span>Kliknij zdjęcie, aby przybliżyć / oddalić &bull; Klawisz <strong>Esc</strong> zamyka</span>
+                <span id="dlLightboxCounterText">Kliknij zdjęcie, aby przybliżyć / oddalić &bull; Strzałki &larr; &rarr; przewijają album &bull; Klawisz <strong>Esc</strong> zamyka</span>
             </div>
         </div>
     </div>
@@ -3158,6 +3249,109 @@
             </div>
             <div class="dl-lightbox-footer">
                 <span>Podgląd bezpośrednio w pamięci przeglądarki &bull; Klawisz <strong>Esc</strong> zamyka</span>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- MODAL: PEŁNOEKRANOWY POKAZ KINOWY (CINEMATIC DELIVERY) -->
+    <div id="cinematicModal" class="cinematic-modal" hidden style="display: none;">
+        <div class="cinematic-backdrop" id="cinematicBackdrop"></div>
+        <div class="cinematic-container">
+            <!-- HUD TOP -->
+            <header class="cinematic-hud-top">
+                <div class="cinematic-hud-left">
+                    <span class="cinematic-brand-tag">DROPSITE CINEMATIC</span>
+                    <strong id="cinematicCollectionTitle" class="cinematic-collection-title">Kolekcja Fotografii</strong>
+                </div>
+                <div class="cinematic-hud-center">
+                    <span id="cinematicSlideCounter" class="cinematic-counter">1 / 1</span>
+                </div>
+                <div class="cinematic-hud-right">
+                    <!-- PRZEŁĄCZNIK DŹWIĘKU -->
+                    <button type="button" id="btnCinematicSoundToggle" class="cinematic-tool-btn" title="Włącz / Wycisz dźwięk (M)" aria-label="Dźwięk">
+                        <div class="cinematic-eq-bars" id="cinematicEqBars">
+                            <span class="cinematic-eq-bar"></span>
+                            <span class="cinematic-eq-bar"></span>
+                            <span class="cinematic-eq-bar"></span>
+                            <span class="cinematic-eq-bar"></span>
+                        </div>
+                        <span id="cinematicSoundLabel" class="cinematic-tool-label">Gentle Piano</span>
+                    </button>
+                    <!-- PEŁNY EKRAN -->
+                    <button type="button" id="btnCinematicFullscreen" class="cinematic-tool-btn" title="Pełny ekran (F)" aria-label="Pełny ekran">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                    </button>
+                    <!-- ZAMKNIJ POKAZ -->
+                    <button type="button" id="btnCloseCinematicModal" class="cinematic-tool-btn cinematic-close-btn" title="Zakończ pokaz (Esc)" aria-label="Zamknij">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- SCENA GŁÓWNA ZE ZDJĘCIEM -->
+            <main class="cinematic-stage" id="cinematicStage">
+                <div class="cinematic-slide-layer current" id="cinematicSlideCurrent">
+                    <img id="cinematicImgCurrent" class="cinematic-img ken-burns" src="" alt="Prezentacja" />
+                </div>
+                <div class="cinematic-slide-layer next" id="cinematicSlideNext" style="opacity: 0;">
+                    <img id="cinematicImgNext" class="cinematic-img" src="" alt="Prezentacja" />
+                </div>
+
+                <!-- PRZYCISKI BOCZNE LEWO / PRAWO -->
+                <button type="button" id="btnCinematicPrev" class="cinematic-nav-btn prev" title="Poprzednie zdjęcie (←)" aria-label="Poprzednie">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button type="button" id="btnCinematicNext" class="cinematic-nav-btn next" title="Następne zdjęcie (→)" aria-label="Następne">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </main>
+
+            <!-- HUD BOTTOM -->
+            <footer class="cinematic-hud-bottom">
+                <!-- PASEK CZASU AUTO-ADVANCE -->
+                <div class="cinematic-progress-track">
+                    <div class="cinematic-progress-bar" id="cinematicProgressBar"></div>
+                </div>
+                
+                <div class="cinematic-controls-bar">
+                    <div class="cinematic-controls-left">
+                        <button type="button" id="btnCinematicPlayPause" class="cinematic-ctrl-btn" title="Pauza / Wznów pokaz (Spacja)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="iconCinematicPlayPause"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            <span id="labelCinematicPlayPause" data-i18n="cinematic_pause">Pauza</span>
+                        </button>
+                    </div>
+
+                    <div class="cinematic-controls-right">
+                        <button type="button" id="btnCinematicDlSingle" class="cinematic-action-btn" title="Pobierz to zdjęcie w pełnej jakości">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span data-i18n="cinematic_btn_dl_single">Pobierz to zdjęcie</span>
+                        </button>
+                        <button type="button" id="btnCinematicDlAll" class="cinematic-action-btn primary" title="Pobierz całą paczkę zdjęć (ZIP)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><polyline points="9 14 12 17 15 14"></polyline></svg>
+                            <span data-i18n="cinematic_btn_dl_all">Pobierz całą paczkę (ZIP)</span>
+                        </button>
+                    </div>
+                </div>
+            </footer>
+
+            <!-- PLANSZA KOŃCOWA (FINISHED SCREEN) -->
+            <div id="cinematicFinishedCard" class="cinematic-finished-card" style="display: none;">
+                <div class="cinematic-finished-box">
+                    <span class="cinematic-finished-spark">✨</span>
+                    <h2 class="cinematic-finished-title" data-i18n="cinematic_finished_title">Koniec prezentacji</h2>
+                    <p class="cinematic-finished-sub" data-i18n="cinematic_finished_sub">Mamy nadzieję, że prezentacja przypadła Ci do gustu. Możesz teraz pobrać całą paczkę lub obejrzeć zdjęcia ponownie.</p>
+                    <div class="cinematic-finished-buttons">
+                        <button type="button" id="btnCinematicReplay" class="btn-cinematic-ghost">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                            <span data-i18n="cinematic_btn_replay">Obejrzyj ponownie</span>
+                        </button>
+                        <button type="button" id="btnCinematicFinishedDlAll" class="btn-cinematic-glow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><polyline points="9 14 12 17 15 14"></polyline></svg>
+                            <span data-i18n="cinematic_btn_dl_all">Pobierz całą paczkę (ZIP)</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3408,14 +3602,240 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
+    
+    <!-- DOCKED FLOATING CAPSULE TRIGGER (NA PRAWEJ KRAWĘDZI EKRANU) -->
+    <div id="sideProofingCapsuleTrigger" class="side-proofing-capsule-trigger" style="display: none;" title="Otwórz panel podglądu i pinezek">
+        <div class="side-capsule-pulse-indicator"></div>
+        <div class="side-capsule-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+        </div>
+        <div class="side-capsule-label-wrap">
+            <span class="side-capsule-label" data-i18n="side_capsule_label">Podgląd & Pinezki</span>
+            <span class="side-capsule-counter" id="sideCapsuleBadge">0</span>
+        </div>
+    </div>
+
+    <!-- BACKDROP BOCZNEGO PANELU PINEZEK -->
+    <div id="sideProofingDrawerBackdrop" class="side-proofing-drawer-backdrop" style="display: none;"></div>
+
+    <!-- BOCZNY PANEL PODGLĄDU I PINEZEK (CLIENT PROOFING DRAWER) -->
+    <aside id="sideProofingDrawer" class="side-proofing-drawer" aria-label="Panel podglądu i uwag do pliku">
+        <div class="side-drawer-header">
+            <div class="side-drawer-header-left">
+                <div class="side-drawer-icon-box">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
+                    </svg>
+                </div>
+                <div class="side-drawer-titles">
+                    <div class="side-drawer-title-row">
+                        <h3 class="side-drawer-main-title" data-i18n="side_drawer_title">Podgląd & Pinezki</h3>
+                        <span class="side-drawer-badge">FRAME.IO PROOFING</span>
+                    </div>
+                    <span class="side-drawer-file-name" id="sideDrawerFileName">plik.mp4</span>
+                </div>
+            </div>
+            <div class="side-drawer-header-right">
+                <button type="button" class="btn-side-drawer-close" id="btnCloseSideProofingDrawer" title="Zamknij panel (Esc)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="side-drawer-body">
+            <!-- SEKCJA WIDEO / GRAFIKI Z INTERAKTYWNĄ NAKŁADKĄ NA PINEZKI -->
+            <div class="side-media-viewport-card">
+                <div class="side-media-wrapper" id="sideMediaWrapper">
+                    <video id="sideProofingVideo" class="side-proofing-video" playsinline preload="metadata" controlslist="nodownload" style="display: none;"></video>
+                    <img id="sideProofingImage" class="side-proofing-image" alt="Podgląd grafiki" style="display: none;">
+                    
+                    <!-- Warstwa kliknięcia do stawiania pinezek -->
+                    <div class="side-proofing-overlay" id="sideProofingOverlay" title="Kliknij w dowolne miejsce na klatce, aby postawić pinezkę">
+                        <div class="side-overlay-cursor-hint">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            <span>Kliknij, aby dodać uwagę</span>
+                        </div>
+                        <div id="sideProofingPinsLayer" class="side-proofing-pins-layer"></div>
+                    </div>
+                </div>
+
+                <!-- PASEK TIMELINE (DLA WIDEO) -->
+                <div class="side-timeline-container" id="sideTimelineContainer" style="display: none;">
+                    <div class="side-timeline-track-row">
+                        <div class="side-timeline-track" id="sideProofingTimelineTrack" title="Kliknij lub przeciągnij, aby przewinąć">
+                            <div class="side-timeline-progress" id="sideProofingTimelineProgress">
+                                <div class="side-timeline-thumb"></div>
+                            </div>
+                            <div id="sideProofingTimelineMarkersLayer" class="side-timeline-markers-layer"></div>
+                            <div class="side-timeline-hover-indicator" id="sideTimelineHoverIndicator">
+                                <span class="side-timeline-hover-time" id="sideTimelineHoverTime">00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="side-timeline-controls-row">
+                        <div class="side-timeline-controls-left">
+                            <button type="button" class="btn-side-timeline-play" id="btnSideProofingPlay" title="Odtwórz / Wstrzymaj (Spacja)">
+                                <svg id="sidePlayIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                <svg id="sidePauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            </button>
+                            <span class="side-timeline-time" id="sideProofingTimeDisplay">00:00 / 00:00</span>
+                        </div>
+                        <div class="side-timeline-controls-right">
+                            <span class="side-timeline-hint">Spacja = Play • C = Uwaga</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASEK AKCJI SZYBKICH -->
+            <div class="side-drawer-toolbar">
+                <div class="side-toolbar-left">
+                    <button type="button" class="btn-side-action btn-side-add-pin" id="btnSideProofingAddHere" title="Dodaj uwagę do aktualnego momentu">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span data-i18n="btn_add_pin_frame">Dodaj uwagę w tej klatce</span>
+                    </button>
+                    <button type="button" class="btn-side-action" id="btnSideProofingToggleMode" title="Włącz / wyłącz widok pinezek">
+                        <span class="side-toggle-dot"></span>
+                        <span data-i18n="btn_toggle_pins">Pinezki</span>
+                    </button>
+                </div>
+                <div class="side-toolbar-right">
+                    <button type="button" class="btn-side-action" id="btnSideProofingExport" title="Kopiuj listę uwag do schowka">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>Kopiuj</span>
+                    </button>
+                    <button type="button" class="btn-side-action" id="btnSideProofingDownloadTxt" title="Pobierz plik tekstowy .TXT">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>.TXT</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- LISTA ZADAŃ I POPRAWEK (CHECKLISTA FRAME.IO) -->
+            <div class="side-drawer-tasks-container">
+                <div class="side-tasks-header">
+                    <div class="side-tasks-title-group">
+                        <span class="side-tasks-title" data-i18n="proofing_tasks_title">Lista uwag i poprawek</span>
+                        <span class="side-tasks-counter-pill" id="sideProofingPinCountBadge">0 uwag</span>
+                    </div>
+                    <span class="side-tasks-progress" id="sideProofingProgressCount">0/0 wykonane</span>
+                </div>
+                <div class="side-tasks-list" id="sideProofingTasksList">
+                    <div class="side-empty-placeholder">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="10" r="3"></circle>
+                            <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                        </svg>
+                        <p>Brak uwag. Kliknij w dowolne miejsce na wideo lub kliknij "Dodaj uwagę w tej klatce", aby postawić pierwszą pinezkę.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MODAL DODAWANIA UWAGI DO PINEZKI -->
+    <div id="proofingCommentModal" class="signature-modal-backdrop" style="display: none;">
+        <div class="signature-modal-box proofing-modal-box">
+            <div class="sig-modal-header">
+                <div class="sig-modal-title">
+                    <span class="proofing-modal-badge" id="proofingModalTimeBadge">00:00</span>
+                    <h3 id="proofingModalTitle" data-i18n="proofing_modal_title">Dodaj uwagę do klatki</h3>
+                </div>
+                <button type="button" class="btn-close-modal" id="proofingModalCloseBtn">✕</button>
+            </div>
+            <div class="sig-modal-body proofing-modal-body">
+                <div class="proofing-form-group">
+                    <label class="proofing-label" for="proofingAuthorInput" data-i18n="proofing_author_label">Twoje imię / marka:</label>
+                    <input type="text" id="proofingAuthorInput" class="tool-text-input" placeholder="np. Klient, Montażysta, Jan" maxlength="40">
+                </div>
+                <div class="proofing-form-group">
+                    <label class="proofing-label" for="proofingCommentInput" data-i18n="proofing_comment_label">Treść uwagi / poprawki:</label>
+                    <textarea id="proofingCommentInput" class="tool-text-input" rows="3" placeholder="np. Przyciemnij tło w tym ujęciu, zmień napis na 00:04..." maxlength="500"></textarea>
+                    <span class="proofing-input-hint">Wskazówka: Wciśnij <kbd>Ctrl + Enter</kbd>, aby szybko zapisać</span>
+                </div>
+            </div>
+            <div class="sig-modal-footer">
+                <button type="button" class="btn-sm-ghost" id="proofingModalCancelBtn" data-i18n="btn_cancel">Anuluj</button>
+                <button type="button" class="btn-primary" id="proofingModalSaveBtn" style="margin: 0; padding: 10px 22px; width: auto;" data-i18n="btn_save_pin">Zapisz uwagę</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/fflate.min.js"></script>
+    <script>
+        if (typeof fflate === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"><\/script>');
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="js/pdf.min.js"></script>
-    <script src="js/pdf-lib.min.js"></script>
-    <script src="js/toolbox.js"></script>
+    <!-- Inteligentny Lazy-Loader dla Zestawu Narzędzi PDF (oszczędność >1 MB na initial load) -->
+    <script>
+        let _toolboxLoadingPromise = null;
+        window.loadToolboxScripts = function () {
+            if (_toolboxLoadingPromise) return _toolboxLoadingPromise;
+            _toolboxLoadingPromise = new Promise(function (resolve, reject) {
+                function loadScript(src) {
+                    return new Promise(function (res, rej) {
+                        const s = document.createElement('script');
+                        s.src = src;
+                        s.async = false; // zachowaj kolejność wykonywania
+                        s.onload = res;
+                        s.onerror = rej;
+                        document.body.appendChild(s);
+                    });
+                }
+                loadScript('js/pdf.min.js')
+                    .then(function () { return loadScript('js/pdf-lib.min.js'); })
+                    .then(function () { return loadScript('js/toolbox.js'); })
+                    .then(resolve)
+                    .catch(reject);
+            });
+            return _toolboxLoadingPromise;
+        };
+
+        // Preload w tle po zakończeniu renderowania strony głównej (nie blokuje FCP/LCP)
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(function () {
+                window.loadToolboxScripts();
+            }, { timeout: 3500 });
+        } else {
+            setTimeout(function () {
+                window.loadToolboxScripts();
+            }, 3000);
+        }
+
+        // Natychmiastowy prefetch przy najeździe na przycisk "Narzędzia" lub kliknięciu
+        document.addEventListener('DOMContentLoaded', function () {
+            const toolNavBtns = document.querySelectorAll('.nav-btn[data-target="view-narzedzia"], .mobile-drawer-link[data-target="view-narzedzia"]');
+            toolNavBtns.forEach(function (btn) {
+                btn.addEventListener('mouseenter', function () { window.loadToolboxScripts(); }, { passive: true, once: true });
+                btn.addEventListener('click', function () { window.loadToolboxScripts(); });
+            });
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tool') || urlParams.get('tab') === 'tools' || window.location.hash.includes('narzedzia')) {
+                window.loadToolboxScripts();
+            }
+        });
+    </script>
     <script src="js/ads-engine.js"></script>
     <script src="app.js"></script>
 </body>

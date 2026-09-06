@@ -34,6 +34,15 @@ export default {
     // =========================================================================
     // HELPER: WYKRYWANIE TYPU MIME DLA MULTIMEDIÓW I DYSKU R2
     // =========================================================================
+    function safeDecode(val) {
+      if (!val || typeof val !== "string") return "";
+      try {
+        return decodeURIComponent(val);
+      } catch (_) {
+        return val;
+      }
+    }
+
     function getMimeType(fileName) {
       const ext = (fileName || '').split('.').pop().toLowerCase();
       const map = {
@@ -476,7 +485,11 @@ export default {
         const pwd = url.searchParams.get("pwd") || "";
         const maxdl = url.searchParams.get("maxdl") || "";
         const note = url.searchParams.get("note") || "";
+        const brand = url.searchParams.get("brand") || "";
         const isSpy = url.searchParams.get("spy") === "1" || url.searchParams.get("spy") === "true";
+        const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
+        const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
+        const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
         const isPro = isProAuthorized(request);
@@ -527,6 +540,10 @@ export default {
 
         // Bezpośredni zapis na dysk R2 z rozszerzonymi metadanymi i nagłówkiem Content-Type
         const detectedMime = getMimeType(filename);
+        const safeNote = note ? encodeURIComponent(note) : "";
+        const safeBrand = brand ? encodeURIComponent(brand) : "";
+        const safePwd = pwd ? encodeURIComponent(pwd) : "";
+
         await env.BUCKET.put(fileKey, request.body, {
             httpMetadata: {
                 contentType: detectedMime
@@ -535,13 +552,30 @@ export default {
                 originalName: filename,
                 views: "0",
                 downloads: "0",
-                password: pwd,
+                password: safePwd,
                 maxDownloads: maxdl,
-                note: note,
+                note: safeNote,
+                brand: safeBrand,
                 isSpy: isSpy ? "true" : "false",
+                isCinematic: isCinematic ? "true" : "false",
+                isAlbum: isAlbum ? "true" : "false",
+                cinematicTrack: cinematicTrack,
                 isPro: isPro ? "true" : "false"
             }
         });
+
+        if (note || brand) {
+            const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+            try {
+                await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
+                    note: note,
+                    brand: brand,
+                    maxDownloads: maxdl ? parseInt(maxdl, 10) : null
+                }), {
+                    httpMetadata: { contentType: "application/json" }
+                });
+            } catch (_) {}
+        }
 
         return new Response(JSON.stringify({
           success: true,
@@ -570,6 +604,11 @@ export default {
             const pwd = url.searchParams.get("pwd") || "";
             const maxdl = url.searchParams.get("maxdl") || "";
             const note = url.searchParams.get("note") || "";
+            const brand = url.searchParams.get("brand") || "";
+            const isSpy = url.searchParams.get("spy") === "1" || url.searchParams.get("spy") === "true";
+            const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
+            const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
+            const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
             const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
             
             const isPro = isProAuthorized(request);
@@ -614,9 +653,13 @@ export default {
             let fileKey = uniqueFilename;
             if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
             else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
-            else if (expiry === 'burn') fileKey = `burn/${uniqueFilename}`;
+            else if (expiry === 'burn' || isSpy) fileKey = `burn/${uniqueFilename}`;
 
             const detectedMime = getMimeType(filename);
+            const safeNote = note ? encodeURIComponent(note) : "";
+            const safeBrand = brand ? encodeURIComponent(brand) : "";
+            const safePwd = pwd ? encodeURIComponent(pwd) : "";
+
             const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey, {
                 httpMetadata: {
                     contentType: detectedMime
@@ -625,12 +668,30 @@ export default {
                     originalName: filename,
                     views: "0",
                     downloads: "0",
-                    password: pwd,
+                    password: safePwd,
                     maxDownloads: maxdl,
-                    note: note,
+                    note: safeNote,
+                    brand: safeBrand,
+                    isSpy: isSpy ? "true" : "false",
+                    isCinematic: isCinematic ? "true" : "false",
+                    isAlbum: isAlbum ? "true" : "false",
+                    cinematicTrack: cinematicTrack,
                     isPro: isPro ? "true" : "false"
                 }
             });
+
+            if (note || brand) {
+                const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+                try {
+                    await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
+                        note: note,
+                        brand: brand,
+                        maxDownloads: maxdl ? parseInt(maxdl, 10) : null
+                    }), {
+                        httpMetadata: { contentType: "application/json" }
+                    });
+                } catch (_) {}
+            }
             
             return new Response(JSON.stringify({
                 success: true,
@@ -757,12 +818,18 @@ export default {
             }
 
             const meta = object.customMetadata || {};
-            const correctPassword = meta.password || "";
+            const storedPassword = meta.password || "";
+            let decodedStoredPassword = "";
+            try { decodedStoredPassword = decodeURIComponent(storedPassword); } catch(_) { decodedStoredPassword = storedPassword; }
 
-            if (!correctPassword || correctPassword === password) {
+            if (!storedPassword || decodedStoredPassword === password || storedPassword === password) {
+                const isBurn = key.startsWith("burn/");
                 return new Response(JSON.stringify({
                     success: true,
-                    directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
+                    isBurn: isBurn,
+                    directUrl: isBurn 
+                        ? `${url.origin}/burn-download?key=${encodeURIComponent(key)}` 
+                        : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
                 }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
             } else {
                 return new Response(JSON.stringify({
@@ -772,6 +839,49 @@ export default {
             }
         } catch (err) {
             return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+    }
+
+    // Aktualizacja ustawień transferu (wiadomość dla odbiorcy, marka, limity) bez wydłużania linku
+    if (url.pathname === "/update-transfer-settings" && request.method === "POST") {
+        try {
+            const body = await request.json();
+            const { key, note, brand, maxDownloads } = body;
+
+            if (!key || !env.BUCKET) {
+                return new Response(JSON.stringify({ success: false, message: "Brak klucza lub bucketu" }), { 
+                    status: 400, 
+                    headers: { "Content-Type": "application/json", ...corsHeaders } 
+                });
+            }
+
+            const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+            const sidecarKey = `_system/meta_${safeKey}.json`;
+
+            let currentSidecar = {};
+            try {
+                const existing = await env.BUCKET.get(sidecarKey);
+                if (existing) {
+                    currentSidecar = JSON.parse(await existing.text());
+                }
+            } catch (_) {}
+
+            if (note !== undefined) currentSidecar.note = String(note).trim();
+            if (brand !== undefined) currentSidecar.brand = String(brand).trim();
+            if (maxDownloads !== undefined) currentSidecar.maxDownloads = maxDownloads ? parseInt(maxDownloads, 10) : null;
+
+            await env.BUCKET.put(sidecarKey, JSON.stringify(currentSidecar), {
+                httpMetadata: { contentType: "application/json" }
+            });
+
+            return new Response(JSON.stringify({ success: true, meta: currentSidecar }), {
+                headers: { "Content-Type": "application/json", ...corsHeaders }
+            });
+        } catch (err) {
+            return new Response(JSON.stringify({ success: false, message: err.message }), {
+                status: 500, 
+                headers: { "Content-Type": "application/json", ...corsHeaders } 
+            });
         }
     }
 
@@ -794,11 +904,45 @@ export default {
             else if (key.startsWith("30d/")) expiryType = "30d";
             else if (isBurn) expiryType = "burn";
 
+            const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+            let sidecarMeta = {};
+            try {
+                const sObj = await env.BUCKET.get(`_system/meta_${safeKey}.json`);
+                if (sObj) {
+                    sidecarMeta = JSON.parse(await sObj.text());
+                }
+            } catch (_) {}
+
             const meta = object.customMetadata || {};
             const originalName = meta.originalName || key.split('/').pop();
             const hasPassword = Boolean(meta.password && meta.password.trim().length > 0);
-            const maxDownloads = meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null;
-            const note = meta.note ? decodeURIComponent(meta.note) : "";
+            const maxDownloads = sidecarMeta.maxDownloads !== undefined 
+                ? sidecarMeta.maxDownloads 
+                : (meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null);
+
+            const rawNote = sidecarMeta.note !== undefined ? sidecarMeta.note : (meta.note || "");
+            const note = safeDecode(rawNote);
+            const rawBrand = sidecarMeta.brand !== undefined ? sidecarMeta.brand : (meta.brand || "");
+            const brand = safeDecode(rawBrand);
+            let hasUnboxing = Boolean(meta.hasUnboxing === "true" || meta.hasUnboxing === true);
+            let unboxingType = meta.unboxingType || "video";
+            let unboxingUrl = null;
+
+            try {
+                const unboxHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.webm`);
+                if (unboxHead) {
+                    hasUnboxing = true;
+                    unboxingType = unboxHead.customMetadata?.type || "video";
+                    unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
+                } else {
+                    const unboxAudioHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.mp3`);
+                    if (unboxAudioHead) {
+                        hasUnboxing = true;
+                        unboxingType = "audio";
+                        unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
+                    }
+                }
+            } catch (e) {}
 
             return new Response(JSON.stringify({
                 success: true,
@@ -810,13 +954,21 @@ export default {
                 httpMetadata: object.httpMetadata,
                 isBurn: isBurn,
                 isSpy: Boolean(meta.isSpy === "true" || meta.isSpy === true),
+                isCinematic: Boolean(meta.isCinematic === "true" || meta.isCinematic === true),
+                isAlbum: Boolean(meta.isAlbum === "true" || meta.isAlbum === true || (originalName && originalName.startsWith("Album_"))),
+                cinematicTrack: meta.cinematicTrack || "piano",
+                brand: meta.brand || "",
+                hasUnboxing: hasUnboxing,
+                unboxingType: unboxingType,
+                unboxingUrl: unboxingUrl,
                 expiryType: expiryType,
                 hasPassword: hasPassword,
                 maxDownloads: maxDownloads,
                 note: note,
                 views: parseInt(meta.views || "1", 10),
                 downloads: parseInt(meta.downloads || "0", 10),
-                directUrl: hasPassword ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
+                directUrl: hasPassword ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+                streamUrl: `${url.origin}/stream?key=${encodeURIComponent(key)}`
             }), { 
                 headers: { 
                     "Content-Type": "application/json", 
@@ -827,6 +979,43 @@ export default {
 
         } catch (err) {
             return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+    }
+
+    // =========================================================================
+    // ENDPOINT: STRUMIENIOWANIE I ODCZYT PLIKU Z PEŁNYMI NAGŁÓWKAMI CORS (/stream)
+    // =========================================================================
+    if (url.pathname === "/stream" && (request.method === "GET" || request.method === "HEAD")) {
+        const key = url.searchParams.get("key");
+        if (!key || !env.BUCKET) {
+            return new Response("Brak klucza pliku.", { status: 404, headers: corsHeaders });
+        }
+
+        try {
+            const range = request.headers.get("Range");
+            const options = range ? { range: request.headers } : undefined;
+            const object = await env.BUCKET.get(key, options);
+            if (!object) {
+                return new Response("Plik wygasł lub nie został znaleziony.", { status: 404, headers: corsHeaders });
+            }
+
+            const headers = new Headers();
+            object.writeHttpMetadata(headers);
+            headers.set("etag", object.httpEtag);
+            headers.set("Access-Control-Allow-Origin", "*");
+            headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+            headers.set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization");
+            headers.set("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
+            headers.set("X-Content-Type-Options", "nosniff");
+
+            if (range && object.range) {
+                headers.set("Content-Range", `bytes ${object.range.offset}-${object.range.offset + object.range.length - 1}/${object.size}`);
+                return new Response(object.body, { status: 206, headers });
+            }
+
+            return new Response(object.body, { headers });
+        } catch (err) {
+            return new Response("Błąd strumieniowania: " + err.message, { status: 500, headers: corsHeaders });
         }
     }
 
@@ -858,6 +1047,15 @@ export default {
             // Jeśli plik jest oznaczony jako 'burn', kasujemy go z R2 od razu po pobraniu!
             if (key.startsWith("burn/")) {
                 await env.BUCKET.delete(key);
+                const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+                try {
+                    await Promise.all([
+                        env.BUCKET.delete(`_system/meta_${safeKey}.json`),
+                        env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
+                        env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
+                        env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
+                    ]);
+                } catch (_) {}
             }
 
             return new Response(object.body, { headers });
@@ -1053,6 +1251,262 @@ export default {
     }
 
     // =========================================================================
+    // CLIENT PROOFING & REVISION PINS (MINI-FRAME.IO) API
+    // =========================================================================
+
+    // 1. POBIERANIE PINEZEK I UWAG DLA PLIKU
+    if (url.pathname === "/api/proofing" && request.method === "GET") {
+      const fileKey = url.searchParams.get("key");
+      if (!fileKey) {
+        return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+      let pins = [];
+      if (env.BUCKET) {
+        try {
+          const obj = await env.BUCKET.get(`_system/proofing_${safeKey}.json`);
+          if (obj) {
+            pins = JSON.parse(await obj.text());
+            if (!Array.isArray(pins)) pins = [];
+          }
+        } catch (e) {}
+      }
+      return new Response(JSON.stringify({ success: true, pins }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    // 2. DODAWANIE NOWEJ PINEZKI / UWAGI
+    if (url.pathname === "/api/proofing" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const fileKey = body.key;
+        if (!fileKey || !body.pin) {
+          return new Response(JSON.stringify({ success: false, message: "Nieprawidłowe dane" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+        const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        let pins = [];
+        if (env.BUCKET) {
+          try {
+            const obj = await env.BUCKET.get(`_system/proofing_${safeKey}.json`);
+            if (obj) {
+              pins = JSON.parse(await obj.text());
+              if (!Array.isArray(pins)) pins = [];
+            }
+          } catch (e) {}
+        }
+
+        const newPin = {
+          id: (body.pin.id && typeof body.pin.id === "string") ? body.pin.id.substring(0, 80) : ("pin_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7)),
+          time: typeof body.pin.time === "number" ? body.pin.time : null,
+          formattedTime: body.pin.formattedTime || null,
+          xPct: typeof body.pin.xPct === "number" ? Math.max(0, Math.min(100, Math.round(body.pin.xPct * 10) / 10)) : 50,
+          yPct: typeof body.pin.yPct === "number" ? Math.max(0, Math.min(100, Math.round(body.pin.yPct * 10) / 10)) : 50,
+          author: (body.pin.author || "Użytkownik").trim().substring(0, 60),
+          comment: (body.pin.comment || "").trim().substring(0, 2000),
+          resolved: false,
+          resolvedAt: null,
+          createdAt: new Date().toISOString(),
+          timestamp: Date.now()
+        };
+
+        pins.push(newPin);
+        if (pins.length > 300) pins = pins.slice(-300);
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(`_system/proofing_${safeKey}.json`, JSON.stringify(pins), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, pin: newPin, pins }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd serwera: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 3. PRZEŁĄCZANIE STATUSU ROZWIĄZANIA PINEZKI (RESOLVED / PENDING)
+    if (url.pathname === "/api/proofing/toggle" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const fileKey = body.key;
+        const pinId = body.pinId;
+        if (!fileKey || !pinId) {
+          return new Response(JSON.stringify({ success: false, message: "Brak klucza lub ID uwagi" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+        const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        let pins = [];
+        if (env.BUCKET) {
+          try {
+            const obj = await env.BUCKET.get(`_system/proofing_${safeKey}.json`);
+            if (obj) {
+              pins = JSON.parse(await obj.text());
+              if (!Array.isArray(pins)) pins = [];
+            }
+          } catch (e) {}
+        }
+
+        let updatedResolved = false;
+        pins = pins.map(p => {
+          if (p.id === pinId) {
+            const res = !p.resolved;
+            updatedResolved = res;
+            return { ...p, resolved: res, resolvedAt: res ? new Date().toISOString() : null };
+          }
+          return p;
+        });
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(`_system/proofing_${safeKey}.json`, JSON.stringify(pins), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, pinId, resolved: updatedResolved, pins }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd serwera: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 4. USUWANIE PINEZKI
+    if ((url.pathname === "/api/proofing/delete" || url.pathname === "/api/proofing") && (request.method === "POST" || request.method === "DELETE")) {
+      try {
+        const body = await request.json();
+        const fileKey = body.key;
+        const pinId = body.pinId;
+        if (!fileKey || !pinId) {
+          return new Response(JSON.stringify({ success: false, message: "Brak klucza lub ID uwagi" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+        const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        let pins = [];
+        if (env.BUCKET) {
+          try {
+            const obj = await env.BUCKET.get(`_system/proofing_${safeKey}.json`);
+            if (obj) {
+              pins = JSON.parse(await obj.text());
+              if (!Array.isArray(pins)) pins = [];
+            }
+          } catch (e) {}
+        }
+
+        pins = pins.filter(p => p.id !== pinId);
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(`_system/proofing_${safeKey}.json`, JSON.stringify(pins), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, pinId, pins }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd serwera: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // =========================================================================
+    // DIGITAL UNBOXING API (WIDEO / NOTATKA GŁOSOWA OD NADAWCY)
+    // =========================================================================
+
+    // 1. UPLOAD NAGRANIA POWITANIA (WIDEO LUB AUDIO)
+    if (url.pathname === "/upload-unboxing" && request.method === "PUT") {
+      try {
+        const fileKey = url.searchParams.get("key");
+        const type = (url.searchParams.get("type") || "video").toLowerCase();
+        if (!fileKey) {
+          return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        const ext = type === "audio" ? "mp3" : "webm";
+        const contentType = type === "audio" ? "audio/webm;codecs=opus" : "video/webm";
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(`_system/unboxing_${safeKey}.${ext}`, request.body, {
+            httpMetadata: { contentType: contentType },
+            customMetadata: {
+              type: type,
+              uploaded: new Date().toISOString(),
+              forFile: fileKey
+            }
+          });
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          message: "Nagranie powitania zapisane pomyślnie.",
+          type: type,
+          key: safeKey
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd zapisu nagrania: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 2. STREAMING / POBIERANIE NAGRANIA POWITANIA
+    if (url.pathname === "/unboxing" && request.method === "GET") {
+      const fileKey = url.searchParams.get("key");
+      if (!fileKey || !env.BUCKET) {
+        return new Response("Not Found", { status: 404, headers: corsHeaders });
+      }
+
+      const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+      let obj = await env.BUCKET.get(`_system/unboxing_${safeKey}.webm`);
+      let contentType = "video/webm";
+      if (!obj) {
+        obj = await env.BUCKET.get(`_system/unboxing_${safeKey}.mp3`);
+        contentType = "audio/webm";
+      }
+
+      if (!obj) {
+        return new Response("Unboxing recording not found", { status: 404, headers: corsHeaders });
+      }
+
+      const headers = new Headers();
+      obj.writeHttpMetadata(headers);
+      headers.set("etag", obj.httpEtag);
+      headers.set("Content-Type", obj.httpMetadata?.contentType || contentType);
+      headers.set("Accept-Ranges", "bytes");
+      Object.entries(corsHeaders).forEach(([k, v]) => headers.set(k, v));
+
+      return new Response(obj.body, { headers });
+    }
+
+    // =========================================================================
     // ZABEZPIECZENIE PANELU MODERACJI
     // =========================================================================
     const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; 
@@ -1080,6 +1534,15 @@ export default {
       if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
       const key = decodeURIComponent(url.pathname.split("/delete/")[1]);
       await env.BUCKET.delete(key);
+      const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+      try {
+          await Promise.all([
+              env.BUCKET.delete(`_system/meta_${safeKey}.json`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
+              env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
+          ]);
+      } catch (_) {}
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 

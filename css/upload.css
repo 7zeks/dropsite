@@ -1,20 +1,23 @@
 /* --- Główne Panele --- */
 .upload-container {
-    background: var(--panel-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--panel-border);
-    border-top: 1px solid var(--panel-border-highlight);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: var(--surface-glass-card);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow-volumetric-card);
     border-radius: var(--radius-lg);
     padding: 40px 32px;
     width: 100%;
     box-sizing: border-box;
-    transition: var(--transition-smooth);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+    position: relative;
 }
 
 .upload-container:hover {
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: var(--shadow-volumetric-card-hover);
+    border-top-color: rgba(255, 255, 255, 0.3);
 }
 
 /* --- Nagłówki --- */
@@ -35,8 +38,8 @@
 }
 
 @keyframes glow {
-    from { text-shadow: 0 0 10px rgba(15, 145, 210, 0.3); }
-    to { text-shadow: 0 0 20px rgba(15, 145, 210, 0.6); }
+    from { text-shadow: 0 0 10px rgba(94, 234, 212, 0.25); }
+    to { text-shadow: 0 0 20px rgba(94, 234, 212, 0.55); }
 }
 
 .upload-header p {
@@ -111,10 +114,11 @@
 /* --- Dropzone (oryginalne) --- */
 .dropzone {
     position: relative;
-    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border: 2px dashed rgba(196, 231, 212, 0.45);
     border-radius: var(--radius-md);
     padding: 40px 20px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-recessed);
+    box-shadow: var(--shadow-sunken-stage), 0 0 20px rgba(196, 231, 212, 0.08);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -131,17 +135,18 @@
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(45deg, transparent 30%, rgba(15, 145, 210, 0.05) 50%, transparent 70%);
-    opacity: 0;
+    background: radial-gradient(circle at 50% 30%, rgba(196, 231, 212, 0.12) 0%, transparent 70%);
+    opacity: 0.6;
     transition: opacity 0.3s;
+    pointer-events: none;
 }
 
 .dropzone:hover::before, .dropzone.active::before { opacity: 1; }
 
 .dropzone:hover, .dropzone.active {
-    border-color: var(--accent-blue);
-    background: rgba(15, 145, 210, 0.05);
-    box-shadow: 0 0 30px var(--accent-glow);
+    border-color: #C4E7D4;
+    background: radial-gradient(ellipse at 50% 0%, rgba(196, 231, 212, 0.16) 0%, rgba(8, 11, 16, 0.96) 100%);
+    box-shadow: inset 0 3px 20px rgba(0, 0, 0, 0.9), inset 0 0 35px var(--accent-glow), 0 0 30px rgba(196, 231, 212, 0.3), 0 1px 0 rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
 }
 
@@ -154,56 +159,55 @@
 }
 
 .upload-icon {
-    color: var(--text-muted);
+    color: #C4E7D4;
     transition: var(--transition-smooth);
-    filter: drop-shadow(0 0 10px rgba(15, 145, 210, 0.3));
+    filter: drop-shadow(0 0 12px rgba(196, 231, 212, 0.4));
 }
 
 .dropzone:hover .upload-icon, .dropzone.active .upload-icon {
-    color: var(--accent-blue);
+    color: #FFFFFF;
     transform: scale(1.1) rotate(5deg);
-    filter: drop-shadow(0 0 15px rgba(15, 145, 210, 0.5));
+    filter: drop-shadow(0 0 18px rgba(196, 231, 212, 0.8));
 }
 
 .drop-text { font-size: 15px; font-weight: 600; color: var(--text-main); }
 .drop-subtext { font-size: 13px; color: var(--text-muted); }
 
 .btn-select {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-main);
+    background: rgba(196, 231, 212, 0.18);
+    border: 1px solid rgba(196, 231, 212, 0.35);
+    color: #C4E7D4;
     border-radius: var(--radius-sm);
-    padding: 8px 16px;
+    padding: 8px 18px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
     margin-top: 10px;
+    box-shadow: 0 0 12px rgba(196, 231, 212, 0.15);
     transition: var(--transition-smooth);
+    pointer-events: none; /* Kliknięcie w przycisk jest jednolicie obsługiwane przez kontener dropzone */
 }
 
 .dropzone:hover .btn-select {
-    background: var(--accent-blue);
-    border-color: var(--accent-blue);
-    color: #fff;
+    background: #C4E7D4;
+    border-color: #C4E7D4;
+    color: #090A0F;
+    box-shadow: 0 4px 16px rgba(196, 231, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 input[type='file'] {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
+    display: none;
 }
 
 /* --- Zintegrowany File Info & Progress Bar --- */
 .file-status-box {
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--panel-border);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    background: linear-gradient(180deg, rgba(16, 22, 34, 0.85) 0%, rgba(9, 13, 22, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 4px 14px rgba(0, 0, 0, 0.35);
     border-radius: var(--radius-sm); 
     padding: 0 16px;
     gap: 14px;
@@ -265,12 +269,12 @@ input[type='file'] {
 
 .fs-fill {
     height: 100%;
-    background: linear-gradient(90deg, #1091d2, #C4E7D4, #FFFFFF);
+    background: linear-gradient(90deg, #A8DABF, #C4E7D4, #FFFFFF);
     background-size: 200% 100%;
     border-radius: 4px;
     width: 0%;
     transition: width 0.1s linear;
-    box-shadow: 0 0 15px var(--accent-glow), 0 0 5px var(--accent-blue);
+    box-shadow: 0 0 15px var(--accent-glow), 0 0 5px #C4E7D4;
     animation: flowBar 1.5s linear infinite;
 }
 
@@ -441,18 +445,21 @@ input[type='file'] {
 .btn-primary {
     box-sizing: border-box;
     margin-top: 18px;
-    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
+    background: linear-gradient(135deg, #C4E7D4 0%, #A8DABF 100%);
     color: #090A0F;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
     padding: 18px 24px;
     width: 100%;
     border-radius: var(--radius-md);
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 0.3px;
     font-family: inherit;
     cursor: pointer;
     transition: var(--transition-smooth);
-    box-shadow: 0 4px 14px var(--accent-glow);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 10px 28px -4px rgba(196, 231, 212, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -465,16 +472,18 @@ input[type='file'] {
     content: '';
     position: absolute;
     top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
     transition: left 0.5s;
 }
 
 .btn-primary:hover:not(:disabled)::before { left: 100%; }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px) scale(1.02);
-    background: linear-gradient(135deg, var(--accent-blue-hover) 0%, #1a9eff 100%);
-    box-shadow: 0 8px 24px var(--accent-glow);
+    transform: translateY(-2px) scale(1.015);
+    background: linear-gradient(135deg, #E2F5EC 0%, #C4E7D4 50%, #A8DABF 100%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 14px 34px -2px rgba(196, 231, 212, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border-top-color: #ffffff;
+    color: #05070A;
 }
 
 .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }

@@ -257,14 +257,14 @@ graph TD
     WOW --> F8[8. Kapsuła Czasu - Zaplanowany transfer]
 ```
 
-### 1. 🎬 „Digital Unboxing” (Wideo lub Głosowe Powitanie od Nadawcy)
-* **Mechanika:** Podczas wgrywania pliku, nadawca jednym kliknięciem nagrywa 15-sekundowe wideo z kamerki lub notatkę głosową.
-* **Doświadczenie odbiorcy:** Po otwarciu linku na szklanym panelu pojawia się pulsujący, zaokrąglony avatar z nagraniem nadawcy (np. montażysta tłumaczy klientowi, na co zwrócić uwagę w pliku).
+### 1. 🎬 „Digital Unboxing” (Wideo lub Głosowe Powitanie od Nadawcy) — [WDROŻONE ✅]
+* **Mechanika:** Podczas wgrywania pliku, nadawca jednym kliknięciem nagrywa 15-60-sekundowe wideo z kamerki lub notatkę głosową (mikrofon z wizualizacją fal dźwiękowych na żywo).
+* **Doświadczenie odbiorcy:** Po otwarciu linku na szklanym panelu pojawia się pulsujący, zaokrąglony avatar z nagraniem nadawcy (video loop) lub animowany equalizer audio. Kliknięcie rozwija pełny, szklany odtwarzacz z czystym dźwiękiem.
 * **Zastosowanie:** Agencje reklamowe, fotografowie, montażyści, a także zwykli ludzie wysyłający życzenia wideo wraz z prezentem.
 
-### 2. 🎵 „Cinematic Delivery” (Klimatyczna Galeria z Muzyką dla Fotografów)
-* **Mechanika:** Przy wysyłce paczki zdjęć nadawca włącza „Tryb Prezentacji” i wybiera nastrojowy podkład muzyczny (np. lofi beat lub łagodny fortepian).
-* **Doświadczenie odbiorcy:** Zdjęcia wyświetlają się w pełnoekranowym, kinowym pokazie slajdów na ciemnym szkle z płynną muzyką. Na końcu pojawia się przycisk pobrania całej paczki.
+### 2. 🎵 „Cinematic Delivery” (Klimatyczna Galeria z Muzyką dla Fotografów) — [WDROŻONE ✅]
+* **Mechanika:** Przy wysyłce paczki zdjęć nadawca włącza „Tryb Prezentacji (Cinematic Delivery)” i wybiera nastrojowy podkład muzyczny (Gentle Piano, Lo-Fi Sunset, Cinematic Ambient, Acoustic Breeze) z podglądem odsłuchu.
+* **Doświadczenie odbiorcy:** Zdjęcia wyświetlają się w pełnoekranowym, kinowym pokazie slajdów na ciemnym szkle z nastrojową muzyką (Web Audio synth), efektem powolnego najazdu Ken Burns, kontrolą dźwięku, możliwością pobrania pojedynczego zdjęcia oraz całej paczki ZIP.
 * **Dlaczego to sprzedaje PRO:** Fotografowie sesji ślubnych i biznesowych chętnie płacą abonament, bo ich oddanie materiałów wygląda 100x bardziej prestiżowo niż surowy ZIP.
 
 ### 3. 🕵️‍♂️ „Tryb Szpiegowski (Mission: Impossible)” — TikTok Viral Engine

@@ -4,11 +4,13 @@
         --panel-border: rgba(255, 255, 255, 0.08);
         --panel-border-highlight: rgba(255, 255, 255, 0.15);
         
-        /* TUTAJ ZMIANA: Zastępujemy niebieski miętowym! 
-           (Zostawiamy nazwę zmiennej, żeby nie psuć reszty plików) */
-        --accent-blue: #C4E7D4; 
-        --accent-blue-hover: #A8DABF; /* Lekko ciemniejsza mięta przy najeździe */
-        --accent-glow: rgba(196, 231, 212, 0.3); /* Miętowa poświata */
+        /* Główny akcent kolorystyczny: Czysta Pastelowa Mięta Dropsite */
+    --accent-mint: #C4E7D4;
+    --accent-mint-light: #E2F5EC;
+    --accent-mint-dark: #A8DABF;
+    --accent-blue: #C4E7D4; 
+    --accent-blue-hover: #A8DABF;
+    --accent-glow: rgba(196, 231, 212, 0.35);
     
     --success-green: #59A829;
     --success-green-hover: #6bb033;
@@ -23,6 +25,48 @@
     
     --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* --- Czyste ciemne szkło (Dark Glass) bez zielonego zanieczyszczenia --- */
+    --surface-glass-card: linear-gradient(180deg, rgba(20, 24, 33, 0.78) 0%, rgba(13, 16, 23, 0.9) 42%, rgba(8, 10, 15, 0.97) 100%);
+    --surface-glass-card-hover: linear-gradient(180deg, rgba(26, 31, 42, 0.82) 0%, rgba(16, 20, 28, 0.92) 42%, rgba(10, 12, 18, 0.98) 100%);
+    --surface-recessed: radial-gradient(ellipse at 50% 0%, rgba(16, 20, 28, 0.6) 0%, rgba(5, 7, 11, 0.95) 100%);
+    
+    /* Wielopoziomowe cienie przestrzenne z delikatną miętową aureolą */
+    --shadow-volumetric-card: 
+        0 2px 4px rgba(0, 0, 0, 0.25),
+        0 10px 22px -4px rgba(0, 0, 0, 0.45),
+        0 20px 45px -8px rgba(0, 0, 0, 0.55),
+        0 0 35px -10px rgba(196, 231, 212, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.18),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        
+    --shadow-volumetric-card-hover: 
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 14px 28px -4px rgba(0, 0, 0, 0.5),
+        0 28px 55px -10px rgba(0, 0, 0, 0.65),
+        0 0 45px -8px rgba(196, 231, 212, 0.16),
+        inset 0 1px 1px rgba(255, 255, 255, 0.22),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+
+    --shadow-sunken-stage: 
+        inset 0 3px 18px rgba(0, 0, 0, 0.92),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.75),
+        0 1px 0 rgba(255, 255, 255, 0.06);
+
+    --shadow-btn-tactile: 
+        0 4px 14px rgba(0, 0, 0, 0.4),
+        0 10px 28px -4px rgba(196, 231, 212, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+
+    --shadow-btn-tactile-hover: 
+        0 6px 20px rgba(0, 0, 0, 0.45),
+        0 14px 36px -2px rgba(196, 231, 212, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 *, *::before, *::after {
@@ -41,16 +85,22 @@ body {
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--bg-color); /* Twoje ciemne tło */
     
-    /* UPGRADE: Wiele warstw dla efektu głębi i dynamiki */
+    /* Stonowane, eleganckie tło – zredukowana winieta i łagodne rozproszenia */
     background-image: 
-        radial-gradient(circle at 20% 50%, rgba(196, 231, 212, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(196, 231, 212, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 50% 100%, rgba(89, 168, 41, 0.08) 0%, transparent 50%),
-        linear-gradient(135deg, rgba(20, 30, 48, 0.4) 0%, rgba(15, 20, 30, 0) 100%),
+        /* 1. Bardzo subtelna winieta zamiast ciężkiego zaciemnienia */
+        radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(2, 4, 8, 0.45) 100%),
+        /* 2. Delikatne, gładkie rozproszenie za kartą */
+        radial-gradient(ellipse 900px 500px at 50% 35%, rgba(196, 231, 212, 0.07) 0%, transparent 70%),
+        /* 3. Miękkie akcenty po bokach */
+        radial-gradient(circle at 18% 45%, rgba(196, 231, 212, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 82% 22%, rgba(196, 231, 212, 0.06) 0%, transparent 42%),
+        radial-gradient(circle at 50% 100%, rgba(89, 168, 41, 0.05) 0%, transparent 50%),
+        /* 4. Subtelny mikroskopijny raster */
         radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        radial-gradient(rgba(196, 231, 212, 0.08) 2px, transparent 2px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 30px 30px, 80px 80px;
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+        /* 5. Miętowe punkciki świetlne */
+        radial-gradient(rgba(196, 231, 212, 0.05) 2px, transparent 2px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 32px 32px, 80px 80px;
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
     
     color: var(--text-main);
     display: flex;
@@ -85,7 +135,7 @@ h1, h2, h3, .nav-logo, button, input, select, textarea {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
 }
 
-/* --- Aurora Background (Glassmorphism) --- */
+/* --- Aurora Background (Glassmorphism) - zredukowana intensywność --- */
 body::before, body::after {
     content: '';
     position: fixed;
@@ -95,11 +145,11 @@ body::before, body::after {
     background-blend-mode: screen;
 }
 body::before {
-    background: radial-gradient(circle at 50% 50%, rgba(196, 231, 212, 0.08), transparent 40%);
+    background: radial-gradient(circle at 50% 50%, rgba(196, 231, 212, 0.05), transparent 40%);
     animation: move-aurora-1 25s ease-in-out infinite alternate;
 }
 body::after {
-    background: radial-gradient(circle at 50% 50%, rgba(15, 145, 210, 0.06), transparent 40%);
+    background: radial-gradient(circle at 50% 50%, rgba(196, 231, 212, 0.04), transparent 40%);
     animation: move-aurora-2 30s ease-in-out infinite alternate-reverse;
 }
 

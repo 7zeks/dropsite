@@ -4,8 +4,44 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Cross-Origin-Opener-Policy: same-origin-allow-popups
 
-/css/*
+# HTML Documents: revalidate so updates are immediately visible without stale page caching
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Core Root Stylesheets & Scripts
+/style.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/app.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+# CSS & JS Directories
+/css/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /js/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Static Third-Party Vendor Libraries in /js/ (Immutable, 1 year cache)
+/js/pdf.min.js
+  Cache-Control: public, max-age=31536000, immutable
+/js/pdf.worker.min.js
+  Cache-Control: public, max-age=31536000, immutable
+/js/pdf-lib.min.js
+  Cache-Control: public, max-age=31536000, immutable
+/js/fflate.min.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Favicon, Icons, Images & Web App Manifest
+/*.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/*.jpeg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/*.ico
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/*.svg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/manifest.json
+  Cache-Control: public, max-age=86400
