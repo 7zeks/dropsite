@@ -1355,6 +1355,7 @@ body.is-admin .storage-widget {
 /* Widoki SPA z wydłużonym widokiem (pierwszy ekran czysty, stopka schowana poniżej 100vh) */
 #view-glowna,
 #view-narzedzia,
+#view-beam,
 #view-funkcje,
 #view-cennik,
 #view-kontakt,
@@ -1367,13 +1368,26 @@ body.is-admin .storage-widget {
     align-items: center;
     justify-content: flex-start;
     position: relative;
-    padding-bottom: 160px;
+    padding-bottom: 200px;
     box-sizing: border-box;
     width: 100%;
 }
 
+/* Dedykowane wydłużenie dla sekcji Beam P2P, aby stopka była głęboko pod pierwszym ekranem */
+#view-beam {
+    min-height: 115vh;
+    min-height: 115dvh;
+    padding-bottom: clamp(240px, 28vh, 400px);
+}
+
+#view-beam .main-wrapper {
+    max-width: 740px !important;
+    width: 100% !important;
+}
+
 #view-glowna[hidden],
 #view-narzedzia[hidden],
+#view-beam[hidden],
 #view-funkcje[hidden],
 #view-cennik[hidden],
 #view-kontakt[hidden],
@@ -1384,6 +1398,7 @@ body.is-admin .storage-widget {
 
 /* Opadanie kapsuły podstron (optyczne zbalansowanie przestrzeni pionowej) */
 #view-narzedzia .main-wrapper,
+#view-beam .main-wrapper,
 #view-funkcje .main-wrapper,
 #view-cennik .main-wrapper,
 #view-kontakt .main-wrapper,
@@ -1395,6 +1410,7 @@ body.is-admin .storage-widget {
 
 @media (max-width: 768px) {
     #view-narzedzia .main-wrapper,
+    #view-beam .main-wrapper,
     #view-funkcje .main-wrapper,
     #view-cennik .main-wrapper,
     #view-kontakt .main-wrapper,
@@ -17724,3 +17740,67 @@ body.studio-fullscreen-active {
     margin-top: 14px;
     text-decoration: none;
 }
+
+/* Siatka zalet i cech Dropsite Beam P2P pod kartą */
+.beam-features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 36px;
+    width: 100%;
+}
+
+@media (max-width: 640px) {
+    .beam-features-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+}
+
+.beam-feature-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(13, 17, 28, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 20px 22px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.beam-feature-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 24px rgba(6, 182, 212, 0.1);
+}
+
+.beam-feat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.beam-feat-content h4 {
+    margin: 0 0 5px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #F8FAFC;
+    letter-spacing: -0.2px;
+}
+
+.beam-feat-content p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #94A3B8;
+}
+
