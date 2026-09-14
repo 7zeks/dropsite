@@ -3,33 +3,93 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+    <!-- Główna strona transferu -->
     <url>
         <loc>https://dropsite.pages.dev/</loc>
-        <lastmod>2026-09-02</lastmod>
+        <lastmod>2026-09-13</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
+    
+    <!-- Dedykowane SEO Landing Pages (Narzędzia PDF w RAM) -->
     <url>
-        <loc>https://dropsite.pages.dev/#cennik</loc>
-        <lastmod>2026-09-02</lastmod>
+        <loc>https://dropsite.pages.dev/podpisz-pdf</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/polacz-pdf</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/kompresor-pdf</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/cenzura-pdf</loc>
+        <lastmod>2026-09-13</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://dropsite.pages.dev/#kontakt</loc>
-        <lastmod>2026-09-02</lastmod>
+        <loc>https://dropsite.pages.dev/konwertuj-pdf</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/narzedzia</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>https://dropsite.pages.dev/beam</loc>
+        <lastmod>2026-09-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Główne sekcje i podstrony -->
+    <url>
+        <loc>https://dropsite.pages.dev/funkcje</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/cennik</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/faq</loc>
+        <lastmod>2026-09-13</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/kontakt</loc>
+        <lastmod>2026-09-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://dropsite.pages.dev/#regulamin</loc>
-        <lastmod>2026-09-02</lastmod>
+        <loc>https://dropsite.pages.dev/regulamin</loc>
+        <lastmod>2026-09-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>
     <url>
-        <loc>https://dropsite.pages.dev/#polityka-prywatnosci</loc>
-        <lastmod>2026-09-02</lastmod>
+        <loc>https://dropsite.pages.dev/polityka-prywatnosci</loc>
+        <lastmod>2026-09-13</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>

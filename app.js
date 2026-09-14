@@ -94,6 +94,27 @@ if (loginBtn) {
     });
 }
 
+const dockLogoutBtn = document.getElementById('dockLogoutBtn');
+if (dockLogoutBtn) {
+    dockLogoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (auth.currentUser) {
+            auth.signOut().then(() => {
+                setProKey('');
+                showNotification('Wylogowano pomyślnie', 'info');
+            });
+        }
+    });
+}
+
+const dockUserInfo = document.getElementById('dockUserInfo');
+if (dockUserInfo) {
+    dockUserInfo.addEventListener('click', () => {
+        const openUserPanelBtn = document.getElementById('openUserPanelBtn');
+        if (openUserPanelBtn) openUserPanelBtn.click();
+    });
+}
+
 if (closeLoginModal) {
     closeLoginModal.addEventListener('click', () => {
         window.smoothCloseModal(loginModalWrap, () => {
@@ -244,7 +265,8 @@ function isProUser() {
             return false;
         }
     }
-    return getProKey().length > 0;
+    const isLocalDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
+    return getProKey().length > 0 || isLocalDev;
 }
 
 function setProKey(key) {
@@ -283,9 +305,13 @@ function updateAdminRoleUI() {
         }
     }
 
-    // Przycisk 1: Panel Admina (Wszystkie pliki serwera R2) - widoczny TYLKO dla prawdziwego admina w trybie 'admin'
+    // Przycisk 1: Panel Admina - widoczny TYLKO dla admina
     if (openModBtn) {
         openModBtn.style.display = isEffectiveAdmin ? 'inline-flex' : 'none';
+    }
+    const adminDivider = document.querySelector('.dock-admin-divider');
+    if (adminDivider) {
+        adminDivider.style.display = isEffectiveAdmin ? 'inline-block' : 'none';
     }
 
     // Przycisk 2: Panel Zwykły (Moje Pliki) - widoczny ZAWSZE dla każdego
@@ -293,14 +319,15 @@ function updateAdminRoleUI() {
         openUserPanelBtn.style.display = 'inline-flex';
         const span = openUserPanelBtn.querySelector('span');
         if (span) {
-            if (isProUser() && (!isRealAdmin || currentActiveRole === 'preview-pro')) {
-                span.textContent = 'Moje Pliki (PRO)';
-                openUserPanelBtn.title = 'Panel Twoich plików PRO';
-            } else {
-                span.textContent = 'Moje Pliki';
-                openUserPanelBtn.title = 'Panel Twoich wgranych plików';
-            }
+            span.textContent = 'Moje Pliki';
+            openUserPanelBtn.title = isProUser() ? 'Panel Twoich plików PRO' : 'Panel Twoich wgranych plików';
         }
+    }
+
+    const dockProBadge = document.getElementById('dockProBadge');
+    if (dockProBadge) {
+        const isPro = isProUser() && (!isRealAdmin || currentActiveRole === 'preview-pro');
+        dockProBadge.style.display = (auth.currentUser && isPro) ? 'inline-flex' : 'none';
     }
 
     updateProUI();
@@ -309,14 +336,58 @@ function updateAdminRoleUI() {
 // 3. Nasłuchiwanie stanu zalogowania
 auth.onAuthStateChanged(async user => {
     const btnText = loginBtn ? loginBtn.querySelector('span') : null;
+    const dockUserSection = document.getElementById('dockUserSection');
+    const dockDividerUser = document.getElementById('dockDividerUser');
+    const dockAvatar = document.getElementById('dockAvatar');
+    const dockUsername = document.getElementById('dockUsername');
+    const dockProBadge = document.getElementById('dockProBadge');
+    const dockLogoutBtn = document.getElementById('dockLogoutBtn');
 
     if (user) {
         document.body.classList.add('is-user-logged');
         const displayName = user.displayName ? user.displayName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Konto');
         if (btnText) btnText.textContent = displayName;
+
+        if (dockUserSection) dockUserSection.style.display = 'inline-flex';
+        if (dockDividerUser) dockDividerUser.style.display = 'inline-block';
+        if (loginBtn) loginBtn.style.display = 'none';
+
+        if (dockAvatar) dockAvatar.textContent = (displayName[0] || 'U').toUpperCase();
+        if (dockUsername) dockUsername.textContent = displayName;
+        if (dockLogoutBtn) dockLogoutBtn.title = `Wyloguj (${user.email || displayName})`;
+
+        const isPro = typeof isProUser === 'function' && isProUser();
+        if (dockProBadge) dockProBadge.style.display = isPro ? 'inline-flex' : 'none';
+
         if (loginBtn) {
             loginBtn.title = `Zalogowano jako: ${user.email || displayName} (Kliknij, aby się wylogować)`;
             loginBtn.classList.add('logged-in');
+        }
+
+        // Migracja plików wgranych przed zalogowaniem (jako gość) do profilu użytkownika
+        try {
+            const guestHistory = JSON.parse(localStorage.getItem('dropsite_user_history_guest') || '[]');
+            if (guestHistory.length > 0) {
+                const userStorageKey = `dropsite_user_history_${user.uid}`;
+                const userHistory = JSON.parse(localStorage.getItem(userStorageKey) || '[]');
+                const knownKeys = new Set(userHistory.map(h => h.key || h.url || h.name));
+                guestHistory.forEach(gh => {
+                    if (!knownKeys.has(gh.key || gh.url || gh.name)) {
+                        userHistory.unshift(gh);
+                    }
+                });
+                localStorage.setItem(userStorageKey, JSON.stringify(userHistory.slice(0, 500)));
+                localStorage.removeItem('dropsite_user_history_guest');
+            }
+        } catch (_) {}
+
+        // Sync user files with R2 cloud
+        if (typeof syncUserHistory === 'function') {
+            syncUserHistory().then(synced => {
+                if (synced && typeof renderUserHistory === 'function') {
+                    renderUserHistory();
+                }
+            });
         }
 
         // Automatyczna aktywacja oczekującego klucza po zalogowaniu
@@ -350,8 +421,9 @@ auth.onAuthStateChanged(async user => {
         }
 
         // Weryfikacja czy ten konkretny użytkownik ma aktywny klucz PRO przypisany do swojego konta
+        // Jeśli w pamięci lokalnej brak klucza (np. nowe urządzenie/telefon), odpytujemy serwer R2 po adresie e-mail
         const userStoredKey = (localStorage.getItem(`dropsite_pro_key_${user.uid}`) || localStorage.getItem('dropsite_pro_key') || '').trim();
-        if (userStoredKey && !isActualAdminUser()) {
+        if (!isActualAdminUser()) {
             try {
                 const vRes = await fetch(`${WORKER_URL}/verify-pro`, {
                     method: 'POST',
@@ -360,31 +432,52 @@ auth.onAuthStateChanged(async user => {
                         'X-Pro-Key': userStoredKey,
                         'X-User-Email': user.email || ''
                     },
-                    body: JSON.stringify({ key: userStoredKey, email: user.email })
+                    body: JSON.stringify({ key: userStoredKey, email: user.email || '' })
                 });
                 const vData = await vRes.json();
                 if (vData.success && vData.isPro) {
-                    setProKey(userStoredKey);
-                    localStorage.setItem(`dropsite_pro_key_${user.uid}`, userStoredKey);
+                    const activeKey = vData.key || userStoredKey || 'DROPSITE-PRO-ACTIVE';
+                    setProKey(activeKey);
+                    localStorage.setItem(`dropsite_pro_key_${user.uid}`, activeKey);
+                    localStorage.setItem('dropsite_pro_key', activeKey);
+                    if (vData.expires_at) {
+                        localStorage.setItem('dropsite_pro_expires', vData.expires_at);
+                    }
                 } else {
                     setProKey('');
                     localStorage.removeItem(`dropsite_pro_key_${user.uid}`);
                 }
             } catch(e) {
-                setProKey('');
+                // W razie błędu sieci, jeśli mamy lokalny klucz, zachowaj go
+                if (userStoredKey) {
+                    setProKey(userStoredKey);
+                }
             }
-        } else if (!isActualAdminUser()) {
-            setProKey('');
         }
     } else {
         document.body.classList.remove('is-user-logged');
+        const dockUserSection = document.getElementById('dockUserSection');
+        const dockDividerUser = document.getElementById('dockDividerUser');
+        const dockProBadge = document.getElementById('dockProBadge');
+
+        if (dockUserSection) dockUserSection.style.display = 'none';
+        if (dockDividerUser) dockDividerUser.style.display = 'none';
+        if (dockProBadge) dockProBadge.style.display = 'none';
+
         if (btnText) btnText.textContent = 'Login';
         if (loginBtn) {
+            loginBtn.style.display = 'inline-flex';
             loginBtn.title = 'Zaloguj się';
             loginBtn.classList.remove('logged-in');
         }
         if (!isActualAdminUser()) {
-            setProKey('');
+            // Sprawdź czy niezalogowany użytkownik posiada aktywny, niewygasły klucz lokalny (np. zakup BLIK bez konta)
+            const localKey = (localStorage.getItem('dropsite_pro_key') || '').trim();
+            const localExp = localStorage.getItem('dropsite_pro_expires');
+            const isLocalValid = localKey && (!localExp || new Date(localExp) > new Date());
+            if (!isLocalValid) {
+                setProKey('');
+            }
         }
     }
     updateAdminRoleUI();
@@ -715,6 +808,15 @@ function initBlikModalListeners() {
                 localStorage.setItem('dropsite_pro_type', 'blik_30d');
                 localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
 
+                if (window.auth?.currentUser?.email) {
+                    localStorage.setItem(`dropsite_pro_key_${window.auth.currentUser.uid}`, blikProKey);
+                    fetch(`${WORKER_URL}/verify-pro`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key: blikProKey, email: window.auth.currentUser.email })
+                    }).catch(() => {});
+                }
+
                 try {
                     let orders = JSON.parse(localStorage.getItem('dropsite_admin_orders_db') || '[]');
                     orders.unshift({
@@ -757,6 +859,7 @@ function initBlikModalListeners() {
 
 // Inicjalizacja przycisków PRO
 document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initDropsiteBeamUI === 'function') initDropsiteBeamUI();
     updateAdminRoleUI();
     initBlikModalListeners();
     initFeedbackSystem();
@@ -964,6 +1067,15 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('dropsite_pro_key', blikProKey);
         localStorage.setItem('dropsite_pro_type', 'blik_30d');
         localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
+
+        if (window.auth?.currentUser?.email) {
+            localStorage.setItem(`dropsite_pro_key_${window.auth.currentUser.uid}`, blikProKey);
+            fetch(`${WORKER_URL}/verify-pro`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: blikProKey, email: window.auth.currentUser.email })
+            }).catch(() => {});
+        }
 
         try {
             const rawOrders = localStorage.getItem('dropsite_admin_orders_db');
@@ -1248,6 +1360,31 @@ if (spyModeCheckbox) {
     });
 }
 
+// === KAPSUŁA CZASU (TIME-LOCKED DELIVERY) ===
+const timeLockCheckbox = document.getElementById('timeLockCheckbox');
+const timeLockSettingsBox = document.getElementById('timeLockSettingsBox');
+const timeLockDatetime = document.getElementById('timeLockDatetime');
+const timeLockHintInput = document.getElementById('timeLockHintInput');
+
+if (timeLockCheckbox) {
+    timeLockCheckbox.addEventListener('change', () => {
+        if (timeLockSettingsBox) {
+            timeLockSettingsBox.style.display = timeLockCheckbox.checked ? 'block' : 'none';
+        }
+        if (timeLockCheckbox.checked && timeLockDatetime) {
+            const minDate = new Date(Date.now() + 5 * 60 * 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            const toLocalISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            timeLockDatetime.min = toLocalISO(minDate);
+            if (!timeLockDatetime.value) {
+                const defaultDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                timeLockDatetime.value = toLocalISO(defaultDate);
+            }
+            if (typeof playSound === 'function') playSound('click');
+        }
+    });
+}
+
 // === EFEKT ANIMACJI OGNIA DLA OPCJI "BURN AFTER READ" ===
 function triggerBurnFireAnimation(targetElement) {
     const parentLabel = (targetElement && targetElement.closest('.option-item-burn')) || document.querySelector('.option-item-burn');
@@ -1292,10 +1429,48 @@ function triggerBurnFireAnimation(targetElement) {
     }
 }
 
+// === PŁYNNY ŚLIZGACZ / ANIMACJA WYBORU CZASU PRZECHOWYWANIA (AESTHETIC SPRING GLIDER) ===
+window.updateRetentionGlider = function(immediate = false) {
+    const radiosWrap = document.querySelector('.options-radios');
+    const glider = document.getElementById('optionsGlider');
+    if (!radiosWrap || !glider) return;
+    const checkedInput = radiosWrap.querySelector('input[name="duration"]:checked');
+    if (!checkedInput) return;
+    const activeLabel = checkedInput.closest('.option-item');
+    if (!activeLabel) return;
+
+    // Użyj offsetLeft / offsetTop, które są w lokalnym układzie współrzędnych rodzica (.options-radios)
+    // i nie ulegają zniekształceniom pod wpływem CSS zoom / transformacji przodków
+    const left = activeLabel.offsetLeft;
+    const top = activeLabel.offsetTop;
+    const width = activeLabel.offsetWidth;
+    const height = activeLabel.offsetHeight;
+
+    if (width === 0 || height === 0) return;
+
+    if (immediate) {
+        glider.style.transition = 'none';
+    } else {
+        glider.style.transition = '';
+    }
+
+    glider.style.width = `${Math.round(width)}px`;
+    glider.style.height = `${Math.round(height)}px`;
+    glider.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
+
+    // Klasa podświetlenia: glider-mode-1d, glider-mode-burn, glider-mode-30d, glider-mode-permanent
+    const val = checkedInput.value;
+    glider.className = `options-glider glider-mode-${val}`;
+};
+
 // Nasłuchiwanie wyboru czasu przechowywania
 document.querySelectorAll('input[name="duration"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
+        if (typeof playSound === 'function') playSound('click');
         const val = e.target.value;
+        if (typeof window.updateRetentionGlider === 'function') {
+            window.updateRetentionGlider();
+        }
         if (val === 'burn') {
             triggerBurnFireAnimation(e.target);
             if (typeof showNotification === 'function') {
@@ -1306,24 +1481,129 @@ document.querySelectorAll('input[name="duration"]').forEach(radio => {
                 showNotification(typeof t === 'function' ? t('notify_pro_required_perm') : 'Przechowywanie 30 Dni i Bezterminowe wymaga Dropsite PRO.', 'info');
             }
             window.openProModal();
-            const defaultRadio = document.querySelector('input[name="duration"][value="1d"]');
-            if (defaultRadio) defaultRadio.checked = true;
+            setTimeout(() => {
+                const defaultRadio = document.querySelector('input[name="duration"][value="1d"]');
+                if (defaultRadio) {
+                    defaultRadio.checked = true;
+                    if (typeof window.updateRetentionGlider === 'function') {
+                        window.updateRetentionGlider();
+                    }
+                }
+            }, 300);
         }
     });
 });
 
-// === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) ===
+// Inicjalizacja pozycji ślizgacza po załadowaniu oraz przy zmianie rozmiaru okna
+window.addEventListener('resize', () => {
+    if (typeof window.updateRetentionGlider === 'function') {
+        window.updateRetentionGlider(true);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof window.updateRetentionGlider === 'function') {
+            window.updateRetentionGlider(true);
+        }
+    }, 60);
+});
+
+// Wywołaj natychmiast, jeśli DOM jest już gotowy
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+        if (typeof window.updateRetentionGlider === 'function') {
+            window.updateRetentionGlider(true);
+        }
+    }, 100);
+}
+
+document.addEventListener('dropsite_language_changed', () => {
+    setTimeout(() => {
+        if (typeof window.updateRetentionGlider === 'function') {
+            window.updateRetentionGlider(true);
+        }
+    }, 40);
+});
+
+// === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) - MODAL COCKPIT ===
+window.openAdvSettingsModal = function() {
+    const modal = document.getElementById('advSettingsModalWrap');
+    if (modal) {
+        if (typeof window.smoothOpenModal === 'function') {
+            window.smoothOpenModal(modal);
+        } else {
+            modal.removeAttribute('hidden');
+            modal.style.display = 'flex';
+        }
+        if (typeof updateAdvActiveBadges === 'function') {
+            updateAdvActiveBadges();
+        }
+    }
+};
+
+window.closeAdvSettingsModal = function() {
+    const modal = document.getElementById('advSettingsModalWrap');
+    if (modal) {
+        modal.classList.add('is-closing');
+        setTimeout(() => {
+            modal.classList.remove('is-closing');
+            modal.setAttribute('hidden', '');
+            modal.style.display = 'none';
+            if (typeof updateAdvActiveBadges === 'function') {
+                updateAdvActiveBadges();
+            }
+        }, 140);
+    }
+};
+
 const advToggleBtn = document.getElementById('advToggleBtn');
-const customAdvBox = document.getElementById('customAdvBox');
-if (advToggleBtn && customAdvBox) {
-    advToggleBtn.addEventListener('click', () => {
-        const isHidden = customAdvBox.hidden || customAdvBox.style.display === 'none';
-        customAdvBox.hidden = !isHidden;
-        customAdvBox.style.display = isHidden ? 'flex' : 'none';
-        advToggleBtn.classList.toggle('active', isHidden);
-        advToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+const closeAdvSettingsModalBtn = document.getElementById('closeAdvSettingsModal');
+const advSettingsModalWrap = document.getElementById('advSettingsModalWrap');
+
+if (advToggleBtn) {
+    advToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.openAdvSettingsModal();
     });
 }
+
+if (closeAdvSettingsModalBtn) {
+    closeAdvSettingsModalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.closeAdvSettingsModal();
+    });
+}
+
+if (advSettingsModalWrap) {
+    advSettingsModalWrap.addEventListener('click', (e) => {
+        if (e.target === advSettingsModalWrap) {
+            window.closeAdvSettingsModal();
+        }
+    });
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('advSettingsModalWrap');
+        if (modal && !modal.hasAttribute('hidden') && modal.style.display !== 'none') {
+            window.closeAdvSettingsModal();
+        }
+    }
+});
+
+// Obsługa zakładek w mini-modalu opcji zaawansowanych
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.adv-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.getAttribute('data-tab');
+            document.querySelectorAll('.adv-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+            document.querySelectorAll('.adv-tab-pane').forEach(pane => {
+                pane.classList.toggle('active', pane.getAttribute('data-tab-content') === targetTab);
+            });
+        });
+    });
+});
 
 // === REKURSYWNY ODCZYT FOLDERÓW Z DROPZONE (FAIL-SAFE) ===
 async function scanFilesAndFolders(dataTransfer) {
@@ -1853,6 +2133,14 @@ async function decryptBufferAESGCM(combinedBuffer, key) {
 async function uploadFile() {
     if (!selectedFile) return;
 
+    // WERYFIKACJA BEZPIECZEŃSTWA: Blokada niebezpiecznych rozszerzeń
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
+    const ext = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
+    if (dangerousExtensions.includes(ext)) {
+        showError(`Pliki z rozszerzeniem ${ext} są zablokowane ze względów bezpieczeństwa.`);
+        return;
+    }
+
     let file = selectedFile;
     let duration = document.querySelector('input[name="duration"]:checked')?.value || '1d';
     const isSpyMode = Boolean(document.getElementById('spyModeCheckbox')?.checked);
@@ -1867,6 +2155,7 @@ async function uploadFile() {
     const fileMaxDl = document.querySelector('input[name="maxDownloads"]:checked')?.value || '';
     const creatorBrand = document.getElementById('creatorBrandInput')?.value.trim() || '';
     const isZeroKnowledgeEncrypted = document.getElementById('encryptZeroKnowledgeCheckbox')?.checked;
+    const isStripExif = Boolean(document.getElementById('stripExifCheckbox')?.checked);
 
     // Weryfikacja konta PRO dla dużych plików i długich okresów
     const isPro = isProUser();
@@ -1912,9 +2201,35 @@ async function uploadFile() {
         return;
     }
 
+    if (!isPro && isStripExif) {
+        showError('Prywatne czyszczenie metadanych EXIF / RODO w RAM wymaga konta Dropsite PRO.');
+        if (typeof showNotification === 'function') {
+            showNotification('Odblokuj Dropsite PRO, aby bezpiecznie czyścić metadane w RAM!', 'info');
+        }
+        window.openProModal();
+        return;
+    }
+
     // Zapisz parametry transferu do sesji sukcesu
     window._activeCreatorBrand = isPro && creatorBrand ? creatorBrand : '';
     window._activeEncryptionKeyB64 = '';
+
+    // Czyszczenie prywatnych metadanych EXIF w RAM przed ewentualnym szyfrowaniem / wysyłką
+    if (isPro && isStripExif && window.DropsiteRAM && typeof window.DropsiteRAM.sanitizeImageExif === 'function') {
+        uploadBtn.disabled = true;
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) btnTextSpan.textContent = 'Czyszczenie EXIF / RODO w RAM...';
+        try {
+            file = await window.DropsiteRAM.sanitizeImageExif(file);
+            selectedFile = file;
+            if (originalImageFile) originalImageFile = file;
+            if (typeof showNotification === 'function') {
+                showNotification('✓ Usunięto metadane EXIF i tagi GPS w 100% w pamięci RAM!', 'success');
+            }
+        } catch (exifErr) {
+            console.warn('RAM EXIF clean failed, proceeding:', exifErr);
+        }
+    }
 
     // Szyfrowanie pliku w pamięci RAM przed uploadem (Zero-Knowledge)
     if (isPro && isZeroKnowledgeEncrypted) {
@@ -1998,11 +2313,29 @@ async function uploadFile() {
     try {
         const isCinematic = Boolean(document.getElementById('chkCinematicDelivery')?.checked);
         const cinematicTrack = document.querySelector('input[name="cinematicTrack"]:checked')?.value || 'piano';
+        const isTimeLocked = Boolean(document.getElementById('timeLockCheckbox')?.checked);
+        let timelockTimestamp = null;
+        let timelockHint = '';
+
+        if (isTimeLocked) {
+            const timeLockDateInput = document.getElementById('timeLockDatetime');
+            if (!timeLockDateInput || !timeLockDateInput.value) {
+                showError('Wybierz datę i godzinę otwarcia Kapsuły Czasu.');
+                return;
+            }
+            const chosenTime = new Date(timeLockDateInput.value).getTime();
+            if (isNaN(chosenTime) || chosenTime <= Date.now()) {
+                showError('Data otwarcia Kapsuły Czasu musi być w przyszłości.');
+                return;
+            }
+            timelockTimestamp = chosenTime;
+            timelockHint = document.getElementById('timeLockHintInput')?.value.trim() || '';
+        }
 
         if (file.size <= 10 * 1024 * 1024) { 
-            await uploadFileStandard(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, btnTextSpan, updateTelemetry);
+            await uploadFileStandard(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, timelockTimestamp, timelockHint, btnTextSpan, updateTelemetry);
         } else { 
-            await uploadFileMultipart(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, btnTextSpan, updateTelemetry);
+            await uploadFileMultipart(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, timelockTimestamp, timelockHint, btnTextSpan, updateTelemetry);
         }
     } catch (error) {
         showError(error.message);
@@ -2010,7 +2343,7 @@ async function uploadFile() {
 }
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
-async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, btnTextSpan, onProgressUpdate) {
+async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
     const proKey = getProKey();
     let urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(file.name)}&expiry=${duration}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
@@ -2020,8 +2353,11 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
     if (creatorBrand) urlReq += `&brand=${encodeURIComponent(creatorBrand)}`;
     if (isSpy) urlReq += `&spy=1`;
     if (isCinematic) urlReq += `&cinematic=1&track=${encodeURIComponent(cinematicTrack || 'piano')}`;
+    if (timelock) urlReq += `&timelock=${encodeURIComponent(timelock)}`;
+    if (timehint) urlReq += `&timehint=${encodeURIComponent(timehint)}`;
     if (window._isUploadingAlbum || (file && file.name && file.name.startsWith('Album_'))) urlReq += `&album=1`;
     if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
+    if (window.auth?.currentUser?.email) urlReq += `&userEmail=${encodeURIComponent(window.auth.currentUser.email)}`;
     
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie...';
 
@@ -2060,11 +2396,12 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
     xhr.open("PUT", urlReq, true);
     xhr.setRequestHeader("Content-Type", file.type || 'application/octet-stream');
     if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
+    if (window.auth?.currentUser?.email) xhr.setRequestHeader("X-User-Email", window.auth.currentUser.email);
     xhr.send(file);
 }
 
 // === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Niezawodny) ===
-async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, btnTextSpan, onProgressUpdate) {
+async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
     const proKey = getProKey();
     let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
@@ -2074,10 +2411,14 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
     if (creatorBrand) urlReq += `&brand=${encodeURIComponent(creatorBrand)}`;
     if (isSpy) urlReq += `&spy=1`;
     if (isCinematic) urlReq += `&cinematic=1&track=${encodeURIComponent(cinematicTrack || 'piano')}`;
+    if (timelock) urlReq += `&timelock=${encodeURIComponent(timelock)}`;
+    if (timehint) urlReq += `&timehint=${encodeURIComponent(timehint)}`;
     if (window._isUploadingAlbum || (file && file.name && file.name.startsWith('Album_'))) urlReq += `&album=1`;
     if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
+    if (window.auth?.currentUser?.email) urlReq += `&userEmail=${encodeURIComponent(window.auth.currentUser.email)}`;
     
     const headers = proKey ? { 'X-Pro-Key': proKey } : {};
+    if (window.auth?.currentUser?.email) headers['X-User-Email'] = window.auth.currentUser.email;
     const response = await fetch(urlReq, { headers });
     const data = await response.json();
 
@@ -2221,6 +2562,15 @@ function buildTransferUrls(fileKey) {
         params.set('unbox', uType);
     }
     
+    // Kapsuła Czasu
+    if (document.getElementById('timeLockCheckbox')?.checked) {
+        const timeVal = document.getElementById('timeLockDatetime')?.value;
+        if (timeVal) {
+            const lockTs = new Date(timeVal).getTime();
+            if (!isNaN(lockTs)) params.set('timelock', String(lockTs));
+        }
+    }
+    
     const pStr = params.toString();
     if (pStr) {
         pageUrl += '&' + pStr;
@@ -2264,6 +2614,7 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
     const trackVal = document.querySelector('input[name="cinematicTrack"]:checked')?.value || 'piano';
     const pwdVal = document.getElementById('filePasswordInput')?.value.trim() || '';
     const isAes = Boolean(document.getElementById('encryptZeroKnowledgeCheckbox')?.checked);
+    const isStripExif = Boolean(document.getElementById('stripExifCheckbox')?.checked);
     const hasUnboxing = Boolean(window._attachedUnboxing && window._attachedUnboxing.blob);
 
     // Synchronizuj zmienne globalne
@@ -2295,6 +2646,11 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
 
             if (pwdVal) localStorage.setItem('dropsite_pwd_' + fileKey, pwdVal);
             else localStorage.removeItem('dropsite_pwd_' + fileKey);
+
+            if (window._attachedUnboxing && window._attachedUnboxing.blob) {
+                saveUnboxingToStore(fileKey, window._attachedUnboxing.blob, window._attachedUnboxing.type);
+                uploadUnboxingToWorker(fileKey, window._attachedUnboxing.blob, window._attachedUnboxing.type);
+            }
         } catch (e) {}
 
         // Synchronizuj ustawienia na serwerze R2 bez powiększania linku
@@ -2327,12 +2683,14 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
         if (brandVal) badgesHtml += `<span class="applied-badge-pill brand">⭐ Marka: ${escapeTxt(brandVal)}</span>`;
         if (maxDlVal) badgesHtml += `<span class="applied-badge-pill limit">⏱️ Limit: ${maxDlVal}x</span>`;
         if (isAes) badgesHtml += `<span class="applied-badge-pill aes">🛡️ Pancerne AES-256</span>`;
+        if (isStripExif) badgesHtml += `<span class="applied-badge-pill exif">🛡️ EXIF / RODO wyczyszczone</span>`;
         if (isSpy) badgesHtml += `<span class="applied-badge-pill spy">🕶️ Tryb Szpiegowski</span>`;
         if (isCinematic) {
             const trackLabels = { piano: 'Gentle Piano', lofi: 'Lo-Fi Sunset', ambient: 'Cinematic Ambient', acoustic: 'Acoustic Breeze' };
             badgesHtml += `<span class="applied-badge-pill cinematic">🎵 Cinematic: ${trackLabels[trackVal] || trackVal}</span>`;
         }
         if (hasUnboxing) badgesHtml += `<span class="applied-badge-pill unbox">🎬 Digital Unboxing</span>`;
+        if (document.getElementById('timeLockCheckbox')?.checked) badgesHtml += `<span class="applied-badge-pill timelock">⏳ Kapsuła Czasu</span>`;
         successBadges.innerHTML = badgesHtml;
     }
 
@@ -2343,7 +2701,7 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
         syncBadge.style.opacity = '1';
         const syncText = syncBadge.querySelector('.adv-sync-text');
         if (syncText) {
-            syncText.textContent = typeof t === 'function' ? t('adv_sync_auto_saved') : 'Zapisano automatycznie • Link zaktualizowany';
+            syncText.textContent = typeof t === 'function' ? t('adv_sync_auto_saved') : 'Zapisano automatycznie';
         }
     }
 
@@ -2358,7 +2716,7 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>✓ Zastosowano do linku!</span>
+                <span>Zastosowano do linku!</span>
             `;
             setTimeout(() => {
                 btn.classList.remove('applied');
@@ -2383,21 +2741,95 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
 }
 window.syncTransferSettingsToActiveLink = syncTransferSettingsToActiveLink;
 
+function updateAdvActiveBadges() {
+    const pwd = document.getElementById('filePasswordInput')?.value?.trim();
+    const note = document.getElementById('fileNoteInput')?.value?.trim();
+    const brand = document.getElementById('creatorBrandInput')?.value?.trim();
+    const isAes = document.getElementById('encryptZeroKnowledgeCheckbox')?.checked;
+    const isExif = document.getElementById('stripExifCheckbox')?.checked;
+    const isSpy = document.getElementById('spyModeCheckbox')?.checked;
+    const isCinematic = document.getElementById('chkCinematicDelivery')?.checked;
+    const maxDl = document.querySelector('input[name="maxDownloads"]:checked')?.value;
+    const hasUnboxing = Boolean(window._attachedUnboxing && window._attachedUnboxing.blob);
+
+    const getSafeLabel = (key, fallback) => {
+        if (typeof hasTranslation === 'function' && hasTranslation(key)) return t(key);
+        if (typeof t === 'function') {
+            const val = t(key);
+            if (val && val !== key) return val;
+        }
+        return fallback;
+    };
+
+    const badges = [];
+    if (pwd) badges.push({ color: 'emerald', label: getSafeLabel('badge_active_pwd', 'Hasło') });
+    if (isAes) badges.push({ color: 'emerald', label: 'AES-256' });
+    if (isExif) badges.push({ color: 'cyan', label: getSafeLabel('badge_active_exif', 'Bez EXIF') });
+    if (isSpy) badges.push({ color: 'amber', label: getSafeLabel('badge_active_spy', 'Tryb szpiegowski') });
+    if (maxDl) badges.push({ color: 'blue', label: `${maxDl}x` });
+    if (note) badges.push({ color: 'purple', label: getSafeLabel('badge_active_note', 'Notatka') });
+    if (brand) badges.push({ color: 'gold', label: getSafeLabel('badge_active_brand', 'Branding') });
+    if (isCinematic) badges.push({ color: 'purple', label: getSafeLabel('badge_active_cinematic', 'Cinematic') });
+    if (hasUnboxing) badges.push({ color: 'emerald', label: getSafeLabel('badge_active_unboxing', 'Powitanie') });
+    if (document.getElementById('timeLockCheckbox')?.checked) badges.push({ color: 'purple', label: getSafeLabel('adv_timelock_title', 'Kapsuła Czasu') });
+
+    const countEl = document.getElementById('advActiveBadgeCount');
+    const pillsBar = document.getElementById('advActivePillsBar');
+
+    if (countEl) {
+        if (badges.length > 0) {
+            countEl.textContent = `${badges.length}`;
+            countEl.style.display = 'inline-flex';
+        } else {
+            countEl.style.display = 'none';
+        }
+    }
+
+    if (pillsBar) {
+        if (badges.length > 0) {
+            const editTxt = getSafeLabel('adv_edit_link', 'Edytuj');
+            pillsBar.innerHTML = badges.map(b => `<span class="adv-active-pill-chip"><span class="chip-dot dot-${b.color}"></span>${b.label}</span>`).join('') +
+                `<button type="button" class="adv-active-pill-edit" onclick="if(window.openAdvSettingsModal) window.openAdvSettingsModal();">${editTxt}</button>`;
+            pillsBar.style.display = 'flex';
+        } else {
+            pillsBar.innerHTML = '';
+            pillsBar.style.display = 'none';
+        }
+    }
+}
+window.updateAdvActiveBadges = updateAdvActiveBadges;
+
+document.addEventListener('dropsite_language_changed', () => {
+    if (typeof updateAdvActiveBadges === 'function') {
+        updateAdvActiveBadges();
+    }
+});
+
 function initAdvancedTransferListeners() {
     const inputsToWatch = [
         '#filePasswordInput',
         '#fileNoteInput',
         '#creatorBrandInput',
         '#encryptZeroKnowledgeCheckbox',
+        '#stripExifCheckbox',
         '#spyModeCheckbox',
-        '#chkCinematicDelivery'
+        '#chkCinematicDelivery',
+        '#timeLockCheckbox',
+        '#timeLockDatetime',
+        '#timeLockHintInput'
     ];
 
     inputsToWatch.forEach(sel => {
         const el = document.querySelector(sel);
         if (el) {
-            el.addEventListener('input', () => syncTransferSettingsToActiveLink(false));
-            el.addEventListener('change', () => syncTransferSettingsToActiveLink(false));
+            el.addEventListener('input', () => {
+                syncTransferSettingsToActiveLink(false);
+                updateAdvActiveBadges();
+            });
+            el.addEventListener('change', () => {
+                syncTransferSettingsToActiveLink(false);
+                updateAdvActiveBadges();
+            });
         }
     });
 
@@ -2421,11 +2853,17 @@ function initAdvancedTransferListeners() {
     }
 
     document.querySelectorAll('input[name="maxDownloads"]').forEach(radio => {
-        radio.addEventListener('change', () => syncTransferSettingsToActiveLink(false));
+        radio.addEventListener('change', () => {
+            syncTransferSettingsToActiveLink(false);
+            updateAdvActiveBadges();
+        });
     });
 
     document.querySelectorAll('input[name="cinematicTrack"]').forEach(radio => {
-        radio.addEventListener('change', () => syncTransferSettingsToActiveLink(false));
+        radio.addEventListener('change', () => {
+            syncTransferSettingsToActiveLink(false);
+            updateAdvActiveBadges();
+        });
     });
 
     const btnApply = document.getElementById('btnApplyTransferSettings');
@@ -2433,8 +2871,26 @@ function initAdvancedTransferListeners() {
         btnApply.onclick = (e) => {
             e.preventDefault();
             syncTransferSettingsToActiveLink(true);
+            updateAdvActiveBadges();
+            setTimeout(() => {
+                if (window.closeAdvSettingsModal) window.closeAdvSettingsModal();
+            }, 350);
         };
     }
+
+    const btnTogglePwd = document.getElementById('btnToggleAdvPwd');
+    const pwdInput = document.getElementById('filePasswordInput');
+    if (btnTogglePwd && pwdInput) {
+        btnTogglePwd.onclick = (e) => {
+            e.preventDefault();
+            const isPwd = pwdInput.type === 'password';
+            pwdInput.type = isPwd ? 'text' : 'password';
+            btnTogglePwd.classList.toggle('active', !isPwd);
+        };
+    }
+
+    // Wywołaj na starcie, aby zaktualizować plakietki jeśli są zapamiętane wartości
+    updateAdvActiveBadges();
 }
 document.addEventListener('DOMContentLoaded', initAdvancedTransferListeners);
 
@@ -2476,27 +2932,9 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         pageUrl += `&unbox=${encodeURIComponent(uType)}`;
         smartShareUrl += `&unbox=${encodeURIComponent(uType)}`;
 
-        // Zapisz nagranie w localStorage (działa w 100% natychmiast lokalnie)
-        try {
-            const unboxData = window._attachedUnboxing;
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    localStorage.setItem('dropsite_unboxing_' + fileKey, reader.result);
-                    localStorage.setItem('dropsite_unboxing_type_' + fileKey, uType);
-                } catch(e){}
-            };
-            reader.readAsDataURL(unboxData.blob);
-        } catch(e){}
-
-        // Wyślij nagranie do Worker R2 w tle
-        try {
-            fetch(`${WORKER_URL}/upload-unboxing?key=${encodeURIComponent(fileKey)}&type=${encodeURIComponent(uType)}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': window._attachedUnboxing.blob.type || (uType === 'video' ? 'video/webm' : 'audio/webm') },
-                body: window._attachedUnboxing.blob
-            }).catch(()=>{});
-        } catch(e){}
+        // Zapisz nagranie w pamięci trwałej i prześlij do workera w tle
+        saveUnboxingToStore(fileKey, window._attachedUnboxing.blob, uType);
+        uploadUnboxingToWorker(fileKey, window._attachedUnboxing.blob, uType);
     }
 
     let shareableUrl = smartShareUrl;
@@ -2592,6 +3030,10 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         if (imageCompressPanel) imageCompressPanel.hidden = true;
         const customSlugWrap = document.querySelector('.custom-slug-wrap');
         if (customSlugWrap) customSlugWrap.hidden = true;
+        const uploadHeader = document.querySelector('.upload-header');
+        if (uploadHeader) uploadHeader.hidden = true;
+        const customAdvWrap = document.querySelector('.custom-adv-wrap');
+        if (customAdvWrap) customAdvWrap.hidden = true;
 
         uploadBtn.hidden = true;
         fileStatusBox.classList.remove('visible');
@@ -2601,9 +3043,63 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
             fsTelemetry.hidden = true;
             fsTelemetry.classList.add('is-hidden');
         }
-        
+
+        // Aktualizacja paszportu pliku na ekranie sukcesu
+        const sfcFileName = document.getElementById('sfcFileName');
+        const sfcFileSize = document.getElementById('sfcFileSize');
+        const sfcRetention = document.getElementById('sfcRetention');
+        const sfcSecurityBadge = document.getElementById('sfcSecurityBadge');
+        const sfcIconBox = document.getElementById('sfcIconBox');
+
+        if (selectedFile) {
+            if (sfcFileName) sfcFileName.textContent = selectedFile.name;
+            if (sfcFileSize) sfcFileSize.textContent = formatBytes(selectedFile.size);
+            if (sfcIconBox && typeof getMiniFileSvg === 'function') {
+                sfcIconBox.innerHTML = getMiniFileSvg(selectedFile.name);
+            }
+        } else {
+            if (sfcFileName) sfcFileName.textContent = fileKey.split('/').pop() || 'plik';
+            if (sfcFileSize) sfcFileSize.textContent = '';
+        }
+
+        if (sfcRetention) {
+            if (duration === 'burn' || window._activeSpyMode) {
+                sfcRetention.innerHTML = '<span style="color:#FF6B6B; font-weight:700;">🔥 Burn after read</span>';
+            } else if (duration === '30d') {
+                sfcRetention.textContent = '⏳ Ważny 30 dni';
+            } else if (duration === 'permanent') {
+                sfcRetention.textContent = '♾️ Bezterminowo';
+            } else {
+                sfcRetention.textContent = '⏳ Ważny 24h';
+            }
+        }
+
+        if (sfcSecurityBadge) {
+            if (window._activeEncryptionKeyB64) {
+                sfcSecurityBadge.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>AES-256</span>
+                `;
+            } else {
+                sfcSecurityBadge.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span>Cloudflare R2</span>
+                `;
+            }
+        }
+
+        const btnOpenRecipientPreview = document.getElementById('btnOpenRecipientPreview');
+        if (btnOpenRecipientPreview) {
+            btnOpenRecipientPreview.href = pageUrl;
+        }
+
         successFlow.hidden = false;
-        successFlow.style.animation = 'slideInUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        successFlow.style.animation = 'successFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
         if (window.initDropsiteAds) window.initDropsiteAds();
         
         if (typeof confetti === 'function') {
@@ -2611,7 +3107,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
                 particleCount: 120,
                 spread: 80,
                 origin: { y: 0.6 },
-                colors: ['#C4E7D4', '#0F91D2', '#FFFFFF']
+                colors: ['#34D399', '#38BDF8', '#FFFFFF']
             });
         }
     }, 500);
@@ -2723,6 +3219,9 @@ if (openModBtn) {
             b.classList.toggle('active', b.getAttribute('data-scope') === 'all');
         });
         window.smoothOpenModal(modModal);
+        if (typeof initAdminDashboardOnce === 'function') {
+            initAdminDashboardOnce();
+        }
         fetchModFiles();
     });
 }
@@ -2828,6 +3327,41 @@ if (customSortTrigger && customSortMenu) {
     });
 }
 
+// Obsługa dropdownu wyboru motywu albumu
+const albumThemeDropdown = document.getElementById('albumThemeDropdown');
+const albumThemeTrigger = document.getElementById('albumThemeTrigger');
+const albumThemeLabel = document.getElementById('albumThemeLabel');
+const albumThemeMenu = document.getElementById('albumThemeMenu');
+const albumThemeInput = document.getElementById('albumThemeSelect');
+
+if (albumThemeTrigger && albumThemeMenu) {
+    albumThemeTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = !albumThemeMenu.hidden;
+        closeAllCustomDropdowns();
+        if (!isOpen) {
+            albumThemeMenu.hidden = false;
+            albumThemeDropdown?.classList.add('open');
+            albumThemeTrigger.setAttribute('aria-expanded', 'true');
+        }
+    });
+
+    albumThemeMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const opt = e.target.closest('.custom-select-option');
+        if (!opt) return;
+        const val = opt.getAttribute('data-value');
+        const text = opt.querySelector('span')?.textContent || opt.textContent;
+
+        albumThemeMenu.querySelectorAll('.custom-select-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+
+        if (albumThemeLabel) albumThemeLabel.textContent = text;
+        if (albumThemeInput) albumThemeInput.value = val;
+        closeAllCustomDropdowns();
+    });
+}
+
 if (modFilterPills) {
     modFilterPills.addEventListener('click', (e) => {
         const pill = e.target.closest('.mod-pill');
@@ -2854,6 +3388,51 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// Generator linku do strony Dropsite dla dowolnego pliku lub klucza
+function getDropsitePageUrl(fileOrKey) {
+    if (!fileOrKey) return window.location.href;
+
+    if (typeof fileOrKey === 'string') {
+        if (fileOrKey.includes('?f=') || fileOrKey.startsWith('http')) {
+            if (fileOrKey.includes('?f=')) return fileOrKey;
+        }
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+        return `${origin}${pathname}?f=${encodeURIComponent(fileOrKey)}`;
+    }
+
+    if (fileOrKey.pageUrl && fileOrKey.pageUrl.includes('?f=')) {
+        return fileOrKey.pageUrl;
+    }
+    if (fileOrKey.url && fileOrKey.url.includes('?f=')) {
+        return fileOrKey.url;
+    }
+
+    let rawKey = fileOrKey.key || fileOrKey.name || '';
+    
+    // Sprawdź czy plik jest w lokalnej historii z zapisanym pageUrl
+    if (typeof getLocalHistory === 'function') {
+        try {
+            const history = getLocalHistory();
+            const found = history.find(h => 
+                (rawKey && (h.key === rawKey || h.name === rawKey)) ||
+                (fileOrKey.name && (h.name === fileOrKey.name || `${h.duration}/${h.name}` === fileOrKey.name))
+            );
+            if (found && found.pageUrl && found.pageUrl.includes('?f=')) return found.pageUrl;
+            if (found && found.url && found.url.includes('?f=')) return found.url;
+        } catch (_) {}
+    }
+
+    const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    let url = `${origin}${pathname}?f=${encodeURIComponent(rawKey)}`;
+    if (fileOrKey.isAlbum) {
+        url += '&album=1';
+    }
+    return url;
+}
+window.getDropsitePageUrl = getDropsitePageUrl;
 
 async function fetchModFiles() {
     refreshModBtn.innerText = 'Ładowanie...';
@@ -2904,10 +3483,17 @@ async function fetchModFiles() {
             if (!response.ok) throw new Error('Błąd pobierania listy plików z serwera.');
             
             const data = await response.json();
-            loadedModFiles = (data.files || []).map(f => ({
-                ...f,
-                isGlobalServerFile: true
-            }));
+            loadedModFiles = (data.files || []).map(f => {
+                const rawKey = f.key || f.name;
+                const pageUrl = getDropsitePageUrl(rawKey);
+                return {
+                    ...f,
+                    pageUrl: pageUrl,
+                    url: pageUrl,
+                    directUrl: f.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`,
+                    isGlobalServerFile: true
+                };
+            });
             updateModStats(loadedModFiles);
             applyModFiltersAndRender();
             fetchDiskStats();
@@ -2942,21 +3528,31 @@ async function fetchModFiles() {
         const filesPane = document.getElementById('adminTabPane_files');
         if (filesPane) filesPane.style.display = 'block';
 
+        const user = auth.currentUser;
+        if (user && user.email && typeof syncUserHistory === 'function') {
+            await syncUserHistory();
+        }
+
         const history = getLocalHistory();
         loadedModFiles = history.map(item => {
             let fileName = item.name || 'plik';
             if (item.duration && !fileName.includes('/')) {
                 fileName = `${item.duration}/${fileName}`;
             }
+            const rawKey = item.key || fileName;
+            const pageUrl = getDropsitePageUrl(item);
             return {
                 name: fileName,
                 size: item.size || 0,
-                uploaded: item.date || new Date().toISOString(),
+                uploaded: item.date || item.uploaded || new Date().toISOString(),
                 duration: item.duration || '1d',
-                url: item.url || item.directUrl,
-                directUrl: item.directUrl || item.url,
-                key: item.key || item.name,
-                isUserLocalFile: true
+                pageUrl: pageUrl,
+                url: pageUrl,
+                directUrl: item.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`,
+                key: rawKey,
+                isUserLocalFile: true,
+                status: item.status || 'active',
+                existsOnDisk: item.existsOnDisk !== false
             };
         });
 
@@ -3016,39 +3612,50 @@ function initAdminDashboardOnce() {
         let isDown = false;
         let startX = 0;
         let scrollLeft = 0;
-        let moved = false;
+        let hasMoved = false;
+        let suppressClickUntil = 0;
 
         adminNavTabs.addEventListener('mousedown', (e) => {
+            // Reaguj tylko na lewy przycisk myszy
+            if (e.button !== 0) return;
             isDown = true;
-            moved = false;
-            adminNavTabs.classList.add('is-dragging');
-            startX = e.pageX - adminNavTabs.offsetLeft;
+            hasMoved = false;
+            startX = e.pageX;
             scrollLeft = adminNavTabs.scrollLeft;
         });
 
-        window.addEventListener('mouseup', () => {
-            if (isDown) {
-                isDown = false;
-                adminNavTabs.classList.remove('is-dragging');
-            }
-        });
-
-        adminNavTabs.addEventListener('mouseleave', () => {
-            if (isDown) {
-                isDown = false;
-                adminNavTabs.classList.remove('is-dragging');
-            }
-        });
-
-        adminNavTabs.addEventListener('mousemove', (e) => {
+        window.addEventListener('mousemove', (e) => {
             if (!isDown) return;
-            const x = e.pageX - adminNavTabs.offsetLeft;
-            const walk = (x - startX) * 1.5; // Mnożnik prędkości przesuwania
-            if (Math.abs(walk) > 4) {
-                moved = true;
+            const deltaX = e.pageX - startX;
+            // Próg rozpoczęcia przeciągania - dopiero powyżej 6px uznajemy ruch za scroll, a nie za kliknięcie!
+            if (!hasMoved && Math.abs(deltaX) > 6) {
+                hasMoved = true;
+                adminNavTabs.classList.add('is-dragging');
             }
-            adminNavTabs.scrollLeft = scrollLeft - walk;
+            if (hasMoved) {
+                adminNavTabs.scrollLeft = scrollLeft - (deltaX * 1.25);
+            }
         });
+
+        const stopDrag = () => {
+            if (!isDown) return;
+            isDown = false;
+            if (hasMoved) {
+                suppressClickUntil = Date.now() + 200;
+                adminNavTabs.setAttribute('data-suppress-click', 'true');
+                setTimeout(() => {
+                    adminNavTabs.classList.remove('is-dragging');
+                    adminNavTabs.removeAttribute('data-suppress-click');
+                    hasMoved = false;
+                }, 100);
+            } else {
+                adminNavTabs.classList.remove('is-dragging');
+                adminNavTabs.removeAttribute('data-suppress-click');
+                hasMoved = false;
+            }
+        };
+
+        window.addEventListener('mouseup', stopDrag);
 
         // Obsługa płynnego przewijania kółkiem myszy w osi poziomej
         adminNavTabs.addEventListener('wheel', (e) => {
@@ -3057,12 +3664,26 @@ function initAdminDashboardOnce() {
                 adminNavTabs.scrollLeft += e.deltaY;
             }
         }, { passive: false });
+
+        // Klikanie zakładek przez bezpośrednią delegację na pasku
+        adminNavTabs.addEventListener('click', (e) => {
+            if (hasMoved || Date.now() < suppressClickUntil || adminNavTabs.classList.contains('is-dragging') || adminNavTabs.getAttribute('data-suppress-click') === 'true') {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            const btn = e.target.closest('.admin-tab-btn');
+            if (!btn) return;
+            e.preventDefault();
+            const tab = btn.getAttribute('data-admin-tab');
+            if (tab) switchAdminTab(tab);
+        });
     }
 
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const tabsContainer = btn.closest('.admin-nav-tabs');
-            if (tabsContainer && tabsContainer.classList.contains('is-dragging')) {
+            if (tabsContainer && (tabsContainer.classList.contains('is-dragging') || tabsContainer.getAttribute('data-suppress-click') === 'true')) {
                 e.preventDefault();
                 return;
             }
@@ -3107,11 +3728,24 @@ function initAdminDashboardOnce() {
 
 function switchAdminTab(tabName) {
     currentAdminTab = tabName;
+    const adminNavTabs = document.getElementById('adminNavTabs');
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-admin-tab') === tabName);
+        const isActive = btn.getAttribute('data-admin-tab') === tabName;
+        btn.classList.toggle('active', isActive);
+        if (isActive && adminNavTabs) {
+            const tabLeft = btn.offsetLeft;
+            const tabRight = tabLeft + btn.offsetWidth;
+            const sLeft = adminNavTabs.scrollLeft;
+            const cWidth = adminNavTabs.clientWidth;
+            if (tabLeft < sLeft) {
+                adminNavTabs.scrollTo({ left: Math.max(0, tabLeft - 12), behavior: 'smooth' });
+            } else if (tabRight > sLeft + cWidth) {
+                adminNavTabs.scrollTo({ left: tabRight - cWidth + 12, behavior: 'smooth' });
+            }
+        }
     });
 
-    const panes = ['overview', 'users', 'storage', 'transactions', 'files', 'feedback'];
+    const panes = ['overview', 'users', 'storage', 'transactions', 'files', 'feedback', 'telemetry'];
     panes.forEach(p => {
         const el = document.getElementById(`adminTabPane_${p}`);
         if (el) el.style.display = p === tabName ? 'block' : 'none';
@@ -3122,7 +3756,15 @@ function switchAdminTab(tabName) {
     else if (tabName === 'storage') renderAdminStorageTab();
     else if (tabName === 'transactions') renderAdminTransactionsTab();
     else if (tabName === 'feedback') renderAdminFeedbackTab();
+    else if (tabName === 'files') {
+        if (typeof applyModFiltersAndRender === 'function') applyModFiltersAndRender();
+    }
+    else if (tabName === 'telemetry') {
+        if (typeof window.renderAdminTelemetryTab === 'function') window.renderAdminTelemetryTab();
+    }
 }
+window.switchAdminTab = switchAdminTab;
+window.initAdminDashboardOnce = initAdminDashboardOnce;
 
 function renderAdminDashboard() {
     renderAdminOverviewTab();
@@ -3130,6 +3772,7 @@ function renderAdminDashboard() {
     renderAdminStorageTab();
     renderAdminTransactionsTab();
     fetchAdminFeedback();
+    if (typeof window.fetchAdminTelemetry === 'function') window.fetchAdminTelemetry();
 }
 
 // Baza użytkowników (tylko rzeczywiści zarejestrowani i autoryzowani użytkownicy)
@@ -3343,13 +3986,21 @@ function renderAdminUsersTab() {
             const isAdmin = u.role === 'admin';
             const initials = (u.name || u.email || 'U').substring(0, 2).toUpperCase();
 
+            // Rzeczywiste zliczenie plików z serwera R2
+            const userFiles = (loadedModFiles || []).filter(f => (f.uploaderEmail || '').toLowerCase() === (u.email || '').toLowerCase());
+            const displayFileCount = userFiles.length > 0 ? userFiles.length : (u.fileCount || 0);
+            const displayUsedBytes = userFiles.length > 0 ? userFiles.reduce((acc, f) => acc + (f.size || 0), 0) : (u.usedBytes || 0);
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    <div class="user-cell">
+                    <div class="user-cell" style="cursor: pointer;" onclick="window.openAdminUserDossier('${escapeHtml(u.email)}')">
                         <div class="user-avatar" style="${isAdmin ? 'background: linear-gradient(135deg, #8B5CF6, #6366F1);' : (isPro ? 'background: linear-gradient(135deg, #10B981, #059669);' : '')}">${initials}</div>
                         <div>
-                            <strong style="color: #FFFFFF; font-size: 13px;">${escapeHtml(u.name || 'Użytkownik')}</strong>
+                            <strong style="color: #FFFFFF; font-size: 13px; display: flex; align-items: center; gap: 4px;">
+                                ${escapeHtml(u.name || 'Użytkownik')}
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            </strong>
                             <div style="color: #94A3B8; font-size: 11px;">${escapeHtml(u.email)}</div>
                         </div>
                     </div>
@@ -3365,20 +4016,23 @@ function renderAdminUsersTab() {
                     ${escapeHtml(u.proExpires || (isPro ? 'Aktywne' : 'Brak'))}
                 </td>
                 <td style="font-size: 12px;">
-                    <strong>${u.fileCount || 0}</strong> <span style="color: #94A3B8;">(${formatBytes(u.usedBytes || 0)})</span>
+                    <strong>${displayFileCount}</strong> <span style="color: #94A3B8;">(${formatBytes(displayUsedBytes)})</span>
                 </td>
                 <td style="font-size: 12px; color: #94A3B8;">
                     ${escapeHtml(u.created || '-')}
                 </td>
                 <td style="text-align: right;">
                     <div style="display: inline-flex; gap: 6px;">
+                        <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center;" onclick="window.openAdminUserDossier('${escapeHtml(u.email)}')">
+                            <span>👤 Dossier 360°</span>
+                        </button>
                         ${!isAdmin ? (
                             isPro ? `
                                 <button type="button" class="btn-select" style="padding: 4px 8px; font-size: 11px; color: #FF8E72; border-color: rgba(255, 68, 57, 0.3);" onclick="window.adminRevokePro('${u.id}')">Odbierz PRO</button>
                             ` : `
                                 <button type="button" class="btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="window.adminGrantProPrompt('${u.id}')">Nadaj PRO</button>
                             `
-                        ) : `<span style="font-size: 11px; color: #C084FC; font-weight: 700;">Główny</span>`}
+                        ) : `<span style="font-size: 11px; color: #C084FC; font-weight: 700; align-self: center;">Główny</span>`}
                     </div>
                 </td>
             `;
@@ -3453,6 +4107,14 @@ window.adminRevokePro = function(userId) {
         target.plan = 'free';
         target.proExpires = 'Brak (Cofnięto)';
         saveAdminUsersDB(users);
+        const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        if (apiSecret && target.email) {
+            fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': apiSecret },
+                body: JSON.stringify({ email: target.email, action: 'revoke' })
+            }).catch(() => {});
+        }
         renderAdminUsersTab();
         renderAdminOverviewTab();
         if (window.showNotification) showNotification(`Cofnięto uprawnienia PRO dla ${target.email}.`, 'info');
@@ -3467,9 +4129,406 @@ window.adminGrantProPrompt = function(userId) {
         target.plan = 'pro_30d';
         target.proExpires = `30 dni (do ${new Date(Date.now() + 30 * 86400000).toLocaleDateString('pl-PL')})`;
         saveAdminUsersDB(users);
+        const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        if (apiSecret && target.email) {
+            fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': apiSecret },
+                body: JSON.stringify({ email: target.email, action: 'grant', days: 30 })
+            }).catch(() => {});
+        }
         renderAdminUsersTab();
         renderAdminOverviewTab();
         if (window.showNotification) showNotification(`Pomyślnie nadano dostęp Dropsite PRO dla ${target.email}!`, 'success');
+    }
+};
+
+// =========================================================================
+// SILNIK DOSSIER UŻYTKOWNIKA 360° (USER PROFILE EXECUTIVE MODAL)
+// =========================================================================
+window.activeDossierEmail = null;
+
+window.openAdminUserDossier = function(targetEmail) {
+    if (!targetEmail) return;
+    const email = targetEmail.toLowerCase().trim();
+    window.activeDossierEmail = email;
+
+    const modal = document.getElementById('adminUserDossierModal');
+    if (!modal) return;
+
+    // 1. Znajdź użytkownika w lokalnej bazie lub utwórz reprezentację na żywo
+    const users = typeof getAdminUsersDB === 'function' ? getAdminUsersDB() : [];
+    let user = users.find(u => (u.email || '').toLowerCase() === email);
+    if (!user) {
+        user = {
+            id: `usr_${Date.now()}`,
+            email: email,
+            name: email.split('@')[0],
+            role: 'free',
+            plan: 'free',
+            proExpires: 'Brak',
+            created: '-'
+        };
+    }
+
+    const isPro = user.role === 'pro' || user.plan?.startsWith('pro');
+    const isAdmin = user.role === 'admin' || (typeof isActualAdminUser === 'function' && isActualAdminUser() && email === (auth.currentUser?.email || '').toLowerCase());
+
+    // 2. Pobierz powiązane pliki z R2
+    const allFiles = window.loadedModFiles || [];
+    const userFiles = allFiles.filter(f => (f.uploaderEmail || '').toLowerCase() === email);
+    const userUsedBytes = userFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+
+    // 3. Pobierz powiązane zamówienia i transakcje
+    const allOrders = typeof getAdminOrdersDB === 'function' ? getAdminOrdersDB() : [];
+    const userOrders = allOrders.filter(o => (o.email || '').toLowerCase() === email);
+    const userLtv = userOrders.reduce((sum, o) => sum + (o.rawAmount || 0), 0);
+
+    // 4. Pobierz powiązane sesje z modułu telemetrii
+    const allSessions = typeof window.getAdminTelemetryData === 'function' ? window.getAdminTelemetryData() : [];
+    const userSessions = allSessions.filter(s => (s.userEmail || '').toLowerCase() === email);
+    const isOnline = userSessions.some(s => s.online);
+
+    // 5. Uzupełnienie nagłówka tożsamości
+    const avatarEl = document.getElementById('dossierAvatar');
+    const nameEl = document.getElementById('dossierName');
+    const emailEl = document.getElementById('dossierEmail');
+    const roleBadgeEl = document.getElementById('dossierRoleBadge');
+    const onlineStatusEl = document.getElementById('dossierOnlineStatus');
+    const joinedDateEl = document.getElementById('dossierJoinedDate');
+    const uidEl = document.getElementById('dossierUid');
+
+    const initials = (user.name || email || 'U').substring(0, 2).toUpperCase();
+    if (avatarEl) {
+        avatarEl.textContent = initials;
+        avatarEl.className = 'user-dossier-avatar ' + (isAdmin ? 'is-admin' : (isPro ? 'is-pro' : ''));
+    }
+    if (nameEl) nameEl.textContent = user.name || email.split('@')[0];
+    if (emailEl) emailEl.textContent = email;
+    if (joinedDateEl) joinedDateEl.textContent = `Dołączył: ${user.created || '-'}`;
+    if (uidEl) uidEl.textContent = `UID: ${user.id || '-'}`;
+
+    if (roleBadgeEl) {
+        if (isAdmin) {
+            roleBadgeEl.className = 'status-badge-admin';
+            roleBadgeEl.textContent = '👑 Administrator';
+        } else if (isPro) {
+            roleBadgeEl.className = 'status-badge-pro';
+            roleBadgeEl.textContent = '⭐ Dropsite PRO';
+        } else {
+            roleBadgeEl.className = 'status-badge-free';
+            roleBadgeEl.textContent = '👤 Darmowy (Free)';
+        }
+    }
+
+    if (onlineStatusEl) {
+        onlineStatusEl.className = `dossier-online-badge ${isOnline ? 'online' : ''}`;
+        onlineStatusEl.textContent = isOnline ? '🟢 Online teraz' : '⚪ Offline';
+    }
+
+    // 6. Uzupełnienie KPI
+    const kpiLtv = document.getElementById('dossierKpiLtv');
+    const kpiOrdersCount = document.getElementById('dossierKpiOrdersCount');
+    const kpiFilesCount = document.getElementById('dossierKpiFilesCount');
+    const kpiFilesSize = document.getElementById('dossierKpiFilesSize');
+    const kpiProExpires = document.getElementById('dossierKpiProExpires');
+    const kpiProPlan = document.getElementById('dossierKpiProPlan');
+    const kpiSessionsCount = document.getElementById('dossierKpiSessionsCount');
+    const kpiLastSeen = document.getElementById('dossierKpiLastSeen');
+
+    if (kpiLtv) kpiLtv.textContent = `${userLtv.toFixed(2).replace('.', ',')} zł`;
+    if (kpiOrdersCount) kpiOrdersCount.textContent = `${userOrders.length} opłaconych zamówień`;
+    if (kpiFilesCount) kpiFilesCount.textContent = userFiles.length;
+    if (kpiFilesSize) kpiFilesSize.textContent = `${formatBytes(userUsedBytes)} zajętego miejsca`;
+    if (kpiProExpires) kpiProExpires.textContent = user.proExpires || (isPro ? 'Aktywne' : 'Brak');
+    if (kpiProPlan) kpiProPlan.textContent = isAdmin ? 'Konto Administratora' : (isPro ? 'Abonament PRO aktywny' : 'Plan darmowy (250 MB limit)');
+    if (kpiSessionsCount) kpiSessionsCount.textContent = `${userSessions.length} sesji`;
+    if (kpiLastSeen) {
+        if (isOnline) {
+            kpiLastSeen.textContent = 'Aktywny w tej chwili';
+        } else if (userSessions.length > 0 && userSessions[0].lastActive) {
+            kpiLastSeen.textContent = `Ostatnio: ${new Date(userSessions[0].lastActive).toLocaleString('pl-PL')}`;
+        } else {
+            kpiLastSeen.textContent = 'Brak telemetrii w tej sesji';
+        }
+    }
+
+    // 7. Badże zakładek
+    const tabFilesBadge = document.getElementById('dossierTabFilesBadge');
+    const tabOrdersBadge = document.getElementById('dossierTabOrdersBadge');
+    const tabSessionsBadge = document.getElementById('dossierTabSessionsBadge');
+    if (tabFilesBadge) tabFilesBadge.textContent = userFiles.length;
+    if (tabOrdersBadge) tabOrdersBadge.textContent = userOrders.length;
+    if (tabSessionsBadge) tabSessionsBadge.textContent = userSessions.length;
+
+    // 8. Wyrenderowanie listy plików
+    renderDossierFilesList(userFiles);
+
+    // 9. Wyrenderowanie listy zamówień
+    renderDossierOrdersList(userOrders);
+
+    // 10. Wyrenderowanie listy sesji z telemetrii
+    renderDossierSessionsList(userSessions);
+
+    // 11. Zaktualizowanie przycisku PRO
+    const quickProBtn = document.getElementById('dossierQuickProBtn');
+    if (quickProBtn) {
+        quickProBtn.textContent = isPro ? '⚙️ Zarządzaj PRO (Cofnij)' : '⭐ Nadaj dostęp PRO';
+    }
+
+    // Domyślnie otwórz zakładkę plików
+    window.switchDossierTab('files');
+
+    // Otwórz modal
+    window.smoothOpenModal(modal);
+};
+
+window.closeAdminUserDossier = function() {
+    const modal = document.getElementById('adminUserDossierModal');
+    if (modal) window.smoothCloseModal(modal);
+    window.activeDossierEmail = null;
+};
+
+window.switchDossierTab = function(tabName) {
+    document.querySelectorAll('.dossier-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-dossier-tab') === tabName);
+    });
+    ['files', 'orders', 'telemetry'].forEach(tab => {
+        const pane = document.getElementById(`dossierTabPane_${tab}`);
+        if (pane) pane.style.display = tab === tabName ? 'block' : 'none';
+    });
+};
+
+function renderDossierFilesList(files) {
+    const container = document.getElementById('dossierFilesList');
+    if (!container) return;
+
+    if (!files || files.length === 0) {
+        container.innerHTML = `<div class="telemetry-empty-box">Użytkownik nie posiada obecnie żadnych aktywnych plików na dysku R2.</div>`;
+        return;
+    }
+
+    let html = '';
+    files.forEach(f => {
+        const clean = cleanFileName(f.name);
+        const pageUrl = getDropsitePageUrl(f);
+        let directMediaUrl = f.directUrl;
+        if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
+            directMediaUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${f.name}`;
+        }
+
+        html += `
+            <div class="dossier-list-item">
+                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1;">
+                    <div style="font-size: 20px;">📄</div>
+                    <div style="overflow: hidden;">
+                        <a href="${pageUrl}" target="_blank" style="color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${f.name} • Otwórz stronę pliku">${escapeHtml(clean)}</a>
+                        <div style="color: #94A3B8; font-size: 11px; display: flex; gap: 8px; margin-top: 2px;">
+                            <span>${formatBytes(f.size || 0)}</span>
+                            <span>•</span>
+                            <span>${f.uploaded ? new Date(f.uploaded).toLocaleDateString('pl-PL') : 'Aktywny'}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: inline-flex; gap: 6px; flex-shrink: 0;">
+                    <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="copyDirectLink('${pageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku (PPM: bezpośredni link do pliku)">Kopiuj</button>
+                    <button type="button" class="btn-delete" style="padding: 4px 8px; font-size: 11px;" onclick="handleSafeDelete(this, '${f.name}')">Usuń</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderDossierOrdersList(orders) {
+    const container = document.getElementById('dossierOrdersList');
+    if (!container) return;
+
+    if (!orders || orders.length === 0) {
+        container.innerHTML = `<div class="telemetry-empty-box">Brak zarejestrowanych transakcji dla tego adresu e-mail.</div>`;
+        return;
+    }
+
+    let html = '';
+    orders.forEach(o => {
+        html += `
+            <div class="dossier-list-item">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 18px;">💳</div>
+                    <div>
+                        <strong style="color: #34D399; font-size: 13px;">${escapeHtml(o.amount || '14,99 zł')}</strong>
+                        <div style="color: #94A3B8; font-size: 11px;">${escapeHtml(o.planName || o.plan || 'Dropsite PRO')} • ${escapeHtml(o.date || '-')}</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="status-badge-pro" style="font-size: 10px;">${escapeHtml(o.gateway || o.method || 'Polar')}</span>
+                    ${o.key ? `<div style="font-size: 10px; color: #64748B; font-family: monospace; margin-top: 3px;">${escapeHtml(o.key)}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function renderDossierSessionsList(sessions) {
+    const container = document.getElementById('dossierSessionsList');
+    if (!container) return;
+
+    if (!sessions || sessions.length === 0) {
+        container.innerHTML = `<div class="telemetry-empty-box">Brak zarejestrowanych sesji telemetrycznych powiązanych z tym kontem.</div>`;
+        return;
+    }
+
+    let html = '';
+    sessions.forEach(s => {
+        const isOnline = !!s.online;
+        const timeStr = s.lastActive ? new Date(s.lastActive).toLocaleString('pl-PL') : '-';
+        html += `
+            <div class="dossier-list-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="telemetry-status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                        <strong style="color: #FFFFFF; font-size: 12px;">${escapeHtml(s.city || 'Nieznana lokalizacja')} (${escapeHtml(s.country || 'PL')})</strong>
+                        <span style="color: #64748B; font-size: 11px;">• ${escapeHtml(s.ip || '127.0.0.1')}</span>
+                    </div>
+                    <span style="color: #94A3B8; font-size: 11px;">${timeStr}</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span class="telemetry-badge badge-gpu" style="font-size: 10px; padding: 2px 6px;">🎮 ${escapeHtml(s.gpu || 'GPU')}</span>
+                    <span class="telemetry-badge badge-res" style="font-size: 10px; padding: 2px 6px;">💻 ${escapeHtml(s.os || 'OS')} • ${escapeHtml(s.browser || 'Przeglądarka')}</span>
+                    <span class="telemetry-badge badge-route" style="font-size: 10px; padding: 2px 6px;">📍 ${escapeHtml(s.currentPage || '/')}</span>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+window.dossierTogglePro = function() {
+    const email = window.activeDossierEmail;
+    if (!email) return;
+
+    const users = getAdminUsersDB();
+    let target = users.find(u => (u.email || '').toLowerCase() === email);
+
+    if (!target) {
+        target = {
+            id: `usr_${Date.now()}`,
+            email: email,
+            name: email.split('@')[0],
+            role: 'free',
+            plan: 'free',
+            proExpires: 'Brak',
+            created: new Date().toISOString().split('T')[0]
+        };
+        users.unshift(target);
+    }
+
+    const isCurrentlyPro = target.role === 'pro' || target.plan?.startsWith('pro');
+    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+
+    if (isCurrentlyPro) {
+        if (confirm(`Czy na pewno chcesz cofnąć dostęp PRO dla ${email}?`)) {
+            target.role = 'free';
+            target.plan = 'free';
+            target.proExpires = 'Brak (Cofnięto)';
+            saveAdminUsersDB(users);
+            if (apiSecret) {
+                fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': apiSecret },
+                    body: JSON.stringify({ email: email, action: 'revoke' })
+                }).catch(() => {});
+            }
+            if (window.showNotification) showNotification(`Cofnięto PRO dla ${email}.`, 'info');
+        }
+    } else {
+        const choice = prompt(`Wybierz plan PRO dla ${email}:\n1 - 30 Dni\n2 - 1 Rok\n3 - Dożywotnie (Lifetime)`, '1');
+        if (!choice) return;
+
+        let days = 30;
+        if (choice === '2') {
+            days = 365;
+            target.role = 'pro';
+            target.plan = 'pro_1y';
+            target.proExpires = `1 rok (do ${new Date(Date.now() + 365 * 86400000).toLocaleDateString('pl-PL')})`;
+        } else if (choice === '3') {
+            days = 99999;
+            target.role = 'pro';
+            target.plan = 'pro_lifetime';
+            target.proExpires = 'Bezterminowo (Lifetime)';
+        } else {
+            days = 30;
+            target.role = 'pro';
+            target.plan = 'pro_30d';
+            target.proExpires = `30 dni (do ${new Date(Date.now() + 30 * 86400000).toLocaleDateString('pl-PL')})`;
+        }
+        saveAdminUsersDB(users);
+        if (apiSecret) {
+            fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': apiSecret },
+                body: JSON.stringify({ email: email, action: 'grant', days: days })
+            }).catch(() => {});
+        }
+        if (window.showNotification) showNotification(`Nadano Dropsite PRO dla ${email}!`, 'success');
+    }
+
+    renderAdminUsersTab();
+    renderAdminOverviewTab();
+    window.openAdminUserDossier(email);
+};
+
+window.dossierFilterInModeration = function() {
+    const email = window.activeDossierEmail;
+    if (!email) return;
+    window.closeAdminUserDossier();
+    window.filterFilesByUser(email);
+};
+
+window.dossierDeleteAllFiles = async function() {
+    const email = window.activeDossierEmail;
+    if (!email) return;
+
+    if (!confirm(`UWAGA: Czy na pewno chcesz bezpowrotnie usunąć WSZYSTKIE pliki należące do użytkownika ${email} z serwera R2?`)) {
+        return;
+    }
+
+    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    try {
+        const res = await fetch(`${WORKER_URL}/admin/user-files/delete-all`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': apiSecret
+            },
+            body: JSON.stringify({ email: email })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (window.showNotification) showNotification(`Pomyślnie usunięto ${data.deletedCount} plików użytkownika ${email}!`, 'success');
+            await fetchModFiles();
+            window.openAdminUserDossier(email);
+        } else {
+            if (window.showNotification) showNotification(data.message || 'Błąd usuwania plików.', 'error');
+        }
+    } catch (e) {
+        if (window.showNotification) showNotification(`Błąd sieci podczas usuwania: ${e.message}`, 'error');
+    }
+};
+
+window.filterFilesByUser = function(email) {
+    if (!email) return;
+    const searchInput = document.getElementById('modSearchInput');
+    if (searchInput) {
+        searchInput.value = email;
+        activeSearchQuery = email.toLowerCase().trim();
+    }
+    if (typeof switchAdminTab === 'function') {
+        switchAdminTab('files');
+    }
+    if (typeof applyModFiltersAndRender === 'function') {
+        applyModFiltersAndRender();
     }
 };
 
@@ -3567,9 +4626,35 @@ function initAdminQuotaControls() {
         });
     });
 
+    // Pobierz aktualny stan z chmury R2 jeśli admin jest zalogowany
+    try {
+        const apiSecret = localStorage.getItem('dropsite_pro_license') || '12345678';
+        fetch(`${WORKER_URL}/admin/quota`, {
+            headers: { 'X-Admin-Secret': apiSecret }
+        }).then(r => r.ok ? r.json() : null).then(data => {
+            if (data && data.success && data.quotaGb !== undefined) {
+                const cloudQuota = String(data.quotaGb);
+                localStorage.setItem('dropsite_admin_quota_gb', cloudQuota);
+                pills.forEach(b => {
+                    b.classList.toggle('active', b.getAttribute('data-quota-gb') === cloudQuota);
+                });
+                const labels = {
+                    '10': '10 GB (Darmowy limit R2)',
+                    '50': '50 GB',
+                    '100': '100 GB',
+                    '500': '500 GB',
+                    '1000': '1 TB (Odblokowany)',
+                    '0': '∞ Nielimitowany (Pełny Auto-Scale)'
+                };
+                const statusEl = document.getElementById('adminCurrentQuotaStatus');
+                if (statusEl) statusEl.textContent = labels[cloudQuota] || `${cloudQuota} GB`;
+            }
+        }).catch(() => {});
+    } catch (_) {}
+
     const saveBtn = document.getElementById('adminSaveQuotaBtn');
     if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             const activePill = document.querySelector('.quota-pill-btn.active');
             const quota = activePill ? activePill.getAttribute('data-quota-gb') : '1000';
             localStorage.setItem('dropsite_admin_quota_gb', quota);
@@ -3585,11 +4670,42 @@ function initAdminQuotaControls() {
             const statusEl = document.getElementById('adminCurrentQuotaStatus');
             if (statusEl) statusEl.textContent = labels[quota] || `${quota} GB`;
 
+            saveBtn.disabled = true;
+            const prevText = saveBtn.textContent;
+            saveBtn.textContent = 'Zapisywanie w R2...';
+
+            try {
+                const apiSecret = localStorage.getItem('dropsite_pro_license') || '12345678';
+                const res = await fetch(`${WORKER_URL}/admin/quota`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Secret': apiSecret
+                    },
+                    body: JSON.stringify({ quotaGb: quota })
+                });
+
+                if (res.ok) {
+                    if (window.showNotification) {
+                        showNotification(`✓ Pojemność serwera w chmurze R2 zaktualizowana do: ${labels[quota]}!`, 'success');
+                    }
+                } else {
+                    if (window.showNotification) {
+                        showNotification(`Zastosowano lokalnie: ${labels[quota]}`, 'info');
+                    }
+                }
+            } catch (netErr) {
+                console.warn('Błąd sieci podczas zapisu limitu w chmurze:', netErr);
+                if (window.showNotification) {
+                    showNotification(`Zastosowano lokalnie: ${labels[quota]} (brak łączności z API)`, 'warning');
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = prevText;
+            }
+
             fetchDiskStats();
             renderAdminStorageTab();
-            if (window.showNotification) {
-                showNotification(`Pojemność serwera zaktualizowana do: ${labels[quota]}. Blokada dysku 10 GB została zdjęta!`, 'success');
-            }
         });
     }
 }
@@ -4171,6 +5287,8 @@ function updateModStats(files) {
     const elMediaCount = document.getElementById('modMediaCount');
 
     if (elTotalFiles) elTotalFiles.innerText = `${files.length}`;
+    const elSubtabFilesCount = document.getElementById('subtabFilesCount');
+    if (elSubtabFilesCount) elSubtabFilesCount.innerText = `${files.length}`;
     if (elTotalSize) elTotalSize.innerText = formatBytes(totalSize);
     if (elMediaCount) elMediaCount.innerText = `${counts.video} wideo • ${counts.image} zdjęć`;
 
@@ -4196,24 +5314,36 @@ function applyModFiltersAndRender() {
         filtered = filtered.filter(f => getFileCategory(f.name) === activeCategoryFilter);
     }
 
-    // 2. Szukanie
+    // 2. Szukanie (po nazwie oraz e-mailu autora)
     if (activeSearchQuery) {
         filtered = filtered.filter(f => {
             const clean = cleanFileName(f.name).toLowerCase();
             const raw = f.name.toLowerCase();
-            return clean.includes(activeSearchQuery) || raw.includes(activeSearchQuery);
+            const uEmail = (f.uploaderEmail || '').toLowerCase();
+            return clean.includes(activeSearchQuery) || raw.includes(activeSearchQuery) || uEmail.includes(activeSearchQuery);
         });
     }
 
-    // 3. Sortowanie
+    // 3. Rzetelne sortowanie (po timestampie, rozmiarze i nazwie)
+    const getFileTime = (item) => {
+        const val = item.uploaded || item.date || item.createdAt;
+        if (!val) return 0;
+        const t = new Date(val).getTime();
+        return isNaN(t) ? 0 : t;
+    };
+
     if (activeSort === 'newest') {
-        filtered.reverse(); 
+        filtered.sort((a, b) => getFileTime(b) - getFileTime(a));
+    } else if (activeSort === 'oldest') {
+        filtered.sort((a, b) => getFileTime(a) - getFileTime(b));
     } else if (activeSort === 'size-desc') {
         filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
     } else if (activeSort === 'size-asc') {
         filtered.sort((a, b) => (a.size || 0) - (b.size || 0));
     } else if (activeSort === 'name-asc') {
-        filtered.sort((a, b) => cleanFileName(a.name).localeCompare(cleanFileName(b.name)));
+        filtered.sort((a, b) => cleanFileName(a.name).localeCompare(cleanFileName(b.name), 'pl', { sensitivity: 'base' }));
+    } else if (activeSort === 'name-desc') {
+        filtered.sort((a, b) => cleanFileName(b.name).localeCompare(cleanFileName(a.name), 'pl', { sensitivity: 'base' }));
     }
 
     renderModFilesList(filtered);
@@ -4230,15 +5360,15 @@ function renderModFilesList(files) {
         const li = document.createElement('li');
         li.className = 'mod-file-item';
         
-        // Prawdziwy bezpośredni adres pliku do miniatury
+        // Prawdziwy bezpośredni adres pliku do miniatury i odtwarzacza
         let directMediaUrl = file.directUrl;
         if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
             const rawKey = file.key || file.name;
             directMediaUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`;
         }
         
-        // Link do udostępniania / pobierania
-        const shareableLink = (file.url && file.url.includes('?f=')) ? file.url : directMediaUrl;
+        // Link do strony pobierania Dropsite (umożliwia skopiowanie i przejście do strony pliku)
+        const dropsitePageUrl = getDropsitePageUrl(file);
 
         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
         const isVideo = /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
@@ -4248,7 +5378,7 @@ function renderModFilesList(files) {
             previewHtml = `
                 <img src="${directMediaUrl}" class="mod-preview-img" alt="" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" onclick="openImagePreview('${directMediaUrl}')" title="Powiększ zdjęcie">
                 <div class="mod-preview-icon" style="display: none;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                 </div>
             `;
         } else if (isVideo) {
@@ -4266,9 +5396,9 @@ function renderModFilesList(files) {
             } else if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
                 iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
             } else if (/\.(mp3|wav|ogg|flac|m4a)$/i.test(lowerName)) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
             } else if (/\.(json|js|html|css|py|cpp|c|ts|jsx|tsx)$/i.test(lowerName)) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
             } else {
                 iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
             }
@@ -4314,25 +5444,69 @@ function renderModFilesList(files) {
                 </div>
             </div>
         ` : `
-            <span class="mod-badge-size" style="color: var(--accent-blue); background: rgba(196, 231, 212, 0.08);">${expiryLabels[currentExp] || '1 Dzień'}</span>
+            <span class="mod-badge-size" style="color: #5EEAD4; background: rgba(94, 234, 212, 0.12);">${expiryLabels[currentExp] || '1 Dzień'}</span>
         `;
+
+        let uploaderBadgeHtml = '';
+        if (isEffectiveAdmin) {
+            if (file.uploaderEmail) {
+                const isPro = !!file.isPro || file.uploaderRole === 'pro';
+                uploaderBadgeHtml = `
+                    <button type="button" class="mod-uploader-badge ${isPro ? 'is-pro' : 'is-user'}" onclick="event.stopPropagation(); if(window.openAdminUserDossier) window.openAdminUserDossier('${escapeHtml(file.uploaderEmail)}')" title="Autor: ${escapeHtml(file.uploaderEmail)} • Kliknij, aby otworzyć Dossier 360°">
+                        ${isPro ? '<span class="badge-pro-pill" style="font-size: 8px; padding: 1px 4px; margin-right: 2px;">PRO</span>' : '<span style="font-size: 10px; margin-right: 2px;">👤</span>'}
+                        <span class="uploader-email-text">${escapeHtml(file.uploaderEmail)}</span>
+                    </button>
+                `;
+            } else {
+                uploaderBadgeHtml = `
+                    <span class="mod-uploader-badge is-guest" title="Wgrano anonimowo (Gość)">
+                        <span style="font-size: 10px; margin-right: 2px;">👻</span>
+                        <span class="uploader-email-text">Gość</span>
+                    </span>
+                `;
+            }
+        }
+
+        const isFileExpired = file.status === 'expired' || file.existsOnDisk === false;
+        const fileKey = file.key || file.name;
+        const isSelected = window.selectedFilesForAlbum && window.selectedFilesForAlbum.has(fileKey);
+
+        const checkboxHtml = isFileExpired ? '' : `
+            <input type="checkbox" class="file-select-checkbox" data-key="${escapeHtml(fileKey)}" ${isSelected ? 'checked' : ''} onchange="if(window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum('${escapeHtml(fileKey)}', this.checked)" title="Zaznacz plik do albumu">
+        `;
+
+        let finalExpHtml = expSelectHtml;
+        if (isFileExpired) {
+            finalExpHtml = `<span class="mod-badge-size" style="color: #94A3B8; background: rgba(148, 163, 184, 0.14); border: 1px dashed rgba(148, 163, 184, 0.35);" title="Plik wygasł z serwera, ale pozostaje w Twojej trwałej historii konta">Wygasły</span>`;
+        }
+
+        const nameClickAction = isFileExpired ? `onclick="event.preventDefault(); showNotification('Ten plik wygasł z dysku serwera, ale zachowaliśmy go w Twojej historii.', 'info');"` : '';
 
         li.innerHTML = `
             <div class="mod-file-main">
+                ${checkboxHtml}
                 ${previewHtml}
                 <div class="mod-file-info">
-                    <a href="${shareableLink}" target="_blank" class="mod-file-name" title="${file.name}">${displayName}</a>
+                    <a href="${dropsitePageUrl}" target="_blank" class="mod-file-name" ${nameClickAction} title="${file.name} • Otwórz stronę pliku">${displayName}</a>
                     <div class="mod-meta-row">
                         <span class="mod-badge-size">${formatBytes(file.size)}</span>
-                        ${expSelectHtml}
+                        ${finalExpHtml}
+                        ${uploaderBadgeHtml}
                     </div>
                 </div>
             </div>
             <div class="mod-actions">
-                <button class="btn-copy-mod" onclick="copyDirectLink('${shareableLink}')" title="Kopiuj link do pobierania">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Kopiuj</span>
-                </button>
+                ${isFileExpired ? `
+                    <button class="btn-copy-mod" style="opacity: 0.6;" onclick="showNotification('Plik wygasł z serwera po upływie terminu.', 'warning');" title="Plik wygasł">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span>Wygasł</span>
+                    </button>
+                ` : `
+                    <button class="btn-copy-mod" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku (Prawy przycisk myszy: bezpośredni link do pliku)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Kopiuj link</span>
+                    </button>
+                `}
                 <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń plik">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     <span>Usuń</span>
@@ -4417,15 +5591,18 @@ window.selectExpiryOption = async function(filename, newExpiry, optionElement) {
         const newKey = data.newKey;
         const row = wrap.closest('.mod-file-item');
         if (row && newKey) {
-            const fileNameLink = row.querySelector('.mod-file-name');
+            const pageLink = getDropsitePageUrl(newKey);
             const publicLink = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${newKey}`;
+            const fileNameLink = row.querySelector('.mod-file-name');
             if (fileNameLink) {
-                fileNameLink.href = publicLink;
-                fileNameLink.title = newKey;
+                fileNameLink.href = pageLink;
+                fileNameLink.title = `${newKey} • Otwórz stronę pliku`;
             }
             const copyBtn = row.querySelector('.btn-copy-mod');
             if (copyBtn) {
-                copyBtn.setAttribute('onclick', `copyDirectLink('${publicLink}')`);
+                copyBtn.setAttribute('onclick', `copyDirectLink('${pageLink}', 'Skopiowano link do strony pliku!')`);
+                copyBtn.setAttribute('oncontextmenu', `event.preventDefault(); copyDirectLink('${publicLink}', 'Skopiowano bezpośredni link R2/pub do pliku!');`);
+                copyBtn.setAttribute('title', 'Kopiuj link do strony pliku (Prawy przycisk myszy: bezpośredni link do pliku)');
             }
             const deleteBtn = row.querySelector('.btn-delete');
             if (deleteBtn) {
@@ -4444,13 +5621,24 @@ window.selectExpiryOption = async function(filename, newExpiry, optionElement) {
     }
 };
 
-// Szybkie kopiowanie linku z powiadomieniem
-window.copyDirectLink = function(url) {
-    navigator.clipboard.writeText(url).then(() => {
-        showNotification('Skopiowano link do pliku!', 'success');
-    }).catch(() => {
-        showNotification('Nie udało się skopiować linku', 'error');
-    });
+// Szybkie kopiowanie linku z powiadomieniem, dźwiękiem i obsługą strony / pub
+window.copyDirectLink = function(url, customMsg) {
+    const isPageLink = typeof url === 'string' && (url.includes('?f=') || url.includes(window.location.host));
+    const defaultMsg = isPageLink ? 'Skopiowano link do strony pliku!' : 'Link został skopiowany do schowka!';
+    const msg = customMsg || defaultMsg;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+            if (typeof playSound === 'function') playSound('copy');
+            if (typeof showNotification === 'function') {
+                showNotification(msg, 'success');
+            }
+        }).catch(() => {
+            prompt('Skopiuj link poniżej:', url);
+        });
+    } else {
+        prompt('Skopiuj link poniżej:', url);
+    }
 };
 
 // Bezpieczne 2-etapowe usuwanie
@@ -4522,7 +5710,12 @@ window.handleSafeDelete = async function(btn, filename) {
         localStorage.setItem(storageKey, JSON.stringify(updated));
         
         try {
-            fetch(`${WORKER_URL}/delete/${filename}`, { method: 'DELETE' }).catch(() => {});
+            const uEmail = auth.currentUser?.email || '';
+            const headers = uEmail ? { 'X-User-Email': uEmail } : {};
+            fetch(`${WORKER_URL}/delete/${encodeURIComponent(filename)}`, { 
+                method: 'DELETE',
+                headers: headers
+            }).catch(() => {});
         } catch (_) {}
 
         showNotification('Plik został usunięty z Twojego panelu', 'success');
@@ -4531,19 +5724,54 @@ window.handleSafeDelete = async function(btn, filename) {
 };
 
 // === SUCCESS FLOW FUNCTIONS ===
+function onCopyLinkFeedback() {
+    playSound('click');
+    showNotification('Link skopiowany do schowka!', 'success');
+
+    // Animacja przycisku szybkiego kopiowania w pasku linku
+    const quickBtn = document.getElementById('smartLinkQuickCopyBtn');
+    if (quickBtn) {
+        quickBtn.classList.add('copied');
+        const idleSpan = quickBtn.querySelector('.sl-copy-idle');
+        const copiedSpan = quickBtn.querySelector('.sl-copy-copied');
+        if (idleSpan) idleSpan.style.display = 'none';
+        if (copiedSpan) copiedSpan.style.display = 'inline-flex';
+
+        setTimeout(() => {
+            quickBtn.classList.remove('copied');
+            if (idleSpan) idleSpan.style.display = 'inline-flex';
+            if (copiedSpan) copiedSpan.style.display = 'none';
+        }, 2400);
+    }
+
+    // Animacja głównego przycisku CTA
+    const mainBtn = document.getElementById('btnMainCopy');
+    const mainText = document.getElementById('mainCopyBtnText');
+    if (mainBtn) {
+        mainBtn.classList.add('copied');
+        const oldText = mainText ? mainText.textContent : '';
+        if (mainText) mainText.textContent = '✓ Skopiowano do schowka!';
+        setTimeout(() => {
+            mainBtn.classList.remove('copied');
+            if (mainText) mainText.textContent = oldText || (typeof t === 'function' ? t('btn_copy_link') : 'Kopiuj link do schowka');
+        }, 2400);
+    }
+}
+
 function copyToClipboard() {
     const linkElement = document.getElementById('finalLink');
     if (linkElement && linkElement.href && linkElement.href !== '#') {
-        navigator.clipboard.writeText(linkElement.href).then(() => {
-            showNotification('Link skopiowany do schowka!', 'success');
+        const urlToCopy = linkElement.dataset.shareUrl || linkElement.href;
+        navigator.clipboard.writeText(urlToCopy).then(() => {
+            onCopyLinkFeedback();
         }).catch(() => {
             const textArea = document.createElement('textarea');
-            textArea.value = linkElement.href;
+            textArea.value = urlToCopy;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            showNotification('Link skopiowany do schowka!', 'success');
+            onCopyLinkFeedback();
         });
     }
 }
@@ -4551,10 +5779,13 @@ function copyToClipboard() {
 function shareLink() {
     const linkElement = document.getElementById('finalLink');
     if (linkElement && linkElement.href && linkElement.href !== '#' && navigator.share) {
+        const urlToCopy = linkElement.dataset.shareUrl || linkElement.href;
         navigator.share({
-            title: 'Przesłany plik',
-            text: 'Sprawdź mój przesłany plik:',
-            url: linkElement.href
+            title: 'Dropsite Vault Transfer',
+            text: 'Sprawdź mój bezpiecznie przesłany plik w Dropsite:',
+            url: urlToCopy
+        }).catch(() => {
+            copyToClipboard();
         });
     } else {
         copyToClipboard();
@@ -4569,6 +5800,13 @@ function resetUpload() {
         dropzone.hidden = false;
         optionsContainer.hidden = false;
         uploadBtn.hidden = false;
+
+        const uploadHeader = document.querySelector('.upload-header');
+        if (uploadHeader) uploadHeader.hidden = false;
+        const customAdvWrap = document.querySelector('.custom-adv-wrap');
+        if (customAdvWrap) customAdvWrap.hidden = false;
+        const customSlugWrap = document.querySelector('.custom-slug-wrap');
+        if (customSlugWrap) customSlugWrap.hidden = false;
         
         selectedFile = null;
         dropzone.innerHTML = originalDropzoneHtml;
@@ -4625,29 +5863,17 @@ function showNotification(message, type = 'info') {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // === MAGNETYCZNE PRZYCISKI ===
-    const magneticElements = document.querySelectorAll('.btn-primary, .nav-logo');
-    magneticElements.forEach(elem => {
-        elem.addEventListener('mousemove', (e) => {
-            const rect = elem.getBoundingClientRect();
-            const x = e.clientX - rect.left - rect.width / 2;
-            const y = e.clientY - rect.top - rect.height / 2;
-            elem.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px) scale(1.02)`;
-        });
-        elem.addEventListener('mouseleave', () => {
-            elem.style.transform = ``; // Reset to CSS default
-        });
-    });
+    // Wyłączono magnetyczne podążanie za myszką - przyciski stoją stabilnie i sztywno w miejscu
 
-    // Efekt "ripple" na przyciskach
+    // Efekt "ripple" (rozchodzącej się fali świetlnej) na przyciskach, zakładkach i filtrach
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-primary') || e.target.classList.contains('btn-secondary')) {
-            const button = e.target;
+        const button = e.target.closest('.btn-primary, .btn-secondary, .subtab-btn, .mod-pill, .btn-copy-mod');
+        if (button) {
             const ripple = document.createElement('div');
             ripple.className = 'btn-ripple';
             
             const rect = button.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
+            const size = Math.max(rect.width, rect.height) * 1.4;
             const x = e.clientX - rect.left - size / 2;
             const y = e.clientY - rect.top - size / 2;
             
@@ -5394,15 +6620,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window._attachedUnboxing = null;
 
+// ============================================================================
+// DIGITAL UNBOXING STORAGE & RETRIEVAL (IndexedDB + LocalStorage Fallback)
+// ============================================================================
+function openUnboxingDB() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error('IndexedDB not supported'));
+        const req = indexedDB.open('dropsite_unboxing_db', 1);
+        req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('media')) {
+                db.createObjectStore('media', { keyPath: 'fileKey' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveUnboxingToStore(fileKey, blob, type) {
+    if (!fileKey || !blob) return;
+    const safeType = type || 'video';
+    try {
+        localStorage.setItem('dropsite_unboxing_type_' + fileKey, safeType);
+    } catch (_) {}
+
+    // 1. IndexedDB - bez limitów pamięci, bezpośrednio natywny Blob
+    try {
+        const db = await openUnboxingDB();
+        const tx = db.transaction('media', 'readwrite');
+        tx.objectStore('media').put({
+            fileKey: fileKey,
+            blob: blob,
+            type: safeType,
+            savedAt: Date.now()
+        });
+    } catch (e) {
+        console.warn('IndexedDB unboxing save error:', e);
+    }
+
+    // 2. LocalStorage dataURL dla plików poniżej 4MB (gwarantowany fallback)
+    if (blob.size < 4 * 1024 * 1024) {
+        try {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    localStorage.setItem('dropsite_unboxing_' + fileKey, reader.result);
+                } catch (_) {}
+            };
+            reader.readAsDataURL(blob);
+        } catch (_) {}
+    }
+}
+window.saveUnboxingToStore = saveUnboxingToStore;
+
+async function getUnboxingFromStore(fileKey) {
+    if (!fileKey) return null;
+    // 1. Sprawdź IndexedDB
+    try {
+        const db = await openUnboxingDB();
+        const tx = db.transaction('media', 'readonly');
+        const item = await new Promise((resolve, reject) => {
+            const req = tx.objectStore('media').get(fileKey);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+        if (item && item.blob) {
+            return {
+                url: URL.createObjectURL(item.blob),
+                type: item.type || 'video',
+                blob: item.blob
+            };
+        }
+    } catch (_) {}
+
+    // 2. Sprawdź LocalStorage dataURL
+    try {
+        const localDataUrl = localStorage.getItem('dropsite_unboxing_' + fileKey);
+        const localType = localStorage.getItem('dropsite_unboxing_type_' + fileKey);
+        if (localDataUrl) {
+            return {
+                url: localDataUrl,
+                type: localType || 'video'
+            };
+        }
+    } catch (_) {}
+
+    return null;
+}
+window.getUnboxingFromStore = getUnboxingFromStore;
+
+function uploadUnboxingToWorker(fileKey, blob, type) {
+    if (!fileKey || !blob) return;
+    const safeType = type || 'video';
+    try {
+        fetch(`${WORKER_URL}/upload-unboxing?key=${encodeURIComponent(fileKey)}&type=${encodeURIComponent(safeType)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': blob.type || (safeType === 'video' ? 'video/webm' : 'audio/webm') },
+            body: blob
+        }).catch(() => {});
+    } catch (_) {}
+}
+window.uploadUnboxingToWorker = uploadUnboxingToWorker;
+
 function clearAttachedUnboxing() {
     window._attachedUnboxing = null;
     const bar = document.getElementById('unboxingAttachedBar');
     if (bar) bar.style.display = 'none';
+
+    const targetKey = window._lastUploadedFileKey;
+    if (targetKey) {
+        try {
+            localStorage.removeItem('dropsite_unboxing_' + targetKey);
+            localStorage.removeItem('dropsite_unboxing_type_' + targetKey);
+        } catch (_) {}
+    }
+    if (typeof syncTransferSettingsToActiveLink === 'function') {
+        syncTransferSettingsToActiveLink(false);
+    }
 }
 window.clearAttachedUnboxing = clearAttachedUnboxing;
 
 function initDigitalUnboxingRecorder() {
     const btnOpen = document.getElementById('btnOpenUnboxingRecorder');
+    const btnOpenVoice = document.getElementById('btnOpenVoiceRecorder');
     const modal = document.getElementById('unboxingRecorderModal');
     const btnClose = document.getElementById('unboxingModalCloseBtn');
     const backdrop = document.getElementById('unboxingModalBackdrop');
@@ -5418,6 +6759,14 @@ function initDigitalUnboxingRecorder() {
     const playbackWrap = document.getElementById('unboxingPlaybackWrap');
     const recordedVideo = document.getElementById('unboxingRecordedVideo');
     const recordedAudio = document.getElementById('unboxingRecordedAudio');
+    const recordedAudioCard = document.getElementById('unboxingRecordedAudioCard');
+    const voicePlayPauseBtn = document.getElementById('btnVoicePreviewPlayPause');
+    const voicePlayIcon = document.getElementById('voicePlayIcon');
+    const voicePauseIcon = document.getElementById('voicePauseIcon');
+    const voiceBarsContainer = document.getElementById('voicePlaybackBars');
+    const voiceCurrentTimeEl = document.getElementById('voiceCurrentTime');
+    const voiceTotalTimeEl = document.getElementById('voiceTotalTime');
+    const voiceSpeedBtn = document.getElementById('btnVoiceSpeedToggle');
 
     const recIndicator = document.getElementById('unboxingRecIndicator');
     const timerBadge = document.getElementById('unboxingTimerBadge');
@@ -5438,7 +6787,7 @@ function initDigitalUnboxingRecorder() {
     const btnPreviewAttached = document.getElementById('btnPreviewAttachedUnboxing');
     const btnRemove = document.getElementById('btnRemoveUnboxing');
 
-    if (!btnOpen || !modal) return;
+    if (!modal) return;
 
     let activeMode = 'video';
     let mediaStream = null;
@@ -5477,13 +6826,13 @@ function initDigitalUnboxingRecorder() {
 
     function stopPreviewMedia() {
         if (recordedVideo) {
-            recordedVideo.pause();
-            recordedVideo.currentTime = 0;
+            try { recordedVideo.pause(); recordedVideo.currentTime = 0; } catch(_) {}
         }
         if (recordedAudio) {
-            recordedAudio.pause();
-            recordedAudio.currentTime = 0;
+            try { recordedAudio.pause(); recordedAudio.currentTime = 0; } catch(_) {}
         }
+        if (voicePlayIcon) voicePlayIcon.style.display = 'block';
+        if (voicePauseIcon) voicePauseIcon.style.display = 'none';
     }
 
     function setModeUI(mode) {
@@ -5496,6 +6845,10 @@ function initDigitalUnboxingRecorder() {
         } else {
             if (liveVideo) liveVideo.style.display = 'none';
             if (audioLiveBox) audioLiveBox.style.display = 'flex';
+            if (audioStatus) {
+                audioStatus.style.display = '';
+                audioStatus.textContent = typeof t === 'function' ? t('unboxing_mic_active') : 'Mikrofon gotowy do nagrywania';
+            }
         }
     }
 
@@ -5507,7 +6860,7 @@ function initDigitalUnboxingRecorder() {
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             if (warningBox && warningText) {
-                warningText.textContent = typeof t === 'function' ? t('notify_error_network') : 'Przeglądarka nie obsługuje nagrywania kamery/mikrofonu.';
+                warningText.textContent = typeof t === 'function' ? t('notify_error_network') : 'Przeglądarka nie obsługuje nagrywania mikrofonu/kamery.';
                 warningBox.style.display = 'flex';
             }
             return;
@@ -5531,7 +6884,8 @@ function initDigitalUnboxingRecorder() {
                     liveVideo.play().catch(() => {});
                 }
             } else {
-                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Tryb TYLKO MIKROFON - nie pytamy o kamerę ani jej nie uruchamiamy!
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                 mediaStream = stream;
                 setupAudioWave(stream);
             }
@@ -5548,9 +6902,13 @@ function initDigitalUnboxingRecorder() {
         if (!waveCanvas) return;
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
             const source = audioCtx.createMediaStreamSource(stream);
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 64;
+            analyser.smoothingTimeConstant = 0.8;
             source.connect(analyser);
 
             const canvasCtx = waveCanvas.getContext('2d');
@@ -5562,23 +6920,28 @@ function initDigitalUnboxingRecorder() {
                 analyser.getByteFrequencyData(dataArray);
 
                 canvasCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
-                const barWidth = (waveCanvas.width / bufferLength) * 2;
-                let x = 0;
+                const barCount = 28;
+                const barWidth = 6;
+                const spacing = waveCanvas.width / barCount;
 
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = Math.max(4, (dataArray[i] / 255) * (waveCanvas.height - 8));
+                for (let i = 0; i < barCount; i++) {
+                    const sampleIdx = Math.floor(i * (bufferLength / barCount));
+                    const val = dataArray[sampleIdx] || 0;
+                    const barHeight = Math.max(4, (val / 255) * (waveCanvas.height - 8));
+                    const x = i * spacing + (spacing - barWidth) / 2;
+                    const y = (waveCanvas.height - barHeight) / 2;
+
                     const gradient = canvasCtx.createLinearGradient(0, waveCanvas.height, 0, 0);
-                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
-                    gradient.addColorStop(1, 'rgba(96, 165, 250, 0.95)');
+                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.45)');
+                    gradient.addColorStop(1, 'rgba(147, 197, 253, 0.95)');
                     canvasCtx.fillStyle = gradient;
                     canvasCtx.beginPath();
                     if (canvasCtx.roundRect) {
-                        canvasCtx.roundRect(x, (waveCanvas.height - barHeight) / 2, barWidth - 3, barHeight, 3);
+                        canvasCtx.roundRect(x, y, barWidth, barHeight, 3);
                     } else {
-                        canvasCtx.rect(x, (waveCanvas.height - barHeight) / 2, barWidth - 3, barHeight);
+                        canvasCtx.rect(x, y, barWidth, barHeight);
                     }
                     canvasCtx.fill();
-                    x += barWidth;
                 }
             }
             draw();
@@ -5587,8 +6950,9 @@ function initDigitalUnboxingRecorder() {
         }
     }
 
-    function openModal() {
+    function openModal(preferredMode = 'video') {
         stopPreviewMedia();
+        activeMode = preferredMode;
         if (playbackWrap) playbackWrap.style.display = 'none';
         if (controlsPre) controlsPre.style.display = 'flex';
         if (controlsRec) controlsRec.style.display = 'none';
@@ -5597,10 +6961,18 @@ function initDigitalUnboxingRecorder() {
         if (timerBadge) timerBadge.textContent = '00:00 / 01:00';
         if (btnModeVideo) btnModeVideo.disabled = false;
         if (btnModeAudio) btnModeAudio.disabled = false;
+        if (audioStatus) {
+            audioStatus.style.display = '';
+            audioStatus.textContent = typeof t === 'function' ? t('unboxing_mic_active') : 'Mikrofon gotowy do nagrywania';
+        }
+        const pulseRing = document.getElementById('unboxingMicPulseRing') || audioLiveBox?.querySelector('.unboxing-mic-pulse-ring');
+        if (pulseRing) pulseRing.classList.remove('is-recording');
 
         window.smoothOpenModal(modal);
         startStream(activeMode);
     }
+
+    let openedFromAdvModal = false;
 
     function closeModal() {
         stopActiveStream();
@@ -5610,9 +6982,48 @@ function initDigitalUnboxingRecorder() {
             recordTimer = null;
         }
         window.smoothCloseModal(modal);
+        if (openedFromAdvModal) {
+            setTimeout(() => {
+                if (typeof window.openAdvSettingsModal === 'function') {
+                    window.openAdvSettingsModal();
+                    const extrasTab = document.querySelector('.adv-tab-btn[data-tab="extras"]');
+                    if (extrasTab) extrasTab.click();
+                }
+                openedFromAdvModal = false;
+            }, 180);
+        }
     }
 
-    btnOpen.addEventListener('click', openModal);
+    if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+            const advModal = document.getElementById('advSettingsModalWrap');
+            if (advModal && !advModal.hasAttribute('hidden') && advModal.style.display !== 'none') {
+                openedFromAdvModal = true;
+                if (typeof window.closeAdvSettingsModal === 'function') window.closeAdvSettingsModal();
+            } else {
+                openedFromAdvModal = false;
+            }
+            setTimeout(() => {
+                openModal('video');
+            }, openedFromAdvModal ? 100 : 0);
+        });
+    }
+
+    if (btnOpenVoice) {
+        btnOpenVoice.addEventListener('click', () => {
+            const advModal = document.getElementById('advSettingsModalWrap');
+            if (advModal && !advModal.hasAttribute('hidden') && advModal.style.display !== 'none') {
+                openedFromAdvModal = true;
+                if (typeof window.closeAdvSettingsModal === 'function') window.closeAdvSettingsModal();
+            } else {
+                openedFromAdvModal = false;
+            }
+            setTimeout(() => {
+                openModal('audio');
+            }, openedFromAdvModal ? 100 : 0);
+        });
+    }
+
     if (btnClose) btnClose.addEventListener('click', closeModal);
     if (backdrop) backdrop.addEventListener('click', closeModal);
     if (btnCancel) btnCancel.addEventListener('click', closeModal);
@@ -5696,7 +7107,15 @@ function initDigitalUnboxingRecorder() {
             if (liveVideo) liveVideo.style.display = 'none';
             if (audioLiveBox) audioLiveBox.style.display = 'none';
 
+            const pulseRing = document.getElementById('unboxingMicPulseRing') || audioLiveBox?.querySelector('.unboxing-mic-pulse-ring');
+            if (pulseRing) pulseRing.classList.remove('is-recording');
+            if (audioStatus) {
+                audioStatus.style.display = '';
+                audioStatus.textContent = typeof t === 'function' ? t('unboxing_mic_active') : 'Mikrofon gotowy do nagrywania';
+            }
+
             if (activeMode === 'video') {
+                if (recordedAudioCard) recordedAudioCard.style.display = 'none';
                 if (recordedAudio) recordedAudio.style.display = 'none';
                 if (recordedVideo) {
                     recordedVideo.style.display = 'block';
@@ -5706,11 +7125,96 @@ function initDigitalUnboxingRecorder() {
                 }
             } else {
                 if (recordedVideo) recordedVideo.style.display = 'none';
+                if (recordedAudioCard) recordedAudioCard.style.display = 'flex';
                 if (recordedAudio) {
-                    recordedAudio.style.display = 'block';
                     recordedAudio.src = recordedUrl;
-                    recordedAudio.controls = true;
-                    recordedAudio.play().catch(() => {});
+                    recordedAudio.playbackRate = 1.0;
+                    if (voiceSpeedBtn) voiceSpeedBtn.textContent = '1.0x';
+                }
+
+                // Czas trwania nagranej notatki
+                const durationSec = Math.max(1, secondsElapsed);
+                const mm = String(Math.floor(durationSec / 60)).padStart(2, '0');
+                const ss = String(durationSec % 60).padStart(2, '0');
+                if (voiceTotalTimeEl) voiceTotalTimeEl.textContent = `${mm}:${ss}`;
+                if (voiceCurrentTimeEl) voiceCurrentTimeEl.textContent = '00:00';
+
+                // Generowanie fali dźwiękowej (paseczki audio do kliknięcia/przewijania)
+                if (voiceBarsContainer) {
+                    voiceBarsContainer.innerHTML = '';
+                    const barHeights = [8, 14, 20, 12, 18, 26, 16, 22, 14, 28, 20, 16, 24, 18, 12, 26, 22, 16, 20, 14, 24, 18, 12, 22, 16, 10, 18, 12];
+                    barHeights.forEach((h, idx) => {
+                        const bar = document.createElement('div');
+                        bar.className = 'voice-bar';
+                        bar.style.height = `${h}px`;
+                        bar.dataset.idx = idx;
+                        bar.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (recordedAudio && (recordedAudio.duration || durationSec)) {
+                                const ratio = idx / barHeights.length;
+                                recordedAudio.currentTime = ratio * (recordedAudio.duration || durationSec);
+                                updateVoiceProgress();
+                            }
+                        });
+                        voiceBarsContainer.appendChild(bar);
+                    });
+                }
+
+                function updateVoiceProgress() {
+                    if (!recordedAudio) return;
+                    const cur = recordedAudio.currentTime || 0;
+                    const dur = recordedAudio.duration || durationSec;
+                    const cMm = String(Math.floor(cur / 60)).padStart(2, '0');
+                    const cSs = String(Math.floor(cur % 60)).padStart(2, '0');
+                    if (voiceCurrentTimeEl) voiceCurrentTimeEl.textContent = `${cMm}:${cSs}`;
+
+                    const progressRatio = dur > 0 ? (cur / dur) : 0;
+                    if (voiceBarsContainer) {
+                        const bars = voiceBarsContainer.querySelectorAll('.voice-bar');
+                        const activeCount = Math.floor(progressRatio * bars.length);
+                        bars.forEach((b, i) => {
+                            b.classList.toggle('played', i <= activeCount);
+                        });
+                    }
+                }
+
+                if (recordedAudio) {
+                    recordedAudio.ontimeupdate = updateVoiceProgress;
+                    recordedAudio.onended = () => {
+                        if (voicePlayIcon) voicePlayIcon.style.display = 'block';
+                        if (voicePauseIcon) voicePauseIcon.style.display = 'none';
+                        if (voiceBarsContainer) {
+                            voiceBarsContainer.querySelectorAll('.voice-bar').forEach(b => b.classList.remove('played'));
+                        }
+                        if (voiceCurrentTimeEl) voiceCurrentTimeEl.textContent = '00:00';
+                    };
+                }
+
+                if (voicePlayPauseBtn) {
+                    voicePlayPauseBtn.onclick = () => {
+                        if (!recordedAudio) return;
+                        if (recordedAudio.paused) {
+                            recordedAudio.play().then(() => {
+                                if (voicePlayIcon) voicePlayIcon.style.display = 'none';
+                                if (voicePauseIcon) voicePauseIcon.style.display = 'block';
+                            }).catch(() => {});
+                        } else {
+                            recordedAudio.pause();
+                            if (voicePlayIcon) voicePlayIcon.style.display = 'block';
+                            if (voicePauseIcon) voicePauseIcon.style.display = 'none';
+                        }
+                    };
+                }
+
+                if (voiceSpeedBtn) {
+                    const speeds = [1.0, 1.5, 2.0];
+                    let speedIdx = 0;
+                    voiceSpeedBtn.onclick = () => {
+                        speedIdx = (speedIdx + 1) % speeds.length;
+                        const newSpeed = speeds[speedIdx];
+                        voiceSpeedBtn.textContent = `${newSpeed.toFixed(1)}x`;
+                        if (recordedAudio) recordedAudio.playbackRate = newSpeed;
+                    };
                 }
             }
 
@@ -5729,6 +7233,15 @@ function initDigitalUnboxingRecorder() {
         if (recIndicator) recIndicator.style.display = 'inline-flex';
         if (btnModeVideo) btnModeVideo.disabled = true;
         if (btnModeAudio) btnModeAudio.disabled = true;
+
+        if (activeMode === 'audio') {
+            const pulseRing = document.getElementById('unboxingMicPulseRing') || audioLiveBox?.querySelector('.unboxing-mic-pulse-ring');
+            if (pulseRing) pulseRing.classList.add('is-recording');
+            if (audioStatus) {
+                audioStatus.textContent = '';
+                audioStatus.style.display = 'none';
+            }
+        }
 
         secondsElapsed = 0;
         if (timerBadge) timerBadge.textContent = '00:00 / 01:00';
@@ -5767,6 +7280,12 @@ function initDigitalUnboxingRecorder() {
             if (controlsPost) controlsPost.style.display = 'none';
             if (controlsPre) controlsPre.style.display = 'flex';
             if (timerBadge) timerBadge.textContent = '00:00 / 01:00';
+            if (audioStatus) {
+                audioStatus.style.display = '';
+                audioStatus.textContent = typeof t === 'function' ? t('unboxing_mic_active') : 'Mikrofon gotowy do nagrywania';
+            }
+            const pulseRing = document.getElementById('unboxingMicPulseRing') || audioLiveBox?.querySelector('.unboxing-mic-pulse-ring');
+            if (pulseRing) pulseRing.classList.remove('is-recording');
             startStream(activeMode);
         });
     }
@@ -5774,6 +7293,7 @@ function initDigitalUnboxingRecorder() {
     if (btnAttach) {
         btnAttach.addEventListener('click', () => {
             if (!recordedBlob) return;
+            stopPreviewMedia();
             window._attachedUnboxing = {
                 blob: recordedBlob,
                 type: activeMode,
@@ -5788,6 +7308,33 @@ function initDigitalUnboxingRecorder() {
                 if (attachedText) {
                     const label = activeMode === 'video' ? 'Dołączono wideo powitanie' : 'Dołączono notatkę głosową';
                     attachedText.textContent = `${label} (${secondsElapsed}s)`;
+                }
+            }
+
+            // Zapisz w pamięci trwałej i prześlij do workera dla aktywnego pliku
+            const targetKey = window._lastUploadedFileKey;
+            if (targetKey) {
+                saveUnboxingToStore(targetKey, recordedBlob, activeMode);
+                uploadUnboxingToWorker(targetKey, recordedBlob, activeMode);
+            }
+
+            if (typeof syncTransferSettingsToActiveLink === 'function') {
+                syncTransferSettingsToActiveLink(false);
+            }
+
+            // Opcjonalna automatyczna transkrypcja audio w pamięci RAM do pola notatki dla odbiorcy
+            if (activeMode === 'audio' && window.DropsiteRAM && typeof window.DropsiteRAM.transcribeAudioInRAM === 'function') {
+                const noteInput = document.getElementById('fileNoteInput');
+                if (noteInput && !noteInput.value.trim()) {
+                    window.DropsiteRAM.transcribeAudioInRAM(recordedBlob, localStorage.getItem('dropsite_lang') === 'pl' ? 'pl-PL' : 'en-US')
+                        .then(transcript => {
+                            if (transcript && !noteInput.value.trim()) {
+                                noteInput.value = `🎙️ [Transkrypcja]: "${transcript}"`;
+                                if (typeof syncTransferSettingsToActiveLink === 'function') {
+                                    syncTransferSettingsToActiveLink(false);
+                                }
+                            }
+                        }).catch(() => {});
                 }
             }
 
@@ -5815,6 +7362,7 @@ function initDigitalUnboxingRecorder() {
             const previewSrc = unbox.url || URL.createObjectURL(unbox.blob);
 
             if (unbox.type === 'video') {
+                if (recordedAudioCard) recordedAudioCard.style.display = 'none';
                 if (recordedAudio) recordedAudio.style.display = 'none';
                 if (recordedVideo) {
                     recordedVideo.style.display = 'block';
@@ -5824,11 +7372,12 @@ function initDigitalUnboxingRecorder() {
                 }
             } else {
                 if (recordedVideo) recordedVideo.style.display = 'none';
+                if (recordedAudioCard) recordedAudioCard.style.display = 'flex';
                 if (recordedAudio) {
-                    recordedAudio.style.display = 'block';
                     recordedAudio.src = previewSrc;
-                    recordedAudio.controls = true;
                     recordedAudio.play().catch(() => {});
+                    if (voicePlayIcon) voicePlayIcon.style.display = 'none';
+                    if (voicePauseIcon) voicePauseIcon.style.display = 'block';
                 }
             }
         });
@@ -5942,6 +7491,12 @@ function resetUploadFlow() {
     const customSlugWrap = document.querySelector('.custom-slug-wrap');
     if (customSlugWrap) customSlugWrap.hidden = false;
 
+    const uploadHeader = document.querySelector('.upload-header');
+    if (uploadHeader) uploadHeader.hidden = false;
+
+    const customAdvWrap = document.querySelector('.custom-adv-wrap');
+    if (customAdvWrap) customAdvWrap.hidden = false;
+
     const cinematicCard = document.getElementById('cinematicOptionCard');
     if (cinematicCard) {
         cinematicCard.style.display = 'none';
@@ -5955,6 +7510,10 @@ function resetUploadFlow() {
     if (successFlow) {
         successFlow.hidden = true;
         successFlow.style.animation = '';
+    }
+
+    if (typeof clearAttachedUnboxing === 'function') {
+        clearAttachedUnboxing();
     }
 
     const statusDiv = document.getElementById('status');
@@ -5993,6 +7552,9 @@ function navigateToHome(resetUpload = true) {
         view.classList.toggle('active', isHome);
     });
 
+    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
+    navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.navigateToHome = navigateToHome;
@@ -6007,49 +7569,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.nav-btn');
     const views = document.querySelectorAll('.view-section');
 
+    function switchView(targetId, updateHistory = false) {
+        stopAllMediaPlayback();
+
+        if (targetId === 'view-glowna') {
+            navigateToHome(false);
+            return;
+        }
+
+        if (updateHistory && (window.location.search || window.location.hash)) {
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.pushState({}, document.title, cleanUrl);
+        }
+
+        const allNavs = document.querySelectorAll('.nav-btn');
+        const drawerLinks = document.querySelectorAll('.mobile-drawer-link');
+        const allViews = document.querySelectorAll('.view-section');
+
+        allNavs.forEach(nav => {
+            nav.classList.toggle('active', nav.getAttribute('data-target') === targetId);
+        });
+
+        drawerLinks.forEach(dl => {
+            dl.classList.toggle('active', dl.getAttribute('data-target') === targetId);
+        });
+
+        allViews.forEach(v => {
+            const isTarget = v.id === targetId;
+            v.hidden = !isTarget;
+            v.classList.toggle('active', isTarget);
+        });
+
+        if (targetId === 'view-narzedzia' && window.loadToolboxScripts) {
+            window.loadToolboxScripts();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.switchView = switchView;
+
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const targetId = link.getAttribute('data-target');
-
-            // Zawsze zatrzymujemy odtwarzanie multimediów w tle
-            stopAllMediaPlayback();
-
-            if (targetId === 'view-glowna') {
-                navigateToHome(false);
-                return;
-            }
-
-            // Jeśli użytkownik był na widoku pobierania i klika inną zakładkę, czyścimy URL
-            if (window.location.search || window.location.hash) {
-                const cleanUrl = window.location.origin + window.location.pathname;
-                window.history.pushState({}, document.title, cleanUrl);
-            }
-
-            // Zdejmij klasę 'active' ze wszystkich linków
-            navLinks.forEach(nav => nav.classList.remove('active'));
-            // Dodaj klasę 'active' do klikniętego linku
-            link.classList.add('active');
-
-            // Ukryj wszystkie widoki
-            views.forEach(view => {
-                view.hidden = true;
-                view.classList.remove('active');
-            });
-
-            // Pokaż docelowy widok
-            const targetView = document.getElementById(targetId);
-            if (targetView) {
-                targetView.hidden = false;
-                targetView.classList.add('active');
-            }
-
-            // Lazy-load narzędzi PDF przy wejściu do zakładki
-            if (targetId === 'view-narzedzia' && window.loadToolboxScripts) {
-                window.loadToolboxScripts();
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            switchView(targetId, true);
         });
     });
 
@@ -6119,6 +7682,263 @@ document.addEventListener('DOMContentLoaded', () => {
             closeMobileDrawer();
         });
     });
+
+    // === SMART AUTO-HIDE NAVBAR (OPCJA 2: PŁYNNE CHOWANIE LOGO I MENU PRZY SCROLLU W DÓŁ) ===
+    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
+    if (navFloatingElements.length) {
+        let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        let ticking = false;
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+
+                    // Schowaj logo i menu gdy użytkownik wyraźnie scrolluje w dół (>8px) i znajduje się poniżej 70px
+                    if (currentScrollY > 70) {
+                        if (currentScrollY > lastScrollY && (currentScrollY - lastScrollY > 8)) {
+                            // Scroll w dół -> płynne ukrycie poza ekranem
+                            navFloatingElements.forEach(el => el.classList.add('nav-hidden'));
+                            const langMenu = document.getElementById('langMenu');
+                            if (langMenu && !langMenu.hidden) {
+                                langMenu.hidden = true;
+                            }
+                        } else if (lastScrollY - currentScrollY > 8) {
+                            // Scroll w górę -> natychmiastowe ujawnienie
+                            navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                        }
+                    } else {
+                        // Na samej górze zawsze widoczne
+                        navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                    }
+
+                    lastScrollY = Math.max(0, currentScrollY);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+
+    // === BENTO PIANO TABS (KLAWISZE PIANINA NA STRONIE GŁÓWNEJ) ===
+    function initHomeBentoPianoTabs() {
+        const pianoKeys = document.querySelectorAll('.piano-key-btn');
+        const pianoPanels = document.querySelectorAll('.piano-panel');
+        if (!pianoKeys.length || !pianoPanels.length) return;
+
+        function playKeyHapticTone() {
+            if (typeof playUiSound === 'function') {
+                playUiSound('select');
+            }
+        }
+
+        window.switchHomePianoTab = function(targetTab, smoothScroll = false) {
+            if (!targetTab) return;
+            const normalized = targetTab.toLowerCase().trim();
+
+            let matchedKey = null;
+            pianoKeys.forEach(key => {
+                const keyTarget = key.getAttribute('data-tab-target');
+                const isMatch = keyTarget === normalized;
+                key.classList.toggle('active', isMatch);
+                key.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+                if (isMatch) matchedKey = key;
+            });
+
+            pianoPanels.forEach(panel => {
+                const isTarget = panel.id === `homeTabContent_${normalized}`;
+                if (isTarget) {
+                    panel.hidden = false;
+                    panel.classList.add('active');
+                } else {
+                    panel.hidden = true;
+                    panel.classList.remove('active');
+                }
+            });
+
+            if (smoothScroll && matchedKey) {
+                matchedKey.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        };
+
+        pianoKeys.forEach(key => {
+            key.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTab = key.getAttribute('data-tab-target');
+                playKeyHapticTone();
+                window.switchHomePianoTab(targetTab, false);
+            });
+        });
+
+        // Deep-linking z URL hash lub query param dla zakładek Bento (#faq, ?tab=trust itp.)
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            const hash = (window.location.hash || '').toLowerCase();
+            if (tabParam && ['tools', 'trust', 'faq'].includes(tabParam.toLowerCase())) {
+                window.switchHomePianoTab(tabParam.toLowerCase(), true);
+            } else if (hash.includes('faq')) {
+                window.switchHomePianoTab('faq', true);
+            } else if (hash.includes('trust') || hash.includes('bezpieczenstwo')) {
+                window.switchHomePianoTab('trust', true);
+            }
+        } catch (_) {}
+    }
+
+    initHomeBentoPianoTabs();
+
+    // =========================================================================
+    // DEDYKOWANY ROUTER SEO & DEEP-LINKING DLA NARZĘDZI PDF I PODSTRON
+    // =========================================================================
+    function handleSeoAndDeepLinking() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            // Nie zakłócaj procesu pobierania plików ani powrotu ze Stripe
+            if (params.get('f') || params.get('file') || params.get('pro_success') ||
+                window.location.pathname.startsWith('/f/') || window.location.pathname.startsWith('/v/')) {
+                return;
+            }
+
+            const path = (window.location.pathname || '').toLowerCase();
+            const hash = (window.location.hash || '').toLowerCase();
+            const toolParam = (params.get('tool') || params.get('tab') || '').toLowerCase();
+
+            function setSeoMeta(title, desc) {
+                if (title) document.title = title;
+                if (desc) {
+                    let metaDesc = document.querySelector('meta[name="description"]');
+                    if (!metaDesc) {
+                        metaDesc = document.createElement('meta');
+                        metaDesc.setAttribute('name', 'description');
+                        document.head.appendChild(metaDesc);
+                    }
+                    metaDesc.setAttribute('content', desc);
+                }
+            }
+
+            // Dropsite Beam P2P
+            const beamParam = params.get('beam');
+            if (path === '/beam' || hash.includes('beam') || beamParam) {
+                if (window.switchView) window.switchView('view-beam');
+                setSeoMeta('Dropsite Beam — Błyskawiczny Transfer P2P bez Pośredników | Dropsite', 'Przesyłaj pliki 10 GB, 50 GB lub całe foldery bezpośrednio z przeglądarki do przeglądarki. 0 pośredników, 0 limitów serwera, 100% prędkości Twojej sieci.');
+                if (beamParam) {
+                    setTimeout(() => {
+                        const tabRecBtn = document.getElementById('beamTabReceiveBtn');
+                        if (tabRecBtn) tabRecBtn.click();
+                        const pinInput = document.getElementById('beamPinInput');
+                        if (pinInput) pinInput.value = beamParam;
+                        const btnConnect = document.getElementById('btnBeamConnectReceive');
+                        if (btnConnect) btnConnect.click();
+                    }, 260);
+                }
+                return;
+            }
+
+            // 1. Podpisz PDF
+            if (path === '/podpisz-pdf' || hash.includes('podpisz-pdf') || hash.includes('podpis') || toolParam === 'edit') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Podpisz PDF Online za Darmo — Bezpieczny Podpis w RAM | Dropsite', 'Podpisz dokument PDF elektronicznie bezpośrednio w przeglądarce bez instalacji programów. 100% bezpieczeństwa w lokalnej pamięci RAM.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('edit', false); }, 160);
+                return;
+            }
+
+            // 2. Połącz / Scal PDF
+            if (path === '/polacz-pdf' || hash.includes('polacz-pdf') || hash.includes('scal-pdf') || toolParam === 'merge') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Połącz PDF Online — Błyskawiczne Scalanie Dokumentów bez Limitu | Dropsite', 'Łącz i scalaj wiele plików PDF w jeden dokument w kilka sekund bez wysyłania ich na serwer. Całkowicie bezpłatnie i bez limitów.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('merge', false); }, 160);
+                return;
+            }
+
+            // 3. Kompresor PDF
+            if (path === '/kompresor-pdf' || path === '/kompresuj-pdf' || hash.includes('kompresor-pdf') || hash.includes('kompresuj-pdf') || toolParam === 'compress') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Kompresor PDF Online — Zmniejsz Rozmiar PDF bez Utraty Jakości | Dropsite', 'Zmniejsz wagę i rozmiar dokumentu PDF bezpośrednio w pamięci RAM urządzenia. Bezpieczna kompresja zgodna z RODO bez utraty czytelności.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('compress', false); }, 160);
+                return;
+            }
+
+            // 4. Cenzura / Anonimizacja RODO
+            if (path === '/cenzura-pdf' || path === '/anonimizuj-pdf' || hash.includes('cenzura-pdf') || hash.includes('anonimizuj-pdf')) {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Cenzura RODO w PDF — Bezpieczna Anonimizacja Danych w RAM | Dropsite', 'Trwale zamaluj czarną belką PESEL, numery kont, adresy i dane wrażliwe w dokumentach PDF. Anonimizacja 100% w pamięci RAM.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('edit', false); }, 160);
+                return;
+            }
+
+            // 5. Konwerter PDF & Obrazów
+            if (path === '/konwertuj-pdf' || hash.includes('konwertuj-pdf') || toolParam === 'convert') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Konwerter PDF i Obrazów Online — JPG/PNG do PDF w RAM | Dropsite', 'Konwertuj zdjęcia i obrazy do formatu PDF lub wyodrębniaj strony PDF w ułamku sekundy bez zewnętrznego oprogramowania.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('convert', false); }, 160);
+                return;
+            }
+
+            // 6. Narzędzia ogólne
+            if (path === '/narzedzia' || path === '/tools' || hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Zestaw Narzędzi PDF Online (Toolbox) — 100% Local RAM | Dropsite', 'Edytuj, łącz, rozdzielaj, kompresuj i podpisuj pliki PDF lokalnie w przeglądarce. 0 zł, bez limitów i bez rejestracji.');
+                return;
+            }
+
+            // 7. Cennik
+            if (path === '/cennik' || hash.includes('cennik') || hash.includes('pricing')) {
+                if (window.switchView) window.switchView('view-cennik');
+                setSeoMeta('Cennik Dropsite PRO — Duże Paczki do 10 GB i Polski BLIK | Dropsite', 'Wybierz pakiet Dropsite PRO. Wysyłaj pliki do 10 GB, wydłuż czas przechowywania i ciesz się transferem bez reklam z polskim BLIK.');
+                return;
+            }
+
+            // 8. Funkcje
+            if (path === '/funkcje' || hash.includes('funkcje') || hash.includes('features')) {
+                if (window.switchView) window.switchView('view-funkcje');
+                setSeoMeta('Możliwości Dropsite — Szyfrowanie Zero-Knowledge, Odtwarzacz & EXIF | Dropsite', 'Poznaj zaawansowane możliwości Dropsite: czyszczenie metadanych EXIF w RAM, odtwarzacz wideo, albumy i tryb samozniszczenia.');
+                return;
+            }
+
+            // 9. Kontakt
+            if (path === '/kontakt' || hash.includes('kontakt') || hash.includes('contact')) {
+                if (window.switchView) window.switchView('view-kontakt');
+                setSeoMeta('Kontakt & Pomoc Techniczna — Dropsite', 'Skontaktuj się z zespołem Dropsite w sprawie pytań technicznych, sugestii nowych funkcji lub wsparcia licencji PRO.');
+                return;
+            }
+
+            // 10. Regulamin
+            if (path === '/regulamin' || hash.includes('regulamin') || hash.includes('terms')) {
+                if (window.switchView) window.switchView('view-regulamin');
+                setSeoMeta('Regulamin Serwisu — Dropsite', 'Regulamin świadczenia usług drogą elektroniczną w serwisie Dropsite.');
+                return;
+            }
+
+            // 11. Polityka Prywatności
+            if (path === '/polityka-prywatnosci' || path === '/polityka' || hash.includes('polityka')) {
+                if (window.switchView) window.switchView('view-polityka');
+                setSeoMeta('Polityka Prywatności & Bezpieczeństwo Danych RODO — Dropsite', 'Zasady przetwarzania danych i architektury Zero-Knowledge w serwisie Dropsite.');
+                return;
+            }
+
+            // 12. FAQ
+            if (path === '/faq' || hash.includes('faq')) {
+                if (window.switchView) window.switchView('view-glowna');
+                if (window.switchHomePianoTab) window.switchHomePianoTab('faq', true);
+                setSeoMeta('Często Zadawane Pytania (FAQ) — Dropsite', 'Odpowiedzi na najczęstsze pytania o limity darmowego transferu, bezpieczeństwo szyfrowania i konto PRO w Dropsite.');
+                return;
+            }
+
+            // 13. Trust / Bezpieczeństwo
+            if (path === '/trust' || hash.includes('trust') || hash.includes('bezpieczenstwo')) {
+                if (window.switchView) window.switchView('view-glowna');
+                if (window.switchHomePianoTab) window.switchHomePianoTab('trust', true);
+                setSeoMeta('Prywatność i Bezpieczeństwo Zero-Knowledge — Dropsite', 'Gwarancja prywatności: brak logów, brak ciasteczek śledzących i lokalne czyszczenie metadanych w RAM.');
+                return;
+            }
+        } catch (e) {
+            console.warn('SEO & Deep-linking navigation notice:', e);
+        }
+    }
+
+    handleSeoAndDeepLinking();
+    window.addEventListener('hashchange', handleSeoAndDeepLinking);
+    window.addEventListener('popstate', handleSeoAndDeepLinking);
 });
 
 // ============================================================================
@@ -6163,7 +7983,7 @@ document.addEventListener('DOMContentLoaded', () => {
             vx: (Math.random() - 0.5) * 0.5,
             vy: (Math.random() - 0.5) * 0.5,
             radius: Math.random() * 2 + 1,
-            color: i % 2 === 0 ? 'rgba(56, 189, 248, 0.45)' : 'rgba(14, 165, 233, 0.45)'
+            color: i % 3 === 0 ? 'rgba(52, 211, 153, 0.65)' : (i % 3 === 1 ? 'rgba(56, 189, 248, 0.65)' : 'rgba(167, 139, 250, 0.55)')
         });
     }
 
@@ -6298,21 +8118,43 @@ window.shareLink = function() {
 };
 
 window.openQrModal = function(customUrl) {
-    const url = customUrl || document.getElementById('finalLink')?.href;
-    if (!url || url === '#' || !qrCanvas) return;
+    const finalLink = document.getElementById('finalLink');
+    const targetCanvas = document.getElementById('qrCanvas');
+    const modalWrap = document.getElementById('qrModalWrap');
+    
+    const url = customUrl || finalLink?.dataset?.shareUrl || finalLink?.href || finalLink?.textContent;
+    if (!url || url === '#' || !targetCanvas) return;
 
-    if (typeof QRCode !== 'undefined') {
-        QRCode.toCanvas(qrCanvas, url, {
-            width: 200,
-            margin: 1,
-            color: {
-                dark: '#0E1015',
-                light: '#FFFFFF'
+    try {
+        if (typeof QRious !== 'undefined') {
+            new QRious({
+                element: targetCanvas,
+                value: url,
+                size: 220,
+                background: '#FFFFFF',
+                foreground: '#0E1015',
+                level: 'M'
+            });
+            if (modalWrap && window.smoothOpenModal) {
+                window.smoothOpenModal(modalWrap);
             }
-        }, function (error) {
-            if (error) console.error("Błąd generowania QR:", error);
-            else if (qrModalWrap) window.smoothOpenModal(qrModalWrap);
-        });
+        } else if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
+            QRCode.toCanvas(targetCanvas, url, {
+                width: 220,
+                margin: 1,
+                color: {
+                    dark: '#0E1015',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) console.error("Błąd generowania QR:", error);
+                else if (modalWrap && window.smoothOpenModal) window.smoothOpenModal(modalWrap);
+            });
+        } else {
+            console.warn("Biblioteka QR nie załadowana.");
+        }
+    } catch (err) {
+        console.error("Błąd generowania kodu QR:", err);
     }
 };
 
@@ -6320,6 +8162,102 @@ if (closeQrModal && qrModalWrap) {
     closeQrModal.addEventListener('click', () => { window.smoothCloseModal(qrModalWrap); });
     qrModalWrap.addEventListener('click', (e) => {
         if (e.target === qrModalWrap) window.smoothCloseModal(qrModalWrap);
+    });
+}
+
+// Pobieranie kodu QR jako plik graficzny PNG
+const btnDownloadQr = document.getElementById('btnDownloadQr');
+if (btnDownloadQr) {
+    btnDownloadQr.addEventListener('click', () => {
+        const canvas = document.getElementById('qrCanvas');
+        if (!canvas) return;
+        try {
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'dropsite-qr-code.png';
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            if (typeof showToast === 'function') {
+                showToast('Kod QR został pobrany na Twoje urządzenie', 'success');
+            }
+        } catch (e) {
+            console.error('Błąd pobierania QR:', e);
+        }
+    });
+}
+
+// Udostępnianie kodu QR (Web Share API z plikiem graficznym lub fallback)
+const btnShareQr = document.getElementById('btnShareQr');
+if (btnShareQr) {
+    btnShareQr.addEventListener('click', async () => {
+        const canvas = document.getElementById('qrCanvas');
+        const finalLink = document.getElementById('finalLink');
+        const shareUrl = finalLink?.dataset?.shareUrl || finalLink?.href || finalLink?.textContent || '';
+        if (!canvas) return;
+
+        try {
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const file = new File([blob], 'dropsite-qr.png', { type: 'image/png' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'Kod QR - Dropsite',
+                            text: 'Zeskanuj kod QR, aby pobrać plik:',
+                            url: shareUrl,
+                            files: [file]
+                        });
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // Fallback: natywne udostępnienie samego linku lub pobranie
+                if (navigator.share && shareUrl && shareUrl !== '#') {
+                    try {
+                        await navigator.share({
+                            title: 'Dropsite - Plik do pobrania',
+                            text: 'Pobierz plik przesłany przez Dropsite:',
+                            url: shareUrl
+                        });
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // Dodatkowy fallback: kopiowanie obrazka QR do schowka jeśli wspierane
+                if (navigator.clipboard && window.ClipboardItem) {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        if (typeof showToast === 'function') {
+                            showToast('Obrazek kodu QR został skopiowany do schowka!', 'success');
+                        }
+                        return;
+                    } catch (_) {}
+                }
+
+                // Ostateczny fallback: automatyczne pobranie pliku graficznego
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'dropsite-qr-code.png';
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                if (typeof showToast === 'function') {
+                    showToast('Kod QR został pobrany', 'success');
+                }
+            }, 'image/png');
+        } catch (err) {
+            console.error('Błąd udostępniania QR:', err);
+        }
     });
 }
 
@@ -6349,14 +8287,49 @@ function getLocalHistory() {
     }
 }
 
+async function syncUserHistory() {
+    const user = auth.currentUser;
+    if (user && user.email) {
+        try {
+            const response = await fetch(`${WORKER_URL}/my-files`, {
+                headers: { 'X-User-Email': user.email }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && Array.isArray(data.files)) {
+                    const key = getHistoryStorageKey();
+                    const local = getLocalHistory();
+                    const serverKeys = new Set(data.files.map(f => f.key));
+                    const combined = [...data.files];
+                    local.forEach(l => {
+                        const lKey = l.key || l.name;
+                        if (!serverKeys.has(lKey) && !serverKeys.has(l.name)) {
+                            combined.push(l);
+                        }
+                    });
+                    localStorage.setItem(key, JSON.stringify(combined.slice(0, 500)));
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.warn('Sync failed:', e);
+        }
+    }
+    return false;
+}
+
 function saveToUserHistory(item) {
     const key = getHistoryStorageKey();
     const history = getLocalHistory();
     // Unikamy duplikatów
-    const filtered = history.filter(h => h.url !== item.url && h.name !== item.name);
-    filtered.unshift(item);
-    // Zachowaj maksymalnie 50 ostatnich plików
-    if (filtered.length > 50) filtered.pop();
+    const filtered = history.filter(h => (h.url && h.url !== item.url) && (h.name && h.name !== item.name) && (h.key && h.key !== item.key));
+    filtered.unshift({
+        ...item,
+        status: item.status || 'active',
+        existsOnDisk: item.existsOnDisk !== false
+    });
+    // Zwiększony limit do 500 wpisów
+    if (filtered.length > 500) filtered.pop();
     localStorage.setItem(key, JSON.stringify(filtered));
 }
 
@@ -6393,11 +8366,15 @@ function renderUserHistory() {
         else if (item.duration === 'permanent') badge = '<span class="mod-badge-exp exp-perm">Bezterminowo</span>';
         else if (item.duration === 'burn') badge = '<span class="mod-badge-exp exp-burn">1x Pobranie</span>';
 
+        const pageUrl = getDropsitePageUrl(item);
+        const rawKey = item.key || item.name;
+        const directMediaUrl = item.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`;
+
         li.innerHTML = `
             <div class="mod-file-main">
                 <div class="mod-preview-icon">${iconSvg}</div>
                 <div class="mod-file-info">
-                    <a href="${item.url}" target="_blank" class="mod-file-name" title="${item.name}">${item.name}</a>
+                    <a href="${pageUrl}" target="_blank" class="mod-file-name" title="${item.name} • Otwórz stronę pliku">${item.name}</a>
                     <div class="mod-meta-row">
                         <span class="mod-badge-size">${formatBytes(item.size)}</span>
                         ${badge}
@@ -6405,9 +8382,9 @@ function renderUserHistory() {
                 </div>
             </div>
             <div class="mod-actions">
-                <button class="btn-copy-mod" onclick="copyDirectLink('${item.url}')" title="Kopiuj link">
+                <button class="btn-copy-mod" onclick="copyDirectLink('${pageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku (Prawy przycisk myszy: bezpośredni link do pliku)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    Kopiuj
+                    Kopiuj link
                 </button>
             </div>
         `;
@@ -6416,9 +8393,17 @@ function renderUserHistory() {
 }
 
 if (openHistoryBtn && historyModalWrap) {
-    openHistoryBtn.addEventListener('click', () => {
-        renderUserHistory();
+    openHistoryBtn.addEventListener('click', async () => {
+        renderUserHistory(); // Optymistyczny render (cache)
         window.smoothOpenModal(historyModalWrap);
+        
+        // Tło: synchronizacja z chmurą
+        if (typeof syncUserHistory === 'function') {
+            const synced = await syncUserHistory();
+            if (synced) {
+                renderUserHistory(); // Przeładuj zaktualizowane dane
+            }
+        }
     });
 }
 
@@ -6431,19 +8416,23 @@ if (closeHistoryModal && historyModalWrap) {
 
 if (clearHistoryBtn) {
     clearHistoryBtn.addEventListener('click', () => {
-        localStorage.removeItem('dropsite_user_history');
+        localStorage.removeItem(getHistoryStorageKey());
         renderUserHistory();
         showNotification('Historia została wyczyszczona', 'info');
     });
 }
 
-// Funkcja kopiowania bezpośredniego z dźwiękiem
-window.copyDirectLink = function(url) {
+// Funkcja kopiowania bezpośredniego z dźwiękiem i obsługą strony / pub
+window.copyDirectLink = function(url, customMsg) {
+    const isPageLink = typeof url === 'string' && (url.includes('?f=') || url.includes(window.location.host));
+    const defaultMsg = isPageLink ? 'Skopiowano link do strony pliku!' : 'Link został skopiowany do schowka!';
+    const msg = customMsg || defaultMsg;
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(url).then(() => {
-            playSound('copy');
+            if (typeof playSound === 'function') playSound('copy');
             if (typeof showNotification === 'function') {
-                showNotification('Link został skopiowany do schowka!', 'success');
+                showNotification(msg, 'success');
             }
         }).catch(() => {
             prompt('Skopiuj link poniżej:', url);
@@ -6794,11 +8783,22 @@ async function initDownloadRouter() {
     }
 
     function updateProofingBadge() {
-        const badge = document.getElementById('proofingPinCountBadge');
-        if (!badge) return;
         const total = proofingPins.length;
         const resolved = proofingPins.filter(p => p.resolved).length;
-        badge.textContent = formatPluralPins(total);
+
+        const badge = document.getElementById('proofingPinCountBadge');
+        if (badge) {
+            badge.textContent = total;
+            badge.classList.toggle('has-items', total > 0);
+        }
+
+        const toggleBtn = document.getElementById('btnProofingToggleDrawer');
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('has-pins', total > 0);
+            toggleBtn.title = total > 0 
+                ? `Rozwiń listę uwag (${formatPluralPins(total)}) (L)` 
+                : `Lista uwag i poprawek (L)`;
+        }
 
         const progressEl = document.getElementById('proofingDrawerProgress');
         if (progressEl) {
@@ -6968,6 +8968,12 @@ async function initDownloadRouter() {
             </div>
             <div class="marker-popover-text">${escapeHtml(pin.comment || '')}</div>
             <div class="marker-popover-actions">
+                ${typeof pin.time === 'number' ? `
+                <button type="button" class="marker-popover-btn btn-play-marker" title="Odtwórz wideo od tej sekundy (${pin.formattedTime || '00:00'})">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    <span>Odtwórz</span>
+                </button>
+                ` : ''}
                 <button type="button" class="marker-popover-btn btn-resolve" title="${pin.resolved ? 'Oznacz jako do zrobienia' : 'Oznacz jako wykonane'}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>${pin.resolved ? 'Wykonane ✓' : 'Zrobione?'}</span>
@@ -6983,6 +8989,15 @@ async function initDownloadRouter() {
             e.stopPropagation();
             closeTimelineMarkerPopover();
         };
+
+        const popoverPlayBtn = popover.querySelector('.btn-play-marker');
+        if (popoverPlayBtn) {
+            popoverPlayBtn.onclick = (e) => {
+                e.stopPropagation();
+                seekToPin(pin, true);
+                closeTimelineMarkerPopover();
+            };
+        }
 
         popover.querySelector('.btn-resolve').onclick = (e) => {
             e.stopPropagation();
@@ -7051,7 +9066,9 @@ async function initDownloadRouter() {
         if (proofingPins.length === 0) {
             listEl.innerHTML = `
                 <div class="proofing-empty-hint">
-                    <span>${typeof t === 'function' ? t('proofing_no_pins') : 'Brak uwag. Kliknij w dowolne miejsce na klatce lub grafice, aby postawić pinezkę.'}</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.6; margin-bottom: 4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <div>${typeof t === 'function' ? t('proofing_no_pins') : 'Brak dodanych uwag.'}</div>
+                    <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Kliknij przycisk „+ Dodaj uwagę” lub wciśnij <kbd style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 10px;">C</kbd>, aby zaznaczyć klatkę.</div>
                 </div>
             `;
             return;
@@ -7062,20 +9079,37 @@ async function initDownloadRouter() {
             item.className = `proofing-task-item ${pin.resolved ? 'is-resolved' : ''}`;
             item.setAttribute('data-pin-id', pin.id);
 
+            const hasTime = typeof pin.time === 'number' || Boolean(pin.formattedTime);
+            const timeLabel = pin.formattedTime || (hasTime ? formatProofingTime(pin.time) : `#${idx + 1}`);
+
             item.innerHTML = `
                 <div class="proofing-task-left">
-                    <button type="button" class="proofing-checkbox-btn" title="${pin.resolved ? 'Oznacz jako do zrobienia' : 'Oznacz jako zrobione'}" aria-label="Status zadania">
+                    <button type="button" class="proofing-checkbox-btn" title="${pin.resolved ? 'Oznacz jako do zrobienia' : 'Oznacz jako wykonane'}" aria-label="Status zadania">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                     </button>
-                    ${pin.formattedTime ? `<span class="proofing-time-pill" title="Przewiń wideo do tej sekundy">${pin.formattedTime}</span>` : `<span class="proofing-time-pill" title="Punkt na grafice">#${idx + 1}</span>`}
-                    <div class="proofing-task-content">
-                        <span class="proofing-task-author-tag">${escapeHtml(pin.author)}</span>
-                        <span class="proofing-task-text">${escapeHtml(pin.comment)}</span>
-                    </div>
+                    ${hasTime ? `
+                    <button type="button" class="proofing-time-pill proofing-play-seek-btn" title="Odtwórz wideo od sekundy ${timeLabel}">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="seek-play-icon"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        <span>${timeLabel}</span>
+                    </button>
+                    ` : `
+                    <span class="proofing-time-pill" title="Punkt na grafice">#${idx + 1}</span>
+                    `}
+                    <span class="proofing-task-author-badge" title="Autor uwagi">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>${escapeHtml(pin.author || 'Klient')}</span>
+                    </span>
+                    <div class="proofing-task-text">${escapeHtml(pin.comment)}</div>
                 </div>
                 <div class="proofing-task-right">
+                    ${hasTime ? `
+                    <button type="button" class="btn-task-play" title="Odtwórz film w tej sekundzie (${timeLabel})">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        <span>Odtwórz</span>
+                    </button>
+                    ` : ''}
                     <button type="button" class="btn-task-del" title="Usuń uwagę" aria-label="Usuń uwagę">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="3 6 5 6 21 6"></polyline>
@@ -7097,7 +9131,15 @@ async function initDownloadRouter() {
             if (timePill) {
                 timePill.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    seekToPin(pin);
+                    seekToPin(pin, true);
+                });
+            }
+
+            const playBtn = item.querySelector('.btn-task-play');
+            if (playBtn) {
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    seekToPin(pin, true);
                 });
             }
 
@@ -7109,19 +9151,48 @@ async function initDownloadRouter() {
                 });
             }
 
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.proofing-checkbox-btn') || e.target.closest('.btn-task-del')) return;
+                seekToPin(pin, true);
+            });
+
             listEl.appendChild(item);
         });
     }
 
-    function seekToPin(pin) {
-        const video = document.getElementById('proofingVideoEl');
+    function seekToPin(pin, autoPlay = true) {
+        const video = document.getElementById('proofingVideoEl') || document.getElementById('sideProofingVideo');
         if (video && typeof pin.time === 'number') {
             video.currentTime = pin.time;
-            video.pause();
-            const playIcon = document.getElementById('proofingPlayIcon');
-            const pauseIcon = document.getElementById('proofingPauseIcon');
-            if (playIcon) playIcon.style.display = 'block';
-            if (pauseIcon) pauseIcon.style.display = 'none';
+            if (autoPlay) {
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        const playIcon = document.getElementById('proofingPlayIcon');
+                        const pauseIcon = document.getElementById('proofingPauseIcon');
+                        const centerPlayBtn = document.getElementById('btnProofingCenterPlay');
+                        if (playIcon) playIcon.style.display = 'none';
+                        if (pauseIcon) pauseIcon.style.display = 'block';
+                        if (centerPlayBtn) centerPlayBtn.classList.add('hidden');
+                    }).catch(err => {
+                        console.warn('Playback auto-play was prevented:', err);
+                    });
+                }
+            } else {
+                video.pause();
+                const playIcon = document.getElementById('proofingPlayIcon');
+                const pauseIcon = document.getElementById('proofingPauseIcon');
+                if (playIcon) playIcon.style.display = 'block';
+                if (pauseIcon) pauseIcon.style.display = 'none';
+            }
+        }
+
+        // Podświetlenie aktywnej uwagi na liście
+        document.querySelectorAll('.proofing-task-item').forEach(el => el.classList.remove('active-play'));
+        const activeItem = document.querySelector(`.proofing-task-item[data-pin-id="${pin.id}"]`);
+        if (activeItem) {
+            activeItem.classList.add('active-play');
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         const pinEl = document.querySelector(`.proofing-pin[data-pin-id="${pin.id}"]`);
@@ -7294,6 +9365,15 @@ async function initDownloadRouter() {
         localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
         renderProofingUI();
         closeProofingModal();
+        const drawer = document.getElementById('proofingDrawer');
+        const toggleBtn = document.getElementById('btnProofingToggleDrawer');
+        if (drawer && !drawer.classList.contains('open')) {
+            drawer.classList.add('open');
+            if (toggleBtn) {
+                toggleBtn.classList.add('active');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            }
+        }
         if (typeof playSound === 'function') playSound('copy');
 
         if (typeof showNotification === 'function') {
@@ -7460,9 +9540,28 @@ async function initDownloadRouter() {
             downloadTxtBtn.onclick = () => downloadProofingTxt(cleanName);
         }
 
+        const closeDrawerBtn = document.getElementById('btnProofingDrawerClose');
+        const toggleDrawer = (forceOpen) => {
+            if (!drawer) return;
+            const isOpen = typeof forceOpen === 'boolean' ? forceOpen : !drawer.classList.contains('open');
+            drawer.classList.toggle('open', isOpen);
+            if (toggleDrawerBtn) {
+                toggleDrawerBtn.classList.toggle('active', isOpen);
+                toggleDrawerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+        };
+
         if (toggleDrawerBtn && drawer) {
-            toggleDrawerBtn.onclick = () => {
-                drawer.classList.toggle('open');
+            toggleDrawerBtn.onclick = (e) => {
+                if (e) e.stopPropagation();
+                toggleDrawer();
+            };
+        }
+
+        if (closeDrawerBtn && drawer) {
+            closeDrawerBtn.onclick = (e) => {
+                if (e) e.stopPropagation();
+                toggleDrawer(false);
             };
         }
 
@@ -7726,7 +9825,7 @@ async function initDownloadRouter() {
                             renderH = naturalH;
                         } else {
                             renderH = maxH;
-                            renderW = maxH * vAspect;
+                            renderW = Math.min(boxW, maxH * vAspect);
                         }
                         frameBox.style.height = Math.round(renderH) + 'px';
                         stage.style.setProperty('width', Math.round(renderW) + 'px', 'important');
@@ -7799,6 +9898,9 @@ async function initDownloadRouter() {
                     } else if (e.key === 'i' || e.key === 'I') {
                         e.preventDefault();
                         if (typeof togglePiP === 'function') togglePiP();
+                    } else if (e.key === 'l' || e.key === 'L' || e.key === 'u' || e.key === 'U') {
+                        e.preventDefault();
+                        if (toggleDrawerBtn) toggleDrawerBtn.click();
                     } else if (e.key === 'c' || e.key === 'C' || e.key === 'p' || e.key === 'P') {
                         // Klawisz C lub P: natychmiastowe zaznaczenie momentu
                         e.preventDefault();
@@ -8996,16 +11098,13 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     <div class="proofing-video-frame-box" id="proofingVideoFrameBox">
                         <div class="proofing-video-stage" id="proofingVideoStage">
                             <video id="proofingVideoEl" src="${directUrl}" playsinline preload="metadata"></video>
-                            <button type="button" class="proofing-center-play-btn" id="btnProofingCenterPlay" title="Odtwórz wideo (Spacja)">
-                                <div class="center-play-pulse-ring"></div>
-                                <div class="center-play-circle">
-                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="center-play-svg" aria-hidden="true"><path d="M8 5.5C8 4.67 8.93 4.18 9.62 4.63L19.46 11.13C20.08 11.54 20.08 12.46 19.46 12.87L9.62 19.37C8.93 19.82 8 19.33 8 18.5V5.5Z"></path></svg>
-                                </div>
-                            </button>
                             <div class="proofing-overlay" id="proofingOverlay" title="Odtwórz / Wstrzymaj (Spacja) • Podwójne kliknięcie: Pełny ekran">
                                 <div id="proofingPinsLayer" class="proofing-pins-layer"></div>
                             </div>
                         </div>
+                        <button type="button" class="proofing-center-play-btn" id="btnProofingCenterPlay" title="Odtwórz wideo (Spacja)">
+                            <svg width="52" height="52" viewBox="0 0 24 24" fill="currentColor" class="center-play-svg" aria-hidden="true"><path d="M6.27 5.5C6.27 4.67 7.2 4.18 7.89 4.63L17.73 11.13C18.35 11.54 18.35 12.46 17.73 12.87L7.89 19.37C7.2 19.82 6.27 19.33 6.27 18.5V5.5Z"></path></svg>
+                        </button>
                     </div>
                                         <div class="proofing-timeline-wrap" id="proofingTimelineWrap">
                         <!-- Pełna oś czasu (Scrubber Bar 100% szerokości) -->
@@ -9024,8 +11123,8 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         <div class="proofing-controls-row">
                             <div class="proofing-controls-left">
                                 <button type="button" class="btn-timeline-play" id="btnProofingVideoPlay" title="Odtwórz / Wstrzymaj (Spacja)">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" id="proofingPlayIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" id="proofingPauseIcon" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" id="proofingPlayIcon"><path d="M6.27 5.5C6.27 4.67 7.2 4.18 7.89 4.63L17.73 11.13C18.35 11.54 18.35 12.46 17.73 12.87L7.89 19.37C7.2 19.82 6.27 19.33 6.27 18.5V5.5Z"></path></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" id="proofingPauseIcon" style="display: none;"><rect x="6" y="4" width="4" height="16" rx="1.2"></rect><rect x="14" y="4" width="4" height="16" rx="1.2"></rect></svg>
                                 </button>
                                 <span class="proofing-timeline-time-display" id="proofingTimeDisplay">00:00 / 00:00</span>
                             </div>
@@ -9036,6 +11135,16 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                         <line x1="5" y1="12" x2="19" y2="12"></line>
                                     </svg>
                                     <span>Dodaj uwagę</span>
+                                </button>
+                                <button type="button" class="btn-timeline-toggle-remarks" id="btnProofingToggleDrawer" title="Rozwiń listę uwag i poprawek (L)" aria-expanded="false">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>Uwagi</span>
+                                    <span class="proofing-remarks-count-pill" id="proofingPinCountBadge">0</span>
+                                    <svg class="chevron-toggle" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
                                 </button>
                                 <button type="button" class="btn-timeline-util" id="btnProofingMute" title="Wycisz / włącz dźwięk (M)">
                                     <svg id="proofingVolumeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9066,6 +11175,34 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                         <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                                     </svg>
                                 </button>
+                            </div>
+                        </div>
+                        <!-- Wysuwana lista uwag do wideo -->
+                        <div class="proofing-drawer" id="proofingDrawer">
+                            <div class="proofing-drawer-header">
+                                <div class="proofing-drawer-title-row">
+                                    <div class="proofing-drawer-title">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                        <span>Lista uwag i poprawek</span>
+                                    </div>
+                                    <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0 wykonane</span>
+                                </div>
+                                <div class="proofing-drawer-actions">
+                                    <button type="button" class="proofing-link-btn" id="btnProofingExport" title="Kopiuj listę uwag do schowka">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        <span>Kopiuj</span>
+                                    </button>
+                                    <button type="button" class="proofing-link-btn" id="btnProofingDownloadTxt" title="Pobierz listę uwag jako plik .txt">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        <span>.txt</span>
+                                    </button>
+                                    <button type="button" class="btn-drawer-close" id="btnProofingDrawerClose" title="Zwiń listę uwag">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="proofing-tasks-list" id="proofingTasksList">
+                                <!-- Dynamicznie renderowane uwagi -->
                             </div>
                         </div>
                     </div>
@@ -9109,6 +11246,13 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             </svg>
                             <span data-i18n="btn_add_note_pin">Dodaj uwagę</span>
                         </button>
+                        <button type="button" class="dl-tool-pill dl-tool-remarks" id="btnProofingToggleDrawer" title="Rozwiń listę uwag (L)" aria-expanded="false">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span>Uwagi</span>
+                            <span class="proofing-remarks-count-pill" id="proofingPinCountBadge">0</span>
+                        </button>
                         <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="dl-tool-pill dl-tool-newtab" id="dlQuickNewTabBtn" title="Otwórz oryginalne zdjęcie w nowej karcie">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -9117,6 +11261,34 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             </svg>
                             <span data-i18n="btn_newtab_image">Otwórz w nowej karcie</span>
                         </a>
+                    </div>
+                    <!-- Wysuwana lista uwag do zdjęcia -->
+                    <div class="proofing-drawer" id="proofingDrawer" style="padding: 10px 16px;">
+                        <div class="proofing-drawer-header">
+                            <div class="proofing-drawer-title-row">
+                                <div class="proofing-drawer-title">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                    <span>Lista uwag i poprawek</span>
+                                </div>
+                                <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0 wykonane</span>
+                            </div>
+                            <div class="proofing-drawer-actions">
+                                <button type="button" class="proofing-link-btn" id="btnProofingExport" title="Kopiuj listę uwag do schowka">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <span>Kopiuj</span>
+                                </button>
+                                <button type="button" class="proofing-link-btn" id="btnProofingDownloadTxt" title="Pobierz listę uwag jako plik .txt">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    <span>.txt</span>
+                                </button>
+                                <button type="button" class="btn-drawer-close" id="btnProofingDrawerClose" title="Zwiń listę uwag">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="proofing-tasks-list" id="proofingTasksList">
+                            <!-- Dynamicznie renderowane uwagi -->
+                        </div>
                     </div>
                 </div>
             `;
@@ -9258,6 +11430,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         } else if (isPdf) {
             dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
         } else if (isArchive) {
+            dlPreviewContainer.classList.add('has-archive');
             const isCinematicVisible = document.getElementById('cinematicRecipientSection') && document.getElementById('cinematicRecipientSection').style.display !== 'none';
             const urlParams = new URLSearchParams(window.location.search);
             const isAlbumMode = Boolean(
@@ -9266,6 +11439,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 cleanName.startsWith('Album_') ||
                 cleanName.includes('_zdjec')
             );
+            if (isAlbumMode) dlPreviewContainer.classList.add('has-album');
 
             if (isAlbumMode) {
                 dlPreviewContainer.innerHTML = `
@@ -9289,7 +11463,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         </div>
                         <div class="archive-file-list album-gallery-grid" id="archiveFileList" style="display: grid;">
                             <div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: var(--text-muted); font-size: 12.5px;">
-                                <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 8px;"></span>
+                                <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #5EEAD4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 8px;"></span>
                                 Wczytywanie i przygotowywanie galerii zdjęć...
                             </div>
                         </div>
@@ -9315,7 +11489,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         </div>
                         <div class="archive-file-list" id="archiveFileList">
                             <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 12px;">
-                                <span class="loading-spinner" style="display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
+                                <span class="loading-spinner" style="display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #5EEAD4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
                                 Wczytywanie zawartości archiwum w pamięci RAM...
                             </div>
                         </div>
@@ -9574,19 +11748,38 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         // =========================================================================
         // DIGITAL UNBOXING – WIADOMOŚĆ OD NADAWCY (RECIPIENT WOW EXPERIENCE)
         // =========================================================================
-        let hasUnboxing = Boolean(data.hasUnboxing || urlParams.get('unbox'));
-        let unboxingType = data.unboxingType || urlParams.get('unbox') || 'video';
+        const urlUnboxParam = (urlParams.get('unbox') || '').toLowerCase();
+        const localUnboxType = localStorage.getItem('dropsite_unboxing_type_' + fileKey);
+        
+        let hasUnboxing = Boolean(data.hasUnboxing || urlUnboxParam || localUnboxType);
+        let unboxingType = 'video';
+        if (localUnboxType) {
+            unboxingType = localUnboxType;
+        } else if (urlUnboxParam === 'audio' || urlUnboxParam === 'video') {
+            unboxingType = urlUnboxParam;
+        } else if (data.hasUnboxing && data.unboxingType) {
+            unboxingType = data.unboxingType;
+        } else if (urlUnboxParam) {
+            unboxingType = 'audio';
+        }
+
         let unboxingMediaSrc = data.unboxingUrl;
 
-        // Sprawdź pamięć lokalną przeglądarki (fallback dla pracy lokalnej bez backendu)
-        const localUnbox = localStorage.getItem('dropsite_unboxing_' + fileKey);
-        const localUnboxType = localStorage.getItem('dropsite_unboxing_type_' + fileKey);
-        if (localUnbox) {
+        // 1. Sprawdź pamięć RAM aktywnej sesji
+        if (window._attachedUnboxing && window._attachedUnboxing.blob && (!fileKey || window._lastUploadedFileKey === fileKey)) {
             hasUnboxing = true;
-            unboxingType = localUnboxType || unboxingType || 'video';
-            unboxingMediaSrc = localUnbox;
-        } else if (!unboxingMediaSrc && hasUnboxing) {
-            unboxingMediaSrc = `${WORKER_URL}/unboxing?key=${encodeURIComponent(fileKey)}`;
+            unboxingType = window._attachedUnboxing.type || unboxingType;
+            unboxingMediaSrc = window._attachedUnboxing.url || URL.createObjectURL(window._attachedUnboxing.blob);
+        } else {
+            // 2. Sprawdź IndexedDB i LocalStorage (pełne wsparcie offline/localhost)
+            const localRecord = await getUnboxingFromStore(fileKey);
+            if (localRecord && localRecord.url) {
+                hasUnboxing = true;
+                if (localRecord.type) unboxingType = localRecord.type;
+                unboxingMediaSrc = localRecord.url;
+            } else if (!unboxingMediaSrc && hasUnboxing) {
+                unboxingMediaSrc = `${WORKER_URL}/unboxing?key=${encodeURIComponent(fileKey)}`;
+            }
         }
 
         const unboxSec = document.getElementById('unboxingRecipientSection');
@@ -9600,7 +11793,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         const unboxFullAudio = document.getElementById('unboxingFullAudio');
         const btnCloseUnboxingPlayer = document.getElementById('btnCloseUnboxingPlayer');
 
-        if (hasUnboxing && unboxingMediaSrc && unboxSec && unboxBubble) {
+        if (hasUnboxing && unboxSec && unboxBubble) {
             unboxSec.hidden = false;
             unboxSec.style.display = 'block';
 
@@ -9610,19 +11803,45 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     unboxBubbleVideo.src = '';
                 }
                 if (unboxBubbleAudioIcon) unboxBubbleAudioIcon.style.display = 'flex';
+
+                const badgeTitle = unboxSec.querySelector('.unboxing-avatar-title');
+                const badgeTag = unboxSec.querySelector('.unboxing-avatar-badge span:last-child');
+                if (badgeTag) badgeTag.textContent = typeof t === 'function' ? t('unboxing_voice_badge', 'Wiadomość głosowa') : 'Wiadomość głosowa';
+                if (badgeTitle) badgeTitle.textContent = typeof t === 'function' ? t('unboxing_voice_title', 'Nadawca dołączył wiadomość głosową') : 'Nadawca dołączył wiadomość głosową';
+
+                const playerTitle = unboxSec.querySelector('.unboxing-player-meta strong');
+                const playerIcon = unboxSec.querySelector('.unboxing-player-meta span');
+                if (playerTitle) playerTitle.textContent = typeof t === 'function' ? t('unboxing_voice_player_title', 'Notatka głosowa od nadawcy') : 'Notatka głosowa od nadawcy';
+                if (playerIcon) playerIcon.textContent = '🎙️';
             } else {
                 if (unboxBubbleAudioIcon) unboxBubbleAudioIcon.style.display = 'none';
-                if (unboxBubbleVideo) {
+                if (unboxBubbleVideo && unboxingMediaSrc) {
                     unboxBubbleVideo.style.display = 'block';
-                    unboxBubbleVideo.src = unboxingMediaSrc;
+                    if (unboxBubbleVideo.src !== unboxingMediaSrc) {
+                        unboxBubbleVideo.src = unboxingMediaSrc;
+                    }
                     unboxBubbleVideo.muted = true;
                     unboxBubbleVideo.loop = true;
                     const p = unboxBubbleVideo.play();
                     if (p !== undefined) p.catch(() => {});
+                    unboxBubbleVideo.onerror = () => {
+                        unboxBubbleVideo.style.display = 'none';
+                        if (unboxBubbleAudioIcon) unboxBubbleAudioIcon.style.display = 'flex';
+                    };
                 }
+
+                const badgeTitle = unboxSec.querySelector('.unboxing-avatar-title');
+                const badgeTag = unboxSec.querySelector('.unboxing-avatar-badge span:last-child');
+                if (badgeTag) badgeTag.textContent = typeof t === 'function' ? t('unboxing_badge', 'Wiadomość powitalna') : 'Wiadomość powitalna';
+                if (badgeTitle) badgeTitle.textContent = typeof t === 'function' ? t('unboxing_avatar_title', 'Nadawca dołączył osobiste powitanie') : 'Nadawca dołączył osobiste powitanie';
+
+                const playerTitle = unboxSec.querySelector('.unboxing-player-meta strong');
+                const playerIcon = unboxSec.querySelector('.unboxing-player-meta span');
+                if (playerTitle) playerTitle.textContent = typeof t === 'function' ? t('unboxing_player_title', 'Powitanie od nadawcy transferu') : 'Powitanie od nadawcy transferu';
+                if (playerIcon) playerIcon.textContent = '🎬';
             }
 
-            const expandUnboxPlayer = () => {
+            const expandUnboxPlayer = async () => {
                 playSound('click');
                 if (unboxPlayerExpanded) {
                     unboxPlayerExpanded.hidden = false;
@@ -9632,29 +11851,124 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     unboxCard.classList.add('is-expanded');
                 }
 
+                // Sprawdź czy źródło mediów jest gotowe
+                if (!unboxingMediaSrc) {
+                    const localRecord = await getUnboxingFromStore(fileKey);
+                    if (localRecord && localRecord.url) {
+                        unboxingMediaSrc = localRecord.url;
+                    } else {
+                        unboxingMediaSrc = `${WORKER_URL}/unboxing?key=${encodeURIComponent(fileKey)}`;
+                    }
+                }
+
                 if (unboxingType === 'audio') {
                     if (unboxFullVideo) {
                         unboxFullVideo.style.display = 'none';
                         unboxFullVideo.pause();
+                        unboxFullVideo.src = '';
                     }
                     if (unboxFullAudioWrap && unboxFullAudio) {
                         unboxFullAudioWrap.style.display = 'flex';
-                        unboxFullAudio.src = unboxingMediaSrc;
+                        if (unboxFullAudio.src !== unboxingMediaSrc) {
+                            unboxFullAudio.src = unboxingMediaSrc;
+                        }
                         unboxFullAudio.currentTime = 0;
-                        unboxFullAudio.play().catch(() => {});
+                        const p = unboxFullAudio.play();
+                        if (p !== undefined) p.catch((err) => console.warn('Audio auto-play prevented:', err));
                     }
                 } else {
                     if (unboxBubbleVideo) unboxBubbleVideo.pause();
-                    if (unboxFullAudioWrap) unboxFullAudioWrap.style.display = 'none';
+                    if (unboxFullAudioWrap) {
+                        unboxFullAudioWrap.style.display = 'none';
+                        if (unboxFullAudio) unboxFullAudio.pause();
+                    }
                     if (unboxFullVideo) {
                         unboxFullVideo.style.display = 'block';
-                        unboxFullVideo.src = unboxingMediaSrc;
+                        if (unboxFullVideo.src !== unboxingMediaSrc) {
+                            unboxFullVideo.src = unboxingMediaSrc;
+                        }
                         unboxFullVideo.currentTime = 0;
                         unboxFullVideo.muted = false;
-                        unboxFullVideo.play().catch(() => {});
+                        const p = unboxFullVideo.play();
+                        if (p !== undefined) p.catch((err) => console.warn('Video play prevented:', err));
                     }
                 }
             };
+
+            // Podpięcie niestandardowego, nowoczesnego odtwarzacza audio
+            const btnPlayAudio = document.getElementById('btnPlayUnboxingAudio');
+            const playAudioIcon = document.getElementById('unboxingAudioPlayIcon');
+            const pauseAudioIcon = document.getElementById('unboxingAudioPauseIcon');
+            const audioSlider = document.getElementById('unboxingAudioProgressSlider');
+            const audioTime = document.getElementById('unboxingAudioTime');
+            const speedBtn = document.getElementById('btnUnboxingVoiceSpeed');
+            const customPlayer = document.getElementById('unboxingCustomAudioPlayer');
+
+            const formatAudioTime = (secs) => {
+                if (isNaN(secs) || secs === Infinity) return '0:00';
+                const m = Math.floor(secs / 60);
+                const s = Math.floor(secs % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+
+            const setCustomAudioPlayingUI = (isPlaying) => {
+                if (customPlayer) customPlayer.classList.toggle('playing', isPlaying);
+                if (playAudioIcon) playAudioIcon.style.display = isPlaying ? 'none' : 'block';
+                if (pauseAudioIcon) pauseAudioIcon.style.display = isPlaying ? 'block' : 'none';
+            };
+
+            if (unboxFullAudio) {
+                unboxFullAudio.onloadedmetadata = () => {
+                    if (audioTime) audioTime.textContent = `0:00 / ${formatAudioTime(unboxFullAudio.duration)}`;
+                };
+                unboxFullAudio.ontimeupdate = () => {
+                    if (unboxFullAudio.duration && audioSlider) {
+                        audioSlider.value = (unboxFullAudio.currentTime / unboxFullAudio.duration) * 100;
+                        if (audioTime) audioTime.textContent = `${formatAudioTime(unboxFullAudio.currentTime)} / ${formatAudioTime(unboxFullAudio.duration)}`;
+                    }
+                };
+                unboxFullAudio.onplay = () => setCustomAudioPlayingUI(true);
+                unboxFullAudio.onpause = () => setCustomAudioPlayingUI(false);
+                unboxFullAudio.onended = () => {
+                    setCustomAudioPlayingUI(false);
+                    if (audioSlider) audioSlider.value = 0;
+                    if (audioTime) audioTime.textContent = `0:00 / ${formatAudioTime(unboxFullAudio.duration)}`;
+                };
+            }
+
+            if (btnPlayAudio && unboxFullAudio) {
+                btnPlayAudio.onclick = (e) => {
+                    e.stopPropagation();
+                    playSound('click');
+                    if (unboxFullAudio.paused) {
+                        unboxFullAudio.play().catch(err => console.warn('Play error:', err));
+                    } else {
+                        unboxFullAudio.pause();
+                    }
+                };
+            }
+
+            if (audioSlider && unboxFullAudio) {
+                audioSlider.oninput = (e) => {
+                    e.stopPropagation();
+                    if (unboxFullAudio.duration) {
+                        unboxFullAudio.currentTime = (audioSlider.value / 100) * unboxFullAudio.duration;
+                    }
+                };
+            }
+
+            if (speedBtn && unboxFullAudio) {
+                const speeds = [1.0, 1.5, 2.0];
+                let curIdx = 0;
+                speedBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    playSound('click');
+                    curIdx = (curIdx + 1) % speeds.length;
+                    const sp = speeds[curIdx];
+                    speedBtn.textContent = `${sp.toFixed(1)}x`;
+                    unboxFullAudio.playbackRate = sp;
+                };
+            }
 
             const collapseUnboxPlayer = () => {
                 playSound('click');
@@ -9671,7 +11985,8 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 if (unboxFullAudio) {
                     unboxFullAudio.pause();
                 }
-                if (unboxingType === 'video' && unboxBubbleVideo) {
+                setCustomAudioPlayingUI(false);
+                if (unboxingType === 'video' && unboxBubbleVideo && unboxBubbleVideo.style.display !== 'none') {
                     unboxBubbleVideo.play().catch(() => {});
                 }
             };
@@ -9776,15 +12091,34 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             };
         }
 
+        // Obsługa zunifikowanego kokpitu nagłówka (Branding, Vault AES-256, Spy HUD)
+        const dlMetaCockpit = document.getElementById('dlMetaCockpit');
+        const dlCreatorBrandBanner = document.getElementById('dlCreatorBrandBanner');
+        const dlCreatorBrandName = document.getElementById('dlCreatorBrandName');
+        const dlVaultSecurityBadge = document.getElementById('dlVaultSecurityBadge');
+        const dlSpyCountdownHUD = document.getElementById('dlSpyCountdownHUD');
+
+        const updateCockpitVisibility = () => {
+            if (!dlMetaCockpit) return;
+            const hasBrand = dlCreatorBrandBanner && !dlCreatorBrandBanner.hidden && dlCreatorBrandBanner.style.display !== 'none';
+            const hasVault = dlVaultSecurityBadge && !dlVaultSecurityBadge.hidden && dlVaultSecurityBadge.style.display !== 'none';
+            const hasSpy = dlSpyCountdownHUD && !dlSpyCountdownHUD.hidden && dlSpyCountdownHUD.style.display !== 'none';
+            dlMetaCockpit.style.display = (hasBrand || hasVault || hasSpy) ? 'flex' : 'none';
+            if (hasBrand && !hasVault && !hasSpy) {
+                dlMetaCockpit.classList.add('is-solo-brand');
+            } else {
+                dlMetaCockpit.classList.remove('is-solo-brand');
+            }
+        };
+
         // Obsługa brandingu twórcy (PRO)
         const brandParam = urlParams.get('brand') || data.brand || localStorage.getItem('dropsite_brand_' + fileKey);
         if (brandParam) {
-            const dlCreatorBrandBanner = document.getElementById('dlCreatorBrandBanner');
-            const dlCreatorBrandName = document.getElementById('dlCreatorBrandName');
             if (dlCreatorBrandBanner && dlCreatorBrandName) {
                 dlCreatorBrandName.textContent = decodeURIComponent(brandParam);
                 dlCreatorBrandBanner.hidden = false;
                 dlCreatorBrandBanner.style.display = 'flex';
+                updateCockpitVisibility();
             }
         }
 
@@ -9792,20 +12126,125 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         const hashMatch = window.location.hash.match(/enc=([A-Za-z0-9_-]+)/);
         const encKeyB64 = hashMatch ? hashMatch[1] : null;
         if (encKeyB64) {
-            const dlVaultSecurityBadge = document.getElementById('dlVaultSecurityBadge');
             if (dlVaultSecurityBadge) {
                 dlVaultSecurityBadge.hidden = false;
                 dlVaultSecurityBadge.style.display = 'inline-flex';
+                updateCockpitVisibility();
             }
         }
 
         // Notatka od nadawcy (z serwera, pamięci lokalnej lub linku wstecznej kompatybilności)
         const rawNote = data.note || urlParams.get('note') || localStorage.getItem('dropsite_note_' + fileKey) || localStorage.getItem('dropsite_note_' + (data.key || ''));
         const noteVal = safeDecode(rawNote);
-        if (noteVal && dlNoteBox && dlNoteText) {
-            dlNoteText.textContent = noteVal;
-            dlNoteBox.hidden = false;
-            dlNoteBox.style.display = 'block';
+        const unboxingNoteSnippet = document.getElementById('unboxingNoteSnippet');
+
+        if (noteVal) {
+            if (hasUnboxing && unboxingNoteSnippet) {
+                unboxingNoteSnippet.textContent = `„${noteVal}”`;
+                unboxingNoteSnippet.style.display = 'block';
+                if (dlNoteBox) dlNoteBox.style.display = 'none';
+            } else if (dlNoteBox && dlNoteText) {
+                dlNoteText.textContent = noteVal;
+                dlNoteBox.hidden = false;
+                dlNoteBox.style.display = 'block';
+            }
+        }
+
+        // =========================================================================
+        // OBSŁUGA KAPSUŁY CZASU (TIME-LOCKED DELIVERY - RECIPIENT COUNTDOWN)
+        // =========================================================================
+        const dlTimeLockOverlay = document.getElementById('dlTimeLockOverlay');
+        const dlTimeLockHintBox = document.getElementById('dlTimeLockHintBox');
+        const dlTimeLockHintText = document.getElementById('dlTimeLockHintText');
+        const dlTimeLockTargetFormatted = document.getElementById('dlTimeLockTargetFormatted');
+        const tlDays = document.getElementById('tlDays');
+        const tlHours = document.getElementById('tlHours');
+        const tlMinutes = document.getElementById('tlMinutes');
+        const tlSeconds = document.getElementById('tlSeconds');
+
+        let timelockInterval = null;
+        const isTimeLocked = Boolean(data.isTimeLocked || (data.lockUntil && Date.now() < data.lockUntil));
+
+        if (isTimeLocked && dlTimeLockOverlay) {
+            dlTimeLockOverlay.hidden = false;
+            dlTimeLockOverlay.style.display = 'flex';
+            dlTimeLockOverlay.classList.remove('unlocked');
+
+            if (dlContentWrap) dlContentWrap.hidden = true;
+            if (dlPasswordLockBox) dlPasswordLockBox.hidden = true;
+
+            const lockHint = data.lockHint || urlParams.get('timehint');
+            if (lockHint && dlTimeLockHintBox && dlTimeLockHintText) {
+                dlTimeLockHintText.textContent = `„${safeDecode(lockHint)}”`;
+                dlTimeLockHintBox.style.display = 'flex';
+            } else if (dlTimeLockHintBox) {
+                dlTimeLockHintBox.style.display = 'none';
+            }
+
+            if (dlTimeLockTargetFormatted && data.lockUntil) {
+                try {
+                    dlTimeLockTargetFormatted.textContent = new Date(data.lockUntil).toLocaleString(undefined, {
+                        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+                } catch (_) {
+                    dlTimeLockTargetFormatted.textContent = new Date(data.lockUntil).toString();
+                }
+            }
+
+            const triggerTimeLockUnlock = async () => {
+                if (timelockInterval) clearInterval(timelockInterval);
+                if (typeof playSound === 'function') playSound('success');
+                if (dlTimeLockOverlay) {
+                    dlTimeLockOverlay.classList.add('unlocked');
+                    setTimeout(() => {
+                        dlTimeLockOverlay.style.display = 'none';
+                        dlTimeLockOverlay.hidden = true;
+                    }, 700);
+                }
+                if (typeof showNotification === 'function') {
+                    showNotification(
+                        typeof t === 'function' ? t('timelock_unlocked_toast') : '✨ Kapsuła Czasu została otwarta! Plik jest gotowy.',
+                        'success'
+                    );
+                }
+                setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${WORKER_URL}/file-info?key=${encodeURIComponent(data.key || fileKey)}`);
+                        const freshData = await res.json();
+                        if (freshData.success && !freshData.isTimeLocked) {
+                            renderDownloadView(freshData);
+                        } else {
+                            window.location.reload();
+                        }
+                    } catch (_) {
+                        window.location.reload();
+                    }
+                }, 600);
+            };
+
+            const tickClock = () => {
+                const now = Date.now();
+                const diff = Math.max(0, data.lockUntil - now);
+                if (diff <= 0) {
+                    triggerTimeLockUnlock();
+                    return;
+                }
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                if (tlDays) tlDays.textContent = String(days).padStart(2, '0');
+                if (tlHours) tlHours.textContent = String(hours).padStart(2, '0');
+                if (tlMinutes) tlMinutes.textContent = String(minutes).padStart(2, '0');
+                if (tlSeconds) tlSeconds.textContent = String(seconds).padStart(2, '0');
+            };
+
+            tickClock();
+            timelockInterval = setInterval(tickClock, 1000);
+        } else if (dlTimeLockOverlay) {
+            dlTimeLockOverlay.hidden = true;
+            dlTimeLockOverlay.style.display = 'none';
         }
 
         // =========================================================================
@@ -9814,7 +12253,6 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         const isSpy = urlParams.get('spy') === '1' || window.location.hash.includes('spy=1') || Boolean(data.isSpy);
         const dlCard = document.querySelector('.download-card');
         const dlSpyOverlay = document.getElementById('dlSpyOverlay');
-        const dlSpyCountdownHUD = document.getElementById('dlSpyCountdownHUD');
         const dlSpyTimerNumber = document.getElementById('dlSpyTimerNumber');
         const dlSpyProgressBar = document.getElementById('dlSpyProgressBar');
         const dlSpyDestroyedCard = document.getElementById('dlSpyDestroyedCard');
@@ -9853,6 +12291,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     if (promoCard) promoCard.style.display = 'none';
                     const brandBanner = document.getElementById('dlCreatorBrandBanner');
                     if (brandBanner) brandBanner.style.display = 'none';
+                    if (dlMetaCockpit) dlMetaCockpit.style.display = 'none';
                 }
 
                 if (dlSpyDestroyedCard) {
@@ -9907,10 +12346,11 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             }
                         });
 
-                        // Uruchomienie licznika samozniszczenia (30 sekund)
+                        // Uruchomienie licznika samozniszczenia (30 sekund) w kokpicie
                         if (dlSpyCountdownHUD) {
                             dlSpyCountdownHUD.hidden = false;
                             dlSpyCountdownHUD.style.display = 'flex';
+                            updateCockpitVisibility();
                         }
 
                         let secondsLeft = 30;
@@ -9965,22 +12405,23 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
         }
 
-        // Badges
+        // Badges (streamlined, unified hierarchy)
         let badgeHtml = '';
         if (isSpy) {
-            badgeHtml = '<span class="badge-spy-viral-pill" style="font-size: 11px; padding: 4px 10px;">🕵️‍♂️ Tryb Szpiegowski 007</span> <span class="dl-badge burn" style="margin-left: 6px;">Samozniszczenie (Hold to Reveal)</span>';
+            badgeHtml = '<span class="dl-badge spy-badge">🕵️ Tryb Szpiegowski</span>';
             if (dlBurnWarning) dlBurnWarning.hidden = true;
         } else if (data.isBurn) {
-            badgeHtml = '<span class="dl-badge burn">Jednorazowy (Burn after download)</span>';
+            badgeHtml = '<span class="dl-badge burn">🔥 Jednorazowy</span>';
             if (dlBurnWarning) dlBurnWarning.hidden = false;
         } else if (data.expiryType === 'permanent') {
-            badgeHtml = '<span class="dl-badge perm">Bezterminowy</span>';
+            badgeHtml = '<span class="dl-badge perm">♾️ Bezterminowy</span>';
         } else {
-            badgeHtml = `<span class="dl-badge temp">Wygasa za ${data.expiryType === '1d' ? '1 dzień' : '30 dni'}</span>`;
+            const expLabel = data.expiryType === '1d' ? '1 dzień' : '30 dni';
+            badgeHtml = `<span class="dl-badge temp">⏱️ Wygasa za ${expLabel}</span>`;
         }
 
         if (data.maxDownloads) {
-            badgeHtml += ` <span class="dl-badge temp" style="margin-left: 6px;">Limit: ${data.downloads || 0}/${data.maxDownloads} pobrań</span>`;
+            badgeHtml += ` <span class="dl-badge limit-badge">Limit: ${data.downloads || 0}/${data.maxDownloads} pobrań</span>`;
         }
 
         if (dlBadgeWrap) dlBadgeWrap.innerHTML = badgeHtml;
@@ -10083,6 +12524,35 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             renderDownloadPreview(cleanName, data.directUrl, data.key || fileKey);
             if (window.initDropsiteAds) window.initDropsiteAds();
         }
+
+        // Przycisk "Kopiuj Direct Stream URL" na stronie pobierania
+        (function setupDlCopyStreamBtn() {
+            const dlCopyStreamBtn = document.getElementById('dlCopyStreamBtn');
+            if (!dlCopyStreamBtn || !data.directUrl || data.isBurn) return;
+            const isStreamable = /\.(mp4|webm|mov|m4v|mkv|avi|mp3|wav|flac|ogg|m4a|aac)$/i.test(cleanName);
+            if (isStreamable) {
+                dlCopyStreamBtn.style.display = 'inline-flex';
+                dlCopyStreamBtn.onclick = () => {
+                    navigator.clipboard.writeText(data.directUrl).then(() => {
+                        if (typeof playSound === 'function') playSound('click');
+                        const origHtml = dlCopyStreamBtn.innerHTML;
+                        dlCopyStreamBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Skopiowano!</span>`;
+                        dlCopyStreamBtn.style.borderColor = '#22C55E';
+                        dlCopyStreamBtn.style.color = '#22C55E';
+                        setTimeout(() => {
+                            dlCopyStreamBtn.innerHTML = origHtml;
+                            dlCopyStreamBtn.style.borderColor = '';
+                            dlCopyStreamBtn.style.color = '';
+                        }, 2200);
+                        if (typeof showNotification === 'function') showNotification('🎬 Skopiowano Direct Stream URL!', 'success');
+                    }).catch(() => {
+                        prompt('Skopiuj Direct Stream URL:', data.directUrl);
+                    });
+                };
+            } else {
+                dlCopyStreamBtn.style.display = 'none';
+            }
+        })();
 
         // Jeśli plik jest zaszyfrowany AES-256 (Zero-Knowledge), odszyfruj w locie w RAM
         if (encKeyB64) {
@@ -10472,5 +12942,767 @@ window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
     }, 1000);
 };
 
-document.addEventListener('DOMContentLoaded', initDownloadLightboxSystem);
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initDownloadLightboxSystem === 'function') initDownloadLightboxSystem();
+    if (typeof checkAndHandlePublicAlbum === 'function') checkAndHandlePublicAlbum();
+    
+    // Dynamiczny efekt spotlight glow (Awwwards cursor tracking) dla kart Belki Zaufania
+    const trustCards = document.querySelectorAll('.trust-card');
+    trustCards.forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const rect = card.getBoundingClientRect();
+            card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+            card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        });
+    });
+});
 
+// ============================================================================
+// SYSTEM ALBUMÓW I KOLEKCJI DROPSITE (TWORZENIE, ZARZĄDZANIE, PUBLICZNA GALERIA)
+// ============================================================================
+window.selectedFilesForAlbum = new Set();
+
+window.switchMyFilesSubtab = function(tab) {
+    const filesBtn = document.getElementById('subtabFilesBtn');
+    const albumsBtn = document.getElementById('subtabAlbumsBtn');
+    const paneFiles = document.getElementById('subpane_files');
+    const paneAlbums = document.getElementById('subpane_albums');
+
+    if (tab === 'albums') {
+        if (filesBtn) filesBtn.classList.remove('active');
+        if (albumsBtn) albumsBtn.classList.add('active');
+        if (paneFiles) paneFiles.style.display = 'none';
+        if (paneAlbums) paneAlbums.style.display = 'block';
+        window.loadMyAlbums();
+    } else {
+        if (albumsBtn) albumsBtn.classList.remove('active');
+        if (filesBtn) filesBtn.classList.add('active');
+        if (paneAlbums) paneAlbums.style.display = 'none';
+        if (paneFiles) paneFiles.style.display = 'block';
+    }
+};
+
+window.toggleFileSelectionForAlbum = function(fileKey, isChecked) {
+    if (!fileKey) return;
+    if (isChecked) {
+        window.selectedFilesForAlbum.add(fileKey);
+    } else {
+        window.selectedFilesForAlbum.delete(fileKey);
+    }
+
+    const count = window.selectedFilesForAlbum.size;
+    const bar = document.getElementById('modSelectionBar');
+    const countElem = document.getElementById('selectedFilesCount');
+    if (countElem) countElem.innerText = `${count}`;
+    if (bar) bar.style.display = count > 0 ? 'flex' : 'none';
+};
+
+window.clearFileSelection = function() {
+    window.selectedFilesForAlbum.clear();
+    document.querySelectorAll('.file-select-checkbox').forEach(cb => cb.checked = false);
+    const bar = document.getElementById('modSelectionBar');
+    if (bar) bar.style.display = 'none';
+    const countElem = document.getElementById('selectedFilesCount');
+    if (countElem) countElem.innerText = '0';
+};
+
+window.openCreateAlbumModal = function() {
+    if (window.selectedFilesForAlbum.size === 0) {
+        showNotification('Zaznacz co najmniej jeden plik na liście, aby utworzyć album.', 'warning');
+        return;
+    }
+    const titleInput = document.getElementById('albumTitleInput');
+    const descInput = document.getElementById('albumDescInput');
+    const passInput = document.getElementById('albumPasswordInput');
+    const themeSelect = document.getElementById('albumThemeSelect');
+    const countLabel = document.getElementById('albumSelectedCountLabel');
+
+    if (titleInput) titleInput.value = '';
+    if (descInput) descInput.value = '';
+    if (passInput) passInput.value = '';
+    if (themeSelect) themeSelect.value = 'gallery';
+    const themeLabel = document.getElementById('albumThemeLabel');
+    if (themeLabel) themeLabel.textContent = '🖼️ Kinowa Siatka Zdjęć & Wideo';
+    const themeMenu = document.getElementById('albumThemeMenu');
+    if (themeMenu) {
+        themeMenu.querySelectorAll('.custom-select-option').forEach(o => {
+            if (o.getAttribute('data-value') === 'gallery') o.classList.add('selected');
+            else o.classList.remove('selected');
+        });
+    }
+    if (countLabel) countLabel.innerText = `${window.selectedFilesForAlbum.size}`;
+    const modalCountElem = document.getElementById('albumModalItemCount');
+    if (modalCountElem) modalCountElem.innerText = `${window.selectedFilesForAlbum.size} plików`;
+
+    const modal = document.getElementById('modalCreateAlbum');
+    if (window.smoothOpenModal) window.smoothOpenModal(modal, 'flex');
+    else if (modal) modal.style.display = 'flex';
+    if (titleInput) setTimeout(() => titleInput.focus(), 150);
+};
+
+window.closeCreateAlbumModal = function() {
+    const modal = document.getElementById('modalCreateAlbum');
+    if (window.smoothCloseModal) window.smoothCloseModal(modal);
+    else if (modal) modal.style.display = 'none';
+};
+
+window.executeCreateAlbum = async function() {
+    const titleInput = document.getElementById('albumTitleInput');
+    const title = (titleInput?.value || '').trim();
+    if (!title) {
+        showNotification('Podaj nazwę albumu.', 'warning');
+        titleInput?.focus();
+        return;
+    }
+
+    const desc = (document.getElementById('albumDescInput')?.value || '').trim();
+    const password = (document.getElementById('albumPasswordInput')?.value || '').trim();
+    const theme = document.getElementById('albumThemeSelect')?.value || 'gallery';
+
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    const userEmail = (user && user.email) || window.currentUserEmail || localStorage.getItem('dropsite_user_email') || '';
+    if (!userEmail) {
+        showNotification('Musisz być zalogowany, aby utworzyć i zapisać album.', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btnExecuteCreateAlbum');
+    const originalText = btn ? btn.innerText : '';
+    if (btn) { btn.disabled = true; btn.innerText = 'Tworzenie...'; }
+
+    try {
+        const response = await fetch(`${WORKER_URL}/api/albums/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Email': userEmail
+            },
+            body: JSON.stringify({
+                title: title,
+                description: desc,
+                theme: theme,
+                password: password,
+                fileKeys: Array.from(window.selectedFilesForAlbum)
+            })
+        });
+
+        const data = await response.json();
+        if (data.success && data.albumId) {
+            window.clearFileSelection();
+            window.closeCreateAlbumModal();
+            window.switchMyFilesSubtab('albums');
+            const publicUrl = `${window.location.origin}${window.location.pathname}?album=${data.albumId}`;
+            try {
+                await navigator.clipboard.writeText(publicUrl);
+                showNotification('Album został pomyślnie utworzony! Link skopiowano do schowka.', 'success');
+            } catch (_) {
+                showNotification('Album został pomyślnie utworzony!', 'success');
+            }
+            window.loadMyAlbums();
+        } else {
+            showNotification(data.message || 'Nie udało się utworzyć albumu.', 'error');
+        }
+    } catch (err) {
+        showNotification('Błąd połączenia z serwerem: ' + err.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerText = originalText; }
+    }
+};
+
+window.copyAlbumLink = async function(albumId) {
+    if (!albumId) return;
+    const url = `${window.location.origin}${window.location.pathname}?album=${albumId}`;
+    try {
+        await navigator.clipboard.writeText(url);
+        showNotification('Skopiowano link do albumu!', 'success');
+    } catch (_) {
+        prompt('Skopiuj link do albumu:', url);
+    }
+};
+
+window.loadMyAlbums = async function() {
+    const grid = document.getElementById('modAlbumsGrid');
+    const empty = document.getElementById('modAlbumsEmpty');
+    const countBadge = document.getElementById('subtabAlbumsCount');
+    if (!grid) return;
+
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    const userEmail = (user && user.email) || window.currentUserEmail || localStorage.getItem('dropsite_user_email') || '';
+
+    if (!userEmail) {
+        grid.style.display = 'none';
+        if (empty) {
+            empty.style.display = 'block';
+            empty.querySelector('p').textContent = 'Zaloguj się, aby tworzyć i zarządzać albumami.';
+        }
+        if (countBadge) countBadge.textContent = '0';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${WORKER_URL}/api/albums/my-albums`, {
+            headers: { 'X-User-Email': userEmail }
+        });
+        const data = await response.json();
+        const albums = (data.success && Array.isArray(data.albums)) ? data.albums : [];
+
+        if (countBadge) countBadge.textContent = `${albums.length}`;
+
+        if (albums.length === 0) {
+            grid.style.display = 'none';
+            if (empty) {
+                empty.style.display = 'block';
+                const p = empty.querySelector('p');
+                if (p) p.textContent = 'Nie utworzyłeś jeszcze żadnego albumu';
+            }
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        grid.style.display = 'grid';
+
+        const themeLabels = {
+            'gallery': '🖼️ Galeria',
+            'cinematic': '🎬 Kinowy',
+            'list': '📄 Lista'
+        };
+
+        grid.innerHTML = albums.map(alb => `
+            <div class="album-card">
+                <div class="album-card-header">
+                    <div>
+                        <h4 class="album-card-title">${escapeHtml(alb.title)}</h4>
+                        ${alb.description ? `<p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">${escapeHtml(alb.description)}</p>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        ${alb.hasPassword ? '<span title="Chroniony hasłem" style="font-size: 13px;">🔒</span>' : ''}
+                        <span class="album-badge-theme">${themeLabels[alb.theme] || 'Kolekcja'}</span>
+                    </div>
+                </div>
+                <div class="album-card-meta">
+                    <span>📁 ${alb.itemCount || 0} plików</span>
+                    <span>•</span>
+                    <span>${new Date(alb.created).toLocaleDateString('pl-PL')}</span>
+                </div>
+                <div class="album-card-actions">
+                    <button type="button" class="btn-copy-mod" onclick="window.copyAlbumLink('${alb.id}')" title="Kopiuj link do udostępnienia">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <span>Kopiuj link</span>
+                    </button>
+                    <button type="button" class="btn-copy-mod" style="flex: 0 0 auto; padding: 6px 10px;" onclick="window.open('?album=${alb.id}', '_blank')" title="Otwórz widok albumu">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </button>
+                    <button type="button" class="btn-delete" style="flex: 0 0 auto; padding: 6px 10px;" onclick="window.handleDeleteAlbum('${alb.id}')" title="Usuń album">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.warn('Błąd pobierania albumów:', e);
+    }
+};
+
+window.handleDeleteAlbum = async function(albumId) {
+    if (!albumId) return;
+    if (!confirm('Czy na pewno chcesz usunąć ten album? (Pliki w chmurze pozostaną bezpieczne)')) return;
+
+    const user = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    const userEmail = (user && user.email) || window.currentUserEmail || localStorage.getItem('dropsite_user_email') || '';
+
+    try {
+        const res = await fetch(`${WORKER_URL}/api/albums/delete?id=${encodeURIComponent(albumId)}`, {
+            method: 'DELETE',
+            headers: { 'X-User-Email': userEmail }
+        });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('Album został usunięty.', 'success');
+            window.loadMyAlbums();
+        } else {
+            showNotification(data.message || 'Nie udało się usunąć albumu.', 'error');
+        }
+    } catch (err) {
+        showNotification('Błąd usuwania albumu: ' + err.message, 'error');
+    }
+};
+
+// ============================================================================
+// PUBLICZNY WIDOK ALBUMU (DLA ODBIORCY / GOŚCIA)
+// ============================================================================
+window._currentActiveAlbum = null;
+window._currentLockedAlbumId = null;
+
+window.checkAndHandlePublicAlbum = function() {
+    const params = new URLSearchParams(window.location.search);
+    const albumId = params.get('album');
+    if (albumId) {
+        window.openPublicAlbum(albumId);
+    }
+};
+
+window.openPublicAlbum = function(albumId) {
+    const modal = document.getElementById('modalPublicAlbumView');
+    if (window.smoothOpenModal) window.smoothOpenModal(modal, 'flex');
+    else if (modal) modal.style.display = 'flex';
+    window.loadPublicAlbumData(albumId);
+};
+
+window.closePublicAlbumModal = function() {
+    const modal = document.getElementById('modalPublicAlbumView');
+    if (window.smoothCloseModal) window.smoothCloseModal(modal);
+    else if (modal) modal.style.display = 'none';
+
+    if (window.location.search.includes('album=')) {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        try { history.pushState(null, '', cleanUrl); } catch (_) {}
+    }
+};
+
+window.loadPublicAlbumData = async function(albumId, password = '') {
+    window._currentLockedAlbumId = albumId;
+
+    const spinner = document.getElementById('publicAlbumLoadingSpinner');
+    const grid = document.getElementById('publicAlbumItemsGrid');
+    const gate = document.getElementById('publicAlbumPasswordGate');
+    const statsBar = document.getElementById('publicAlbumStatsBar');
+    const downloadZipBtn = document.getElementById('btnPublicAlbumDownloadZip');
+    const titleEl = document.getElementById('publicAlbumTitle');
+    const descEl = document.getElementById('publicAlbumDesc');
+    const passErr = document.getElementById('publicAlbumPasswordError');
+
+    if (spinner) spinner.style.display = 'block';
+    if (grid) grid.style.display = 'none';
+    if (gate) gate.style.display = 'none';
+    if (statsBar) statsBar.style.display = 'none';
+    if (downloadZipBtn) downloadZipBtn.style.display = 'none';
+    if (passErr) passErr.style.display = 'none';
+
+    try {
+        const response = await fetch(`${WORKER_URL}/api/albums/get`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: albumId, password: password })
+        });
+        const data = await response.json();
+
+        if (spinner) spinner.style.display = 'none';
+
+        if (data.locked) {
+            if (gate) gate.style.display = 'block';
+            if (titleEl) titleEl.innerText = data.title || 'Album zabezpieczony hasłem';
+            if (descEl) descEl.innerText = data.description || 'Wprowadź hasło dostępu, aby odblokować zawartość.';
+            if (password && passErr) {
+                passErr.innerText = 'Nieprawidłowe hasło. Spróbuj ponownie.';
+                passErr.style.display = 'block';
+            }
+            const passInput = document.getElementById('publicAlbumPasswordInput');
+            if (passInput) setTimeout(() => passInput.focus(), 150);
+            return;
+        }
+
+        if (data.success && data.album) {
+            const alb = data.album;
+            window._currentActiveAlbum = alb;
+
+            if (titleEl) titleEl.innerText = alb.title;
+            if (descEl) descEl.innerText = alb.description || '';
+
+            const ownerMeta = document.getElementById('publicAlbumOwnerMeta');
+            if (ownerMeta) ownerMeta.innerText = `Udostępnione przez: ${alb.ownerEmail || 'Użytkownika Dropsite'}`;
+
+            const itemsSummary = document.getElementById('publicAlbumItemsSummary');
+            if (itemsSummary) itemsSummary.innerText = `${(alb.files || []).length} plików • ${new Date(alb.created).toLocaleDateString('pl-PL')}`;
+
+            if (statsBar) statsBar.style.display = 'flex';
+            if (downloadZipBtn) downloadZipBtn.style.display = 'inline-flex';
+
+            const modalBox = document.querySelector('#modalPublicAlbumView .signature-modal-box');
+            if (modalBox) {
+                modalBox.classList.remove('theme-gallery', 'theme-cinematic', 'theme-list');
+                modalBox.classList.add(`theme-${alb.theme || 'gallery'}`);
+            }
+
+            if (grid) {
+                grid.style.display = 'grid';
+                if (!alb.files || alb.files.length === 0) {
+                    grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">Pliki w tym albumie już wygasły lub zostały usunięte.</p>';
+                    return;
+                }
+
+                grid.innerHTML = alb.files.map(file => {
+                    const isImg = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+                    const isVid = /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
+
+                    let thumbHtml = '';
+                    if (isImg) {
+                        thumbHtml = `<img src="${file.directUrl}" alt="" loading="lazy" onclick="if(window.openImagePreview) window.openImagePreview('${file.directUrl}', '${escapeHtml(file.name)}')">`;
+                    } else if (isVid) {
+                        thumbHtml = `
+                            <video src="${file.directUrl}#t=0.1" preload="metadata" muted></video>
+                            <div class="album-item-thumb-play" onclick="if(window.openVideoPreview) window.openVideoPreview('${file.directUrl}')">▶</div>
+                        `;
+                    } else {
+                        thumbHtml = `<span style="font-size: 32px;">📄</span>`;
+                    }
+
+                    return `
+                        <div class="album-item-card">
+                            <div class="album-item-thumb">
+                                ${thumbHtml}
+                            </div>
+                            <div class="album-item-info">
+                                <span class="album-item-title" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+                                <div class="album-item-meta">
+                                    <span>${formatBytes(file.size || 0)}</span>
+                                </div>
+                                <div class="album-item-actions">
+                                    <a href="${file.directUrl}" download="${escapeHtml(file.name)}" class="album-item-btn" title="Pobierz plik">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        <span>Pobierz</span>
+                                    </a>
+                                    <a href="${file.pageUrl}" target="_blank" class="album-item-btn" title="Otwórz podgląd na Dropsite">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        <span>Podgląd</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } else {
+            if (titleEl) titleEl.innerText = 'Album nieodnaleziony';
+            if (descEl) descEl.innerText = data.message || 'Album wygasł lub link jest nieprawidłowy.';
+        }
+    } catch (err) {
+        if (spinner) spinner.style.display = 'none';
+        if (titleEl) titleEl.innerText = 'Błąd wczytywania';
+        if (descEl) descEl.innerText = err.message;
+    }
+};
+
+window.unlockPublicAlbum = function() {
+    const input = document.getElementById('publicAlbumPasswordInput');
+    const pwd = (input?.value || '').trim();
+    if (window._currentLockedAlbumId) {
+        window.loadPublicAlbumData(window._currentLockedAlbumId, pwd);
+    }
+};
+
+window.downloadCurrentAlbumAsZip = async function() {
+    const album = window._currentActiveAlbum;
+    if (!album || !Array.isArray(album.files) || album.files.length === 0) {
+        showNotification('Brak plików do pobrania.', 'warning');
+        return;
+    }
+
+    if (typeof fflate === 'undefined') {
+        showNotification('Biblioteka archiwizatora ZIP jest wczytywana...', 'info');
+        return;
+    }
+
+    const btn = document.getElementById('btnPublicAlbumDownloadZip');
+    const oldText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="auth-spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="border: none; animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+            <span>Pakowanie ZIP...</span>
+        `;
+    }
+
+    showNotification(`Rozpoczęto pobieranie i pakowanie ${album.files.length} plików...`, 'info');
+
+    try {
+        const zipFiles = {};
+        for (let i = 0; i < album.files.length; i++) {
+            const f = album.files[i];
+            try {
+                const resp = await fetch(f.directUrl);
+                if (resp.ok) {
+                    const buf = await resp.arrayBuffer();
+                    zipFiles[f.name] = new Uint8Array(buf);
+                }
+            } catch (e) {
+                console.warn(`Pominięto ${f.name} przy tworzeniu ZIP:`, e);
+            }
+        }
+
+        const zippedData = fflate.zipSync(zipFiles, { level: 6 });
+        const blob = new Blob([zippedData], { type: 'application/zip' });
+        const a = document.createElement('a');
+        const safeTitle = (album.title || 'album').replace(/[^a-zA-Z0-9_\u00A0-\u024F\u0400-\u04FF-]/g, '_');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${safeTitle}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            try {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            } catch (_) {}
+        }, 1500);
+
+        showNotification('Pobrano paczkę ZIP z całym albumem!', 'success');
+    } catch (err) {
+        showNotification('Błąd tworzenia archiwum ZIP: ' + err.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = oldText;
+        }
+    }
+};
+
+
+
+// =========================================================================
+// DROPSITE BEAM (TRANSFER P2P WEBRTC) - LOGIKA KONTROLERÓW UI
+// =========================================================================
+function initDropsiteBeamUI() {
+    // Przełącznik trybu transferu na karcie (Chmura Dropsite vs Beam P2P)
+    const modeSwitchCloudBtn = document.getElementById('modeSwitchCloudBtn');
+    const modeSwitchBeamBtn = document.getElementById('modeSwitchBeamBtn');
+    const beamModeSwitchCloudBtn = document.getElementById('beamModeSwitchCloudBtn');
+    const beamModeSwitchBeamBtn = document.getElementById('beamModeSwitchBeamBtn');
+
+    if (modeSwitchBeamBtn) {
+        modeSwitchBeamBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof window.switchView === 'function') {
+                window.switchView('view-beam', true);
+            }
+        });
+    }
+
+    if (beamModeSwitchCloudBtn) {
+        beamModeSwitchCloudBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof window.switchView === 'function') {
+                window.switchView('view-glowna', true);
+            }
+        });
+    }
+
+    const tabSendBtn = document.getElementById('beamTabSendBtn');
+    const tabReceiveBtn = document.getElementById('beamTabReceiveBtn');
+    const paneSend = document.getElementById('beamPaneSend');
+    const paneReceive = document.getElementById('beamPaneReceive');
+
+    if (!tabSendBtn || !tabReceiveBtn) return;
+
+    tabSendBtn.addEventListener('click', () => {
+        tabSendBtn.classList.add('active');
+        tabReceiveBtn.classList.remove('active');
+        if (paneSend) paneSend.style.display = 'block';
+        if (paneReceive) paneReceive.style.display = 'none';
+        if (typeof playSound === 'function') playSound('click');
+    });
+
+    tabReceiveBtn.addEventListener('click', () => {
+        tabReceiveBtn.classList.add('active');
+        tabSendBtn.classList.remove('active');
+        if (paneReceive) paneReceive.style.display = 'block';
+        if (paneSend) paneSend.style.display = 'none';
+        if (typeof playSound === 'function') playSound('click');
+        const pinInput = document.getElementById('beamPinInput');
+        if (pinInput) pinInput.focus();
+    });
+
+    const beamDropzone = document.getElementById('beamDropzone');
+    const beamFileInput = document.getElementById('beamFileInput');
+    const beamChooseBtn = document.getElementById('beamChooseFileBtn');
+    const beamSendActiveCard = document.getElementById('beamSendActiveCard');
+    const beamSendFileName = document.getElementById('beamSendFileName');
+    const beamSendFileSize = document.getElementById('beamSendFileSize');
+    const btnBeamCancelSend = document.getElementById('btnBeamCancelSend');
+    const btnBeamCopyLink = document.getElementById('btnBeamCopyLink');
+
+    if (beamChooseBtn && beamFileInput) {
+        beamChooseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            beamFileInput.click();
+        });
+    }
+
+    if (beamDropzone && beamFileInput) {
+        beamDropzone.addEventListener('click', () => beamFileInput.click());
+        beamDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            beamDropzone.classList.add('dragover');
+        });
+        beamDropzone.addEventListener('dragleave', () => beamDropzone.classList.remove('dragover'));
+        beamDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            beamDropzone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleBeamFileSelected(e.dataTransfer.files[0]);
+            }
+        });
+        beamFileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleBeamFileSelected(e.target.files[0]);
+            }
+        });
+    }
+
+    function handleBeamFileSelected(file) {
+        if (!file || !window.DropsiteBeam) return;
+        if (beamDropzone) beamDropzone.style.display = 'none';
+        if (beamSendActiveCard) beamSendActiveCard.style.display = 'block';
+
+        if (beamSendFileName) beamSendFileName.textContent = file.name;
+        if (beamSendFileSize) {
+            beamSendFileSize.textContent = typeof formatBytes === 'function' 
+                ? formatBytes(file.size) 
+                : `${(file.size / (1024*1024)).toFixed(1)} MB`;
+        }
+
+        window.DropsiteBeam.startSender(file, {
+            onSessionReady: ({ pin, beamUrl }) => {
+                for (let i = 0; i < 6; i++) {
+                    const box = document.getElementById(`beamPin${i + 1}`);
+                    if (box) box.textContent = pin[i] || '-';
+                }
+                const qrCanvas = document.getElementById('beamQrCanvas');
+                if (qrCanvas && typeof QRious !== 'undefined') {
+                    new QRious({
+                        element: qrCanvas,
+                        value: beamUrl,
+                        size: 110,
+                        background: 'white',
+                        foreground: '#0F172A'
+                    });
+                }
+                if (btnBeamCopyLink) {
+                    btnBeamCopyLink.onclick = () => {
+                        navigator.clipboard.writeText(beamUrl).then(() => {
+                            if (typeof playSound === 'function') playSound('copy');
+                            if (typeof showNotification === 'function') {
+                                showNotification(typeof t === 'function' ? t('beam_copied_toast') : '✓ Skopiowano link Beam!', 'success');
+                            }
+                        });
+                    };
+                }
+            },
+            onStatus: (status, msg) => {
+                const statusMsg = document.getElementById('beamSendStatusMsg');
+                if (statusMsg) statusMsg.textContent = msg;
+            },
+            onProgress: ({ percent, speedMbSec, transferred, total }) => {
+                const progBox = document.getElementById('beamSendProgressBox');
+                if (progBox) progBox.style.display = 'block';
+                const pEl = document.getElementById('beamSendPercent');
+                if (pEl) pEl.textContent = `${Math.round(percent)}%`;
+                const sEl = document.getElementById('beamSendSpeed');
+                if (sEl) sEl.textContent = `${speedMbSec} MB/s`;
+                const tEl = document.getElementById('beamSendTransferred');
+                if (tEl && typeof formatBytes === 'function') {
+                    tEl.textContent = `${formatBytes(transferred)} z ${formatBytes(total)}`;
+                }
+                const bar = document.getElementById('beamSendProgressBar');
+                if (bar) bar.style.width = `${percent}%`;
+            },
+            onComplete: ({ fileName }) => {
+                const statusMsg = document.getElementById('beamSendStatusMsg');
+                if (statusMsg) statusMsg.textContent = typeof t === 'function' ? t('beam_completed') : '✨ Transfer ukończony!';
+                if (typeof showNotification === 'function') {
+                    showNotification(`✓ Plik "${fileName}" został pomyślnie przesłany przez Beam P2P!`, 'success');
+                }
+            },
+            onError: (err) => {
+                if (typeof showError === 'function') showError(err);
+                else alert(err);
+            }
+        });
+    }
+
+    if (btnBeamCancelSend) {
+        btnBeamCancelSend.addEventListener('click', () => {
+            if (window.DropsiteBeam) window.DropsiteBeam.reset();
+            if (beamSendActiveCard) beamSendActiveCard.style.display = 'none';
+            if (beamDropzone) beamDropzone.style.display = 'flex';
+            if (beamFileInput) beamFileInput.value = '';
+        });
+    }
+
+    const pinInput = document.getElementById('beamPinInput');
+    const btnConnectReceive = document.getElementById('btnBeamConnectReceive');
+    const receiveActiveCard = document.getElementById('beamReceiveActiveCard');
+    const receiveStatusMsg = document.getElementById('beamReceiveStatusMsg');
+    const receiveFileSummary = document.getElementById('beamReceiveFileSummary');
+    const receiveFileName = document.getElementById('beamReceiveFileName');
+    const receiveFileSize = document.getElementById('beamReceiveFileSize');
+    const receiveProgressBox = document.getElementById('beamReceiveProgressBox');
+    const receivePercent = document.getElementById('beamReceivePercent');
+    const receiveSpeed = document.getElementById('beamReceiveSpeed');
+    const receiveTransferred = document.getElementById('beamReceiveTransferred');
+    const receiveProgressBar = document.getElementById('beamReceiveProgressBar');
+    const receiveCompletedBox = document.getElementById('beamReceiveCompletedBox');
+    const btnDownloadReady = document.getElementById('btnBeamDownloadReady');
+
+    if (btnConnectReceive && pinInput) {
+        const triggerReceive = () => {
+            const rawPin = pinInput.value.replace(/[^0-9]/g, '').trim();
+            if (rawPin.length !== 6) {
+                if (typeof showError === 'function') showError('Wpisz pełny 6-cyfrowy kod PIN transferu.');
+                return;
+            }
+            if (receiveActiveCard) receiveActiveCard.style.display = 'block';
+            btnConnectReceive.disabled = true;
+
+            window.DropsiteBeam.startReceiver(rawPin, {
+                onSessionFound: (session) => {
+                    if (receiveFileSummary) receiveFileSummary.style.display = 'flex';
+                    if (receiveFileName) receiveFileName.textContent = session.fileName || 'plik';
+                    if (receiveFileSize && typeof formatBytes === 'function') {
+                        receiveFileSize.textContent = formatBytes(session.fileSize);
+                    }
+                },
+                onFileHeader: (meta) => {
+                    if (receiveFileSummary) receiveFileSummary.style.display = 'flex';
+                    if (receiveFileName) receiveFileName.textContent = meta.name;
+                    if (receiveFileSize && typeof formatBytes === 'function') {
+                        receiveFileSize.textContent = formatBytes(meta.size);
+                    }
+                },
+                onStatus: (status, msg) => {
+                    if (receiveStatusMsg) receiveStatusMsg.textContent = msg;
+                },
+                onProgress: ({ percent, speedMbSec, transferred, total }) => {
+                    if (receiveProgressBox) receiveProgressBox.style.display = 'block';
+                    if (receivePercent) receivePercent.textContent = `${Math.round(percent)}%`;
+                    if (receiveSpeed) receiveSpeed.textContent = `${speedMbSec} MB/s`;
+                    if (receiveTransferred && typeof formatBytes === 'function') {
+                        receiveTransferred.textContent = `${formatBytes(transferred)} z ${formatBytes(total)}`;
+                    }
+                    if (receiveProgressBar) receiveProgressBar.style.width = `${percent}%`;
+                },
+                onComplete: ({ fileName, downloadUrl }) => {
+                    if (receiveProgressBox) receiveProgressBox.style.display = 'none';
+                    if (receiveCompletedBox) receiveCompletedBox.style.display = 'block';
+                    if (btnDownloadReady) {
+                        btnDownloadReady.href = downloadUrl;
+                        btnDownloadReady.setAttribute('download', fileName);
+                    }
+                    if (typeof showNotification === 'function') {
+                        showNotification(`✓ Plik "${fileName}" został odebrany przez Beam P2P!`, 'success');
+                    }
+                    btnConnectReceive.disabled = false;
+                },
+                onError: (err) => {
+                    if (typeof showError === 'function') showError(err);
+                    else alert(err);
+                    btnConnectReceive.disabled = false;
+                }
+            });
+        };
+
+        btnConnectReceive.addEventListener('click', triggerReceive);
+        pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') triggerReceive();
+        });
+    }
+}
+window.initDropsiteBeamUI = initDropsiteBeamUI;

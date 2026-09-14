@@ -24,34 +24,15 @@
     --radius-sm: 8px;
     
     --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    /* --- Czyste ciemne szkło (Dark Glass) bez zielonego zanieczyszczenia --- */
-    --surface-glass-card: linear-gradient(180deg, rgba(20, 24, 33, 0.78) 0%, rgba(13, 16, 23, 0.9) 42%, rgba(8, 10, 15, 0.97) 100%);
-    --surface-glass-card-hover: linear-gradient(180deg, rgba(26, 31, 42, 0.82) 0%, rgba(16, 20, 28, 0.92) 42%, rgba(10, 12, 18, 0.98) 100%);
-    --surface-recessed: radial-gradient(ellipse at 50% 0%, rgba(16, 20, 28, 0.6) 0%, rgba(5, 7, 11, 0.95) 100%);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);    /* --- Glassmorphism Design Tokens --- */
+    --surface-glass-card: rgba(20, 22, 30, 0.72);
+    --surface-glass-card-hover: rgba(24, 27, 38, 0.82);
+    --surface-recessed: rgba(0, 0, 0, 0.25);
     
-    /* Wielopoziomowe cienie przestrzenne z delikatną miętową aureolą */
-    --shadow-volumetric-card: 
-        0 2px 4px rgba(0, 0, 0, 0.25),
-        0 10px 22px -4px rgba(0, 0, 0, 0.45),
-        0 20px 45px -8px rgba(0, 0, 0, 0.55),
-        0 0 35px -10px rgba(196, 231, 212, 0.1),
-        inset 0 1px 1px rgba(255, 255, 255, 0.18),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-        
-    --shadow-volumetric-card-hover: 
-        0 4px 8px rgba(0, 0, 0, 0.3),
-        0 14px 28px -4px rgba(0, 0, 0, 0.5),
-        0 28px 55px -10px rgba(0, 0, 0, 0.65),
-        0 0 45px -8px rgba(196, 231, 212, 0.16),
-        inset 0 1px 1px rgba(255, 255, 255, 0.22),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-
-    --shadow-sunken-stage: 
-        inset 0 3px 18px rgba(0, 0, 0, 0.92),
-        inset 0 0 0 1px rgba(0, 0, 0, 0.75),
-        0 1px 0 rgba(255, 255, 255, 0.06);
+    /* Dynamiczne, żywe cienie szklane */
+    --shadow-volumetric-card: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 45px rgba(196, 231, 212, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --shadow-volumetric-card-hover: 0 30px 75px rgba(0, 0, 0, 0.55), 0 0 60px rgba(196, 231, 212, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    --shadow-sunken-stage: inset 0 2px 10px rgba(0, 0, 0, 0.4);
 
     --shadow-btn-tactile: 
         0 4px 14px rgba(0, 0, 0, 0.4),
@@ -78,29 +59,53 @@ html {
     display: none !important;
 }
 
-/* --- Baza i Tło --- */
+/* --- Kursory: łapka dla wszystkich klikalnych elementów i ich dzieci --- */
+button,
+a,
+label[for],
+label:has(input),
+[role="button"],
+.dropzone,
+.format-chip,
+.scope-btn,
+.btn-select,
+.mod-close,
+.bug-report-pin {
+    cursor: pointer;
+}
+
+button *,
+a *,
+label[for] *,
+label:has(input) *,
+[role="button"] *,
+.dropzone *,
+.format-chip *,
+.scope-btn *,
+.btn-select *,
+.mod-close *,
+.bug-report-pin * {
+    cursor: inherit;
+}
+
+
+/* --- Baza i Żywe Tło --- */
 body {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--bg-color); /* Twoje ciemne tło */
+    background-color: #0B0F19;
     
-    /* Stonowane, eleganckie tło – zredukowana winieta i łagodne rozproszenia */
+    /* Bogate, przestrzenne, energetyczne tło pełne życia i pozytywnego blasku */
     background-image: 
-        /* 1. Bardzo subtelna winieta zamiast ciężkiego zaciemnienia */
-        radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(2, 4, 8, 0.45) 100%),
-        /* 2. Delikatne, gładkie rozproszenie za kartą */
-        radial-gradient(ellipse 900px 500px at 50% 35%, rgba(196, 231, 212, 0.07) 0%, transparent 70%),
-        /* 3. Miękkie akcenty po bokach */
-        radial-gradient(circle at 18% 45%, rgba(196, 231, 212, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 82% 22%, rgba(196, 231, 212, 0.06) 0%, transparent 42%),
-        radial-gradient(circle at 50% 100%, rgba(89, 168, 41, 0.05) 0%, transparent 50%),
-        /* 4. Subtelny mikroskopijny raster */
-        radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        /* 5. Miętowe punkciki świetlne */
-        radial-gradient(rgba(196, 231, 212, 0.05) 2px, transparent 2px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 32px 32px, 80px 80px;
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+        radial-gradient(ellipse 90% 55% at 50% -5%, rgba(56, 189, 248, 0.18) 0%, transparent 65%),
+        radial-gradient(circle at 12% 35%, rgba(52, 211, 153, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 88% 30%, rgba(129, 140, 248, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 50% 85%, rgba(56, 189, 248, 0.1) 0%, transparent 55%),
+        radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        radial-gradient(rgba(52, 211, 153, 0.08) 2px, transparent 2px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 30px 30px, 80px 80px;
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
     
     color: var(--text-main);
     display: flex;
@@ -109,12 +114,11 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    padding: 0; /* Zero padding: footer touches bottom edge & spans full screen */
+    padding: 0;
     box-sizing: border-box;
     position: relative;
     overflow-x: hidden;
 
-    /* Wyłączenie zaznaczania tekstu na stronie (niebieskie tło przy klikaniu) */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -122,7 +126,6 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Na mniejszych ekranach lub niższych wysokościach okna pozwalamy treści płynnie przewijać się od góry */
 @media (max-width: 1200px), (max-height: 820px) {
     body {
         justify-content: flex-start;
@@ -130,12 +133,11 @@ body {
     }
 }
 
-/* --- Wszystkie elementy tekstowe i nagłówki dziedziczą Plus Jakarta Sans --- */
 h1, h2, h3, .nav-logo, button, input, select, textarea {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
 }
 
-/* --- Aurora Background (Glassmorphism) - zredukowana intensywność --- */
+/* --- Aurora Background (Dynamiczne, ożywione zorze w tle) --- */
 body::before, body::after {
     content: '';
     position: fixed;
@@ -145,12 +147,12 @@ body::before, body::after {
     background-blend-mode: screen;
 }
 body::before {
-    background: radial-gradient(circle at 50% 50%, rgba(196, 231, 212, 0.05), transparent 40%);
-    animation: move-aurora-1 25s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 45% 40%, rgba(52, 211, 153, 0.16), transparent 45%);
+    animation: move-aurora-1 22s ease-in-out infinite alternate;
 }
 body::after {
-    background: radial-gradient(circle at 50% 50%, rgba(196, 231, 212, 0.04), transparent 40%);
-    animation: move-aurora-2 30s ease-in-out infinite alternate-reverse;
+    background: radial-gradient(circle at 60% 50%, rgba(56, 189, 248, 0.18), transparent 45%);
+    animation: move-aurora-2 28s ease-in-out infinite alternate-reverse;
 }
 
 @keyframes move-aurora-1 {
@@ -196,6 +198,16 @@ canvas,
 a, 
 button, 
 select, 
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.btn-primary,
+.btn-secondary,
+.btn-outline-another,
+.clickable-link,
+.option-item,
+.custom-switch,
+.custom-switch-label,
 .theme-dot, 
 .nav-button, 
 .btn-option, 
@@ -206,9 +218,36 @@ select,
 .icon-btn,
 .delete-btn,
 .modal-close,
+.mod-close,
+.btn-attached-preview,
+.btn-attached-remove,
+.btn-unboxing-rec,
+.btn-unboxing-stop,
+.btn-apply-settings,
+.unboxing-avatar-card,
+.unboxing-avatar-bubble,
+.btn-close-unboxing-player,
+.unboxing-audio-play-btn,
+.btn-voice-speed,
 #loginTrigger,
 [data-cursor='pointer'] {
     cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTguNzU3NjQgMjYuMTgxOVYzMC4wNjA3SDI0LjI3MjhWMjguMTIxM0gyNi4yMTIyVjI2LjE4MTlIMjguMTUxNlYxNS41MTUySDI2LjIxMjJWMTMuNTc1OEgyNC4yNzI4VjExLjYzNjRIMTQuNTc1OFYxLjkzOTQ1SDguNzU3NjRWMTMuNTc1OEgyLjkzOTQ1VjIyLjMwMzFINC44Nzg4NVYyNC4yNDI1SDYuODE4MjRWMjYuMTgxOUg4Ljc1NzY0WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTE0LjU3NTggMTEuNTc1OEgxNi41MTUyVjE4LjM2MzZIMTQuNTc1OFYxMS41NzU4WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTIyLjMzMzMgMTEuNTc1OEgyMC4zOTM5VjE4LjM2MzZIMjIuMzMzM1YxMS41NzU4WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNC41NzU4IDBIOC43NTc1OFYxLjkzOTM5SDYuODE4MThWMTEuNjM2NEgyLjkzOTM5VjEzLjU3NThIMVYyMi4zMDNIMi45MzkzOVYyNC4yNDI0SDQuODc4NzlWMjYuMTgxOEg2LjgxODE4VjMwLjA2MDZIOC43NTc1OFYzMkgyNC4yNzI3VjMwLjA2MDZIMjYuMjEyMVYyOC4xMjEySDI4LjE1MTVWMjYuMTgxOEgzMC4wOTA5VjE1LjUxNTJIMjguMTUxNVYxMy41NzU4SDI2LjIxMjFWMTEuNjM2NEgyNC4yNzI3VjkuNjk2OTdIMTYuNTE1MlYxLjkzOTM5TDE0LjU3NTggMS45MzkzOVYwWk0xNC41NzU4IDEuOTM5MzlWMTEuNjM2NEgyNC4yNzI3VjEzLjU3NThIMjYuMjEyMVYxNS41MTUySDI4LjE1MTVWMjYuMTgxOEgyNi4yMTIxVjI4LjEyMTJIMjQuMjcyN1YzMC4wNjA2SDguNzU3NThWMjYuMTgxOEg2LjgxODE4VjI0LjI0MjRINC44Nzg3OVYyMi4zMDNIMi45MzkzOVYxMy41NzU4SDYuODE4MThWMTguNDI0Mkg4Ljc1NzU4VjEuOTM5MzlIMTQuNTc1OFoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=") 8 0, pointer !important;
+}
+
+/* Zabezpieczenie przed migotaniem kursora nad ikonami SVG i tekstem wewnątrz przycisków */
+button *,
+.btn-primary *,
+.btn-secondary *,
+.btn-outline-another *,
+.btn-unboxing-trigger *,
+.btn-attached-preview *,
+.btn-attached-remove *,
+.btn-unboxing-rec *,
+.btn-unboxing-stop *,
+.btn-apply-settings *,
+.unboxing-audio-play-btn *,
+.btn-voice-speed * {
+    pointer-events: none;
 }
 
 /* 3. Kursor tekstowy dla pól input */

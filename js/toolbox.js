@@ -445,7 +445,9 @@
                 throw new Error('Biblioteka PDF.js nie jest dostępna');
             }
 
-            const loadingTask = pdfjsLib.getDocument({ data: splitBytes });
+            // Kopia bufora dla PDF.js, bo Web Worker odłącza (detaches) przekazany ArrayBuffer
+            const pdfData = new Uint8Array(splitBytes.slice(0));
+            const loadingTask = pdfjsLib.getDocument({ data: pdfData });
             splitPdfJsDoc = await loadingTask.promise;
             splitTotalPages = splitPdfJsDoc.numPages;
 
@@ -633,7 +635,7 @@
             if (splitMode === 'extract') {
                 // TRYB A: Połączenie wybranych stron w jeden nowy plik PDF
                 const newDoc = await PDFLib.PDFDocument.create();
-                const srcDoc = await PDFLib.PDFDocument.load(splitBytes, { ignoreEncryption: true });
+                const srcDoc = await PDFLib.PDFDocument.load(splitBytes.slice(0), { ignoreEncryption: true });
                 const pageIndices = sortedPages.map(p => p - 1);
                 const copiedPages = await newDoc.copyPages(srcDoc, pageIndices);
                 copiedPages.forEach(p => newDoc.addPage(p));
@@ -655,7 +657,7 @@
                 }
 
                 const zipFiles = {};
-                const srcDoc = await PDFLib.PDFDocument.load(splitBytes, { ignoreEncryption: true });
+                const srcDoc = await PDFLib.PDFDocument.load(splitBytes.slice(0), { ignoreEncryption: true });
                 const padLen = String(splitTotalPages).length;
 
                 for (let i = 0; i < sortedPages.length; i++) {

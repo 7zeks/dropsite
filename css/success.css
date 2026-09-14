@@ -1,174 +1,413 @@
-/* --- Success Flow Section --- */
+/* ==========================================================================
+   DROPSITE CLEAN TRANSFER SUCCESS VIEW (Apple & Linear Minimalist Aesthetic)
+   ========================================================================== */
+
 .success-flow {
-    padding: 24px 0 0 0;
-    animation: slideInUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 8px 0 2px 0;
+    width: 100%;
+    box-sizing: border-box;
+    animation: cleanSuccessIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Włączamy układ flex TYLKO wtedy, gdy Javascript usunie atrybut 'hidden' */
 .success-flow:not([hidden]) {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
 }
 
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes cleanSuccessIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
+/* --- 1. Sygnet Sukcesu --- */
+.success-vault-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    margin: 2px auto 0;
+}
+
+.vault-badge-halo {
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, rgba(56, 189, 248, 0.15) 50%, transparent 75%);
+    filter: blur(12px);
+    opacity: 0.85;
+    animation: badgeHaloPulse 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes badgeHaloPulse {
+    0%, 100% { transform: scale(1); opacity: 0.75; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+.vault-badge-circle {
+    position: relative;
+    z-index: 1;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 15, 12, 0.95) 100%);
+    border: 1.5px solid rgba(52, 211, 153, 0.55);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+}
+
+.vault-check-svg {
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.7));
+    animation: checkmarkPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes checkmarkPop {
+    0% { transform: scale(0.6); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- 2. Tytuł + Czyste Metadane (Bez ciężkiej kapsułki!) --- */
 .success-header {
     text-align: center;
-    /* JSON: width: 454px, flex column, center */
     width: 100%;
 }
 
-.success-header h3 {
+.success-title {
     margin: 0;
-    /* JSON: "127.0.0.1SemanticHeading3" -> 18px, 700 */
-    font-size: 18px;
-    font-weight: 700;
-    /* JSON: color rgba(196, 231, 212, 1) -> to ten jasny zielony! */
-    color: #C4E7D4; 
-    text-align: center;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #FFFFFF;
 }
 
-.success-link-box {
+.success-file-meta-clean {
+    margin: 7px auto 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #94A3B8;
+    max-width: 92%;
+}
+
+.success-file-meta-clean .sfc-filename {
+    font-weight: 700;
+    color: #E2E8F0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.success-file-meta-clean .sfc-size {
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+.success-file-meta-clean .sfc-retention {
+    color: #34D399;
+    font-weight: 600;
+}
+
+.success-file-meta-clean .sfc-dot {
+    opacity: 0.4;
+}
+
+/* --- 3. Plakietki zaawansowane (Tylko gdy aktywne) --- */
+.success-settings-status {
     width: 100%;
 }
 
-.clickable-link {
-    display: block;
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(196, 231, 212, 0.25);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    background: radial-gradient(ellipse at 50% 0%, rgba(196, 231, 212, 0.08) 0%, rgba(6, 10, 18, 0.85) 100%);
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.75), 0 1px 0 rgba(255, 255, 255, 0.05);
-    color: #C4E7D4; 
-    font-weight: 700;
-    text-align: center;
-    font-size: 15px;
-    box-sizing: border-box;
-    transition: var(--transition-smooth);
-    text-decoration: none; 
-    word-break: break-all;
-}
-
-.clickable-link:hover {
-    border-color: #C4E7D4; 
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 16px rgba(196, 231, 212, 0.35); 
-    color: #fff;
-}
-
-/* Przyciski (Kopiuj, Udostępnij, Wgraj) */
-.success-actions {
+.success-applied-badges {
     display: flex;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.applied-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+}
+
+/* --- 4. Główny Hero Link Bar (Pojedyncza, luksusowa belka z przyciskiem Kopiuj) --- */
+.clean-hero-link-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 7px 6px 15px;
+    border-radius: 14px;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    background: radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.1) 0%, rgba(7, 12, 20, 0.95) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 24px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.clean-hero-link-bar:hover {
+    border-color: rgba(52, 211, 153, 0.65);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 32px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.clean-link-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.clean-link-icon {
+    color: #34D399;
+    flex-shrink: 0;
+}
+
+.clean-link-text {
+    color: #F8FAFC;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: all;
+    text-align: left;
+}
+
+.clean-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    background: linear-gradient(125deg, #10B981 0%, #34D399 45%, #2DD4BF 80%, #38BDF8 100%);
+    color: #03140C;
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.clean-copy-btn:hover {
+    filter: brightness(1.06);
+    transform: scale(1.02);
+}
+
+.clean-copy-btn:active {
+    transform: scale(0.98);
+}
+
+.clean-copy-btn.copied {
+    background: #10B981 !important;
+    color: #FFFFFF !important;
+}
+
+/* --- 5. Rząd akcji pomocniczych (Lekkie, minimalistyczne) --- */
+.clean-actions-row {
+    display: flex;
+    gap: 8px;
     width: 100%;
     justify-content: center;
 }
 
-.btn-secondary {
-    box-sizing: border-box;
+.clean-tool-btn {
     flex: 1;
-    min-width: 130px;
-    background: linear-gradient(180deg, rgba(38, 44, 60, 0.7) 0%, rgba(20, 24, 36, 0.85) 100%);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    padding: 12px 16px;
-    border-radius: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: var(--transition-smooth);
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #CBD5E1;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clean-tool-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #FFFFFF;
+}
+
+.clean-stream-btn {
+    color: #38BDF8;
+    border-color: rgba(56, 189, 248, 0.2);
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.clean-stream-btn:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.12);
+    color: #E0F2FE;
+}
+
+/* --- 6. Prześlij kolejny plik (Dyskretny text link, BEZ ramki!) --- */
+.clean-reset-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    margin-top: 1px;
+}
+
+.clean-reset-link svg {
+    transition: transform 0.3s ease;
+}
+
+.clean-reset-link:hover {
+    color: #34D399;
+}
+
+.clean-reset-link:hover svg {
+    transform: rotate(-60deg);
+}
+
+/* --- 7. Czyszczona notka na dole (BEZ ciężkiego boxa!) --- */
+.clean-security-caption {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #64748B;
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
+.clean-security-caption svg {
+    color: #10B981;
+    opacity: 0.8;
+}
+
+/* --- Globalny Przycisk Drugorzędny (Sleek Cyber Glass) --- */
+.btn-secondary {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: linear-gradient(180deg, rgba(30, 36, 50, 0.7) 0%, rgba(16, 20, 30, 0.85) 100%);
+    color: #F1F5F9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    padding: 11px 18px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition-smooth, all 0.25s cubic-bezier(0.16, 1, 0.3, 1));
     position: relative;
     overflow: hidden;
 }
 
 .btn-secondary:hover {
-    background: linear-gradient(180deg, rgba(50, 58, 80, 0.8) 0%, rgba(26, 32, 48, 0.95) 100%);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: linear-gradient(180deg, rgba(42, 52, 72, 0.8) 0%, rgba(22, 28, 42, 0.95) 100%);
+    border-color: rgba(255, 255, 255, 0.22);
     border-top-color: rgba(255, 255, 255, 0.35);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.btn-secondary:active { transform: translateY(0); }
+.btn-secondary:active {
+    transform: translateY(0);
+}
 
-/* Wskazówka na dole */
-.success-tips {
+/* --- Dedykowane przyciski w modalu Kod QR (Pobierz QR, Udostępnij) --- */
+.qr-modal-actions {
+    display: flex;
+    gap: 10px;
     width: 100%;
-    /* JSON: OverlayVerticalBorder */
-    /* JSON: padding 16px 16px 16px 20px */
-    padding: 16px 16px 16px 20px;
-    /* JSON: backgroundColor rgba(0, 0, 0, 0.2) */
-    background: rgba(0, 0, 0, 0.2);
-    /* JSON: borderRadius 8px */
-    border-radius: 8px;
-    /* JSON: borderWidth 0 0 0 4px, borderColor rgba(196, 231, 212, 1) */
-    border-left: 4px solid #C4E7D4;
-    text-align: center;
-    box-sizing: border-box;
-}
-
-.success-tips p { 
-    margin: 0; 
-    /* JSON: fontSize 13px, color rgba(138, 143, 152, 1) */
-    font-size: 13px; 
-    color: #8A8F98; 
-    line-height: 1.4; 
-}
-.success-tips strong { 
-    color: #FFFFFF; 
-}
-
-/* Przycisk: Prześlij kolejny plik */
-.btn-outline-another {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 13px 20px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #C4E7D4;
-    border: 1px dashed rgba(196, 231, 212, 0.35);
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box;
     margin-top: 4px;
 }
 
-.btn-outline-another svg {
-    transition: transform 0.3s ease;
+.qr-modal-actions .btn-secondary {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 11px;
 }
 
-.btn-outline-another:hover {
-    background: rgba(196, 231, 212, 0.12);
-    border-color: #C4E7D4;
-    color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(196, 231, 212, 0.25);
-    transform: translateY(-1px);
+#btnDownloadQr {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 18, 14, 0.85) 100%) !important;
+    border: 1px solid rgba(52, 211, 153, 0.35) !important;
+    border-top: 1px solid rgba(52, 211, 153, 0.6) !important;
+    color: #34D399 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 16px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
-.btn-outline-another:hover svg {
-    transform: rotate(-45deg);
+#btnDownloadQr:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.32) 0%, rgba(8, 26, 20, 0.95) 100%) !important;
+    border-color: rgba(52, 211, 153, 0.65) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 24px rgba(16, 185, 129, 0.32) !important;
 }
 
-.btn-outline-another:active {
-    transform: translateY(0);
+#btnShareQr {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #E2E8F0 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+#btnShareQr:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #FFFFFF !important;
 }

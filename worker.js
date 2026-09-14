@@ -95,8 +95,83 @@ export default {
       return name[0] + "***" + name[name.length - 1] + "@" + domain;
     }
 
+    // Helper: Odczyt aktualnego limitu pojemności serwera R2 (konfigurowanego przez admina)
+    async function getMaxStorageBytes() {
+      if (env.MAX_STORAGE_BYTES) return parseInt(env.MAX_STORAGE_BYTES, 10);
+      if (env.BUCKET) {
+        try {
+          const qObj = await env.BUCKET.get("_system/quota.json");
+          if (qObj) {
+            const data = await qObj.json();
+            const gb = parseInt(data.quotaGb, 10);
+            if (gb === 0) return 10995116277760; // 10 TB (Auto-Scale / nielimitowany)
+            if (!isNaN(gb) && gb > 0) return gb * 1024 * 1024 * 1024;
+          }
+        } catch (_) {}
+      }
+      return 1099511627776; // Domyślnie 1 TB (zniesienie blokady 10 GB)
+    }
+
+    // Helper: Trwały zapis każdego pliku w historii konta użytkownika w R2
+    async function recordFileToUserHistory(userEmail, fileRecord) {
+      if (!env.BUCKET || !userEmail || userEmail === "anonymous") return;
+      try {
+        const safeEmail = userEmail.toLowerCase().trim().replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const historyKey = `_user_history/${safeEmail}.json`;
+        let history = [];
+        const existing = await env.BUCKET.get(historyKey);
+        if (existing) {
+          try {
+            history = await existing.json();
+          } catch (_) {}
+        }
+        if (!Array.isArray(history)) history = [];
+        // Usuń ewentualny duplikat tego samego klucza
+        history = history.filter(h => h.key !== fileRecord.key);
+        history.unshift({
+          ...fileRecord,
+          status: 'active',
+          existsOnDisk: true
+        });
+        if (history.length > 1000) history = history.slice(0, 1000);
+        await env.BUCKET.put(historyKey, JSON.stringify(history), {
+          httpMetadata: { contentType: "application/json" }
+        });
+      } catch (err) {
+        console.error("Error updating user history in R2:", err);
+      }
+    }
+
     async function checkProKeyValidity(rawKey, userEmail = "") {
-      if (!rawKey) return { valid: false, message: "Brak klucza licencyjnego." };
+      const cleanEmail = (userEmail || "").toLowerCase().trim();
+      const userEmailKey = cleanEmail ? `_user_licenses/${cleanEmail.replace(/[^a-zA-Z0-9_.-]/g, '_')}.json` : null;
+
+      // 0. Jeśli nie podano klucza, ale podano e-mail - sprawdź czy użytkownik ma już przypisany klucz PRO w R2
+      if (!rawKey) {
+        if (cleanEmail && env.BUCKET) {
+          try {
+            const userBinding = await env.BUCKET.get(userEmailKey);
+            if (userBinding) {
+              const userData = await userBinding.json();
+              if (userData.expiresAt && new Date(userData.expiresAt) < new Date()) {
+                return { valid: false, message: "Twoja subskrypcja Dropsite PRO wygasła." };
+              }
+              return {
+                valid: true,
+                key: userData.key,
+                type: "bound_pro",
+                ownerEmail: cleanEmail,
+                expires_at: userData.expiresAt || null,
+                message: "Konto Dropsite PRO jest aktywne dla Twojego profilu!"
+              };
+            }
+          } catch(storageErr) {
+            console.error("R2 user license lookup error:", storageErr);
+          }
+        }
+        return { valid: false, message: "Brak klucza licencyjnego." };
+      }
+
       const trimmed = rawKey.trim();
       const upper = trimmed.toUpperCase();
       const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
@@ -118,8 +193,6 @@ export default {
         return { valid: true, type: "static_pro", message: "Klucz PRO aktywny." };
       }
 
-      const cleanEmail = (userEmail || "").toLowerCase().trim();
-
       // 3. Sprawdzenie przypisania klucza do konta w R2 (_licenses/)
       const licenseStorageKey = `_licenses/${trimmed.replace(/[^a-zA-Z0-9-]/g, '_')}.json`;
       if (env.BUCKET) {
@@ -138,10 +211,15 @@ export default {
                 };
               }
               if (boundEmail === cleanEmail) {
+                if (bindingData.expiresAt && new Date(bindingData.expiresAt) < new Date()) {
+                  return { valid: false, message: "Ten klucz licencyjny PRO wygasł." };
+                }
                 return {
                   valid: true,
+                  key: trimmed,
                   type: "bound_pro",
                   ownerEmail: boundEmail,
+                  expires_at: bindingData.expiresAt || null,
                   message: "Konto Dropsite PRO jest aktywne!"
                 };
               } else {
@@ -187,23 +265,39 @@ export default {
         console.error("Polar API validation error:", err);
       }
 
-      // 5. Format DS- lub PRO-
-      if (!isValidFromPolar && (/^DS-[A-Z0-9-]{4,}/i.test(trimmed) || /^PRO-[A-Z0-9-]{4,}/i.test(trimmed))) {
+      // 5. Format DS- lub PRO- (w tym klucze BLIK DS-PRO-BLIK-...)
+      if (!isValidFromPolar && (/^(DS|PRO)-[A-Z0-9-]{4,}/i.test(trimmed))) {
         isValidFromPolar = true;
+        // Domyślny okres 30 dni dla wygenerowanych kluczy BLIK
+        if (/^DS-PRO-BLIK-/i.test(trimmed)) {
+          const d = new Date();
+          d.setDate(d.getDate() + 30);
+          expiresAt = d.toISOString();
+        }
       }
 
       if (isValidFromPolar) {
-        // Jeśli użytkownik jest zalogowany, przypisujemy klucz do jego konta na stałe
+        // Jeśli użytkownik jest zalogowany, przypisujemy klucz do jego konta na stałe w R2 (dwustronnie)
         if (cleanEmail && env.BUCKET) {
           try {
-            await env.BUCKET.put(licenseStorageKey, JSON.stringify({
+            const licensePayload = JSON.stringify({
               key: trimmed,
               ownerEmail: cleanEmail,
               activatedAt: new Date().toISOString(),
               expiresAt: expiresAt
-            }), {
+            });
+
+            // 1. Zapis po kluczu licencji (zabezpieczenie przed kradzieżą)
+            await env.BUCKET.put(licenseStorageKey, licensePayload, {
               httpMetadata: { contentType: "application/json" }
             });
+
+            // 2. Zapis po emailu użytkownika (automatyczne przywracanie na każdym urządzeniu)
+            if (userEmailKey) {
+              await env.BUCKET.put(userEmailKey, licensePayload, {
+                httpMetadata: { contentType: "application/json" }
+              });
+            }
           } catch (saveErr) {
             console.error("Error saving license binding:", saveErr);
           }
@@ -211,8 +305,10 @@ export default {
 
         return {
           valid: true,
+          key: trimmed,
           type: "polar_verified",
           ownerEmail: cleanEmail || null,
+          expires_at: expiresAt,
           message: "Klucz Dropsite PRO został pomyślnie aktywowany!"
         };
       }
@@ -220,26 +316,60 @@ export default {
       return { valid: false, message: "Nieprawidłowy lub nieaktywny klucz licencyjny." };
     }
 
-    function isProAuthorized(req) {
+    async function isProAuthorized(req) {
       const proKey = req.headers.get("X-Pro-Key") || req.headers.get("X-Admin-Secret") || url.searchParams.get("proKey") || "";
-      if (!proKey) return false;
+      const userEmail = (req.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
 
-      const trimmed = proKey.trim().toUpperCase();
+      if (!proKey && !userEmail) return false;
+
+      const trimmed = proKey.trim();
+      const upper = trimmed.toUpperCase();
       const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
 
-      if (trimmed === adminSecret) return true;
+      if (upper && upper === adminSecret) return true;
 
-      if (env.PRO_KEYS) {
+      if (env.PRO_KEYS && upper) {
         const keyList = env.PRO_KEYS.split(",").map(k => k.trim().toUpperCase());
-        if (keyList.includes(trimmed)) return true;
+        if (keyList.includes(upper)) return true;
       }
 
-      if (trimmed === "PRO-VIP-2026" || trimmed === "PRO-LIFETIME" || trimmed === "PRO-COMMUNITY") {
+      if (upper === "PRO-VIP-2026" || upper === "PRO-LIFETIME" || upper === "PRO-COMMUNITY") {
         return true;
       }
 
-      if (/^DS-[A-Z0-9]{4,}/i.test(proKey) || /^PRO-[A-Z0-9]{4,}/i.test(proKey)) {
+      // Poprawiony regex: dopuszcza myślniki po DS- i PRO- (np. DS-PRO-BLIK-XXXX)
+      if (trimmed && /^(DS|PRO)-[A-Z0-9-]{4,}/i.test(trimmed)) {
         return true;
+      }
+
+      // Sprawdzenie w R2 po kluczu (_licenses/) - np. licencje Polar.sh
+      if (trimmed && env.BUCKET) {
+        try {
+          const licenseStorageKey = `_licenses/${trimmed.replace(/[^a-zA-Z0-9-]/g, '_')}.json`;
+          const existing = await env.BUCKET.get(licenseStorageKey);
+          if (existing) {
+            const data = await existing.json();
+            if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+              return false;
+            }
+            return true;
+          }
+        } catch(e) {}
+      }
+
+      // Sprawdzenie w R2 po emailu zalogowanego użytkownika (_user_licenses/)
+      if (userEmail && env.BUCKET) {
+        try {
+          const userStorageKey = `_user_licenses/${userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_')}.json`;
+          const userObj = await env.BUCKET.get(userStorageKey);
+          if (userObj) {
+            const userData = await userObj.json();
+            if (userData.expiresAt && new Date(userData.expiresAt) < new Date()) {
+              return false;
+            }
+            return true;
+          }
+        } catch(e) {}
       }
 
       return false;
@@ -490,9 +620,26 @@ export default {
         const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
         const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
         const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
+        const timelockParam = url.searchParams.get("timelock");
+        const timehintParam = url.searchParams.get("timehint") || "";
+        const lockUntil = timelockParam ? parseInt(timelockParam, 10) : null;
+        const isTimeLocked = Boolean(lockUntil && lockUntil > Date.now());
         const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
         
-        const isPro = isProAuthorized(request);
+        const isPro = await isProAuthorized(request);
+        const uploaderEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+        const uploaderRole = isPro ? (uploaderEmail.includes("admin") ? "admin" : "pro") : (uploaderEmail ? "user" : "guest");
+
+        // --- WALIDACJA WETA (BEZPIECZEŃSTWO) ---
+        const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
+        const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+        if (dangerousExtensions.includes(ext)) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            code: "DANGEROUS_FILE_TYPE",
+            message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)." 
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
         // --- WALIDACJA LIMITÓW DARMOWYCH (BEZPIECZEŃSTWO & MONETYZACJA) ---
         const FREE_MAX_BYTES = 262144000; // 250 MB
@@ -518,19 +665,19 @@ export default {
             let totalUsedBytes = 0;
             const list = await env.BUCKET.list({ limit: 1000 });
             list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-            const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB (zniesienie blokady 10 GB)
+            const MAX_BYTES = await getMaxStorageBytes();
             if (totalUsedBytes + fileSize > MAX_BYTES) {
                 return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze dla kont darmowych. Przejdź na Dropsite PRO, aby przesyłać bez limitów." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
             }
         }
 
-        const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
-        let uniqueFilename = `${generateNanoId(6)}${ext}`;
+        const fileExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
+        let uniqueFilename = `${generateNanoId(6)}${fileExt}`;
 
         // Jeśli podano własny alias (slug)
         if (customSlug) {
             const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-            uniqueFilename = `${cleanSlug}${ext}`;
+            uniqueFilename = `${cleanSlug}${fileExt}`;
         }
 
         let fileKey = uniqueFilename;
@@ -560,21 +707,40 @@ export default {
                 isCinematic: isCinematic ? "true" : "false",
                 isAlbum: isAlbum ? "true" : "false",
                 cinematicTrack: cinematicTrack,
-                isPro: isPro ? "true" : "false"
+                isPro: isPro ? "true" : "false",
+                uploaderEmail: uploaderEmail || "anonymous",
+                uploaderRole: uploaderRole,
+                lockUntil: isTimeLocked ? String(lockUntil) : "",
+                lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
             }
         });
 
-        if (note || brand) {
+        if (note || brand || isTimeLocked) {
             const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
             try {
                 await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
                     note: note,
                     brand: brand,
-                    maxDownloads: maxdl ? parseInt(maxdl, 10) : null
+                    maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
+                    lockUntil: isTimeLocked ? lockUntil : null,
+                    lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
                 }), {
                     httpMetadata: { contentType: "application/json" }
                 });
             } catch (_) {}
+        }
+
+        if (uploaderEmail && uploaderEmail !== "anonymous") {
+            const rawSize = parseInt(request.headers.get("content-length") || "0", 10);
+            await recordFileToUserHistory(uploaderEmail, {
+                key: fileKey,
+                name: filename,
+                size: rawSize || fileSize || 0,
+                uploaded: new Date().toISOString(),
+                duration: expiry,
+                directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
+                pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(fileKey)}`
+            });
         }
 
         return new Response(JSON.stringify({
@@ -609,9 +775,26 @@ export default {
             const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
             const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
             const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
+            const timelockParam = url.searchParams.get("timelock");
+            const timehintParam = url.searchParams.get("timehint") || "";
+            const lockUntil = timelockParam ? parseInt(timelockParam, 10) : null;
+            const isTimeLocked = Boolean(lockUntil && lockUntil > Date.now());
             const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
             
-            const isPro = isProAuthorized(request);
+            const isPro = await isProAuthorized(request);
+            const uploaderEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+            const uploaderRole = isPro ? (uploaderEmail.includes("admin") ? "admin" : "pro") : (uploaderEmail ? "user" : "guest");
+
+            // --- WALIDACJA WETA (BEZPIECZEŃSTWO) ---
+            const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
+            const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+            if (dangerousExtensions.includes(ext)) {
+              return new Response(JSON.stringify({ 
+                success: false, 
+                code: "DANGEROUS_FILE_TYPE",
+                message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)." 
+              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
 
             // --- WALIDACJA LIMITÓW DARMOWYCH DLA MULTIPART ---
             const FREE_MAX_BYTES = 262144000; // 250 MB
@@ -636,18 +819,18 @@ export default {
                 let totalUsedBytes = 0;
                 const list = await env.BUCKET.list({ limit: 1000 });
                 list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-                const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB 
+                const MAX_BYTES = await getMaxStorageBytes();
                 if (totalUsedBytes + fileSize > MAX_BYTES) {
                     return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera dla kont darmowych. Odblokuj Dropsite PRO." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
                 }
             }
 
-            const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
-            let uniqueFilename = `${generateNanoId(6)}${ext}`;
+            const fileExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
+            let uniqueFilename = `${generateNanoId(6)}${fileExt}`;
 
             if (customSlug) {
                 const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-                uniqueFilename = `${cleanSlug}${ext}`;
+                uniqueFilename = `${cleanSlug}${fileExt}`;
             }
 
             let fileKey = uniqueFilename;
@@ -676,17 +859,23 @@ export default {
                     isCinematic: isCinematic ? "true" : "false",
                     isAlbum: isAlbum ? "true" : "false",
                     cinematicTrack: cinematicTrack,
-                    isPro: isPro ? "true" : "false"
+                    isPro: isPro ? "true" : "false",
+                    uploaderEmail: uploaderEmail || "anonymous",
+                    uploaderRole: uploaderRole,
+                    lockUntil: isTimeLocked ? String(lockUntil) : "",
+                    lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
                 }
             });
 
-            if (note || brand) {
+            if (note || brand || isTimeLocked) {
                 const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
                 try {
                     await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
                         note: note,
                         brand: brand,
-                        maxDownloads: maxdl ? parseInt(maxdl, 10) : null
+                        maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
+                        lockUntil: isTimeLocked ? lockUntil : null,
+                        lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
                     }), {
                         httpMetadata: { contentType: "application/json" }
                     });
@@ -739,6 +928,25 @@ export default {
 
             const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
             await multipartUpload.complete(parts);
+
+            try {
+              const headObj = await env.BUCKET.head(key);
+              if (headObj && headObj.customMetadata?.uploaderEmail && headObj.customMetadata.uploaderEmail !== "anonymous") {
+                const uEmail = headObj.customMetadata.uploaderEmail;
+                const dur = key.startsWith('1d/') ? '1d' : (key.startsWith('30d/') ? '30d' : (key.startsWith('burn/') ? 'burn' : 'permanent'));
+                await recordFileToUserHistory(uEmail, {
+                  key: key,
+                  name: headObj.customMetadata.originalName || key,
+                  size: headObj.size || 0,
+                  uploaded: (headObj.uploaded || new Date()).toISOString(),
+                  duration: dur,
+                  directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+                  pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(key)}`
+                });
+              }
+            } catch (histErr) {
+              console.warn("User history log error in multipart:", histErr);
+            }
 
             return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
         } catch (err) {
@@ -944,6 +1152,10 @@ export default {
                 }
             } catch (e) {}
 
+            const lockUntil = sidecarMeta.lockUntil || (meta.lockUntil ? parseInt(meta.lockUntil, 10) : null);
+            const isTimeLocked = Boolean(lockUntil && Date.now() < lockUntil);
+            const lockHint = safeDecode(sidecarMeta.lockHint || meta.lockHint || "");
+
             return new Response(JSON.stringify({
                 success: true,
                 key: key,
@@ -965,10 +1177,14 @@ export default {
                 hasPassword: hasPassword,
                 maxDownloads: maxDownloads,
                 note: note,
+                isTimeLocked: isTimeLocked,
+                lockUntil: lockUntil,
+                lockHint: lockHint,
+                serverTime: Date.now(),
                 views: parseInt(meta.views || "1", 10),
                 downloads: parseInt(meta.downloads || "0", 10),
-                directUrl: hasPassword ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
-                streamUrl: `${url.origin}/stream?key=${encodeURIComponent(key)}`
+                directUrl: (hasPassword || isTimeLocked) ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+                streamUrl: isTimeLocked ? null : `${url.origin}/stream?key=${encodeURIComponent(key)}`
             }), { 
                 headers: { 
                     "Content-Type": "application/json", 
@@ -997,6 +1213,11 @@ export default {
             const object = await env.BUCKET.get(key, options);
             if (!object) {
                 return new Response("Plik wygasł lub nie został znaleziony.", { status: 404, headers: corsHeaders });
+            }
+
+            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+            if (lockUntil && Date.now() < lockUntil) {
+                return new Response("Plik jest zablokowany Kapsułą Czasu do " + new Date(lockUntil).toLocaleString(), { status: 423, headers: corsHeaders });
             }
 
             const headers = new Headers();
@@ -1030,6 +1251,11 @@ export default {
             const object = await env.BUCKET.get(key);
             if (!object) {
                 return new Response("Plik wygasł lub został już zniszczony po pobraniu.", { status: 404, headers: corsHeaders });
+            }
+
+            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+            if (lockUntil && Date.now() < lockUntil) {
+                return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
             }
 
             const headers = new Headers();
@@ -1511,28 +1737,397 @@ export default {
     // =========================================================================
     const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; 
     
-    // 2. LISTA PLIKÓW DLA PANELU MODERACJI
+    // 2. LISTA PLIKÓW DLA ZALOGOWANEGO UŻYTKOWNIKA (MOJE PLIKI - TRWAŁA HISTORIA KONTA)
+    if (url.pathname === "/my-files" && request.method === "GET") {
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      if (!userEmail) {
+         return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      
+      const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const historyKey = `_user_history/${safeEmail}.json`;
+
+      let historyFiles = [];
+      const historyObj = await env.BUCKET.get(historyKey);
+      if (historyObj) {
+        try {
+          historyFiles = await historyObj.json();
+        } catch (_) {}
+      }
+      if (!Array.isArray(historyFiles)) historyFiles = [];
+
+      // Sprawdź także fizycznie obecne pliki w R2 (aby zaimportować pliki wrzucone dawniej)
+      const list = await env.BUCKET.list({ include: ['customMetadata'], limit: 1000 });
+      const activeKeys = new Set(list.objects.map(o => o.key));
+      const historyKeySet = new Set(historyFiles.map(h => h.key));
+
+      // Dołącz pliki z R2, których jeszcze nie było w trwałej historii
+      const currentR2Files = list.objects
+        .filter(obj => !obj.key.startsWith("_") && (obj.customMetadata?.uploaderEmail || "").toLowerCase().trim() === userEmail);
+      
+      currentR2Files.forEach(obj => {
+        if (!historyKeySet.has(obj.key)) {
+          const rawUploaded = obj.uploaded ? (typeof obj.uploaded.toISOString === 'function' ? obj.uploaded.toISOString() : obj.uploaded) : new Date().toISOString();
+          historyFiles.push({
+            name: obj.customMetadata?.originalName || obj.key,
+            size: obj.size,
+            uploaded: rawUploaded,
+            key: obj.key,
+            directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${obj.key}`,
+            duration: obj.key.startsWith('1d/') ? '1d' : (obj.key.startsWith('30d/') ? '30d' : (obj.key.startsWith('burn/') ? 'burn' : 'permanent'))
+          });
+          historyKeySet.add(obj.key);
+        }
+      });
+
+      // Sprawdź stan każdego pliku w historii (czy wciąż leży na dysku R2, czy wygasł)
+      const finalFiles = historyFiles.map(f => {
+        const stillExists = activeKeys.has(f.key);
+        return {
+          ...f,
+          existsOnDisk: stillExists,
+          status: stillExists ? 'active' : 'expired'
+        };
+      });
+
+      // Zapisz zaktualizowaną historię z powrotem do R2
+      try {
+        await env.BUCKET.put(historyKey, JSON.stringify(finalFiles.slice(0, 1000)), {
+          httpMetadata: { contentType: "application/json" }
+        });
+      } catch (_) {}
+
+      return new Response(JSON.stringify({ success: true, files: finalFiles }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // =========================================================================
+    // MODUŁ ALBUMÓW I KOLEKCJI (DROPSITE ALBUMS)
+    // =========================================================================
+    // A. Tworzenie nowego albumu
+    if (url.pathname === "/api/albums/create" && request.method === "POST") {
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, message: "Musisz być zalogowany, aby tworzyć albumy." }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      try {
+        const body = await request.json();
+        const { title, description, fileKeys, theme, password } = body;
+        if (!title || !Array.isArray(fileKeys) || fileKeys.length === 0) {
+          return new Response(JSON.stringify({ success: false, message: "Podaj tytuł oraz wybierz co najmniej 1 plik do albumu." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const albumId = `alb_${generateNanoId(8)}`;
+        const albumData = {
+          id: albumId,
+          title: title.trim(),
+          description: (description || "").trim(),
+          ownerEmail: userEmail,
+          created: new Date().toISOString(),
+          fileKeys: fileKeys,
+          theme: theme || 'gallery', // 'gallery' | 'cinematic' | 'list'
+          hasPassword: Boolean(password && password.trim()),
+          password: password ? password.trim() : ""
+        };
+
+        await env.BUCKET.put(`_albums/${albumId}.json`, JSON.stringify(albumData), {
+          httpMetadata: { contentType: "application/json" }
+        });
+
+        // Dodaj do listy albumów użytkownika
+        const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const userAlbumsKey = `_user_albums/${safeEmail}.json`;
+        let userAlbums = [];
+        const existing = await env.BUCKET.get(userAlbumsKey);
+        if (existing) {
+          try { userAlbums = await existing.json(); } catch (_) {}
+        }
+        if (!Array.isArray(userAlbums)) userAlbums = [];
+        userAlbums.unshift({
+          id: albumId,
+          title: albumData.title,
+          description: albumData.description,
+          created: albumData.created,
+          itemCount: fileKeys.length,
+          theme: albumData.theme,
+          hasPassword: albumData.hasPassword
+        });
+        await env.BUCKET.put(userAlbumsKey, JSON.stringify(userAlbums.slice(0, 200)), {
+          httpMetadata: { contentType: "application/json" }
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          albumId: albumId,
+          albumUrl: `https://dropsite.pl/?album=${albumId}`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd tworzenia albumu: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // B. Pobieranie listy albumów użytkownika
+    if (url.pathname === "/api/albums/my-albums" && request.method === "GET") {
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, albums: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const userAlbumsKey = `_user_albums/${safeEmail}.json`;
+      const existing = await env.BUCKET.get(userAlbumsKey);
+      let albums = [];
+      if (existing) {
+        try { albums = await existing.json(); } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true, albums }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // C. Pobieranie publicznego albumu (dla widoku galerii / odbiorcy)
+    if (url.pathname === "/api/albums/get" && (request.method === "GET" || request.method === "POST")) {
+      let albumId = url.searchParams.get("id");
+      let reqPassword = "";
+      if (request.method === "POST") {
+        try {
+          const b = await request.json();
+          if (b.id) albumId = b.id;
+          if (b.password) reqPassword = b.password;
+        } catch (_) {}
+      }
+      if (!albumId) {
+        return new Response(JSON.stringify({ success: false, message: "Brak identyfikatora albumu." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      const albumObj = await env.BUCKET.get(`_albums/${albumId}.json`);
+      if (!albumObj) {
+        return new Response(JSON.stringify({ success: false, message: "Album nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      const albumData = await albumObj.json();
+
+      if (albumData.hasPassword && albumData.password && albumData.password !== reqPassword) {
+        return new Response(JSON.stringify({
+          success: false,
+          locked: true,
+          title: albumData.title,
+          description: albumData.description,
+          message: "Album jest zabezpieczony hasłem."
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      const filesInfo = [];
+      for (const key of (albumData.fileKeys || [])) {
+        try {
+          const fHead = await env.BUCKET.head(key);
+          if (fHead) {
+            const rawName = fHead.customMetadata?.originalName || key;
+            const mime = fHead.httpMetadata?.contentType || getMimeType(rawName);
+            filesInfo.push({
+              key: key,
+              name: rawName,
+              size: fHead.size,
+              mime: mime,
+              directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+              pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(key)}`
+            });
+          }
+        } catch (_) {}
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        album: {
+          id: albumData.id,
+          title: albumData.title,
+          description: albumData.description,
+          created: albumData.created,
+          theme: albumData.theme,
+          ownerEmail: maskEmail(albumData.ownerEmail),
+          files: filesInfo
+        }
+      }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // D. Usuwanie albumu
+    if (url.pathname === "/api/albums/delete" && request.method === "DELETE") {
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      const isAdmin = request.headers.get("X-Admin-Secret") === ADMIN_SECRET;
+      const albumId = url.searchParams.get("id");
+
+      if (!albumId) {
+        return new Response(JSON.stringify({ success: false, message: "Brak albumId" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      const albumObj = await env.BUCKET.get(`_albums/${albumId}.json`);
+      if (albumObj) {
+        const albumData = await albumObj.json();
+        if (!isAdmin && albumData.ownerEmail && albumData.ownerEmail !== userEmail) {
+          return new Response(JSON.stringify({ success: false, message: "Brak uprawnień do usunięcia tego albumu." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        await env.BUCKET.delete(`_albums/${albumId}.json`);
+      }
+
+      if (userEmail) {
+        const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const userAlbumsKey = `_user_albums/${safeEmail}.json`;
+        const existing = await env.BUCKET.get(userAlbumsKey);
+        if (existing) {
+          try {
+            let albums = await existing.json();
+            albums = albums.filter(a => a.id !== albumId);
+            await env.BUCKET.put(userAlbumsKey, JSON.stringify(albums), { httpMetadata: { contentType: "application/json" } });
+          } catch (_) {}
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // 2b. LISTA PLIKÓW DLA PANELU MODERACJI (Z INDEKSACJĄ AUTORÓW & METADANYCH)
     if (url.pathname === "/list" && request.method === "GET") {
       if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
           return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-      const list = await env.BUCKET.list();
+      const list = await env.BUCKET.list({ include: ['customMetadata'], limit: 1000 });
       const files = list.objects
-        .filter(obj => !obj.key.startsWith("_system/"))
-        .map(obj => ({ name: obj.key, size: obj.size, uploaded: obj.uploaded }));
+        .filter(obj => !obj.key.startsWith("_"))
+        .map(obj => ({
+          name: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded,
+          originalName: obj.customMetadata?.originalName || obj.key,
+          uploaderEmail: (obj.customMetadata?.uploaderEmail && obj.customMetadata.uploaderEmail !== "anonymous") ? obj.customMetadata.uploaderEmail : null,
+          uploaderRole: obj.customMetadata?.uploaderRole || (obj.customMetadata?.isPro === "true" ? "pro" : "guest"),
+          isPro: obj.customMetadata?.isPro === "true",
+          views: parseInt(obj.customMetadata?.views || "0", 10),
+          downloads: parseInt(obj.customMetadata?.downloads || "0", 10)
+        }));
       return new Response(JSON.stringify({ files }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // 3. USUWANIE PLIKÓW Z PANELU MODERACJI
-    if (url.pathname.startsWith("/delete/") && request.method === "DELETE") {
+    // 2b. HURTOWE USUWANIE WSZYSTKICH PLIKÓW DANEGO UŻYTKOWNIKA
+    if (url.pathname === "/admin/user-files/delete-all" && request.method === "POST") {
       if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
           return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
+      try {
+        const body = await request.json();
+        const targetEmail = (body.email || "").toLowerCase().trim();
+        if (!targetEmail) {
+          return new Response(JSON.stringify({ success: false, message: "Brak adresu email użytkownika" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        const list = await env.BUCKET.list({ include: ['customMetadata'], limit: 1000 });
+        const userObjects = list.objects.filter(obj => (obj.customMetadata?.uploaderEmail || "").toLowerCase().trim() === targetEmail);
+        let deletedCount = 0;
+        for (const obj of userObjects) {
+          await env.BUCKET.delete(obj.key);
+          const safeKey = encodeURIComponent(obj.key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+          try {
+            await Promise.all([
+              env.BUCKET.delete(`_system/meta_${safeKey}.json`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
+              env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
+            ]);
+          } catch (_) {}
+          deletedCount++;
+        }
+        return new Response(JSON.stringify({ success: true, deletedCount }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // 2c. NADAWANIE / COFANIE DOSTĘPU PRO PRZEZ ADMINISTRATORA (BEZPOŚREDNI ZAPIS W R2)
+    if (url.pathname === "/admin/user-pro/toggle" && request.method === "POST") {
+      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
+
+      try {
+        const body = await request.json();
+        const targetEmail = (body.email || "").toLowerCase().trim();
+        const action = body.action || "grant"; // "grant" | "revoke"
+        const durationDays = parseInt(body.days || "30", 10);
+
+        if (!targetEmail) {
+          return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        const userEmailKey = `_user_licenses/${targetEmail.replace(/[^a-zA-Z0-9_.-]/g, '_')}.json`;
+        if (action === "grant") {
+          let expiresAt = null;
+          if (durationDays > 0 && durationDays < 9999) {
+            const d = new Date();
+            d.setDate(d.getDate() + durationDays);
+            expiresAt = d.toISOString();
+          }
+          const adminGrantedKey = `DS-PRO-ADMIN-${Date.now()}`;
+          const payload = JSON.stringify({
+            key: adminGrantedKey,
+            ownerEmail: targetEmail,
+            activatedAt: new Date().toISOString(),
+            expiresAt: expiresAt,
+            grantedBy: "admin"
+          });
+          await env.BUCKET.put(userEmailKey, payload, {
+            httpMetadata: { contentType: "application/json" }
+          });
+          return new Response(JSON.stringify({ success: true, message: `Nadano dostęp PRO w R2 dla ${targetEmail}`, expiresAt }), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        } else {
+          await env.BUCKET.delete(userEmailKey);
+          return new Response(JSON.stringify({ success: true, message: `Cofnięto dostęp PRO w R2 dla ${targetEmail}` }), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // 3. USUWANIE PLIKÓW Z PANELU MODERACJI I PANELU UŻYTKOWNIKA
+    if (url.pathname.startsWith("/delete/") && request.method === "DELETE") {
+      const isAdmin = request.headers.get("X-Admin-Secret") === ADMIN_SECRET;
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+
+      if (!isAdmin && !userEmail) {
+          return new Response(JSON.stringify({ success: false, message: "Brak dostępu." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
       const key = decodeURIComponent(url.pathname.split("/delete/")[1]);
+
+      // Jeśli operację wykonuje zalogowany użytkownik (nie admin)
+      if (!isAdmin && userEmail) {
+        const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const historyKey = `_user_history/${safeEmail}.json`;
+        const historyObj = await env.BUCKET.get(historyKey);
+        if (historyObj) {
+          try {
+            let hist = await historyObj.json();
+            hist = hist.filter(h => h.key !== key && h.name !== key);
+            await env.BUCKET.put(historyKey, JSON.stringify(hist), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          } catch (_) {}
+        }
+      }
+
+      // Usuń fizyczny plik z R2 i powiązane metadane systemowe
       await env.BUCKET.delete(key);
       const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
       try {
@@ -1608,7 +2203,7 @@ export default {
 
       let totalUsedBytes = 0;
       let categories = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
-      const MAX_BYTES = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776; // 1 TB domyślnie
+      const MAX_BYTES = await getMaxStorageBytes();
       
       try {
           const list = await env.BUCKET.list();
@@ -1644,6 +2239,172 @@ export default {
       } catch (err) {
           return new Response(JSON.stringify({ error: "Błąd zliczania dysku", msg: err.message }), { status: 500, headers: corsHeaders });
       }
+    }
+
+    // =========================================================================
+    // ENDPOINTY: DZIENNIK SESJI I TELEMETRIA NA ŻYWO (LIVE VISITOR TRACKER)
+    // =========================================================================
+    function getCountryNameByCode(code) {
+      const map = {
+        'PL': 'Poland', 'DE': 'Germany', 'US': 'United States', 'GB': 'United Kingdom',
+        'FR': 'France', 'UA': 'Ukraine', 'NL': 'Netherlands', 'IT': 'Italy',
+        'ES': 'Spain', 'CZ': 'Czech Republic', 'SK': 'Slovakia', 'AT': 'Austria',
+        'CH': 'Switzerland', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark',
+        'FI': 'Finland', 'IE': 'Ireland', 'CA': 'Canada', 'AU': 'Australia',
+        'BR': 'Brazil', 'JP': 'Japan', 'KR': 'South Korea', 'IN': 'India'
+      };
+      return map[(code || '').toUpperCase()] || code || 'Nieznany kraj';
+    }
+
+    if (url.pathname === "/api/telemetry/ping" && request.method === "POST") {
+      try {
+        let body = {};
+        try {
+          body = await request.json();
+        } catch(e) {}
+
+        const sessionId = (body.sessionId || "").trim();
+        if (!sessionId) {
+          return new Response(JSON.stringify({ success: false, message: "Brak sessionId" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("x-real-ip") || "127.0.0.1";
+        const country = request.cf?.country || "PL";
+        const city = request.cf?.city || "Radom";
+        const region = request.cf?.region || "";
+        const isp = request.cf?.asOrganization || request.cf?.asn || "Multimedia Polska Sp. z o.o.";
+
+        const now = Date.now();
+        const sessionRecord = {
+          sessionId: sessionId,
+          visitorId: body.visitorId || sessionId,
+          ip: ip,
+          country: country,
+          countryName: getCountryNameByCode(country),
+          city: city,
+          region: region,
+          isp: isp,
+          os: body.os || "Windows PC",
+          browser: body.browser || "Google Chrome",
+          deviceType: body.deviceType || (/(mobile|android|iphone|ipad)/i.test(body.os || '') ? 'mobile' : 'pc'),
+          gpu: body.gpu || "AMD Radeon RX 7700 XT",
+          battery: body.battery || "100%",
+          screen: body.screen || "3840x2160",
+          viewport: body.viewport || "2560x1311",
+          dpr: body.dpr || 1,
+          colorDepth: body.colorDepth || 24,
+          timezone: body.timezone || "Europe/Warsaw",
+          language: body.language || "pl-PL",
+          referrer: body.referrer || "Direct / Bookmark",
+          utmSource: body.utmSource || "direct",
+          currentPage: body.currentPage || "/",
+          flow: Array.isArray(body.flow) ? body.flow : [{ path: body.currentPage || "/", duration: 1, current: true }],
+          sessionStart: body.sessionStart || now,
+          lastActive: now,
+          userEmail: (body.userEmail || "").toLowerCase().trim() || null,
+          isPro: body.isPro === true,
+          role: body.role || (body.userEmail ? "free" : "guest")
+        };
+
+        if (env.BUCKET) {
+          const indexKey = `_telemetry/active_index.json`;
+          let sessions = [];
+          try {
+            const indexObj = await env.BUCKET.get(indexKey);
+            if (indexObj) {
+              sessions = await indexObj.json();
+            }
+          } catch(e) {}
+
+          const existingIdx = sessions.findIndex(s => s.sessionId === sessionId);
+          if (existingIdx !== -1) {
+            sessions[existingIdx] = {
+              ...sessions[existingIdx],
+              ...sessionRecord,
+              userEmail: sessionRecord.userEmail || sessions[existingIdx].userEmail || null
+            };
+          } else {
+            sessions.unshift(sessionRecord);
+          }
+
+          sessions.sort((a, b) => b.lastActive - a.lastActive);
+          if (sessions.length > 100) sessions = sessions.slice(0, 100);
+
+          await env.BUCKET.put(indexKey, JSON.stringify(sessions), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    if (url.pathname === "/admin/telemetry" && request.method === "GET") {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const reqSecret = (request.headers.get("X-Admin-Secret") || url.searchParams.get("secret") || "").trim().toUpperCase();
+      if (reqSecret !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      let sessions = [];
+      if (env.BUCKET) {
+        try {
+          const indexObj = await env.BUCKET.get(`_telemetry/active_index.json`);
+          if (indexObj) {
+            sessions = await indexObj.json();
+          }
+        } catch(e) {}
+      }
+
+      const now = Date.now();
+      let onlineCount = 0;
+      sessions.forEach(s => {
+        const isOnline = (now - s.lastActive) < 60000;
+        s.online = isOnline;
+        if (isOnline) onlineCount++;
+        s.durationSec = Math.max(0, Math.round((s.lastActive - s.sessionStart) / 1000));
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        total: sessions.length,
+        onlineCount: onlineCount,
+        sessions: sessions
+      }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    if (url.pathname === "/admin/telemetry/clear" && request.method === "POST") {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const reqSecret = (request.headers.get("X-Admin-Secret") || "").trim().toUpperCase();
+      if (reqSecret !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      if (env.BUCKET) {
+        try {
+          await env.BUCKET.put(`_telemetry/active_index.json`, JSON.stringify([]));
+        } catch(e) {}
+      }
+      return new Response(JSON.stringify({ success: true, message: "Wyczyszczono telemetrię." }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
 
     // 6. ANALITYKA I ZARZĄDZANIE DLA ADMIN SUPER-DASHBOARD
@@ -1754,6 +2515,210 @@ export default {
       }
     }
 
+    // --- ZARZĄDZANIE LIMITAMI POJEMNOŚCI DYSKU DLA ADMINISTRATORA ---
+    if (url.pathname === "/admin/quota" && request.method === "GET") {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+      if ((request.headers.get("X-Admin-Secret") || "").trim() !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      let quotaGb = 1000;
+      if (env.BUCKET) {
+        try {
+          const qObj = await env.BUCKET.get("_system/quota.json");
+          if (qObj) {
+            const data = await qObj.json();
+            if (data && data.quotaGb !== undefined) quotaGb = parseInt(data.quotaGb, 10);
+          }
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true, quotaGb }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    if (url.pathname === "/admin/quota" && request.method === "POST") {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+      if ((request.headers.get("X-Admin-Secret") || "").trim() !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      try {
+        const body = await request.json();
+        const quotaGb = parseInt(body.quotaGb, 10);
+        if (isNaN(quotaGb)) {
+          return new Response(JSON.stringify({ success: false, message: "Nieprawidłowa wartość limitu." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+        if (env.BUCKET) {
+          await env.BUCKET.put("_system/quota.json", JSON.stringify({ quotaGb, updatedAt: new Date().toISOString() }), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+        return new Response(JSON.stringify({ success: true, quotaGb, message: "Limit pomyślnie zaktualizowany." }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // =========================================================================
+    // ENDPOINTY SYGNALIZACJI WEBRTC: DROPSITE BEAM (TRANSFER P2P)
+    // =========================================================================
+    if (url.pathname === "/api/beam/session" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        let pin = "";
+        for (let i = 0; i < 6; i++) {
+          pin += Math.floor(Math.random() * 10).toString();
+        }
+        const sessionKey = `_beam/${pin}.json`;
+        const sessionData = {
+          pin: pin,
+          created: Date.now(),
+          fileName: body.fileName || "plik",
+          fileSize: body.fileSize || 0,
+          fileType: body.fileType || "application/octet-stream",
+          senderOffer: null,
+          receiverAnswer: null,
+          senderCandidates: [],
+          receiverCandidates: [],
+          status: "waiting"
+        };
+        if (env.BUCKET) {
+          await env.BUCKET.put(sessionKey, JSON.stringify(sessionData), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+        return new Response(JSON.stringify({ success: true, pin, session: sessionData }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    if (url.pathname === "/api/beam/session" && request.method === "GET") {
+      const pin = (url.searchParams.get("pin") || "").trim();
+      if (!pin || pin.length !== 6 || !env.BUCKET) {
+        return new Response(JSON.stringify({ success: false, message: "Nieprawidłowy kod PIN sesji Beam." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      try {
+        const sObj = await env.BUCKET.get(`_beam/${pin}.json`);
+        if (!sObj) {
+          return new Response(JSON.stringify({ success: false, message: "Sesja Beam nie istnieje lub wygasła." }), {
+            status: 404,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+        const session = await sObj.json();
+        return new Response(JSON.stringify({ success: true, session }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    if (url.pathname === "/api/beam/signal" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const pin = (body.pin || "").trim();
+        const role = body.role; // "sender" | "receiver"
+        const type = body.type; // "offer" | "answer" | "candidate" | "poll"
+
+        if (!pin || pin.length !== 6 || !env.BUCKET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak kodu PIN sesji." }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        const sessionKey = `_beam/${pin}.json`;
+        const sObj = await env.BUCKET.get(sessionKey);
+        if (!sObj) {
+          return new Response(JSON.stringify({ success: false, message: "Sesja Beam nie istnieje." }), {
+            status: 404,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        let session = await sObj.json();
+
+        if (type === "offer" && role === "sender") {
+          session.senderOffer = body.data;
+          session.status = "offered";
+          if (Array.isArray(body.candidates)) {
+            session.senderCandidates = body.candidates;
+          }
+        } else if (type === "answer" && role === "receiver") {
+          session.receiverAnswer = body.data;
+          session.status = "connected";
+          if (Array.isArray(body.candidates)) {
+            session.receiverCandidates = body.candidates;
+          }
+        } else if (type === "candidate") {
+          if (role === "sender") {
+            session.senderCandidates = session.senderCandidates || [];
+            session.senderCandidates.push(body.data);
+          } else if (role === "receiver") {
+            session.receiverCandidates = session.receiverCandidates || [];
+            session.receiverCandidates.push(body.data);
+          }
+        }
+
+        await env.BUCKET.put(sessionKey, JSON.stringify(session), {
+          httpMetadata: { contentType: "application/json" }
+        });
+
+        return new Response(JSON.stringify({
+          success: true,
+          status: session.status,
+          senderOffer: session.senderOffer,
+          receiverAnswer: session.receiverAnswer,
+          peerCandidates: role === "sender" ? session.receiverCandidates : session.senderCandidates
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    if (url.pathname === "/api/beam/session" && request.method === "DELETE") {
+      const pin = (url.searchParams.get("pin") || "").trim();
+      if (pin && env.BUCKET) {
+        try {
+          await env.BUCKET.delete(`_beam/${pin}.json`);
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
     return new Response("Not found", { status: 404, headers: corsHeaders });
   },
 
@@ -1772,6 +2737,10 @@ export default {
 
         for (const obj of list.objects) {
             if (obj.key.startsWith("_system/")) continue;
+            if (obj.key.startsWith("_beam/") && ageMs > 15 * 60 * 1000) {
+                await env.BUCKET.delete(obj.key);
+                continue;
+            }
             const uploadTime = new Date(obj.uploaded).getTime();
             const ageMs = now - uploadTime;
 

@@ -1,0 +1,17 @@
+# Cloudflare Pages SPA Rewrites for Dropsite SEO & Tool Landing Pages
+/podpisz-pdf            /index.html 200
+/polacz-pdf             /index.html 200
+/kompresor-pdf          /index.html 200
+/kompresuj-pdf          /index.html 200
+/konwertuj-pdf          /index.html 200
+/cenzura-pdf            /index.html 200
+/narzedzia              /index.html 200
+/tools                  /index.html 200
+/cennik                 /index.html 200
+/kontakt                /index.html 200
+/funkcje                /index.html 200
+/regulamin              /index.html 200
+/polityka-prywatnosci   /index.html 200
+/faq                    /index.html 200
+/trust                  /index.html 200
+/beam                   /index.html 200

@@ -1,23 +1,284 @@
-/* --- Główne Panele --- */
+/* ==========================================================================
+   DROPSITE FLUID CYBER-MINT & NEON-CYAN LIQUID WAVE SYSTEM (Siri-Style)
+   ========================================================================== */
+
+/* 1. Rotacje wstęg energetycznych (Wysoka dynamika i prędkość) */
+@keyframes siriStreamClockwise {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes siriStreamCounterClockwise {
+    0% {
+        transform: rotate(360deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+/* 2. Organiczne płynne fale plazmy (Metamorficzny ruch cieczy) */
+@keyframes plasmaMorph1 {
+    0%, 100% {
+        border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%;
+        transform: translate3d(28px, -20px, 0) scale(1.22) rotate(120deg);
+    }
+    66% {
+        border-radius: 30% 70% 40% 60% / 65% 35% 65% 35%;
+        transform: translate3d(-24px, 18px, 0) scale(0.9) rotate(240deg);
+    }
+}
+
+@keyframes plasmaMorph2 {
+    0%, 100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        border-radius: 35% 65% 60% 40% / 50% 45% 55% 50%;
+        transform: translate3d(-30px, 22px, 0) scale(1.18) rotate(-110deg);
+    }
+    66% {
+        border-radius: 50% 50% 35% 65% / 40% 65% 35% 60%;
+        transform: translate3d(20px, -24px, 0) scale(0.88) rotate(-220deg);
+    }
+}
+
+@keyframes plasmaMorph3 {
+    0%, 100% {
+        border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    50% {
+        border-radius: 65% 35% 60% 40% / 40% 60% 40% 60%;
+        transform: translate3d(24px, 18px, 0) scale(1.25) rotate(170deg);
+    }
+}
+
+@keyframes plasmaMorph4 {
+    0%, 100% {
+        border-radius: 40% 60% 55% 45% / 45% 55% 45% 55%;
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    }
+    50% {
+        border-radius: 55% 45% 40% 60% / 60% 40% 60% 40%;
+        transform: translate3d(-22px, -18px, 0) scale(1.2) rotate(-150deg);
+    }
+}
+
+/* 3. Pulsująca fala rezonansowa fali dźwiękowo-świetlnej */
+@keyframes siriWaveRipple {
+    0% {
+        opacity: 0.8;
+        transform: scale(0.985);
+        border-color: rgba(0, 240, 255, 0.7);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(52, 211, 153, 0.35);
+    }
+    50% {
+        opacity: 0.45;
+        transform: scale(1.04);
+        border-color: rgba(52, 211, 153, 0.5);
+        box-shadow: 0 0 45px rgba(52, 211, 153, 0.55), inset 0 0 20px rgba(0, 240, 255, 0.25);
+    }
+    100% {
+        opacity: 0.8;
+        transform: scale(0.985);
+        border-color: rgba(0, 240, 255, 0.7);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(52, 211, 153, 0.35);
+    }
+}
+
+/* Główny kontener ramy świetlnej */
+.siri-glow-frame {
+    position: relative;
+    width: 100%;
+    max-width: min(630px, 94vw);
+    margin: 0 auto;
+    border-radius: 28px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 1. Organiczne Chmury Płynnej Plazmy (Fluid Plasma Blobs - tło) */
+.siri-fluid-plasma {
+    position: absolute;
+    inset: -28px;
+    pointer-events: none;
+    z-index: 0;
+    overflow: visible;
+    filter: blur(32px);
+    opacity: 0.85;
+    transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.plasma-blob {
+    position: absolute;
+    width: 60%;
+    height: 65%;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.blob-mint {
+    top: -12%;
+    left: -10%;
+    background: radial-gradient(circle, #34D399 0%, rgba(52, 211, 153, 0.5) 45%, transparent 75%);
+    animation: plasmaMorph1 5.2s ease-in-out infinite alternate;
+}
+
+.blob-cyan {
+    top: -14%;
+    right: -10%;
+    background: radial-gradient(circle, #00F0FF 0%, rgba(0, 240, 255, 0.55) 45%, transparent 75%);
+    animation: plasmaMorph2 6.2s ease-in-out infinite alternate;
+}
+
+.blob-emerald {
+    bottom: -16%;
+    right: 2%;
+    background: radial-gradient(circle, #10B981 0%, rgba(16, 185, 129, 0.55) 45%, transparent 75%);
+    animation: plasmaMorph3 6.8s ease-in-out infinite alternate;
+}
+
+.blob-sky {
+    bottom: -14%;
+    left: 0%;
+    background: radial-gradient(circle, #38BDF8 0%, rgba(56, 189, 248, 0.55) 45%, transparent 75%);
+    animation: plasmaMorph4 5.8s ease-in-out infinite alternate;
+}
+
+/* 2. Pulsująca Fala Rezonansowa (Ripple Halo) */
+.siri-wave-ripple {
+    position: absolute;
+    inset: -7px;
+    border-radius: 34px;
+    border: 1.8px solid rgba(0, 240, 255, 0.55);
+    pointer-events: none;
+    z-index: 1;
+    animation: siriWaveRipple 3.6s ease-in-out infinite;
+}
+
+/* 3. Opływowa Wstęga Światła (Dual Fluid Stream Rim - obwód kapsułki) */
+.siri-wave-stream {
+    position: absolute;
+    inset: -3.5px;
+    border-radius: 30px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+    box-shadow: 
+        0 0 28px rgba(0, 240, 255, 0.4),
+        0 0 50px rgba(52, 211, 153, 0.3);
+}
+
+.stream-element {
+    position: absolute;
+    width: 250%;
+    height: 250%;
+    top: -75%;
+    left: -75%;
+    border-radius: 50%;
+    transform-origin: center center;
+}
+
+/* Szybka, jaskrawa fala zegarowa - neon cyan i cyber mint z białym jądrem świetlnym */
+.stream-cw {
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(0, 240, 255, 0.95) 35deg,
+        #FFFFFF 65deg,
+        rgba(52, 211, 153, 0.98) 95deg,
+        rgba(56, 189, 248, 0.75) 125deg,
+        transparent 160deg,
+        transparent 180deg,
+        rgba(56, 189, 248, 0.8) 215deg,
+        #FFFFFF 245deg,
+        rgba(52, 211, 153, 0.98) 275deg,
+        rgba(0, 240, 255, 0.9) 305deg,
+        transparent 340deg,
+        transparent 360deg
+    );
+    animation: siriStreamClockwise 3s linear infinite;
+    filter: drop-shadow(0 0 10px #00F0FF) drop-shadow(0 0 16px #34D399);
+}
+
+/* Przeciwbieżna fala harmoniczna - szmaragd i błękit oceaniczny */
+.stream-ccw {
+    background: conic-gradient(
+        from 90deg,
+        transparent 0deg,
+        rgba(52, 211, 153, 0.75) 50deg,
+        rgba(0, 240, 255, 0.85) 100deg,
+        transparent 150deg,
+        transparent 180deg,
+        rgba(16, 185, 129, 0.8) 230deg,
+        rgba(56, 189, 248, 0.8) 280deg,
+        transparent 330deg,
+        transparent 360deg
+    );
+    animation: siriStreamCounterClockwise 4.8s linear infinite;
+    mix-blend-mode: screen;
+    opacity: 0.85;
+}
+
+/* Interaktywny stan po najechaniu lub przeciąganiu plików */
+.siri-glow-frame:hover .siri-fluid-plasma,
+.siri-glow-frame:focus-within .siri-fluid-plasma {
+    opacity: 1;
+    filter: blur(26px);
+}
+
+.siri-glow-frame:hover .stream-cw {
+    animation-duration: 1.8s;
+    filter: drop-shadow(0 0 14px #00F0FF) drop-shadow(0 0 24px #34D399);
+}
+
+.siri-glow-frame:hover .stream-ccw {
+    animation-duration: 2.8s;
+}
+
+.siri-glow-frame:hover .siri-wave-ripple {
+    animation-duration: 2s;
+    border-color: rgba(0, 240, 255, 0.85);
+    box-shadow: 0 0 50px rgba(0, 240, 255, 0.7), inset 0 0 24px rgba(52, 211, 153, 0.5);
+}
+
+/* --- Główny Panel Kapsułki (The Glass Capsule) --- */
 .upload-container {
-    background: var(--surface-glass-card);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.6);
-    box-shadow: var(--shadow-volumetric-card);
+    background: linear-gradient(175deg, rgba(14, 21, 33, 0.94) 0%, rgba(9, 13, 22, 0.98) 100%);
+    backdrop-filter: blur(36px);
+    -webkit-backdrop-filter: blur(36px);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    box-shadow: 
+        0 26px 70px -10px rgba(0, 0, 0, 0.82), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
     border-radius: var(--radius-lg);
-    padding: 40px 32px;
+    padding: clamp(26px, 3.4vh, 38px) clamp(18px, 2.5vw, 32px);
     width: 100%;
     box-sizing: border-box;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+    transition: var(--transition-smooth);
     position: relative;
+    z-index: 2;
+    overflow: hidden;
 }
 
 .upload-container:hover {
-    box-shadow: var(--shadow-volumetric-card-hover);
-    border-top-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 32px 85px -10px rgba(0, 0, 0, 0.88), 
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* --- Nagłówki --- */
@@ -26,9 +287,11 @@
     margin-bottom: 24px;
 }
 
-.upload-header h1 {
+.upload-header h1,
+.upload-header h2,
+.upload-header .upload-title {
     margin: 0;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, #FFFFFF 0%, #B0B5C0 100%);
@@ -111,43 +374,35 @@
     margin: 0;
 }
 
-/* --- Dropzone (oryginalne) --- */
+/* --- Dropzone (Interactive Tactile Glass) --- */
 .dropzone {
     position: relative;
-    border: 2px dashed rgba(196, 231, 212, 0.45);
-    border-radius: var(--radius-md);
-    padding: 40px 20px;
-    background: var(--surface-recessed);
-    box-shadow: var(--shadow-sunken-stage), 0 0 20px rgba(196, 231, 212, 0.08);
+    border: 2px dashed rgba(52, 211, 153, 0.45);
+    border-radius: 18px;
+    padding: clamp(26px, 3vh, 36px) 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(52, 211, 153, 0.05) 50%, rgba(56, 189, 248, 0.04) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    transition: var(--transition-smooth);
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     overflow: hidden;
-    min-height: 180px;
+    min-height: 175px;
+    box-shadow: inset 0 1px 6px rgba(255, 255, 255, 0.08), 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .dropzone::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at 50% 30%, rgba(196, 231, 212, 0.12) 0%, transparent 70%);
-    opacity: 0.6;
-    transition: opacity 0.3s;
-    pointer-events: none;
+    display: none;
 }
 
-.dropzone:hover::before, .dropzone.active::before { opacity: 1; }
-
 .dropzone:hover, .dropzone.active {
-    border-color: #C4E7D4;
-    background: radial-gradient(ellipse at 50% 0%, rgba(196, 231, 212, 0.16) 0%, rgba(8, 11, 16, 0.96) 100%);
-    box-shadow: inset 0 3px 20px rgba(0, 0, 0, 0.9), inset 0 0 35px var(--accent-glow), 0 0 30px rgba(196, 231, 212, 0.3), 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: #34D399;
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.12) 0%, rgba(56, 189, 248, 0.09) 100%);
     transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(52, 211, 153, 0.25), inset 0 1px 10px rgba(255, 255, 255, 0.15);
 }
 
 .dropzone.active { animation: dropPulse 0.6s ease-in-out; }
@@ -158,42 +413,76 @@
     100% { transform: scale(1); }
 }
 
+/* Iconic Glowing Squircle Badge */
+.upload-icon-bubble {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(56, 189, 248, 0.2) 100%);
+    border: 1px solid rgba(110, 231, 183, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(52, 211, 153, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    margin-bottom: 4px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropzone:hover .upload-icon-bubble,
+.dropzone.active .upload-icon-bubble {
+    transform: translateY(-3px) scale(1.08);
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.35) 0%, rgba(56, 189, 248, 0.3) 100%);
+    border-color: #34D399;
+    box-shadow: 0 10px 32px rgba(52, 211, 153, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
 .upload-icon {
-    color: #C4E7D4;
+    color: #34D399;
     transition: var(--transition-smooth);
-    filter: drop-shadow(0 0 12px rgba(196, 231, 212, 0.4));
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.5));
 }
 
 .dropzone:hover .upload-icon, .dropzone.active .upload-icon {
     color: #FFFFFF;
-    transform: scale(1.1) rotate(5deg);
-    filter: drop-shadow(0 0 18px rgba(196, 231, 212, 0.8));
+    filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.85));
 }
 
-.drop-text { font-size: 15px; font-weight: 600; color: var(--text-main); }
-.drop-subtext { font-size: 13px; color: var(--text-muted); }
+.drop-text { 
+    font-size: 16px; 
+    font-weight: 700; 
+    color: #FFFFFF; 
+    letter-spacing: -0.2px;
+}
+
+.drop-subtext { 
+    font-size: 12.5px; 
+    color: #CBD5E1; 
+    font-weight: 500;
+}
 
 .btn-select {
-    background: rgba(196, 231, 212, 0.18);
-    border: 1px solid rgba(196, 231, 212, 0.35);
-    color: #C4E7D4;
-    border-radius: var(--radius-sm);
-    padding: 8px 18px;
-    font-size: 12px;
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #34D399 0%, #38BDF8 100%);
+    color: #04160E;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 22px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
     font-family: inherit;
     cursor: pointer;
-    margin-top: 10px;
-    box-shadow: 0 0 12px rgba(196, 231, 212, 0.15);
-    transition: var(--transition-smooth);
+    margin-top: 6px;
+    box-shadow: 0 4px 18px rgba(52, 211, 153, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none; /* Kliknięcie w przycisk jest jednolicie obsługiwane przez kontener dropzone */
 }
 
 .dropzone:hover .btn-select {
-    background: #C4E7D4;
-    border-color: #C4E7D4;
-    color: #090A0F;
-    box-shadow: 0 4px 16px rgba(196, 231, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transform: scale(1.06);
+    box-shadow: 0 6px 24px rgba(52, 211, 153, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 input[type='file'] {
@@ -297,13 +586,64 @@ input[type='file'] {
 }
 
 .options-radios {
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.25);
+    grid-template-columns: 0.82fr 1.18fr 0.82fr 1.18fr;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.32);
     padding: 4px;
     border-radius: var(--radius-md);
     border: 1px solid var(--panel-border);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
+    isolation: isolate;
+}
+
+/* PŁYNNY ŚLIZGACZ (AESTHETIC SPRING GLIDER) */
+.options-glider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 8px;
+    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+                width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, width, height;
+}
+
+.options-glider::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 65%);
+    pointer-events: none;
+}
+
+/* Tryb 1 Dzień - Cyber Emerald */
+.options-glider.glider-mode-1d {
+    background: rgba(196, 231, 212, 0.16);
+    border: 1px solid rgba(196, 231, 212, 0.4);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 16px rgba(196, 231, 212, 0.22);
+}
+
+/* Tryb Burn After Read - Ogień / Płomień */
+.options-glider.glider-mode-burn {
+    background: linear-gradient(135deg, rgba(255, 68, 57, 0.35) 0%, rgba(255, 140, 0, 0.25) 100%);
+    border: 1px solid rgba(255, 68, 57, 0.55);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 0 22px rgba(255, 68, 57, 0.45);
+}
+
+/* Tryb 30 Dni & Bezterminowo - Złoty PRO */
+.options-glider.glider-mode-30d,
+.options-glider.glider-mode-permanent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.26) 0%, rgba(217, 119, 6, 0.18) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 18px rgba(245, 158, 11, 0.3);
 }
 
 .option-item {
@@ -311,6 +651,7 @@ input[type='file'] {
     cursor: pointer;
     margin: 0;
     display: flex;
+    z-index: 2;
 }
 
 .option-item input {
@@ -325,34 +666,51 @@ input[type='file'] {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 4px;
     width: 100%;
-    padding: 9px 4px;
-    font-size: 12px;
+    padding: 8px 6px;
+    font-size: 11.5px;
+    letter-spacing: -0.2px;
     font-weight: 600;
     color: var(--text-muted);
     border-radius: 8px;
-    transition: var(--transition-smooth);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: color 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
     user-select: none;
+    box-sizing: border-box;
+}
+
+.option-item > span .badge-pro-pill {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+    margin-left: 2px !important;
+    letter-spacing: 0.2px !important;
+    border-radius: 4px !important;
 }
 
 .option-item > input:checked + span {
-    background: rgba(255, 255, 255, 0.12);
-    color: #FFFFFF;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.option-item-burn {
-    position: relative;
-    overflow: visible;
+    color: #C4E7D4;
+    font-weight: 700;
+    transform: scale(1.02);
 }
 
 .option-item-burn > input:checked + span {
-    background: linear-gradient(135deg, rgba(255, 68, 57, 0.28) 0%, rgba(255, 140, 0, 0.22) 100%) !important;
     color: #FF8E72 !important;
-    border: 1px solid rgba(255, 68, 57, 0.45);
-    box-shadow: 0 0 14px rgba(255, 68, 57, 0.35) !important;
+}
+
+.option-item-pro > input:checked + span {
+    color: #FCD34D !important;
+}
+
+.option-item:hover > input:not(:checked) + span {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.option-item:active > span {
+    transform: scale(0.95);
 }
 
 .burn-icon-svg {
@@ -441,67 +799,248 @@ input[type='file'] {
     }
 }
 
-/* --- Główny Przycisk --- */
+/* --- Główny Przycisk (Ożywiony Przycisk Upload w stylu Dropsite Cyber-Vault) --- */
 .btn-primary {
     box-sizing: border-box;
     margin-top: 18px;
-    background: linear-gradient(135deg, #C4E7D4 0%, #A8DABF 100%);
-    color: #090A0F;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-top: 1px solid rgba(255, 255, 255, 0.8);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    padding: 18px 24px;
+    position: relative;
     width: 100%;
+    padding: 17px 24px;
     border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    
+    /* Energetyczny, żywy gradient szmaragd-mięta-cyjan */
+    background: linear-gradient(125deg, #10B981 0%, #34D399 35%, #2DD4BF 68%, #38BDF8 100%);
+    background-size: 220% 220%;
+    
+    color: #03140C;
     font-size: 16px;
     font-weight: 800;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.35px;
     font-family: inherit;
     cursor: pointer;
-    transition: var(--transition-smooth);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 10px 28px -4px rgba(196, 231, 212, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
-    position: relative;
+    user-select: none;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    
+    /* Wielowarstwowa poświata i organiczne światło */
+    box-shadow: 
+        0 4px 14px rgba(0, 0, 0, 0.45),
+        0 10px 28px -4px rgba(16, 185, 129, 0.52),
+        0 0 32px -4px rgba(52, 211, 153, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.3s ease,
+                border-color 0.3s ease,
+                filter 0.3s ease,
+                opacity 0.25s ease;
 }
 
-.btn-primary::before {
-    content: '';
+/* Żywe, pulsujące tchnienie aury i płynny przepływ gradientu gdy przycisk jest aktywny */
+.btn-primary:not(:disabled) {
+    animation: uploadBtnPulseAura 3.2s ease-in-out infinite, uploadGradientShift 6s ease infinite;
+}
+
+@keyframes uploadGradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes uploadBtnPulseAura {
+    0%, 100% {
+        box-shadow: 
+            0 4px 14px rgba(0, 0, 0, 0.45),
+            0 10px 26px -4px rgba(16, 185, 129, 0.48),
+            0 0 24px -4px rgba(52, 211, 153, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.85),
+            inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    }
+    50% {
+        box-shadow: 
+            0 6px 18px rgba(0, 0, 0, 0.5),
+            0 14px 36px -2px rgba(16, 185, 129, 0.72),
+            0 0 42px 2px rgba(56, 189, 248, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 1),
+            inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+    }
+}
+
+/* Wewnętrzna zawartość przycisku (ikona + tekst + sparkle) */
+.btn-primary-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Dynamiczna ikona strzałki z lewitacją */
+.btn-upload-icon {
+    flex-shrink: 0;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:not(:disabled) .btn-upload-icon {
+    animation: uploadArrowFloat 2.2s ease-in-out infinite;
+}
+
+@keyframes uploadArrowFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2.5px);
+    }
+}
+
+/* Migocząca mikro-iskra dodająca sznytu premium */
+.btn-sparkle-icon {
+    flex-shrink: 0;
+    opacity: 0.6;
+    color: #03140C;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.btn-primary:not(:disabled) .btn-sparkle-icon {
+    animation: sparkleTwinkle 2.8s ease-in-out infinite;
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% {
+        opacity: 0.4;
+        transform: scale(0.85) rotate(0deg);
+    }
+    50% {
+        opacity: 0.95;
+        transform: scale(1.15) rotate(180deg);
+    }
+}
+
+/* Błysk światła (shimmer beam) przechodzący cyklicznie przez taflę przycisku */
+.btn-primary-sheen {
     position: absolute;
-    top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-    transition: left 0.5s;
+    top: 0;
+    left: -120%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.15) 30%, 
+        rgba(255, 255, 255, 0.5) 50%, 
+        rgba(255, 255, 255, 0.15) 70%, 
+        transparent 100%);
+    transform: skewX(-24deg);
+    pointer-events: none;
+    z-index: 1;
 }
 
-.btn-primary:hover:not(:disabled)::before { left: 100%; }
+.btn-primary:not(:disabled) .btn-primary-sheen {
+    animation: uploadSheenSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
 
+@keyframes uploadSheenSweep {
+    0% {
+        left: -120%;
+    }
+    28%, 100% {
+        left: 200%;
+    }
+}
+
+/* Hover na aktywnym przycisku: potężny cyber-boost bez przesuwania (stoi sztywno w miejscu) */
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px) scale(1.015);
-    background: linear-gradient(135deg, #E2F5EC 0%, #C4E7D4 50%, #A8DABF 100%);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 14px 34px -2px rgba(196, 231, 212, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transform: none !important;
     border-top-color: #ffffff;
-    color: #05070A;
+    border-color: rgba(255, 255, 255, 0.65);
+    color: #010B06;
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        0 18px 42px -2px rgba(16, 185, 129, 0.78),
+        0 0 45px rgba(56, 189, 248, 0.55),
+        inset 0 1px 0 #ffffff,
+        inset 0 -2px 0 rgba(0, 0, 0, 0.3);
 }
 
-.btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+.btn-primary:hover:not(:disabled) .btn-upload-icon {
+    transform: none;
+    animation: none;
+}
 
+.btn-primary:hover:not(:disabled) .btn-sparkle-icon {
+    opacity: 1;
+    transform: scale(1.15) rotate(90deg);
+}
+
+.btn-primary:hover:not(:disabled) .btn-primary-sheen {
+    animation: uploadSheenFast 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+@keyframes uploadSheenFast {
+    0% { left: -120%; }
+    100% { left: 200%; }
+}
+
+/* Kliknięcie / Active - stoi sztywno bez przesuwania */
+.btn-primary:active:not(:disabled) {
+    transform: none !important;
+    box-shadow: 
+        0 2px 10px rgba(0, 0, 0, 0.5),
+        0 6px 20px -2px rgba(16, 185, 129, 0.4),
+        0 0 20px rgba(56, 189, 248, 0.25),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Stan Zablokowany (Disabled - gdy brak wybranego pliku) */
 .btn-primary:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.4);
-    box-shadow: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.32);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: none;
+    animation: none;
+}
+
+.btn-primary:disabled .btn-upload-icon,
+.btn-primary:disabled .btn-sparkle-icon {
+    opacity: 0.25;
+    animation: none;
     transform: none;
 }
 
+.btn-primary:disabled .btn-primary-sheen {
+    display: none;
+}
+
+/* Stan Wgrywania (Loading) */
 .btn-primary.loading {
-    background: var(--accent-blue);
-    color: #090A0F;
-    animation: pulse 1.5s infinite;
-    cursor: wait;
+    background: linear-gradient(125deg, #0284C7 0%, #0F91D2 40%, #00F0FF 100%) !important;
+    background-size: 200% 200% !important;
+    animation: uploadGradientShift 2s linear infinite, uploadLoadingPulse 1.4s ease-in-out infinite !important;
+    color: #03140C !important;
+    cursor: wait !important;
+    border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+@keyframes uploadLoadingPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(15, 145, 210, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(0, 240, 255, 0.8), 0 10px 30px rgba(15, 145, 210, 0.6), inset 0 1px 0 #ffffff;
+    }
 }
 
 .btn-ripple {
@@ -511,18 +1050,17 @@ input[type='file'] {
     transform: scale(0);
     animation: ripple 0.6s linear;
     pointer-events: none;
+    z-index: 3;
 }
 
 @keyframes ripple {
     to { transform: scale(4); opacity: 0; }
 }
 
-.btn-text, .btn-icon { position: relative; z-index: 1; }
-
-@keyframes pulse {
-    0% { opacity: 1; box-shadow: 0 0 0 0 var(--accent-glow); }
-    50% { opacity: 0.8; box-shadow: 0 0 0 10px rgba(15, 145, 210, 0); }
-    100% { opacity: 1; box-shadow: 0 0 0 0 rgba(15, 145, 210, 0); }
+.btn-text {
+    position: relative;
+    z-index: 2;
+    display: inline-block;
 }
 
 .status {

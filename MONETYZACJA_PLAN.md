@@ -1,312 +1,199 @@
-# 🚀 KOMPLEKSOWY MASTER PLAN MONETYZACJI: DROPSITE
-**Projekt:** Dropsite — Prywatny i Szybki Transfer Plików (Micro-SaaS)  
-**Model biznesowy:** Skoncentrowany PRO (Subskrypcje PRO / BLIK 30 Dni za 14,99 zł + Reklamy dla Free + Paywall Twórcy)  
-**Koszt stały infrastruktury:** **0 zł / miesiąc** (Cloudflare Pages + Workers + R2)  
+# 🚀 DROPSITE: MASTER PLAN OPERACYJNY & MONETYZACJA
+**Projekt:** Dropsite — Prywatny, Błyskawiczny Transfer Plików & PDF Toolbox (Micro-SaaS)  
+**Infrastruktura:** Cloudflare Pages (Frontend) + Cloudflare Workers (API) + Cloudflare R2 (Storage)  
+**Ostatnia aktualizacja:** 13 września 2026 (Audyt kodu źródłowego & aktualizacja statusów)  
 
 ---
 
 ## 📑 SPIS TREŚCI
-1. [Status Projektu & Audyt Istniejących Funkcji](#-status-projektu--audyt-istniejących-funkcji)
-2. [Etap 0: Architektura Bezpieczeństwa (Zero-Trust)](#-etap-0-architektura-bezpieczeństwa-zero-trust)
-3. [Etap 1: Audyt UI/UX & Psychologia Konwersji (Triggery Zakupowe)](#-etap-1-audyt-uiux--psychologia-konwersji)
-4. [Etap 2: Hosting i Domena (Cloudflare Pages + Własna Domena)](#-etap-2-hosting-i-domena)
-5. [Etap 3: Wdrożenie Płatności & BLIK (Architektura)](#-etap-3-wdrożenie-płatności--blik)
-6. [Etap 4: Modele Monetyzacji: Dropsite PRO 14,99 zł & Paywall Twórcy](#-etap-4-modele-monetyzacji)
-7. [Etap 5: Monetyzacja z Wyświetleń & Reklam (Model Hybrydowy)](#-etap-5-monetyzacja-z-wyświetleń--reklam)
-8. [Etap 6: Kwestie Prawne i Podatkowe (Regulamin, RODO, Działalność Nierejestrowana)](#-etap-6-kwestie-prawne-i-podatkowe)
-9. [Etap 7: Playbook Dystrybucji & Przewaga UI nad WeTransfer](#-etap-7-playbook-dystrybucji--przewaga-ui-nad-wetransfer)
-10. [Etap 8: Ekonomia Jednostkowa i Prognoza Zysków](#-etap-8-ekonomia-jednostkowa-i-prognoza-zysków)
-11. [Etap 9: Strategiczny Roadmap Rozwoju (Wersje v1.1 – v2.0)](#-etap-9-strategiczny-roadmap-rozwoju)
-12. [Etap 10: Przełomowe Innowacje Produktowe (Efekt WOW & Przewaga nad Rynkiem)](#-etap-10-przełomowe-innowacje-produktowe)
-13. [📋 Checklista Przedstartowa (Pre-Launch Checklist)](#-checklista-przedstartowa-pre-launch-checklist)
+1. [Audyt Wdrożonych Funkcji (Stan Faktyczny: Co jest gotowe w 100%)](#-1-audyt-wdrożonych-funkcji-stan-faktyczny-gotowe-w-100)
+2. [Analiza Braków i Priorytetyzacja (Od Najłatwiejszych do Najtrudniejszych)](#-2-analiza-braków-i-priorytetyzacja-od-najłatwiejszych)
+3. [Krok 1: Błyskawiczne SEO i Routing Narzędzi PDF (~15 min)](#-krok-1-błyskawiczne-seo-i-routing-narzędzi-pdf-15-min)
+4. [Krok 2: Aktywacja WAF w Cloudflare Dashboard (~5 min)](#-krok-2-aktywacja-waf-w-cloudflare-dashboard-5-min)
+5. [Krok 3: Luksusowe Motywy Tła Strony Pobierania PRO (~30 min)](#-krok-3-luksusowe-motywy-tła-strony-pobierania-pro-30-min)
+6. [Krok 4: Procedura Testów QA na Żywej Produkcji (~20 min)](#-krok-4-procedura-testów-qa-na-żywej-produkcji-20-min)
+7. [Krok 5: Innowacja WOW — Kapsuła Czasu (Time-Locked Delivery) (~1.5 h)](#-krok-5-innowacja-wow--kapsuła-czasu-time-locked-delivery-15-h)
+8. [Krok 6: Innowacja WOW — Dropsite Beam P2P / WebRTC (~2-3 h)](#-krok-6-innowacja-wow--dropsite-beam-p2p--webrtc-2-3-h)
+9. [Krok 7: Własna Domena & Kampania Społecznościowa](#-krok-7-własna-domena--kampania-społecznościowa)
 
 ---
 
-## 📊 STATUS PROJEKTU & AUDYT ISTNIEJĄCYCH FUNKCJI
+## ✅ 1. AUDYT WDROŻONYCH FUNKCJI (STAN FAKTYCZNY: GOTOWE W 100%)
 
-| Element | Status | Szczegóły implementacji |
-| :--- | :--- | :--- |
-| **Rdzeń aplikacji (Upload/Download/Worker)** | ✅ Ukończone | Silnik R2, limity 250 MB / 10 GB, weryfikacja kluczy PRO. |
-| **Branding & Złoty Favicon PRO** | ✅ Ukończone | Luksusowa złota chmura wpięta jako `favicon.ico`, `favicon.png`, `favicon.jpg` i PWA. |
-| **Migracja na Cloudflare Pages** | ✅ Ukończone | 100% darmowy, komercyjny hosting bez limitu transferu. |
-| **Player Multimediów (Podgląd)** | ✅ Ukończone | Wbudowany odtwarzacz wideo, audio i podgląd grafik na stronie pobierania. |
-| **Pancerne Szyfrowanie (Zero-Knowledge)** | ✅ Ukończone | Klient szyfruje plik algorytmem AES-256-GCM bezpośrednio w pamięci RAM przeglądarki. |
-| **Zestaw Narzędzi PDF (Toolbox)** | ✅ Ukończone | Podpis cyfrowy, scalanie, rozdzielanie, kompresja i konwersja obrazów bez wysyłania na serwer. |
-| **Tryb Szpiegowski (007 Samozniszczenie)** | ✅ Ukończone | Przytrzymanie 1.5s, licznik 30s, animacja spopielenia i permanentne usunięcie z R2. |
-| **Smart ZIP Explorer** | ✅ Ukończone | Podgląd struktury w RAM, wyszukiwarka plików i selektywne pobieranie z archiwum. |
-| **Branding Twórcy (Signature)** | ✅ Ukończone | Pole podpisu twórcy na stronie pobierania (`Materials crafted by...`). |
-| **Regulamin i Polityka Prywatności** | ✅ Ukończone | Gotowe widoki `#view-regulamin` i `#view-polityka` zaktualizowane na 01.09.2026. |
-| **Płatności BLIK & Polar.sh** | ✅ Ukończone | Natywny modal BLIK (14,99 zł za 30 dni PRO), Polar.sh (14,99 zł/mc) i auto-aktywacja z kluczem licencyjnym. |
-| **Oficjalna Domena (dropsite.pages.dev)** | ✅ Ukończone | Zintegrowany globalny adres Cloudflare Pages z SSL i DDoS Shield. |
+Po wnikliwym audycie kodu źródłowego (`index.html`, `app.js`, `worker.js`, `js/ram-engine.js`, `js/toolbox.js`) potwierdzono pełne wdrożenie poniższych komponentów:
 
----
-
-## 🛡️ ETAP 0: Architektura Bezpieczeństwa (Zero-Trust)
-
-### Zrealizowano:
-- [x] **Dedykowane środowisko Cloudflare**:
-  - Konto e-mail: `dropsite33@gmail.com`.
-  - Bucket Cloudflare R2: `dropsite-storage` z publicznym dostępem.
-  - Worker `uploud-api` zoptymalizowany pod kątem bezpieczeństwa (brak XSS, nagłówki bezpieczeństwa, `nosniff`).
-- [x] **Separacja usług:** Nowe, odizolowane konta bez powiązań z projektami prywatnymi.
-
-### Do dopilnowania w konfiguracji Cloudflare:
-1. **Bot Fight Mode:** Aktywne w panelu Cloudflare (ochrona przed scraperami i skryptami obciążającymi serwer).
-2. **Environment Secrets:** Przechowywanie kluczy administracyjnych jako zmiennych zaszyfrowanych (Secrets) w Cloudflare Worker.
+| Kategoria | Element | Status | Szczegóły techniczne w kodzie |
+| :--- | :--- | :---: | :--- |
+| **Infrastruktura** | Cloudflare Pages, Workers & R2 | ✅ 100% | Frontend na `dropsite.pages.dev`, produkcyjny backend na `uploud-api.dropsite33.workers.dev`, magazyn w R2 z 0 zł kosztów egressu. |
+| **Płatności** | Stripe BLIK & Polar.sh | ✅ 100% | Podpięta obsługa powrotu `?pro_success=1`, weryfikacja licencji w `worker.js` (`/verify-pro`) oraz portal klienta Polar. |
+| **Tarcza Kosztowa** | R2 Quota Guard | ✅ 100% | Zabezpieczenie `MAX_STORAGE_BYTES` w `worker.js` chroniące przed niekontrolowanym wzrostem kosztów. |
+| **Branding & UI** | Obsydianowy Glassmorphism + Favicon | ✅ 100% | Złoty favicon PRO (`favicon.jpg`), kinowy design, responsywność desktop/mobile. |
+| **Silnik Transferu** | Upload & Download R2 | ✅ 100% | Limit darmowy 250 MB, limit PRO 10 GB, natychmiastowe pakowanie ZIP (`fflate.zipSync`), kody QR (`qrious.min.js`). |
+| **Prywatność RAM** | Szyfrowanie Zero-Knowledge | ✅ 100% | Kryptografia AES-256-GCM bezpośrednio w przeglądarce przed wysłaniem bajtów do R2. |
+| **Prywatność RAM** | Czyszczenie EXIF & GPS | ✅ 100% | Funkcja `window.DropsiteRAM.sanitizeImageExif` w `js/ram-engine.js`, przełącznik `#stripExifCheckbox` w opcjach PRO. |
+| **Narzędzia PDF** | Wbudowany Toolbox RAM | ✅ 100% | Podpis cyfrowy, scalanie, rozdzielanie, kompresja oraz konwersja obrazów w `js/toolbox.js`. |
+| **Prywatność PDF** | Cenzura RODO w 1 kliknięcie | ✅ 100% | Narzędzie Blackout / Cenzura w edytorze PDF trwale zamazujące dane wrażliwe (PESEL, adresy) w RAM. |
+| **Multimedialność** | Streaming Player & Albumy | ✅ 100% | Odtwarzanie MP4/WEBM/MP3, kinowe albumy zdjęć z podkładem muzycznym bez konieczności pobierania na dysk. |
+| **Frame.io Proofing** | Pinezki Rewizji na Wideo & Audio | ✅ 100% | Boczny panel uwag, znaczniki czasu na osi, kliknięcia w kadrze, synchronizacja w chmurze R2 (`/api/proofing`) i localStorage. |
+| **Bezpieczeństwo** | Blokada Plików Niebezpiecznych | ✅ 100% | `dangerousExtensions` w `app.js` i `worker.js` blokujące `.exe`, `.bat`, `.cmd`, `.sh`, `.vbs`, `.js`, `.scr`, `.msi`, `.ps1`. |
+| **Bezpieczeństwo** | Nagłówki Anti-XSS | ✅ 100% | `Content-Disposition: attachment` i `X-Content-Type-Options: nosniff` w `worker.js`. |
+| **Pętla Wirusowa** | Szklany Baner dla Odbiorców | ✅ 100% | Baner na stronie pobierania (`.viral-loop-inner`) z wezwaniem do darmowej wysyłki w 5 sekund. |
+| **Belka Zaufania** | 6 Kart Magnesów Dropsite | ✅ 100% | Wdrożona pod uploaderem w `index.html` (Kinowy odtwarzacz, EXIF, Zero-Knowledge, 10 GB/BLIK, Toolbox PDF, Burn-after-read). |
+| **Zwijane FAQ** | 4 Pytania z Akordeonami | ✅ 100% | Sekcja `#faq` z animowanymi kartami, podświetleniami i obsługą i18n. |
+| **Wielojęzyczność** | i18n (6 języków) | ✅ 100% | Pełna obsługa: PL, EN, DE, ES, FR, UK w `js/i18n.js`. |
+| **Prawne** | Regulamin & Polityka Prywatności | ✅ 100% | Widoki `#view-regulamin` i `#view-polityka` dostosowane pod RODO/UE. |
 
 ---
 
-## 🎨 ETAP 1: Audyt UI/UX & Psychologia Konwersji
+## 🎯 2. ANALIZA BRAKÓW I PRIORYTETYZACJA (OD NAJŁATWIEJSZYCH)
 
-### Przewaga Czystego Interfejsu:
-Interfejs Dropsite bije WeTransfer na głowę:
-1. **Zero zbędnych kroków:** Wejście ➔ Upuszczenie pliku ➔ Natychmiastowy link. Bez konieczności wpisywania maila i czekania na kod weryfikacyjny.
-2. **Nowoczesny Glassmorphism:** Eleganckie, ciemne tło z miętowo-złotymi akcentami nie męczy oczu i buduje prestiż.
-3. **Płynne przejścia:** Szklane modale, subtelne animacje mikrointerakcji.
+Poniższa tabela porządkuje wszystkie pozostałe zadania według **trudności i wymaganego czasu**, abyśmy mogli natychmiast osiągnąć rezultaty przy minimalnym nakładzie pracy:
 
-### Komunikat Konwersji (Modal Dropsite PRO):
-* Gdy darmowy użytkownik upuści plik o wadze np. **1.8 GB**:
-  * **Nagłówek:** *„Ten plik ma 1.8 GB. Darmowy transfer obsługuje do 250 MB.”*
-  * **Główny Call to Action (Dropsite PRO):**  
-    👉 **[ ⚡ Odblokuj Dropsite PRO za 14,99 zł kodem BLIK lub kartą ]**  
-    *(Transfer do 10 GB, wojskowe szyfrowanie AES-256, branding twórcy, brak reklam)*
-
----
-
-## 🌐 ETAP 2: Hosting i Domena
-
-* **Hosting:** Cloudflare Pages (darmowy, ultra-szybki globalny CDN).
-* **Własna Domena:** Zakup `dropsite.pages.dev` (koszt ok. 12 zł za 1. rok). Połączenie z Cloudflare DNS gwarantuje darmowy certyfikat SSL, ochronę DDoS oraz pełną wiarygodność przed płacącymi klientami.
+| Priorytet | Zadanie | Czas | Trudność | Zysk / ROI | Status |
+| :---: | :--- | :---: | :---: | :--- | :---: |
+| **1** | **Błyskawiczne SEO i Routing Narzędzi PDF** | ~15 min | Bardzo łatwe | Przejęcie darmowego ruchu z Google na frazy PDF | ✅ 100% Wdrożone |
+| **2** | **Zarządzanie Limiterem & Tarcza Pojemności R2** | ~10 min | Bardzo łatwe | Pełna kontrola pojemności dysku z panelu admina | ✅ 100% Wdrożone & Live |
+| **—** | ~~Luksusowe Motywy Tła Strony Pobierania PRO~~ | ~30 min | Łatwe | Wzrost konwersji na pakiet PRO | 🚫 Odpuszczone |
+| **3** | **Kapsuła Czasu (Time-Locked Delivery)** | ~1.5 h | Średnie | Efekt WOW i wirusowy marketing (embarga, urodziny) | ✅ 100% Wdrożone & Live |
+| **4** | **Dropsite Beam (Nielimitowany Transfer P2P WebRTC)** | ~2 h | Zaawansowane | 0 zł kosztów serwera dla plików 50 GB / 100 GB | ✅ 100% Wdrożone & Live |
+| **5** | **Oficjalna Procedura Testów QA na Produkcji** | ~20 min | Łatwe | 100% pewności działania przed promocją | ⏳ Gotowe do testów |
+| **6** | **Własna Domena `dropsite.pl`** | ~10 min | Zewnętrzne | Budowa profesjonalnej polskiej marki | ⏳ Opcjonalnie |
+| **7** | **Premiera Społecznościowa (Wykop, FB, Reddit)** | ~1 h | Marketing | Pierwsi płacący użytkownicy i wirusowy rozgłos | ⏳ Po QA |
 
 ---
 
-## 💳 ETAP 3: Wdrożenie Płatności & BLIK
+## ✅ KROK 1: BŁYSKAWICZNE SEO I ROUTING NARZĘDZI PDF (WDROŻONE 100%)
+*Zadanie zrealizowane: dedykowany routing SPA, plik `_redirects`, dynamiczne tagi meta/title oraz aktualizacja sitemap.xml.*
 
-Dla polskiego użytkownika **BLIK to metoda płatności #1**:
-1. **Ścieżka Szybka (Polar.sh):** Bezobsługowe licencje i automatyczne rozliczenia VAT.
-2. **Ścieżka Dedykowana (Natywny BLIK):** Klasyczny natywny BLIK (klient wpisuje 6 cyfr bezpośrednio w Dropsite) – natychmiastowe odblokowanie PRO na 30 dni za 14,99 zł.
-
----
-
-## 💡 ETAP 4: Modele Monetyzacji
-
-### 1. Dropsite PRO (14,99 PLN / miesiąc lub 30 Dni BLIK)
-* **Zasada:** Brak zbierania drobnych po 2,50 zł – 15 zł to i tak bardzo niska, bezkonkurencyjna cena na rynku za pełne konto PRO.
-* **Co zyskuje klient:** Transfery do 10 GB (4K wideo, archiwa), personalizowany branding twórcy na stronie pobierania, szyfrowanie AES-256 w RAM, streaming w locie, retencja do 30 dni lub permanentna, 100% brak reklam.
-* **Elastyczność:** Subskrypcja z karty (Polar.sh) lub jednorazowy dostęp na 30 dni kodem BLIK bez podpinania karty.
-
-### 3. "Płatny Plik" / Paywall Twórcy (Prowizja 5% od sprzedaży)
-* Użytkownik wrzuca plik (np. presety, kurs, paczkę grafik) i ustawia cenę dla odbiorcy. Ty zarabiasz prowizję od każdej transakcji bez konieczności prowadzenia magazynu.
-
-### 4. Wyświetlenia Reklamowe
-* Czysty baner pod przyciskiem pobierania dla darmowych plików (Google AdSense / EthicalAds).
-
----
-
-## 📺 ETAP 5: Monetyzacja z Wyświetleń & Reklam
-
-* **Strona pobierania darmowego pliku (`?f=...`):**
-  * Odbiorca pliku darmowego widzi 1 estetyczny baner reklamowy.
-  * Stawki: **\$2.00 – \$4.50 CPM** (~8 – 18 zł za 1 000 wyświetleń).
-* **Pliki przesłane przez użytkowników PRO (14,99 zł):**
-  * Strona w 100% czysta, bez reklam.
+### Co zostało wdrożone:
+1. **Dedykowany routing wirtualny w `app.js` (`handleSeoAndDeepLinking`):**
+   - Obsługa adresów:
+     - `/podpisz-pdf` lub `/#podpisz-pdf` ➔ automatycznie przełącza na widok Narzędzi i aktywuje moduł podpisu elektronicznego.
+     - `/polacz-pdf` lub `/#polacz-pdf` ➔ otwiera moduł scalania PDF.
+     - `/kompresor-pdf` lub `/#kompresor-pdf` ➔ otwiera moduł kompresji PDF.
+     - `/cenzura-pdf` lub `/#cenzura-pdf` ➔ otwiera narzędzie cenzury RODO.
+     - `/konwertuj-pdf` lub `/#konwertuj-pdf` ➔ otwiera konwerter PDF.
+     - `/cennik`, `/funkcje`, `/faq`, `/kontakt`, `/regulamin`, `/polityka-prywatnosci`.
+   - Dynamiczna zmiana `document.title` i `meta[name="description"]` dopasowana do szukanej frazy (np. *"Podpisz PDF Online za Darmo — Bezpiecznie w Pamięci RAM \| Dropsite"*).
+2. **Plik `_redirects` dla Cloudflare Pages:**
+   - Dodano reguły rewrites (kod 200) na `/index.html` dla czystych adresów SEO.
+3. **Aktualizacja `sitemap.xml`:**
+   - Dodano wpisy URL dla dedykowanych narzędzi z priorytetem `0.9` oraz sekcji serwisu.
+4. **Uzupełnienie brakującego klucza i18n:**
+   - Dodano brakujący klucz `hero_scroll_more` w słownikach `de`, `es`, `fr`, `uk` w `js/i18n.js`.
 
 ---
 
-## ⚖️ ETAP 6: Kwestie Prawne i Podatkowe
+## ✅ KROK 2: ZARZĄDZANIE LIMITEREM & TARCZA POJEMNOŚCI R2 (WDROŻONE 100% & LIVE)
+*Zadanie zrealizowane i zweryfikowane na żywym serwerze Cloudflare Workers + R2.*
 
-### 1. Działalność Nierejestrowana:
-* Limit przychodów: do **3 225 zł / miesiąc** bez ZUS i bez rejestracji w CEIDG.
-* Rozliczenie: roczny PIT-36.
-
-### 2. Wymagane Dokumenty na stronie:
-* **Regulamin Serwisu:** Zasady świadczenia usług drogą elektroniczną, zrzeczenie się 14-dniowego odstąpienia dla natychmiastowych transferów cyfrowych.
-* **Polityka Prywatności:** RODO, zasady retencji plików (automatyczne usuwanie z R2 po upływie czasu).
-
----
-
-## 📣 ETAP 7: Playbook Dystrybucji & Przewaga UI nad WeTransfer
-
-Główna oś komunikacji marketingowej: **"Dropsite to WeTransfer bez zbędnego syfu i z czystym interfejsem"**.
-
----
-
-### 🔥 Główny Kąt Marketingowy: "Dlaczego WeTransfer stał się nieznośny?"
-> **Porównanie, które sprzedaje produkt w 5 sekund:**  
-> **WeTransfer w 2026 r.:**  
-> ❌ Pełnoekranowe, krzykliwe reklamy w tle,  
-> ❌ Wymóg podania maila i przepisywania 6-cyfrowego kodu weryfikacyjnego,  
-> ❌ Zgody na śledzenie ciasteczek,  
-> ❌ Wciskanie drogiego abonamentu za 50 zł/mc.  
->  
-> **Dropsite:**  
-> ✅ Czysty, ciemny, szklany interfejs,  
-> ✅ Zero logowania i zero czekania na maile – przeciągasz plik i masz link,  
-> ✅ Wbudowany podgląd wideo/audio i edytor PDF,  
-> ✅ Potrzebujesz wysłać 3–10 GB? Odblokowujesz PRO za 14,99 zł (BLIK lub karta) i masz pełne możliwości bez limitów.
+### Jak to działa w kodzie i panelu admina:
+1. **Panel Administratora (Zakładka Magazyn R2):**
+   - Przyciski wyboru pojemności (10 GB, 50 GB, 100 GB, 500 GB, 1 TB, ∞ Nielimitowany) oraz przycisk „Zapisz i Zastosuj Limit”.
+   - Po kliknięciu panel natychmiast synchronizuje stan z chmurą przez dedykowany endpoint `POST /admin/quota`.
+   - Przy wejściu do panelu aktualny limit pobierany jest w tle z chmury przez `GET /admin/quota`.
+2. **Backend API (`worker.js` w chmurze Cloudflare):**
+   - Helper `getMaxStorageBytes()` odczytuje rzeczywisty limit zapisany w R2 (`_system/quota.json`).
+   - Weryfikacja tarczy w endpointach `/upload-small` i `/multipart/upload`:
+     - Użytkownicy darmowi są blokowani po osiągnięciu wybranego limitu (z zachowaniem ochrony portfela).
+     - Użytkownicy PRO mają transfer nielimitowany pojemnością darmową.
+     - Limit pojedynczego pliku wynosi 250 MB dla kont darmowych i 10 GB dla kont PRO.
+3. **Testy na żywym serwerze produkcyjnym:**
+   - Wykonano testy `GET /admin/quota` (status 200) oraz `POST /admin/quota` (status 200) potwierdzające 100% sprawności.
+   - Nowa wersja została wdrożona na produkcję (`uploud-api.dropsite33.workers.dev`).
 
 ---
 
-### 🎬 60-Sekundowy Dynamiczny Trailer AI (Plan Produkcji & Prompty)
-
-#### 🎵 Kwestia Muzyki: TikTok Trending vs Suno AI
-* **Wrzutka organiczna na TikToku / Reels (Darmowy post na profilu):**  
-  👉 **Możesz użyć dowolnego trendującego dźwięku / muzyki z biblioteki TikToka**. Algorytm TikToka premiuje filmy z popularnymi audio (daje dodatkowe zasięgi).
-* **Płatna reklama (TikTok Ads / Meta Ads / wideo na stronie `dropsite.pages.dev`):**  
-  👉 **NIE WOLNO używać komercyjnych hitów** (reklama zostanie odrzucona przez prawa autorskie). Wtedy generujesz własny podkład w **Suno AI** lub bierzesz darmowy z biblioteki *Pixabay / YouTube Audio Library*.
-  * *Prompt do Suno:* `dark cyberpunk synthwave, driving distorted bassline, fast energetic tempo 135 bpm, punchy drums, tech product launch trailer, futuristic atmospheric drop, no vocals`.
+## 🚫 KROK 3: LUKSUSOWE MOTYWY TŁA (ODPUSZCZONE ZGODNIE Z DECYZJĄ)
+*Krok pominięty na wniosek użytkownika w celu skupienia się na kluczowych funkcjach.*
 
 ---
 
-#### ⏱️ Scenariusz Trailera Sekunda po Sekundzie (100% Kinowe CGI 3D — Bez Ludzi):
+## 🧪 KROK 4: PROCEDURA TESTÓW QA NA ŻYWEJ PRODUKCJI (~20 MIN)
+*Uruchomienie procedury weryfikacyjnej na domenie produkcyjnej `dropsite.pages.dev`:*
 
-| Czas | Co widać na ekranie (Czysta animacja 3D / CGI) | Głos Lektora (ElevenLabs / AI Voice) | Dźwięk / Efekty |
-| :--- | :--- | :--- | :--- |
-| **0:00 - 0:08** | Ciemna cyfrowa otchłań. Czerwone, pękające szklane panele z napisem: *„STORAGE FULL / 50 PLN/MO”*, wirujące błędy, eksplozja cyfrowego szkła. | *„Przepłacasz za powolne chmury i skomplikowane formularze?”* | Głęboki basowy sub-bass, trzask pękającego szkła (*cinematic hit*). |
-| **0:08 - 0:18** | **[Start ze screena Dropsite]**: Z czerni wyłania się lewitujący w 3D szklany interfejs ze screena. Kamera przelatuje nad szlifowanymi krawędziami szkła i pulsującym złotym symbolem chmury. | *„Oto Dropsite. Czysty, bezkompromisowy transfer nowej generacji.”* | Potężny cyberpunkowy drop (*whoosh + synth pulse*). |
-| **0:18 - 0:30** | Świecąca kula danych (plik 5 GB) wpada w szklany portal ➔ Wokół niej materializuje się szmaragdowa, kryształowa tarcza AES-256 z kodami binarnymi. | *„Zero spamu. Szyfrowanie wojskowe AES-256. Prędkość ograniczona tylko Twoim łączem.”* | Dźwięk ładowania reaktora / lasera, mechaniczny zatrzask tarczy. |
-| **0:30 - 0:42** | Ekran odbiorcy: z kuli danych w ułamku sekundy rozwija się holograficzny odtwarzacz wideo 4K z podglądem w locie. | *„Natychmiastowy podgląd wideo i audio bez konieczności pobierania gigabajtów.”* | Krystaliczny dźwięk aktywacji hologramu (*chime*). |
-| **0:42 - 0:52** | Wokół kryształu danych zapalają się złote pierścienie energii z pulsującym symbolem „DROPSITE PRO 14,99 PLN” ➔ Eksplozja złotych cząsteczek. | *„Odblokuj pełne konto PRO za 14,99 zł. Błyskawiczny BLIK lub karta.”* | Złoty rezonans dźwiękowy, głęboki basowy impuls. |
-| **0:52 - 1:00** | Luksusowy złoty monolit ze szklanym logo Dropsite, adres `dropsite.pages.dev` jarzący się na ciemnym obsydianie. | *„Dropsite. Po prostu upuść plik.”* | Wygasający kinowy akord smyczkowy z syntetykiem. |
-
----
-
-#### 🤖 Gotowe Prompty Kinowe 3D (Bez Ludzi / Octane Render Style)
-
-* **Scena 1 (Część 1: 0:00 - 0:30) — Start ze zrzutu ekranu Dropsite:**
-  * *Tryb:* Image-to-Video (wgrywasz screen strony głównej Dropsite).
-  * *Prompt do skopiowania:* `Cinematic 3D CGI product reveal, strictly NO humans. Starting from this dark frosted glass web interface, camera executes an IMAX-style sweeping orbit around floating glass panels with photorealistic obsidian reflections. Glowing neon mint and gold UI circuits pulse with energy. Floating ambient volumetric micro-particles, anamorphic blue and amber lens flare, futuristic science fiction tech commercial, Unreal Engine 5 cinematic render, Raytracing, 8k ultra detail, 60fps.`
-* **Scena 2 (Część 2: 0:30 - 1:00) — Finał z BLIKiem i Złotym Logo:**
-  * *Prompt do skopiowania:* `Cinematic CGI sequence, NO humans. A massive glowing 5GB holographic data sphere surrounded by an emerald green crystal force field of AES-256 binary streams. Three concentric rings of liquid gold energy with glowing neon digits 'PRO 14.99 PLN' rotate and lock into place with a radiant gold burst. Final shot: iconic obsidian glass black cube with radiant glowing golden cloud logo floating in void. Cinematic Hollywood movie trailer aesthetic, photorealistic 8k, Octane Render.`
-
----
-
-### 💬 Post na Wykop.pl i Grupy Montażystów / Fotografów:
-```text
-Tytuł: Zrobiłem minimalistyczną alternatywę dla WeTransfer – bez pełnoekranowych reklam i bez kodów na maila
-
-Cześć! Też irytuje Was, że żeby wysłać komuś jeden plik przez WeTransfer, musicie podawać swój e-mail, czekać na kod weryfikacyjny, przeklikiwać zgody marketingowe i oglądać wielkie banery reklamowe w tle?
-
-Postanowiłem stworzyć Dropsite z myślą o prostocie:
-- Czysty, intuicyjny interfejs bez śmieci i zbędnych kroków.
-- Przeciągasz plik -> dostajesz natychmiastowy link.
-- Wbudowany podgląd wideo i audio (odbiorca może sprawdzić materiał bez pobierania całego gigabajta).
-- A jak ktoś potrzebuje przesyłać potężne pliki do 10 GB: pełne konto PRO za jedyne 14,99 zł (wygodny BLIK na 30 dni lub subskrypcja) bez wciskania drogich zagranicznych abonamentów za 50 zł.
-
-Link do testów: [dropsite.pages.dev]
-Dajcie znać jak oceniacie prostotę i prędkość!
-```
+- [ ] **Test 1: Darmowy transfer (< 250 MB)**
+  - Wgraj plik testowy 5 MB jako gość.
+  - Sprawdź generowanie linku, działanie kodu QR i pobranie pliku.
+- [ ] **Test 2: Blokada darmowego limitu (> 250 MB)**
+  - Upuść plik > 250 MB jako gość.
+  - Sprawdź, czy pojawia się elegancki modal z propozycją pakietu PRO / BLIK.
+- [ ] **Test 3: Płatność i Aktywacja PRO**
+  - Sprawdź przekierowanie do Stripe BLIK i Polar.
+  - Zweryfikuj aktywację statusu PRO po powrocie (`?pro_success=1`).
+- [ ] **Test 4: Streaming wideo/audio i pinezki Frame.io**
+  - Odtwórz wideo `.mp4` na stronie pobierania.
+  - Kliknij na osi czasu, dodaj pinezkę z komentarzem, sprawdź czy zapisuje się w chmurze i odświeża.
+- [ ] **Test 5: Tryb Samozniszczenia (Burn-After-Read)**
+  - Prześlij plik z zaznaczoną opcją „Zniszcz po pobraniu”.
+  - Pobierz plik raz — sprawdź, czy drugi refresh zwraca 404.
+- [ ] **Test 6: Test mobilny (iOS / Android)**
+  - Otwórz stronę na telefonie, przetestuj upload zdjęcia z rolki aparatu i responsywność.
 
 ---
 
-## 💰 ETAP 8: Ekonomia Jednostkowa i Prognoza Zysków
+## ✅ KROK 5: INNOWACJA WOW — KAPSUŁA CZASU (TIME-LOCKED DELIVERY) (WDROŻONE 100% & LIVE)
+*Unikalna funkcja na rynku — fizyczna blokada pliku na serwerze do wyznaczonej daty i godziny z kinowym odliczaniem u odbiorcy.*
 
-### Scenariusz Realistyczny (Skoncentrowany na PRO 14,99 zł):
-* **80 kont PRO (subskrypcje + 30-dniowe doładowania BLIK: 80 x 14,99 zł):** **~1 200 zł**
-* **25 000 darmowych pobrań z reklamami (eCPM $2.00):** **~200 zł**
-* **Łączny przychód:** **~1 400 zł / miesiąc**
-
-### Koszty stałe:
-* Cloudflare (Pages, Workers, R2): **~20 zł**
-* Prowizje bramek płatności: **~90 zł**
-* **Czysty zysk netto:** **~1 190 zł / miesiąc (Marża: >91%)**
-
----
-
-## 🗺️ ETAP 9: Strategiczny Roadmap Rozwoju
-
-Rozwój serwisu podzielony na konkretne etapy produktowe:
-
-```mermaid
-timeline
-    title Roadmap Rozwoju Dropsite
-    Faza 1 (v1.1) : Wdrożenie PRO BLIK (14.99 zł) : Zakup domeny dropsite.pages.dev : Kampania Split-Screen na TikToku
-    Faza 2 (v1.2) : Powiadomienia E-mail o pobraniu pliku : Chmurowy Dashboard dla PRO : Płatny Plik (Paywall dla twórców)
-    Faza 3 (v2.0) : WebRTC P2P (nielimitowany transfer 0 zł) : CNAME dla domen agencji
-```
-
-### Faza 1 (v1.1) — Start i Monetyzacja
-1. Podpięcie natywnego BLIKa (14,99 zł za 30 dni PRO) + Polar.sh (14,99 zł/mc subskrypcja z karty).
-2. Zakup i wpięcie domeny `dropsite.pages.dev`.
-3. Start kampanii porównawczej "Dropsite vs WeTransfer: Czysty UX".
-
-### Faza 2 (v1.2) — Narzędzie dla Twórców & E-Commerce
-1. **Powiadomienia E-mail o pobraniu:** Nadawca opcjonalnie podaje mail i otrzymuje informację, w sekundzie gdy odbiorca ściągnie plik.
-2. **Chmurowy Manager Plików:** Zalogowany użytkownik PRO zarządza wszystkimi aktywnymi linkami w jednym pulpicie (usuwanie, przedłużanie, zmiana haseł).
-3. **Paywall dla Twórców:** Możliwość ustawienia ceny za pobranie pliku (sprzedaż presetów, grafik, e-booków).
-
-### Faza 3 (v2.0) — Skalowanie bez Kosztów
-1. **WebRTC P2P Transfer:** Bezpośredni przesył przeglądarka-przeglądarka dla paczek 20–50 GB (zero obciążenia serwera R2).
-2. **Własna domena dla agencji (CNAME):** Agencja może podpiąć `transfer.agencja.pl` i wysyłać pliki pod własnym adresem.
+### Co zostało wdrożone i przetestowane:
+1. **Frontend Nadawcy (`index.html`, `css/widgets.css`, `app.js`):**
+   - W sekcji opcji zaawansowanych (`#advOptionsCard`) dodano przełącznik `#timeLockCheckbox` (fioletowa plakietka *„Blokada do daty”*).
+   - Rozwijany szklany panel `#timeLockSettingsBox` z polem `#timeLockDatetime` (`datetime-local` z minimalną datą `teraz + 5 min`) oraz polem opcjonalnej wiadomości `#timeLockHintInput`.
+   - Automatyczna walidacja daty i przekazywanie parametrów `&timelock=` oraz `&timehint=` w `uploadFileStandard` i `uploadFileMultipart`.
+   - Plakietka statusu `⏳ Kapsuła Czasu` na ekranie sukcesu i w podsumowaniu transferu.
+2. **Backend w chmurze (`worker.js` w Cloudflare Workers & R2):**
+   - Obsługa `timelock` i `timehint` w `/upload-small` i `/multipart/create`.
+   - Zapis `lockUntil` i `lockHint` w metadanych obiektu R2 oraz pliku pobocznym `_system/meta_${safeKey}.json`.
+   - Endpoint `/file-info`: dopóki `Date.now() < lockUntil`, serwer zwraca `isTimeLocked: true`, `lockUntil`, `lockHint`, a bezpośrednie adresy `directUrl` i `streamUrl` pozostają `null`.
+   - Twarda serwerowa blokada: endpointy `/stream` i `/burn-download` zwracają status HTTP `423 Locked`, fizycznie uniemożliwiając pobranie pliku przed czasem.
+3. **Frontend Odbiorcy (`index.html`, `css/widgets.css`, `app.js`):**
+   - Szklany, kinowy monolit `#dlTimeLockOverlay` z fioletowo-złotą aureolą światła i pulsującym klejnotem.
+   - Odczyt i wyświetlenie wskazówki od nadawcy (`#dlTimeLockHintBox`).
+   - 4 szklane kasetony zegara z neonowymi cyframi: `[ DNI ] : [ GODZ ] : [ MIN ] : [ SEK ]` odliczające sekundy w czasie rzeczywistym.
+   - **Auto-Unlock:** Po wybiciu zera następuje odtworzenie dźwięku odryglowania, rozbłysk monolitu i automatyczne ponowne pobranie danych pliku bez przeładowania strony.
+4. **Weryfikacja E2E (100% PASS):**
+   - Zbudowano skrypt automatyczny `scratch/test_timelock_flow.js` testujący wgranie, blokadę 423 Locked, odczekanie do wybicia godziny zero i natychmiastowe pobranie 200 OK.
+   - Nowy worker wdrożony na produkcję (`uploud-api.dropsite33.workers.dev`).
 
 ---
 
-## ⚡ ETAP 10: Przełomowe Innowacje Produktowe (Efekt WOW & Przewaga nad Rynkiem)
+## ✅ KROK 6: INNOWACJA WOW — DROPSITE BEAM P2P / WEBRTC (WDROŻONE 100% & LIVE)
+*Lokalny i globalny transfer bezpośredni (10 GB, 50 GB, 100 GB+) bez pośrednictwa serwera i z zerowym kosztem dysku R2.*
 
-Unikalne funkcje, które deklasują konkurencję i wywołują u użytkowników efekt „zbierania szczęki z podłogi”:
+### Co zostało wdrożone i przetestowane:
+1. **Silnik P2P WebRTC (`js/beam.js`):**
+   - Klasa `DropsiteBeamEngine` wykorzystująca `RTCPeerConnection` oraz stabilne serwery Google STUN.
+   - Dwustronny `RTCDataChannel` z binarnym przesyłem w pakietach 64 KB (`65536` bajtów).
+   - Inteligentna kontrola bufora (backpressure / `bufferedAmountLowThreshold`) chroniąca przed zapychaniem RAM przy łączach gigabitowych.
+   - Dynamiczny pomiar prędkości transferu w czasie rzeczywistym (MB/s) oraz estymacja czasu (ETA).
+2. **Bezstanowa sygnalizacja w Cloudflare Workers & R2 (`worker.js`):**
+   - Endpointy: `POST /api/beam/session` (generowanie 6-cyfrowego PIN-u), `POST /api/beam/signal` (wymiana SDP Offer, Answer i kandydatów ICE), `GET /api/beam/session` (odczyt sesji) oraz `DELETE /api/beam/session` (sprzątanie).
+   - Automatyczne czyszczenie porzuconych sesji starszych niż 15 minut w cronie.
+   - Wdrożenie na żywo przez `npx wrangler deploy` (`Current Version ID: 7fc12859-5afb-4179-94a4-03ccb02a41e2`).
+3. **Nowoczesny interfejs użytkownika (`index.html` & `css/widgets.css`):**
+   - Dodano odnośnik `Beam P2P` z neonową plakietką `⚡ 0 zł` w menu głównym i szufladzie mobilnej.
+   - Dedykowany widok `#view-beam` w obsydianowym szkle z neonową poświatą cyjanowo-szmaragdową (`#06B6D4` / `#10B981`).
+   - Tryb Nadawcy: dropzone na dowolny rozmiar pliku, 6 szklanych kasetonów PIN, generowany w locie kod QR (QRious), radar skanujący w oczekiwaniu na odbiorcę.
+   - Tryb Odbiorcy: szybkie pole wprowadzania PIN-u, automatyczne łączenie z parametru URL `?beam=123456`, wskaźnik prędkości pobierania i automatyczny zapis pliku.
+4. **Wielojęzyczność i Routing (`js/i18n.js` & `app.js`):**
+   - Przetłumaczono 22 klucze językowe we wszystkich 6 językach: **PL, EN, DE, ES, FR, UK**.
+   - Dodano czyste trasy SPA `/beam` w `_redirects` i `sitemap.xml`.
+5. **Weryfikacja E2E (100% PASS):**
+   - Zautomatyzowany skrypt `scratch/test_live_beam_signaling.js` przetestował pełny cykl handshake na żywym serwerze Cloudflare Workers.
 
-```mermaid
-graph TD
-    WOW[Innowacje Efektu WOW Dropsite] --> F1[1. Digital Unboxing - Wideo powitanie]
-    WOW --> F2[2. Cinematic Delivery - Galeria z muzyką]
-    WOW --> F3[3. Tryb Szpiegowski - Samozniszczenie 007]
-    WOW --> F4[4. Smart Clip Extractor - Wycinek wideo]
-    WOW --> F5[5. Dropsite Beam - Web AirDrop P2P]
-    WOW --> F6[6. Client Proofing - Pinezki i uwagi do klatek]
-    WOW --> F7[7. Smart ZIP Explorer - Wybiórcze pobieranie]
-    WOW --> F8[8. Kapsuła Czasu - Zaplanowany transfer]
-```
-
-### 1. 🎬 „Digital Unboxing” (Wideo lub Głosowe Powitanie od Nadawcy) — [WDROŻONE ✅]
-* **Mechanika:** Podczas wgrywania pliku, nadawca jednym kliknięciem nagrywa 15-60-sekundowe wideo z kamerki lub notatkę głosową (mikrofon z wizualizacją fal dźwiękowych na żywo).
-* **Doświadczenie odbiorcy:** Po otwarciu linku na szklanym panelu pojawia się pulsujący, zaokrąglony avatar z nagraniem nadawcy (video loop) lub animowany equalizer audio. Kliknięcie rozwija pełny, szklany odtwarzacz z czystym dźwiękiem.
-* **Zastosowanie:** Agencje reklamowe, fotografowie, montażyści, a także zwykli ludzie wysyłający życzenia wideo wraz z prezentem.
-
-### 2. 🎵 „Cinematic Delivery” (Klimatyczna Galeria z Muzyką dla Fotografów) — [WDROŻONE ✅]
-* **Mechanika:** Przy wysyłce paczki zdjęć nadawca włącza „Tryb Prezentacji (Cinematic Delivery)” i wybiera nastrojowy podkład muzyczny (Gentle Piano, Lo-Fi Sunset, Cinematic Ambient, Acoustic Breeze) z podglądem odsłuchu.
-* **Doświadczenie odbiorcy:** Zdjęcia wyświetlają się w pełnoekranowym, kinowym pokazie slajdów na ciemnym szkle z nastrojową muzyką (Web Audio synth), efektem powolnego najazdu Ken Burns, kontrolą dźwięku, możliwością pobrania pojedynczego zdjęcia oraz całej paczki ZIP.
-* **Dlaczego to sprzedaje PRO:** Fotografowie sesji ślubnych i biznesowych chętnie płacą abonament, bo ich oddanie materiałów wygląda 100x bardziej prestiżowo niż surowy ZIP.
-
-### 3. 🕵️‍♂️ „Tryb Szpiegowski (Mission: Impossible)” — TikTok Viral Engine
-* **Mechanika:** Przełącznik dla ultra-poufnych plików (hasła, skany dokumentów, poufne umowy).
-* **Doświadczenie odbiorcy:** Ekran jest zamazany. Odbiorca musi **przytrzymać palec/myszkę**, aby odsłonić treść. W rogu ekranu tyka licznik: *„Plik ulegnie samozniszczeniu za 10... 9... 8...”*. Po upływie czasu animacja dymu usuwa plik na zawsze z serwera.
-* **Marketing:** Gotowy temat na wirusowe wideo: *„Jak wysyłać poufne pliki jak agent wywiadu?”*.
-
-### 4. ✂️ „Smart Video Scrub & Clip Extractor”
-* **Mechanika:** Odbiorca 5-gigabajtowej surówki wideo nie musi pobierać całego pliku. Na osi czasu wbudowanego playera zaznacza interesujące go 15 sekund i pobiera **tylko ten fragment** (kilkanaście megabajtów wyrenderowanych w locie w przeglądarce).
-
-### 5. 📡 „Dropsite Beam / Web AirDrop” (Transfer Lokalny bez Internetu)
-* **Mechanika:** Parowanie urządzeń (np. iPhone i laptop z Windows) 4-cyfrowym kodem PIN lub lokalną siecią Wi-Fi.
-* **Zaleta:** Przesyłanie paczek 50 GB z telefonu na komputer bez zużywania transferu internetowego, bezpośrednio z prędkością sieci lokalnej (300–500 Mb/s).
-
-### 6. ✍️ „Client Proofing & Revision Pins” (Mini-Frame.io dla Twórców)
-* **Mechanika:** Klient przeglądający wideo lub grafikę na stronie pobierania może kliknąć w dowolny punkt ekranu i dodać pinezkę: *„Zmień ten napis na żółty”* lub *„Przytnij to ujęcie o 1 sekundę”*.
-* **Wartość:** Eliminuje potrzebę drogich narzędzi do feedbacku (jak Frame.io kosztujące $15/mc).
-
-### 7. 📦 „Smart ZIP Explorer & Selective Download”
-* **Mechanika:** Gdy ktoś wysyła archiwum ZIP z 300 plikami (np. 2 GB), odbiorca widzi drzewo katalogów i może pobrać **tylko jeden wybrany plik** bez konieczności ściągania i rozpakowywania całego archiwum.
-
-### 8. ⏳ „Kapsuła Czasu (Zaplanowany Transfer)”
-* **Mechanika:** Możliwość ustawienia daty aktywacji linku (np. *„Aktywuj ten transfer w Wigilię o 18:00”* lub *„Wyślij życzenia urodzinowe za 3 miesiące”*).
 
 ---
 
-## 📋 CHECKLISTA PRZEDSTARTOWA (PRE-LAUNCH CHECKLIST)
+## 📢 KROK 7: WŁASNA DOMENA & KAMPANIA SPOŁECZNOŚCIOWA
 
-### Faza 1: Fundamenty Techniczne & UI
-- [x] Backend Cloudflare Worker (`uploud-api`) z limitami 250 MB / 10 GB.
-- [x] Szklany interfejs, modal PRO i weryfikacja kluczy w `app.js`.
-- [x] Luksusowy złoty favicon na obsydianowym szkle (`favicon.jpg`).
-- [x] Migracja frontendu na **Cloudflare Pages** (darmowy komercyjny hosting).
-- [x] Regulamin i Polityka Prywatności w widokach serwisu.
+### 1. Własna Domena `dropsite.pl` (Opcjonalnie)
+* Zakup domeny `dropsite.pl` (~12–15 zł w OVH / Seohost).
+* Podpięcie w Cloudflare Pages w zakładce *Custom Domains* (automatyczny certyfikat SSL i routing DNS).
 
-### Faza 2: Płatności & Zaufanie
-- [x] Wdrożenie płatności natywnym BLIKiem (14,99 zł za 30 dni PRO) z walidacją 6 cyfr i autoryzacją.
-- [x] Podpięcie linków zakupu (Stripe BLIK 14,99 zł i Polar.sh 14,99 zł/mc).
-- [x] Automatyczna aktywacja licencji PRO po powrocie z bramki płatności.
-- [x] Podpięcie domeny `dropsite.pages.dev` w Cloudflare Pages.
-
-### Faza 3: Dystrybucja & Start
-- [ ] Opublikowanie porównania WeTransfer vs Dropsite (Wideo / Post).
-- [ ] Publikacja postu na Wykop.pl i branżowych grupach FB.
-- [ ] Nagranie virału na TikToka z "Trybem Szpiegowskim 007".
+### 2. Dystrybucja Społecznościowa (Gotowe formatki postów):
+* **Wykop.pl (Technologia / Wykopalisko):**
+  > *„Cześć! Zbudowałem Dropsite — prywatną alternatywę dla WeTransfer bez reklam i bez logowania. Pliki do 250 MB za darmo, czyszczenie EXIF w RAM, odtwarzacz wideo w przeglądarce i zestaw narzędzi PDF. Działa na serwerach Cloudflare w Warszawie z obsługą BLIK. Będę wdzięczny za feedback!”*
+* **Grupy Facebook (Montażyści wideo Premiere / DaVinci, Fotografowie):**
+  > *„Jeśli szukacie alternatywy dla Frame.io i WeTransfer do wysyłania surówek klientom z możliwością stawiania pinezek z komentarzami na osi czasu wideo — przetestujcie Dropsite.”*
+* **Reddit (`r/InternetIsBeautiful`, `r/selfhosted`):**
+  > *„I built a privacy-focused, zero-knowledge file transfer & PDF toolbox with browser-based video streaming and RAM metadata stripping.”*
