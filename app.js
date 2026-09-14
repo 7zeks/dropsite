@@ -13460,6 +13460,61 @@ window.downloadCurrentAlbumAsZip = async function() {
 // =========================================================================
 // DROPSITE BEAM (TRANSFER P2P WEBRTC) - LOGIKA KONTROLERÓW UI
 // =========================================================================
+
+function transitionBetweenCloudAndBeam(targetId) {
+    if (typeof playSound === 'function') playSound('pop');
+
+    const uploadBox = document.getElementById('uploadBox');
+    const beamContainer = document.querySelector('.beam-container');
+
+    const applySwitch = () => {
+        if (targetId === 'view-beam') {
+            if (typeof window.switchView === 'function') {
+                window.switchView('view-beam', true);
+            }
+            if (beamContainer) {
+                beamContainer.classList.remove('beam-warp-enter');
+                void beamContainer.offsetWidth;
+                beamContainer.classList.add('beam-warp-enter');
+                setTimeout(() => beamContainer.classList.remove('beam-warp-enter'), 500);
+            }
+        } else {
+            if (typeof window.navigateToHome === 'function') {
+                window.navigateToHome(false);
+            } else if (typeof window.switchView === 'function') {
+                window.switchView('view-glowna', true);
+            }
+            if (uploadBox) {
+                uploadBox.classList.remove('cloud-warp-enter');
+                void uploadBox.offsetWidth;
+                uploadBox.classList.add('cloud-warp-enter');
+                setTimeout(() => uploadBox.classList.remove('cloud-warp-enter'), 500);
+            }
+        }
+    };
+
+    // Jeśli przeglądarka wspiera View Transitions API, uruchamiamy natywny morphing
+    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (uploadBox) uploadBox.style.viewTransitionName = 'transfer-card';
+        if (beamContainer) beamContainer.style.viewTransitionName = 'transfer-card';
+
+        try {
+            const transition = document.startViewTransition(() => {
+                applySwitch();
+            });
+            transition.finished.finally(() => {
+                if (uploadBox) uploadBox.style.viewTransitionName = '';
+                if (beamContainer) beamContainer.style.viewTransitionName = '';
+            });
+        } catch (_) {
+            applySwitch();
+        }
+    } else {
+        applySwitch();
+    }
+}
+window.transitionBetweenCloudAndBeam = transitionBetweenCloudAndBeam;
+
 function initDropsiteBeamUI() {
     // Przełącznik trybu transferu na karcie (Chmura Dropsite vs Beam P2P)
     const modeSwitchCloudBtn = document.getElementById('modeSwitchCloudBtn');
@@ -13470,18 +13525,14 @@ function initDropsiteBeamUI() {
     if (modeSwitchBeamBtn) {
         modeSwitchBeamBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (typeof window.switchView === 'function') {
-                window.switchView('view-beam', true);
-            }
+            transitionBetweenCloudAndBeam('view-beam');
         });
     }
 
     if (beamModeSwitchCloudBtn) {
         beamModeSwitchCloudBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (typeof window.switchView === 'function') {
-                window.switchView('view-glowna', true);
-            }
+            transitionBetweenCloudAndBeam('view-glowna');
         });
     }
 
