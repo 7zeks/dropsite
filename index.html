@@ -197,6 +197,7 @@
         </div>
     </div>
 
+    <div class="mobile-header-backdrop" id="mobileHeaderBackdrop" aria-hidden="true"></div>
     <a href="/" class="nav-logo" onclick="if(window.navigateToHome){ window.navigateToHome(true); return false; }">
         <div class="nav-logo-icon-box">
             <div class="nav-logo-aura"></div>
@@ -354,6 +355,23 @@
                 </svg>
                 <span data-i18n="nav_contact">Contact</span>
             </a>
+
+            <div class="mobile-drawer-actions">
+                <button type="button" class="mobile-drawer-action-btn" id="mobileSoundToggleBtn" aria-label="Przełącz dźwięki">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <span>Dźwięki</span>
+                </button>
+                <button type="button" class="mobile-drawer-action-btn" id="mobileHistoryBtn" aria-label="Historia transferów">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Historia</span>
+                </button>
+            </div>
         </div>
     </div>
 

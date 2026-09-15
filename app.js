@@ -13464,19 +13464,22 @@ window.downloadCurrentAlbumAsZip = async function() {
 function transitionBetweenCloudAndBeam(targetId) {
     if (typeof playSound === 'function') playSound('pop');
 
+    const siriGlowFrame = document.getElementById('siriGlowFrame');
     const uploadBox = document.getElementById('uploadBox');
     const beamContainer = document.querySelector('.beam-container');
 
-    const applySwitch = () => {
+    const cloudCard = siriGlowFrame || uploadBox;
+
+    const applySwitch = (isViewTransition = false) => {
         if (targetId === 'view-beam') {
             if (typeof window.switchView === 'function') {
                 window.switchView('view-beam', true);
             }
-            if (beamContainer) {
+            if (!isViewTransition && beamContainer) {
                 beamContainer.classList.remove('beam-warp-enter');
                 void beamContainer.offsetWidth;
                 beamContainer.classList.add('beam-warp-enter');
-                setTimeout(() => beamContainer.classList.remove('beam-warp-enter'), 500);
+                setTimeout(() => beamContainer.classList.remove('beam-warp-enter'), 400);
             }
         } else {
             if (typeof window.navigateToHome === 'function') {
@@ -13484,33 +13487,33 @@ function transitionBetweenCloudAndBeam(targetId) {
             } else if (typeof window.switchView === 'function') {
                 window.switchView('view-glowna', true);
             }
-            if (uploadBox) {
-                uploadBox.classList.remove('cloud-warp-enter');
-                void uploadBox.offsetWidth;
-                uploadBox.classList.add('cloud-warp-enter');
-                setTimeout(() => uploadBox.classList.remove('cloud-warp-enter'), 500);
+            if (!isViewTransition && cloudCard) {
+                cloudCard.classList.remove('cloud-warp-enter');
+                void cloudCard.offsetWidth;
+                cloudCard.classList.add('cloud-warp-enter');
+                setTimeout(() => cloudCard.classList.remove('cloud-warp-enter'), 400);
             }
         }
     };
 
     // Jeśli przeglądarka wspiera View Transitions API, uruchamiamy natywny morphing
     if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        if (uploadBox) uploadBox.style.viewTransitionName = 'transfer-card';
+        if (cloudCard) cloudCard.style.viewTransitionName = 'transfer-card';
         if (beamContainer) beamContainer.style.viewTransitionName = 'transfer-card';
 
         try {
             const transition = document.startViewTransition(() => {
-                applySwitch();
+                applySwitch(true);
             });
             transition.finished.finally(() => {
-                if (uploadBox) uploadBox.style.viewTransitionName = '';
+                if (cloudCard) cloudCard.style.viewTransitionName = '';
                 if (beamContainer) beamContainer.style.viewTransitionName = '';
             });
         } catch (_) {
-            applySwitch();
+            applySwitch(false);
         }
     } else {
-        applySwitch();
+        applySwitch(false);
     }
 }
 window.transitionBetweenCloudAndBeam = transitionBetweenCloudAndBeam;
