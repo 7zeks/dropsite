@@ -2109,7 +2109,7 @@
     transform: rotate(90deg);
 }
 
-/* Mobile slide-down drawer */
+/* Mobile slide-down drawer (Translucent Frosted Glass Overlay) */
 .mobile-nav-drawer {
     display: none;
     position: fixed;
@@ -2118,13 +2118,13 @@
     right: 0;
     bottom: 0;
     z-index: 99999;
-    background: rgba(9, 10, 15, 0.96);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
+    background: rgba(9, 12, 22, 0.65);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-nav-drawer.open {
