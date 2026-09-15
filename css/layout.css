@@ -1805,28 +1805,7 @@
 }
 
 @media (max-width: 768px) {
-    /* --- EKRAN MOBILNY: SPÓJNY, SZKLANY HEADER NA SAMEJ GÓRZE --- */
-    .mobile-header-backdrop {
-        display: block !important;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 52px;
-        background: rgba(9, 11, 18, 0.92);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        z-index: 999;
-        pointer-events: none;
-        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
-    }
-
-    .mobile-header-backdrop.nav-hidden {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-
+    /* --- EKRAN MOBILNY: PŁYWAJĄCE LOGO I PRZYCISKI W JEDNEJ LINII --- */
     .nav-logo {
         position: fixed !important;
         top: 10px !important;
