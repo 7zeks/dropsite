@@ -7683,18 +7683,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === SMART AUTO-HIDE NAVBAR (OPCJA 2: PŁYNNE CHOWANIE LOGO I MENU PRZY SCROLLU W DÓŁ) ===
+    // === SMART AUTO-HIDE NAVBAR & SCROLL TO TOP BUTTON ===
     const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
-    if (navFloatingElements.length) {
-        let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-        let ticking = false;
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
 
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (scrollToTopBtn) {
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            if (navFloatingElements.length) {
+                navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+            }
+        });
+    }
 
-                    // Schowaj logo i menu gdy użytkownik wyraźnie scrolluje w dół (>8px) i znajduje się poniżej 70px
+    let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    let ticking = false;
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+
+                // Pokaż przycisk powrotu na górę, gdy użytkownik przewinie stronę > 250px
+                if (scrollToTopBtn) {
+                    if (currentScrollY > 250) {
+                        scrollToTopBtn.classList.add('visible');
+                    } else {
+                        scrollToTopBtn.classList.remove('visible');
+                    }
+                }
+
+                // Schowaj logo i menu gdy użytkownik wyraźnie scrolluje w dół (>8px) i znajduje się poniżej 70px
+                if (navFloatingElements.length) {
                     if (currentScrollY > 70) {
                         if (currentScrollY > lastScrollY && (currentScrollY - lastScrollY > 8)) {
                             // Scroll w dół -> płynne ukrycie poza ekranem
@@ -7711,14 +7734,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Na samej górze zawsze widoczne
                         navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
                     }
+                }
 
-                    lastScrollY = Math.max(0, currentScrollY);
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        }, { passive: true });
-    }
+                lastScrollY = Math.max(0, currentScrollY);
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
 
     // === BENTO PIANO TABS (KLAWISZE PIANINA NA STRONIE GŁÓWNEJ) ===
     function initHomeBentoPianoTabs() {
