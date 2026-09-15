@@ -545,6 +545,11 @@ body.is-admin .storage-widget {
 .mod-icon-badge {
     width: 42px;
     height: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    aspect-ratio: 1 / 1;
     border-radius: 12px;
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(56, 189, 248, 0.2);
@@ -3525,6 +3530,10 @@ body.is-pro .pro-sparkle {
     -webkit-backdrop-filter: blur(20px);
     z-index: 25;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 @media (max-width: 640px) {
@@ -3549,7 +3558,32 @@ body.is-pro .pro-sparkle {
         margin-top: -20px;
         margin-left: -16px;
         margin-right: -16px;
-        padding: 16px 16px 10px 16px;
+        padding: 14px 14px 10px 14px;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+    .pro-modal-header-left {
+        gap: 10px !important;
+    }
+    .pro-modal-header-left h2 {
+        font-size: 16.5px !important;
+        margin: 0 0 2px 0 !important;
+    }
+    .pro-modal-subtitle {
+        font-size: 11px !important;
+        line-height: 1.35 !important;
+    }
+    .pro-icon-badge {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        font-size: 18px !important;
+        border-radius: 10px !important;
     }
     .pro-features-summary {
         padding: 12px 12px !important;
@@ -3593,25 +3627,43 @@ body.is-pro .pro-sparkle {
     display: flex;
     align-items: center;
     gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.pro-modal-header-left h2 {
+    margin: 0 0 2px 0;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #FFFFFF;
 }
 
 .pro-icon-badge {
-    width: 44px;
-    height: 44px;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    aspect-ratio: 1 / 1 !important;
+    flex-shrink: 0 !important;
     border-radius: 12px;
     background: linear-gradient(135deg, rgba(255, 226, 89, 0.25) 0%, rgba(255, 167, 81, 0.25) 100%);
     border: 1px solid rgba(255, 210, 76, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 20px;
     color: #FFD24C;
     box-shadow: 0 0 20px rgba(255, 195, 60, 0.25);
 }
 
 .pro-modal-subtitle {
-    font-size: 13px;
+    font-size: 12.5px;
+    line-height: 1.35;
     color: var(--text-muted);
+    display: block;
 }
 
 .pro-features-summary {
