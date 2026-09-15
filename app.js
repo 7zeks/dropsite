@@ -265,15 +265,17 @@ function isProUser() {
             return false;
         }
     }
-    const isLocalDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
-    return getProKey().length > 0 || isLocalDev;
+    return getProKey().length > 0;
 }
 
 function setProKey(key) {
     if (key) {
         localStorage.setItem('dropsite_pro_key', key.trim());
+        localStorage.removeItem('dropsite_pro_detached');
     } else {
         localStorage.removeItem('dropsite_pro_key');
+        localStorage.removeItem('dropsite_pro_expires');
+        localStorage.removeItem('dropsite_pro_type');
     }
     updateProUI();
 }
@@ -423,6 +425,8 @@ auth.onAuthStateChanged(async user => {
         // Weryfikacja czy ten konkretny użytkownik ma aktywny klucz PRO przypisany do swojego konta
         // Jeśli w pamięci lokalnej brak klucza (np. nowe urządzenie/telefon), odpytujemy serwer R2 po adresie e-mail
         const userStoredKey = (localStorage.getItem(`dropsite_pro_key_${user.uid}`) || localStorage.getItem('dropsite_pro_key') || '').trim();
+        const isDetached = localStorage.getItem('dropsite_pro_detached') === '1';
+
         if (!isActualAdminUser()) {
             try {
                 const vRes = await fetch(`${WORKER_URL}/verify-pro`, {
@@ -437,19 +441,34 @@ auth.onAuthStateChanged(async user => {
                 const vData = await vRes.json();
                 if (vData.success && vData.isPro) {
                     const activeKey = vData.key || userStoredKey || 'DROPSITE-PRO-ACTIVE';
-                    setProKey(activeKey);
-                    localStorage.setItem(`dropsite_pro_key_${user.uid}`, activeKey);
-                    localStorage.setItem('dropsite_pro_key', activeKey);
-                    if (vData.expires_at) {
-                        localStorage.setItem('dropsite_pro_expires', vData.expires_at);
+                    window.accountAvailableProLicense = { 
+                        key: activeKey, 
+                        expires_at: vData.expires_at, 
+                        type: vData.type 
+                    };
+                    localStorage.setItem(`dropsite_pro_backup_key_${user.uid}`, activeKey);
+
+                    if (!isDetached) {
+                        setProKey(activeKey);
+                        localStorage.setItem(`dropsite_pro_key_${user.uid}`, activeKey);
+                        localStorage.setItem('dropsite_pro_key', activeKey);
+                        if (vData.expires_at) {
+                            localStorage.setItem('dropsite_pro_expires', vData.expires_at);
+                        }
+                    } else {
+                        // Użytkownik świadomie odpiął PRO - nie wymuszamy ponownej aktywacji,
+                        // ale licencja czeka w gotowości do 1-klikowego przywrócenia w oknie PRO
+                        setProKey('');
                     }
                 } else {
+                    window.accountAvailableProLicense = null;
                     setProKey('');
                     localStorage.removeItem(`dropsite_pro_key_${user.uid}`);
+                    localStorage.removeItem(`dropsite_pro_backup_key_${user.uid}`);
                 }
             } catch(e) {
-                // W razie błędu sieci, jeśli mamy lokalny klucz, zachowaj go
-                if (userStoredKey) {
+                // W razie błędu sieci, jeśli mamy lokalny klucz i nie było świadomego odpięcia, zachowaj go
+                if (userStoredKey && !isDetached) {
                     setProKey(userStoredKey);
                 }
             }
@@ -524,6 +543,7 @@ function updateProUI() {
     const proPurchaseOptions = document.querySelector('.pro-purchase-options');
     const proActivationBox = document.querySelector('.pro-activation-box');
     const proActiveBox = document.getElementById('proActiveBox');
+    const proRestoreBox = document.getElementById('proRestoreBox');
     const proKeyInput = document.getElementById('proKeyInput');
     const deactivateBtn = document.getElementById('deactivateProKeyBtn');
 
@@ -550,6 +570,28 @@ function updateProUI() {
         }
         if (deactivateBtn) {
             deactivateBtn.style.display = isAdmin ? 'none' : 'inline-flex';
+        }
+    }
+
+    // Obsługa boksu przywracania licencji w gotowości (np. po odpięciu)
+    if (proRestoreBox) {
+        const user = auth.currentUser;
+        const availableBackupKey = user 
+            ? (localStorage.getItem(`dropsite_pro_backup_key_${user.uid}`) || window.accountAvailableProLicense?.key)
+            : sessionStorage.getItem('dropsite_pro_backup_key_guest');
+        
+        if (!isPro && availableBackupKey) {
+            proRestoreBox.hidden = false;
+            const subtitle = document.getElementById('proRestoreSubtitle');
+            if (subtitle) {
+                if (user && user.email) {
+                    subtitle.textContent = `Wykryto aktywną licencję PRO przypisaną do konta ${user.email}. Możesz ją włączyć jednym kliknięciem.`;
+                } else {
+                    subtitle.textContent = 'Klucz PRO został odpięty na tym urządzeniu. Możesz go włączyć z powrotem.';
+                }
+            }
+        } else {
+            proRestoreBox.hidden = true;
         }
     }
 
@@ -955,19 +997,84 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Obsługa przywracania licencji PRO jednym kliknięciem
+    const btnRestorePro = document.getElementById('btnRestorePro');
+    if (btnRestorePro) {
+        btnRestorePro.addEventListener('click', () => {
+            const user = auth.currentUser;
+            const keyToRestore = (user 
+                ? (localStorage.getItem(`dropsite_pro_backup_key_${user.uid}`) || window.accountAvailableProLicense?.key) 
+                : sessionStorage.getItem('dropsite_pro_backup_key_guest')) || '';
+            
+            if (!keyToRestore) {
+                if (typeof showError === 'function') showError('Nie znaleziono zapisanej licencji do przywrócenia.');
+                return;
+            }
+
+            localStorage.removeItem('dropsite_pro_detached');
+            setProKey(keyToRestore);
+            if (user) {
+                localStorage.setItem(`dropsite_pro_key_${user.uid}`, keyToRestore);
+            }
+            if (window.accountAvailableProLicense?.expires_at) {
+                localStorage.setItem('dropsite_pro_expires', window.accountAvailableProLicense.expires_at);
+            }
+
+            if (typeof playSound === 'function') playSound('success');
+            if (typeof showNotification === 'function') {
+                showNotification('Witaj z powrotem w Dropsite PRO! Wszystkie limity odblokowane ⭐', 'success');
+            }
+            updateProUI();
+        });
+    }
+
+    let proDeactivateConfirmTimer = null;
     if (deactivateProKeyBtn) {
         deactivateProKeyBtn.addEventListener('click', () => {
-            setProKey('');
-            if (auth.currentUser) {
-                localStorage.removeItem(`dropsite_pro_key_${auth.currentUser.uid}`);
+            if (!deactivateProKeyBtn.dataset.confirming) {
+                deactivateProKeyBtn.dataset.confirming = 'true';
+                deactivateProKeyBtn.classList.add('confirming');
+                const span = deactivateProKeyBtn.querySelector('span');
+                if (span) span.textContent = 'Na pewno odpiąć? Kliknij ponownie';
+
+                if (proDeactivateConfirmTimer) clearTimeout(proDeactivateConfirmTimer);
+                proDeactivateConfirmTimer = setTimeout(() => {
+                    delete deactivateProKeyBtn.dataset.confirming;
+                    deactivateProKeyBtn.classList.remove('confirming');
+                    if (span) span.textContent = 'Dezaktywuj';
+                }, 4000);
+                return;
             }
+
+            // Potwierdzono - wykonaj miękką dezaktywację
+            if (proDeactivateConfirmTimer) clearTimeout(proDeactivateConfirmTimer);
+            delete deactivateProKeyBtn.dataset.confirming;
+            deactivateProKeyBtn.classList.remove('confirming');
+            const span = deactivateProKeyBtn.querySelector('span');
+            if (span) span.textContent = 'Dezaktywuj';
+
+            const activeKey = getProKey();
+            const user = auth.currentUser;
+
+            if (user && activeKey) {
+                localStorage.setItem(`dropsite_pro_backup_key_${user.uid}`, activeKey);
+            } else if (activeKey) {
+                sessionStorage.setItem('dropsite_pro_backup_key_guest', activeKey);
+            }
+
+            localStorage.setItem('dropsite_pro_detached', '1');
+            setProKey('');
+            if (user) {
+                localStorage.removeItem(`dropsite_pro_key_${user.uid}`);
+            }
+
             const statusText = document.getElementById('proKeyStatus');
             if (statusText) {
                 statusText.className = 'pro-key-status-text';
-                statusText.textContent = 'Klucz został odpięty.';
+                statusText.textContent = 'Klucz PRO został odpięty na tym urządzeniu.';
             }
             if (typeof showNotification === 'function') {
-                showNotification('Klucz PRO został dezaktywowany', 'info');
+                showNotification('Klucz PRO został odpięty. W każdej chwili możesz go przywrócić w oknie PRO.', 'info');
             }
         });
     }
@@ -988,13 +1095,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+            // Na środowisku lokalnym (localhost) zawsze używamy natywnego modala BLIK,
+            // aby zewnętrzny link Stripe nie przekierowywał testera na domenę produkcyjną dropsite.pages.dev!
+            if (!isLocal && STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
                 const btnText = btnBuyProBlik.querySelector('.btn-text');
                 if (btnText) btnText.textContent = 'Przekierowanie do Stripe...';
                 btnBuyProBlik.style.pointerEvents = 'none';
-                window.location.href = STRIPE_PRO_BLIK_URL.trim();
+
+                let targetUrl = STRIPE_PRO_BLIK_URL.trim();
+                const userEmail = window.auth?.currentUser?.email;
+                if (userEmail) {
+                    targetUrl += (targetUrl.includes('?') ? '&' : '?') + `prefilled_email=${encodeURIComponent(userEmail)}`;
+                }
+                window.location.href = targetUrl;
             } else {
-                // Gdy link Stripe nie jest jeszcze podpięty, otwórz wbudowany modal natywny BLIK
+                // Tryb lokalny lub natywny modal BLIK w aplikacji
                 window.openBlikModal(14.99, 'pro');
             }
         });
@@ -1068,13 +1185,24 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('dropsite_pro_type', 'blik_30d');
         localStorage.setItem('dropsite_pro_expires', expiry.toISOString());
 
+        const bindProSuccessToUser = (u) => {
+            if (u && u.email) {
+                localStorage.setItem(`dropsite_pro_key_${u.uid}`, blikProKey);
+                fetch(`${WORKER_URL}/verify-pro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: blikProKey, email: u.email })
+                }).catch(() => {});
+            }
+        };
+
         if (window.auth?.currentUser?.email) {
-            localStorage.setItem(`dropsite_pro_key_${window.auth.currentUser.uid}`, blikProKey);
-            fetch(`${WORKER_URL}/verify-pro`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: blikProKey, email: window.auth.currentUser.email })
-            }).catch(() => {});
+            bindProSuccessToUser(window.auth.currentUser);
+        } else if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+            const unsub = window.auth.onAuthStateChanged(u => {
+                if (u) bindProSuccessToUser(u);
+                if (typeof unsub === 'function') unsub();
+            });
         }
 
         try {
@@ -5903,76 +6031,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// === PODGLĄD ZDJĘĆ W PANELU MODERACJI ORAZ NA STRONIE POBIERANIA (LIGHTBOX) ===
-window.openDownloadImageLightbox = function(url, title) {
-    const modal = document.getElementById('dlLightboxModal');
-    const img = document.getElementById('dlLightboxImg');
-    const titleEl = document.getElementById('dlLightboxTitle');
-    const newTabBtn = document.getElementById('dlLightboxOpenNewTab');
-    const zoomToggleBtn = document.getElementById('dlLightboxZoomToggle');
-    const zoomInIcon = document.getElementById('dlZoomInIcon');
-    const zoomOutIcon = document.getElementById('dlZoomOutIcon');
-    const zoomStatusText = document.getElementById('dlZoomStatusText');
-    const closeBtn = document.getElementById('dlLightboxCloseBtn');
-    const backdrop = document.getElementById('dlLightboxBackdrop');
-
-    if (!modal || !img) return;
-
-    img.src = url;
-    img.alt = title || 'Podgląd zdjęcia';
-    img.classList.remove('zoomed');
-
-    if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
-    if (newTabBtn) newTabBtn.href = url;
-
-    let isZoomed = false;
-    const updateZoomState = (zoomed) => {
-        isZoomed = zoomed;
-        if (isZoomed) {
-            img.classList.add('zoomed');
-            if (zoomInIcon) zoomInIcon.style.display = 'none';
-            if (zoomOutIcon) zoomOutIcon.style.display = 'block';
-            if (zoomStatusText) zoomStatusText.textContent = 'Dopasuj';
-        } else {
-            img.classList.remove('zoomed');
-            if (zoomInIcon) zoomInIcon.style.display = 'block';
-            if (zoomOutIcon) zoomOutIcon.style.display = 'none';
-            if (zoomStatusText) zoomStatusText.textContent = 'Powiększ';
-        }
-    };
-
-    updateZoomState(false);
-
-    const toggleZoom = (e) => {
-        if (e) e.stopPropagation();
-        updateZoomState(!isZoomed);
-    };
-
-    const closeModal = () => {
-        window.smoothCloseModal(modal, () => {
-            img.src = '';
-            img.classList.remove('zoomed');
-        });
-        document.removeEventListener('keydown', handleKeyDown);
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
-    };
-
-    img.onclick = toggleZoom;
-    if (zoomToggleBtn) zoomToggleBtn.onclick = toggleZoom;
-    if (closeBtn) closeBtn.onclick = closeModal;
-    if (backdrop) backdrop.onclick = closeModal;
-
-    document.addEventListener('keydown', handleKeyDown);
-    window.smoothOpenModal(modal);
-};
-
+// === PODGLĄD ZDJĘĆ W PANELU MODERACJI (LIGHTBOX) ===
 window.openImagePreview = function(url, title) {
-    window.openDownloadImageLightbox(url, title || 'Podgląd zdjęcia');
+    if (typeof window.openDownloadImageLightbox === 'function') {
+        window.openDownloadImageLightbox(url, title || 'Podgląd zdjęcia');
+    }
 };
 
 // === ODTWARZACZ WIDEO W PANELU MODERACJI ===
@@ -8682,59 +8745,7 @@ async function initDownloadRouter() {
         modal.style.display = 'flex';
     };
 
-    // Podgląd powiększenia obrazu (Lightbox)
-    window.openDownloadImageLightbox = function(imageUrl, title) {
-        const modal = document.getElementById('dlLightboxModal');
-        const img = document.getElementById('dlLightboxImg');
-        const titleEl = document.getElementById('dlLightboxTitle');
-        const openNewTab = document.getElementById('dlLightboxOpenNewTab');
-        const closeBtn = document.getElementById('dlLightboxCloseBtn');
-        const backdrop = document.getElementById('dlLightboxBackdrop');
-        const zoomToggle = document.getElementById('dlLightboxZoomToggle');
-        const zoomInIcon = document.getElementById('dlZoomInIcon');
-        const zoomOutIcon = document.getElementById('dlZoomOutIcon');
-        const zoomStatus = document.getElementById('dlZoomStatusText');
 
-        if (!modal || !img) return;
-
-        img.src = imageUrl;
-        if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
-        if (openNewTab) openNewTab.href = imageUrl;
-
-        let isZoomed = false;
-        const updateZoom = (zoomed) => {
-            isZoomed = zoomed;
-            img.style.maxHeight = isZoomed ? 'none' : '75vh';
-            img.style.cursor = isZoomed ? 'zoom-out' : 'zoom-in';
-            if (zoomInIcon) zoomInIcon.style.display = isZoomed ? 'none' : 'block';
-            if (zoomOutIcon) zoomOutIcon.style.display = isZoomed ? 'block' : 'none';
-            if (zoomStatus) zoomStatus.textContent = isZoomed ? 'Dopasuj' : 'Powiększ';
-        };
-        updateZoom(false);
-
-        if (zoomToggle) {
-            zoomToggle.onclick = () => updateZoom(!isZoomed);
-        }
-        img.onclick = () => updateZoom(!isZoomed);
-
-        const closeModal = () => {
-            modal.hidden = true;
-            modal.style.display = 'none';
-            img.src = '';
-            document.removeEventListener('keydown', handleEsc);
-        };
-
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') closeModal();
-        };
-
-        if (closeBtn) closeBtn.onclick = closeModal;
-        if (backdrop) backdrop.onclick = closeModal;
-        document.addEventListener('keydown', handleEsc);
-
-        modal.hidden = false;
-        modal.style.display = 'flex';
-    };
 
     // =========================================================================
     // CLIENT PROOFING & REVISION PINS (MINI-FRAME.IO)
@@ -12751,12 +12762,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================================================
-// ZAAWANSOWANY SYSTEM LIGHTBOX & ALBUMU FOTOGRAFICZNEGO (FULLSCREEN VIEWER)
+// ZAAWANSOWANY SYSTEM LIGHTBOX & ALBUMU FOTOGRAFICZNEGO (GPU PAN & ZOOM)
 // =========================================================================
 function initDownloadLightboxSystem() {
     const modal = document.getElementById('dlLightboxModal');
     if (!modal) return;
 
+    const bodyEl = document.getElementById('dlLightboxBody');
     const imgEl = document.getElementById('dlLightboxImg');
     const closeBtn = document.getElementById('dlLightboxCloseBtn');
     const zoomBtn = document.getElementById('dlLightboxZoomToggle') || document.getElementById('dlLightboxZoomBtn');
@@ -12765,35 +12777,244 @@ function initDownloadLightboxSystem() {
     const zoomText = document.getElementById('dlZoomStatusText');
     const prevBtn = document.getElementById('dlLightboxPrevBtn');
     const nextBtn = document.getElementById('dlLightboxNextBtn');
+    const backdrop = document.getElementById('dlLightboxBackdrop');
 
-    const toggleZoom = () => {
+    // Parametry silnika Pan & Zoom
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+    let hasDragged = false;
+    let lastPinchDist = null;
+
+    const MIN_SCALE = 1;
+    const MAX_SCALE = 6;
+
+    const updateTransform = (animate = false) => {
         if (!imgEl) return;
-        const isZoomed = imgEl.classList.toggle('zoomed');
-        if (zoomInIcon) zoomInIcon.style.display = isZoomed ? 'none' : 'block';
-        if (zoomOutIcon) zoomOutIcon.style.display = isZoomed ? 'block' : 'none';
-        if (zoomText) zoomText.textContent = isZoomed ? 'Oddal' : 'Powiększ';
+        imgEl.style.transition = animate ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
+        imgEl.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+
+        if (scale > 1.05) {
+            imgEl.style.cursor = isDragging ? 'grabbing' : 'grab';
+        } else {
+            imgEl.style.cursor = 'zoom-in';
+        }
+
+        if (zoomInIcon) zoomInIcon.style.display = scale > 1.05 ? 'none' : 'block';
+        if (zoomOutIcon) zoomOutIcon.style.display = scale > 1.05 ? 'block' : 'none';
+        if (zoomText) zoomText.textContent = scale > 1.05 ? 'Dopasuj' : 'Powiększ';
     };
 
+    const resetZoom = (animate = true) => {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+        isDragging = false;
+        hasDragged = false;
+        updateTransform(animate);
+    };
+
+    window._resetLightboxPanZoom = resetZoom;
+
+    const clampPan = () => {
+        if (!bodyEl || !imgEl) return;
+        const bRect = bodyEl.getBoundingClientRect();
+        const iRect = imgEl.getBoundingClientRect();
+
+        const maxPanX = Math.max(0, (iRect.width - bRect.width) / 2) + bRect.width * 0.2;
+        const maxPanY = Math.max(0, (iRect.height - bRect.height) / 2) + bRect.height * 0.2;
+
+        panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+        panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+    };
+
+    const zoomAtPoint = (newScale, clientX, clientY, animate = true) => {
+        newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+        if (Math.abs(newScale - 1) < 0.04) {
+            resetZoom(animate);
+            return;
+        }
+
+        if (bodyEl) {
+            const bRect = bodyEl.getBoundingClientRect();
+            const cx = clientX !== undefined ? clientX - (bRect.left + bRect.width / 2) : 0;
+            const cy = clientY !== undefined ? clientY - (bRect.top + bRect.height / 2) : 0;
+
+            const scaleRatio = newScale / scale;
+            panX = cx - (cx - panX) * scaleRatio;
+            panY = cy - (cy - panY) * scaleRatio;
+        }
+
+        scale = newScale;
+        clampPan();
+        updateTransform(animate);
+    };
+
+    const toggleZoom = (clientX, clientY) => {
+        if (scale > 1.05) {
+            resetZoom(true);
+        } else {
+            zoomAtPoint(2.4, clientX, clientY, true);
+        }
+    };
+
+    // Kółko myszy do płynnego skalowania
+    if (bodyEl) {
+        bodyEl.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.25 : 0.8;
+            zoomAtPoint(scale * factor, e.clientX, e.clientY, false);
+        }, { passive: false });
+
+        // Przeciąganie myszką (Drag to Pan)
+        bodyEl.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            if (e.target.closest('.dl-lightbox-nav-btn')) return;
+
+            isDragging = true;
+            hasDragged = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            startPanX = panX;
+            startPanY = panY;
+
+            if (scale > 1.05 && imgEl) {
+                imgEl.style.cursor = 'grabbing';
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasDragged = true;
+            }
+
+            if (scale > 1.05) {
+                panX = startPanX + dx;
+                panY = startPanY + dy;
+                clampPan();
+                updateTransform(false);
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            if (scale > 1.05 && imgEl) {
+                imgEl.style.cursor = 'grab';
+            }
+        });
+
+        // Obsługa gestów dotykowych (Pinch to zoom + Pan na smartfonach)
+        bodyEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isDragging = false;
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                lastPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            } else if (e.touches.length === 1) {
+                isDragging = true;
+                hasDragged = false;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                startPanX = panX;
+                startPanY = panY;
+            }
+        }, { passive: true });
+
+        bodyEl.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && lastPinchDist) {
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                const midX = (t1.clientX + t2.clientX) / 2;
+                const midY = (t1.clientY + t2.clientY) / 2;
+                const factor = dist / lastPinchDist;
+                zoomAtPoint(scale * factor, midX, midY, false);
+                lastPinchDist = dist;
+            } else if (e.touches.length === 1 && isDragging && scale > 1.05) {
+                const dx = e.touches[0].clientX - startX;
+                const dy = e.touches[0].clientY - startY;
+                if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+                    hasDragged = true;
+                }
+                panX = startPanX + dx;
+                panY = startPanY + dy;
+                clampPan();
+                updateTransform(false);
+            }
+        }, { passive: true });
+
+        bodyEl.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                lastPinchDist = null;
+            }
+            if (e.touches.length === 0) {
+                isDragging = false;
+                if (scale < 1.05) {
+                    resetZoom(true);
+                }
+            }
+        });
+    }
+
+    // Kliknięcie / dwuklik zdjęcia
+    if (imgEl) {
+        imgEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (hasDragged) {
+                hasDragged = false;
+                return;
+            }
+            toggleZoom(e.clientX, e.clientY);
+        });
+
+        imgEl.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            toggleZoom(e.clientX, e.clientY);
+        });
+    }
+
+    // Przycisk "Powiększ / Dopasuj" w belce
+    if (zoomBtn) {
+        zoomBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (scale > 1.05) {
+                resetZoom(true);
+            } else if (bodyEl) {
+                const bRect = bodyEl.getBoundingClientRect();
+                zoomAtPoint(2.4, bRect.left + bRect.width / 2, bRect.top + bRect.height / 2, true);
+            }
+        });
+    }
+
     const closeModal = () => {
-        if (imgEl) imgEl.classList.remove('zoomed');
-        if (zoomInIcon) zoomInIcon.style.display = 'block';
-        if (zoomOutIcon) zoomOutIcon.style.display = 'none';
-        if (zoomText) zoomText.textContent = 'Powiększ';
+        resetZoom(false);
         if (typeof window.smoothCloseModal === 'function') {
-            window.smoothCloseModal(modal);
+            window.smoothCloseModal(modal, () => {
+                if (imgEl) imgEl.src = '';
+            });
         } else {
             modal.style.display = 'none';
             modal.classList.add('is-hidden');
             modal.hidden = true;
+            if (imgEl) imgEl.src = '';
         }
     };
 
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (zoomBtn) zoomBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleZoom(); });
-    if (imgEl) imgEl.addEventListener('click', (e) => { e.stopPropagation(); toggleZoom(); });
+    if (backdrop) backdrop.addEventListener('click', closeModal);
 
     modal.addEventListener('click', (e) => {
-        if (e.target === modal || e.target.classList.contains('dl-lightbox-dialog') || e.target.id === 'dlLightboxBody') {
+        if (e.target === modal || e.target.classList.contains('dl-lightbox-dialog') || e.target.id === 'dlLightboxBackdrop') {
             closeModal();
         }
     });
@@ -12805,6 +13026,7 @@ function initDownloadLightboxSystem() {
         } else if (e.key === 'ArrowLeft') {
             if (window._albumPhotosList && window._albumPhotosList.length > 1 && window._currentLightboxIndex !== undefined) {
                 e.preventDefault();
+                resetZoom(false);
                 const total = window._albumPhotosList.length;
                 const prevIdx = (window._currentLightboxIndex - 1 + total) % total;
                 window.openAlbumLightbox(prevIdx);
@@ -12812,12 +13034,20 @@ function initDownloadLightboxSystem() {
         } else if (e.key === 'ArrowRight') {
             if (window._albumPhotosList && window._albumPhotosList.length > 1 && window._currentLightboxIndex !== undefined) {
                 e.preventDefault();
+                resetZoom(false);
                 const total = window._albumPhotosList.length;
                 const nextIdx = (window._currentLightboxIndex + 1) % total;
                 window.openAlbumLightbox(nextIdx);
             }
         }
     });
+}
+
+// Inicjalizacja systemu Lightbox
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDownloadLightboxSystem);
+} else {
+    initDownloadLightboxSystem();
 }
 
 window.openDownloadImageLightbox = function(imageUrl, title, path) {
@@ -12832,12 +13062,15 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
 
     if (!modal || !imgEl) return;
 
+    if (window._resetLightboxPanZoom) {
+        window._resetLightboxPanZoom(false);
+    }
+
     window._currentLightboxIndex = undefined;
     imgEl.src = imageUrl;
-    imgEl.classList.remove('zoomed');
 
     if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
-    if (counterEl) counterEl.innerHTML = 'Kliknij zdjęcie, aby powiększyć &bull; Klawisz <strong>Esc</strong> zamyka';
+    if (counterEl) counterEl.innerHTML = 'Kółko myszy / kliknięcie przybliża &bull; Przeciągnij, aby przesuwać &bull; <strong>Esc</strong> zamyka';
     if (newTabBtn) {
         newTabBtn.href = imageUrl;
         newTabBtn.style.display = 'inline-flex';
@@ -12880,11 +13113,14 @@ window.openAlbumLightbox = function(index) {
 
     if (!modal || !imgEl) return;
 
+    if (window._resetLightboxPanZoom) {
+        window._resetLightboxPanZoom(false);
+    }
+
     imgEl.src = item.blobUrl;
-    imgEl.classList.remove('zoomed');
 
     if (titleEl) titleEl.textContent = `[${index + 1}/${total}] ${item.filename}`;
-    if (counterEl) counterEl.innerHTML = `Zdjęcie <strong>${index + 1}</strong> z <strong>${total}</strong> &bull; Strzałki <strong>&larr; &rarr;</strong> przewijają album &bull; <strong>Esc</strong> zamyka`;
+    if (counterEl) counterEl.innerHTML = `Zdjęcie <strong>${index + 1}</strong> z <strong>${total}</strong> &bull; Przeciągnij myszką, aby przesuwać &bull; Strzałki <strong>&larr; &rarr;</strong> &bull; <strong>Esc</strong> zamyka`;
     if (newTabBtn) {
         newTabBtn.href = item.blobUrl;
         newTabBtn.style.display = 'inline-flex';

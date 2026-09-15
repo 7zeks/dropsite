@@ -2247,32 +2247,34 @@ body.is-admin .storage-widget {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: auto;
+    overflow: hidden !important;
     padding: 16px;
+    height: 78vh;
     max-height: calc(92vh - 110px);
-    background: rgba(5, 6, 10, 0.6);
+    width: 100%;
+    background: radial-gradient(circle at center, rgba(17, 24, 39, 0.45) 0%, rgba(5, 6, 10, 0.88) 100%);
     box-sizing: border-box;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
 }
 
 .dl-lightbox-img {
     max-width: 100%;
-    max-height: calc(92vh - 145px);
+    max-height: 100%;
     width: auto;
     height: auto;
     object-fit: contain;
     border-radius: var(--radius-sm, 8px);
     cursor: zoom-in;
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     user-select: none;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-}
-
-.dl-lightbox-img.zoomed {
-    max-width: none;
-    max-height: none;
-    cursor: zoom-out;
-    transform: scale(1.6);
-    margin: 60px;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    transform-origin: center center;
+    will-change: transform;
+    pointer-events: auto;
 }
 
 .dl-lightbox-footer {
@@ -4010,11 +4012,106 @@ body.is-pro .pro-sparkle {
     color: #FCA5A5;
 }
 
+.btn-pro-deactivate.confirming {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #FCA5A5 !important;
+    font-weight: 600 !important;
+    animation: pulseDeactivate 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseDeactivate {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* Boks inteligentnego przywracania odpiętej licencji PRO */
+.pro-restore-box {
+    margin-bottom: 20px;
+    padding: 18px 20px;
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.04) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.35), 0 0 20px -8px rgba(245, 158, 11, 0.18);
+    backdrop-filter: blur(12px);
+    animation: proBoxFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pro-restore-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.pro-restore-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pro-restore-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+}
+
+.pro-restore-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #FBBF24;
+    letter-spacing: -0.2px;
+}
+
+.pro-restore-subtitle {
+    font-size: 12px;
+    color: var(--text-muted, #94A3B8);
+    line-height: 1.4;
+}
+
+.pro-restore-actions {
+    display: flex;
+    width: 100%;
+}
+
+.pro-restore-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0F172A;
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+
+.pro-restore-btn:hover {
+    background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
+}
+
 @media (max-width: 480px) {
     .pro-active-actions {
         flex-direction: column;
     }
-    .btn-pro-manage, .btn-pro-deactivate {
+    .btn-pro-manage, .btn-pro-deactivate, .pro-restore-btn {
         width: 100%;
     }
 }

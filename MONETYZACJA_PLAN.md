@@ -27,8 +27,8 @@ Po wnikliwym audycie kodu źródłowego (`index.html`, `app.js`, `worker.js`, `j
 | **Infrastruktura** | Cloudflare Pages, Workers & R2 | ✅ 100% | Frontend na `dropsite.pages.dev`, produkcyjny backend na `uploud-api.dropsite33.workers.dev`, magazyn w R2 z 0 zł kosztów egressu. |
 | **Płatności** | Stripe BLIK & Polar.sh | ✅ 100% | Podpięta obsługa powrotu `?pro_success=1`, weryfikacja licencji w `worker.js` (`/verify-pro`) oraz portal klienta Polar. |
 | **Tarcza Kosztowa** | R2 Quota Guard | ✅ 100% | Zabezpieczenie `MAX_STORAGE_BYTES` w `worker.js` chroniące przed niekontrolowanym wzrostem kosztów. |
-| **Branding & UI** | Obsydianowy Glassmorphism + Favicon | ✅ 100% | Złoty favicon PRO (`favicon.jpg`), kinowy design, responsywność desktop/mobile. |
 | **Silnik Transferu** | Upload & Download R2 | ✅ 100% | Limit darmowy 250 MB, limit PRO 10 GB, natychmiastowe pakowanie ZIP (`fflate.zipSync`), kody QR (`qrious.min.js`). |
+| **Branding & UI** | Obsydianowy Glassmorphism + Favicon | ✅ 100% | Oficjalny transparentny neonowy favicon (mięta/cyjan) w formatach `favicon.ico`, `favicon.png` (512x512) i `favicon.svg`. |
 | **Prywatność RAM** | Szyfrowanie Zero-Knowledge | ✅ 100% | Kryptografia AES-256-GCM bezpośrednio w przeglądarce przed wysłaniem bajtów do R2. |
 | **Prywatność RAM** | Czyszczenie EXIF & GPS | ✅ 100% | Funkcja `window.DropsiteRAM.sanitizeImageExif` w `js/ram-engine.js`, przełącznik `#stripExifCheckbox` w opcjach PRO. |
 | **Narzędzia PDF** | Wbudowany Toolbox RAM | ✅ 100% | Podpis cyfrowy, scalanie, rozdzielanie, kompresja oraz konwersja obrazów w `js/toolbox.js`. |
