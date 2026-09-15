@@ -1862,21 +1862,21 @@
     .nav-right .lang-btn,
     .lang-btn {
         height: 32px !important;
-        padding: 0 8px !important;
+        padding: 0 10px !important;
         font-size: 11px !important;
         font-weight: 700 !important;
-        border-radius: 8px !important;
-        gap: 3px !important;
+        border-radius: 999px !important;
+        gap: 4px !important;
     }
 
     .nav-right .pro-nav-btn,
     .pro-nav-btn,
     body.is-pro .pro-nav-btn {
         height: 32px !important;
-        padding: 0 8px !important;
+        padding: 0 10px !important;
         font-size: 11px !important;
         font-weight: 700 !important;
-        border-radius: 8px !important;
+        border-radius: 999px !important;
         gap: 4px !important;
         display: inline-flex !important;
     }
@@ -1885,7 +1885,7 @@
         display: flex !important;
         width: 32px !important;
         height: 32px !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         flex-shrink: 0 !important;
     }
 
@@ -1916,9 +1916,10 @@
 
     .studio-badge {
         font-size: 9.5px !important;
-        padding: 2.5px 8px !important;
+        padding: 3px 10px !important;
         margin-bottom: 3px !important;
         letter-spacing: 0.3px !important;
+        border-radius: 999px !important;
     }
 
     .studio-hero-title {
@@ -1938,30 +1939,30 @@
     }
 
     .studio-feature-tags {
-        gap: 4px !important;
+        gap: 5px !important;
         flex-wrap: wrap !important;
         justify-content: center !important;
         margin-bottom: 6px !important;
     }
 
     .feature-tag {
-        padding: 2.5px 7px !important;
-        font-size: 9.5px !important;
-        border-radius: 6px !important;
-        gap: 4px !important;
+        padding: 3.5px 10px !important;
+        font-size: 10px !important;
+        border-radius: 999px !important;
+        gap: 5px !important;
     }
 
     .feature-tag svg {
-        width: 11px !important;
-        height: 11px !important;
+        width: 12px !important;
+        height: 12px !important;
     }
 
     .hero-pdf-hint {
         display: inline-flex !important;
         margin: 0 auto 6px auto !important;
-        padding: 4px 10px !important;
+        padding: 4px 12px !important;
         font-size: 10.5px !important;
-        gap: 5px !important;
+        gap: 6px !important;
         border-radius: 999px !important;
     }
 
@@ -1980,7 +1981,7 @@
         max-width: 100% !important;
         width: 100% !important;
         overflow: hidden !important;
-        border-radius: 18px !important;
+        border-radius: 20px !important;
         box-sizing: border-box !important;
     }
 
@@ -1991,8 +1992,8 @@
     }
 
     .upload-container {
-        padding: 12px 10px !important;
-        border-radius: 18px !important;
+        padding: 14px 12px !important;
+        border-radius: 20px !important;
         max-width: 100% !important;
         width: 100% !important;
         box-sizing: border-box !important;
@@ -2015,23 +2016,23 @@
     }
 
     .dropzone {
-        padding: 12px 8px !important;
+        padding: 14px 10px !important;
         min-height: 105px !important;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
         gap: 4px !important;
         margin-bottom: 8px !important;
     }
 
     .upload-icon-bubble {
-        width: 36px !important;
-        height: 36px !important;
-        border-radius: 10px !important;
-        margin-bottom: 1px !important;
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 12px !important;
+        margin-bottom: 2px !important;
     }
 
     .upload-icon {
-        width: 18px !important;
-        height: 18px !important;
+        width: 19px !important;
+        height: 19px !important;
     }
 
     .drop-text {
@@ -2044,22 +2045,22 @@
     }
 
     .btn-select {
-        padding: 4px 12px !important;
+        padding: 4px 14px !important;
         font-size: 10.5px !important;
-        border-radius: 6px !important;
+        border-radius: 999px !important;
         margin-top: 2px !important;
     }
 
     .adv-trigger-btn {
-        padding: 7px 10px !important;
+        padding: 8px 12px !important;
         font-size: 11px !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
     }
 
     .btn-primary {
-        padding: 10px 16px !important;
+        padding: 11px 18px !important;
         font-size: 13px !important;
-        border-radius: 10px !important;
+        border-radius: 14px !important;
         margin-top: 8px !important;
     }
 
