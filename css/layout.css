@@ -1889,88 +1889,29 @@
         flex-shrink: 0 !important;
     }
 
-    /* Dopracowane proporcje sekcji głównej - idealne wpasowanie w ekran telefonu */
+    /* Czysty, bezszumowy układ mobilny - cała uwaga na karcie transferu */
+    .studio-hero-left {
+        display: none !important;
+    }
+
     .studio-wrapper {
-        padding: 6px 4px 16px 4px !important;
+        padding: 56px 12px 24px 12px !important;
         width: 100% !important;
-        max-width: 100% !important;
+        max-width: 520px !important;
         box-sizing: border-box !important;
+        margin: 0 auto !important;
     }
 
     .studio-split-hero {
-        gap: 8px !important;
+        gap: 0 !important;
         width: 100% !important;
-    }
-
-    .studio-hero-left {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 0 4px !important;
-        box-sizing: border-box !important;
-    }
-
-    .studio-hero-copy {
+        display: flex !important;
+        flex-direction: column !important;
         align-items: center !important;
-        text-align: center !important;
-    }
-
-    .studio-badge {
-        font-size: 9.5px !important;
-        padding: 3px 10px !important;
-        margin-bottom: 3px !important;
-        letter-spacing: 0.3px !important;
-        border-radius: 999px !important;
-    }
-
-    .studio-hero-title {
-        font-size: 19px !important;
-        line-height: 1.2 !important;
-        letter-spacing: -0.3px !important;
-        margin: 2px 0 4px 0 !important;
-        font-weight: 800 !important;
-    }
-
-    .studio-hero-desc {
-        font-size: 11.5px !important;
-        line-height: 1.35 !important;
-        max-width: 310px !important;
-        margin: 0 auto 6px auto !important;
-        color: #94A3B8 !important;
-    }
-
-    .studio-feature-tags {
-        gap: 5px !important;
-        flex-wrap: wrap !important;
         justify-content: center !important;
-        margin-bottom: 6px !important;
     }
 
-    .feature-tag {
-        padding: 3.5px 10px !important;
-        font-size: 10px !important;
-        border-radius: 999px !important;
-        gap: 5px !important;
-    }
-
-    .feature-tag svg {
-        width: 12px !important;
-        height: 12px !important;
-    }
-
-    .hero-pdf-hint {
-        display: inline-flex !important;
-        margin: 0 auto 6px auto !important;
-        padding: 4px 12px !important;
-        font-size: 10.5px !important;
-        gap: 6px !important;
-        border-radius: 999px !important;
-    }
-
-    .hero-pdf-link-btn {
-        font-size: 10.5px !important;
-    }
-
-    /* Karta uploadera na telefonie */
+    /* Karta uploadera jako serce ekranu telefonu */
     .studio-hero-right {
         width: 100% !important;
         max-width: 100% !important;
@@ -1981,87 +1922,124 @@
         max-width: 100% !important;
         width: 100% !important;
         overflow: hidden !important;
-        border-radius: 20px !important;
+        border-radius: 24px !important;
         box-sizing: border-box !important;
     }
 
     .siri-fluid-plasma {
-        inset: -4px !important;
-        filter: blur(12px) !important;
-        opacity: 0.45 !important;
+        inset: -6px !important;
+        filter: blur(16px) !important;
+        opacity: 0.55 !important;
     }
 
     .upload-container {
-        padding: 14px 12px !important;
-        border-radius: 20px !important;
+        padding: 18px 16px 16px 16px !important;
+        border-radius: 24px !important;
         max-width: 100% !important;
         width: 100% !important;
         box-sizing: border-box !important;
     }
 
     .upload-header {
-        margin-bottom: 8px !important;
+        margin-bottom: 12px !important;
     }
 
     .upload-title {
-        font-size: 16px !important;
-        margin-bottom: 1px !important;
-        font-weight: 700 !important;
+        font-size: 19px !important;
+        margin-bottom: 0 !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.3px !important;
     }
 
     .upload-subtitle {
-        font-size: 10.5px !important;
-        margin-bottom: 8px !important;
-        opacity: 0.75 !important;
+        display: none !important;
     }
 
     .dropzone {
-        padding: 14px 10px !important;
-        min-height: 105px !important;
-        border-radius: 16px !important;
-        gap: 4px !important;
-        margin-bottom: 8px !important;
+        padding: 24px 16px !important;
+        min-height: 140px !important;
+        border-radius: 18px !important;
+        gap: 8px !important;
+        margin-bottom: 12px !important;
     }
 
     .upload-icon-bubble {
-        width: 38px !important;
-        height: 38px !important;
-        border-radius: 12px !important;
-        margin-bottom: 2px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 16px !important;
+        margin-bottom: 4px !important;
     }
 
     .upload-icon {
-        width: 19px !important;
-        height: 19px !important;
+        width: 24px !important;
+        height: 24px !important;
     }
 
     .drop-text {
-        font-size: 12px !important;
-        font-weight: 600 !important;
+        font-size: 14.5px !important;
+        font-weight: 700 !important;
     }
 
     .drop-subtext {
-        font-size: 10px !important;
+        font-size: 11px !important;
+        opacity: 0.75 !important;
     }
 
     .btn-select {
-        padding: 4px 14px !important;
-        font-size: 10.5px !important;
+        padding: 6px 18px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
         border-radius: 999px !important;
-        margin-top: 2px !important;
+        margin-top: 4px !important;
     }
 
     .adv-trigger-btn {
-        padding: 8px 12px !important;
-        font-size: 11px !important;
+        padding: 9px 13px !important;
+        font-size: 12px !important;
         border-radius: 12px !important;
     }
 
-    .btn-primary {
-        padding: 11px 18px !important;
-        font-size: 13px !important;
-        border-radius: 14px !important;
+    .custom-slug-wrap {
+        margin-bottom: 6px !important;
+    }
+
+    .slug-toggle-header {
+        padding: 8px 12px !important;
+        font-size: 11.5px !important;
+        border-radius: 12px !important;
+    }
+
+    .slug-toggle-label {
+        font-size: 11.5px !important;
+    }
+
+    .options-container {
         margin-top: 8px !important;
+    }
+
+    .options-label {
+        font-size: 11px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .options-radios {
+        padding: 3px !important;
+        gap: 3px !important;
+        border-radius: 12px !important;
+    }
+
+    .option-item span {
+        padding: 7px 4px !important;
+        font-size: 11px !important;
+        border-radius: 9px !important;
+    }
+
+    .btn-primary {
+        padding: 13px 20px !important;
+        font-size: 14.5px !important;
+        font-weight: 700 !important;
+        border-radius: 14px !important;
+        margin-top: 10px !important;
     }
 
     .tb-panoramic-grid {
