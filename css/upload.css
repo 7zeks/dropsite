@@ -272,7 +272,7 @@
     transition: var(--transition-smooth);
     position: relative;
     z-index: 2;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .upload-container:hover {
@@ -388,7 +388,7 @@
     gap: 10px;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     overflow: hidden;
     min-height: 175px;
     box-shadow: inset 0 1px 6px rgba(255, 255, 255, 0.08), 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -480,77 +480,104 @@
     pointer-events: none; /* Kliknięcie w przycisk jest jednolicie obsługiwane przez kontener dropzone */
 }
 
-.dropzone:hover .btn-select {
-    transform: scale(1.06);
-    box-shadow: 0 6px 24px rgba(52, 211, 153, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+.dropzone:hover .btn-select,
+.dropzone.active .btn-select {
+    box-shadow: 0 6px 24px rgba(52, 211, 153, 0.65), 0 0 30px rgba(56, 189, 248, 0.4);
+    transform: scale(1.04);
+}
+
+.btn-select svg {
+    margin-right: 2px;
 }
 
 input[type='file'] {
     display: none;
 }
 
-/* --- Zintegrowany File Info & Progress Bar --- */
+/* --- Czysty, bezramkowy File Info & Progress Stream (Anti-Pill Overload wg BRAND_GUIDELINES.md) --- */
 .file-status-box {
-    display: flex;
+    display: none;
     align-items: center;
-    background: linear-gradient(180deg, rgba(16, 22, 34, 0.85) 0%, rgba(9, 13, 22, 0.95) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7), 0 4px 14px rgba(0, 0, 0, 0.35);
-    border-radius: var(--radius-sm); 
-    padding: 0 16px;
-    gap: 14px;
-    margin-bottom: 24px;
-    min-height: 52px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: none;
+    border-radius: 0; 
+    padding: 6px 2px 12px 2px;
+    gap: 10px;
+    margin-top: 2px;
+    margin-bottom: 14px;
+    min-height: auto;
     box-sizing: border-box;
-    
+    position: relative;
+    overflow: visible;
     opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    position: absolute; 
+    transform: translateY(-2px);
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
 
 .file-status-box.visible {
+    display: flex;
     opacity: 1;
-    visibility: visible;
     transform: translateY(0);
-    position: relative; 
 }
 
-.fs-icon { display: flex; align-items: center; justify-content: center; }
+.fs-icon { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    width: auto;
+    height: auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.45));
+}
 
 .fs-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
     flex-grow: 1;
-    gap: 8px;
-    padding: 12px 0;
+    min-width: 0;
+    gap: 5px;
+    overflow: hidden;
 }
 
 .fs-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
     font-size: 13px;
-    font-weight: 600;
+    width: 100%;
+    min-width: 0;
 }
 
 .fs-filename {
-    color: var(--text-main);
+    color: #F8FAFC;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px; 
+    flex: 1 1 auto;
+    min-width: 40px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
-.fs-size { color: var(--text-muted); font-size: 12px; }
+.fs-size { 
+    color: #94A3B8; 
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 500;
+}
 
 .fs-track {
-    height: 3px;
+    height: 3.5px;
     background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
+    border-radius: 999px;
     width: 100%;
     position: relative;
     overflow: hidden;
@@ -558,18 +585,11 @@ input[type='file'] {
 
 .fs-fill {
     height: 100%;
-    background: linear-gradient(90deg, #A8DABF, #C4E7D4, #FFFFFF);
-    background-size: 200% 100%;
-    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.6) 0%, #FFFFFF 50%, rgba(255, 255, 255, 0.9) 100%);
+    border-radius: 999px;
     width: 0%;
-    transition: width 0.1s linear;
-    box-shadow: 0 0 15px var(--accent-glow), 0 0 5px #C4E7D4;
-    animation: flowBar 1.5s linear infinite;
-}
-
-@keyframes flowBar {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 /* --- Options --- */
@@ -799,26 +819,27 @@ input[type='file'] {
     }
 }
 
-/* --- Główny Przycisk (Ożywiony Przycisk Upload w stylu Dropsite Cyber-Vault) --- */
+/* --- Główny Przycisk (Translucent Cyber Glass Aesthetic) --- */
 .btn-primary {
     box-sizing: border-box;
     margin-top: 18px;
     position: relative;
     width: 100%;
-    padding: 17px 24px;
+    padding: 16px 24px;
     border-radius: var(--radius-md);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-top: 1px solid rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(255, 255, 255, 0.38);
     border-bottom: 1px solid rgba(0, 0, 0, 0.4);
     
-    /* Energetyczny, żywy gradient szmaragd-mięta-cyjan */
-    background: linear-gradient(125deg, #10B981 0%, #34D399 35%, #2DD4BF 68%, #38BDF8 100%);
-    background-size: 220% 220%;
+    /* Półprzezroczyste, szlachetne szkło mrożone */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.04) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     
-    color: #03140C;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.35px;
+    color: #FFFFFF;
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
     font-family: inherit;
     cursor: pointer;
     user-select: none;
@@ -827,50 +848,17 @@ input[type='file'] {
     align-items: center;
     justify-content: center;
     
-    /* Wielowarstwowa poświata i organiczne światło */
+    /* Organiczny cień i wewnętrzny refleks */
     box-shadow: 
-        0 4px 14px rgba(0, 0, 0, 0.45),
-        0 10px 28px -4px rgba(16, 185, 129, 0.52),
-        0 0 32px -4px rgba(52, 211, 153, 0.36),
-        inset 0 1px 0 rgba(255, 255, 255, 0.85),
-        inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+        0 8px 24px -4px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
     
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-                box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                background 0.3s ease,
-                border-color 0.3s ease,
-                filter 0.3s ease,
-                opacity 0.25s ease;
-}
-
-/* Żywe, pulsujące tchnienie aury i płynny przepływ gradientu gdy przycisk jest aktywny */
-.btn-primary:not(:disabled) {
-    animation: uploadBtnPulseAura 3.2s ease-in-out infinite, uploadGradientShift 6s ease infinite;
-}
-
-@keyframes uploadGradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes uploadBtnPulseAura {
-    0%, 100% {
-        box-shadow: 
-            0 4px 14px rgba(0, 0, 0, 0.45),
-            0 10px 26px -4px rgba(16, 185, 129, 0.48),
-            0 0 24px -4px rgba(52, 211, 153, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.85),
-            inset 0 -2px 0 rgba(0, 0, 0, 0.25);
-    }
-    50% {
-        box-shadow: 
-            0 6px 18px rgba(0, 0, 0, 0.5),
-            0 14px 36px -2px rgba(16, 185, 129, 0.72),
-            0 0 42px 2px rgba(56, 189, 248, 0.45),
-            inset 0 1px 0 rgba(255, 255, 255, 1),
-            inset 0 -2px 0 rgba(0, 0, 0, 0.25);
-    }
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.25s ease,
+                border-color 0.25s ease,
+                color 0.2s ease;
 }
 
 /* Wewnętrzna zawartość przycisku (ikona + tekst + sparkle) */
@@ -887,6 +875,8 @@ input[type='file'] {
 /* Dynamiczna ikona strzałki z lewitacją */
 .btn-upload-icon {
     flex-shrink: 0;
+    color: #FFFFFF;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -906,8 +896,8 @@ input[type='file'] {
 /* Migocząca mikro-iskra dodająca sznytu premium */
 .btn-sparkle-icon {
     flex-shrink: 0;
-    opacity: 0.6;
-    color: #03140C;
+    opacity: 0.75;
+    color: #E2E8F0;
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -917,98 +907,60 @@ input[type='file'] {
 
 @keyframes sparkleTwinkle {
     0%, 100% {
-        opacity: 0.4;
+        opacity: 0.5;
         transform: scale(0.85) rotate(0deg);
     }
     50% {
-        opacity: 0.95;
+        opacity: 1;
         transform: scale(1.15) rotate(180deg);
     }
 }
 
-/* Błysk światła (shimmer beam) przechodzący cyklicznie przez taflę przycisku */
 .btn-primary-sheen {
-    position: absolute;
-    top: 0;
-    left: -120%;
-    width: 80%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.15) 30%, 
-        rgba(255, 255, 255, 0.5) 50%, 
-        rgba(255, 255, 255, 0.15) 70%, 
-        transparent 100%);
-    transform: skewX(-24deg);
-    pointer-events: none;
-    z-index: 1;
+    display: none;
 }
 
-.btn-primary:not(:disabled) .btn-primary-sheen {
-    animation: uploadSheenSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes uploadSheenSweep {
-    0% {
-        left: -120%;
-    }
-    28%, 100% {
-        left: 200%;
-    }
-}
-
-/* Hover na aktywnym przycisku: potężny cyber-boost bez przesuwania (stoi sztywno w miejscu) */
+/* Hover na aktywnym przycisku: rozświetlenie szkła */
 .btn-primary:hover:not(:disabled) {
-    transform: none !important;
-    border-top-color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.65);
-    color: #010B06;
+    transform: translateY(-1px) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: rgba(255, 255, 255, 0.6);
+    color: #FFFFFF;
     box-shadow: 
-        0 8px 24px rgba(0, 0, 0, 0.5),
-        0 18px 42px -2px rgba(16, 185, 129, 0.78),
-        0 0 45px rgba(56, 189, 248, 0.55),
-        inset 0 1px 0 #ffffff,
-        inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+        0 12px 32px -4px rgba(0, 0, 0, 0.6),
+        0 0 24px rgba(255, 255, 255, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .btn-primary:hover:not(:disabled) .btn-upload-icon {
-    transform: none;
-    animation: none;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
 }
 
 .btn-primary:hover:not(:disabled) .btn-sparkle-icon {
     opacity: 1;
+    color: #FFFFFF;
     transform: scale(1.15) rotate(90deg);
 }
 
-.btn-primary:hover:not(:disabled) .btn-primary-sheen {
-    animation: uploadSheenFast 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1;
-}
-
-@keyframes uploadSheenFast {
-    0% { left: -120%; }
-    100% { left: 200%; }
-}
-
-/* Kliknięcie / Active - stoi sztywno bez przesuwania */
+/* Kliknięcie / Active - sprężysty neutralny docisk */
 .btn-primary:active:not(:disabled) {
-    transform: none !important;
+    transform: scale(0.985) translateY(0) !important;
+    background: rgba(255, 255, 255, 0.09) !important;
     box-shadow: 
-        0 2px 10px rgba(0, 0, 0, 0.5),
-        0 6px 20px -2px rgba(16, 185, 129, 0.4),
-        0 0 20px rgba(56, 189, 248, 0.25),
-        inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        0 4px 14px rgba(0, 0, 0, 0.45),
+        inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Stan Zablokowany (Disabled - gdy brak wybranego pliku) */
 .btn-primary:disabled {
     cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    color: rgba(255, 255, 255, 0.32);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.26);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.03);
     transform: none;
     animation: none;
 }
@@ -1024,37 +976,61 @@ input[type='file'] {
     display: none;
 }
 
-/* Stan Wgrywania (Loading) */
+/* Stan Wgrywania (Loading - Translucent Sleek Glass) */
 .btn-primary.loading {
-    background: linear-gradient(125deg, #0284C7 0%, #0F91D2 40%, #00F0FF 100%) !important;
-    background-size: 200% 200% !important;
-    animation: uploadGradientShift 2s linear infinite, uploadLoadingPulse 1.4s ease-in-out infinite !important;
-    color: #03140C !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    border-top-color: rgba(255, 255, 255, 0.6) !important;
+    color: #FFFFFF !important;
     cursor: wait !important;
-    border-color: rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 
+        0 8px 24px -4px rgba(0, 0, 0, 0.5),
+        0 0 24px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+    animation: uploadNeutralLoadingGlow 2.2s ease-in-out infinite alternate !important;
 }
 
-@keyframes uploadLoadingPulse {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(15, 145, 210, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+.btn-primary.loading .btn-upload-icon {
+    animation: uploadSpinMinimal 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)) !important;
+}
+
+@keyframes uploadNeutralLoadingGlow {
+    0% {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+        box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
-    50% {
-        box-shadow: 0 0 40px rgba(0, 240, 255, 0.8), 0 10px 30px rgba(15, 145, 210, 0.6), inset 0 1px 0 #ffffff;
+    100% {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.09) 100%);
+        box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.6), 0 0 28px rgba(255, 255, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
+}
+
+@keyframes uploadSpinMinimal {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .btn-ripple {
     position: absolute;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.6);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(52, 211, 153, 0.08) 50%, transparent 80%);
     transform: scale(0);
-    animation: ripple 0.6s linear;
+    animation: delicateSheen 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     pointer-events: none;
-    z-index: 3;
+    z-index: 5;
+    filter: blur(4px);
 }
 
-@keyframes ripple {
-    to { transform: scale(4); opacity: 0; }
+@keyframes delicateSheen {
+    0% {
+        transform: scale(0.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
 }
 
 .btn-text {
@@ -1068,4 +1044,47 @@ input[type='file'] {
     font-size: 14px;
     font-weight: 600;
     text-align: center;
+}
+
+/* --- Mobile Responsive dla Paska Pliku --- */
+@media (max-width: 600px) {
+    .file-status-box {
+        padding: 6px 2px 10px 2px;
+        min-height: auto;
+        gap: 8px;
+        border-radius: 0;
+    }
+
+    .fs-icon {
+        width: auto;
+        height: auto;
+        align-self: flex-start;
+        margin-top: 2px;
+    }
+
+    .fs-content {
+        padding: 0;
+        gap: 3px;
+    }
+
+    .fs-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .fs-filename {
+        width: 100%;
+        max-width: 100%;
+        font-size: 12.5px;
+    }
+
+    .fs-meta-right {
+        width: 100%;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        font-size: 11.5px;
+    }
 }

@@ -1357,15 +1357,85 @@ const compressToggleCheckbox = document.getElementById('compressToggleCheckbox')
 const compressQualitySlider = document.getElementById('compressQualitySlider');
 const compressQualityLabel = document.getElementById('compressQualityLabel');
 const estCompressedSize = document.getElementById('estCompressedSize');
+const btnCompressFlyoutToggle = document.getElementById('btnCompressFlyoutToggle');
+const imageCompressFlyout = document.getElementById('imageCompressFlyout');
+const btnCompressFlyoutClose = document.getElementById('btnCompressFlyoutClose');
+const compressMiniSavingsBadge = document.getElementById('compressMiniSavingsBadge');
+const compressFlyoutQualityVal = document.getElementById('compressFlyoutQualityVal');
+
+function toggleCompressFlyout(forceOpen) {
+    if (!imageCompressFlyout) return;
+    const isCurrentlyOpen = imageCompressFlyout.classList.contains('is-visible');
+    const shouldOpen = forceOpen !== undefined ? forceOpen : !isCurrentlyOpen;
+    
+    if (shouldOpen) {
+        imageCompressFlyout.hidden = false;
+        imageCompressFlyout.style.display = 'block';
+        void imageCompressFlyout.offsetWidth; // Wymuszenie reflow dla płynnej animacji
+        imageCompressFlyout.classList.add('is-visible');
+    } else {
+        imageCompressFlyout.classList.remove('is-visible');
+        setTimeout(() => {
+            if (!imageCompressFlyout.classList.contains('is-visible')) {
+                imageCompressFlyout.hidden = true;
+                imageCompressFlyout.style.display = 'none';
+            }
+        }, 180);
+    }
+
+    if (btnCompressFlyoutToggle) {
+        btnCompressFlyoutToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        btnCompressFlyoutToggle.classList.toggle('active', shouldOpen);
+    }
+}
+
+if (btnCompressFlyoutToggle) {
+    btnCompressFlyoutToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCompressFlyout();
+    });
+}
+
+if (btnCompressFlyoutClose) {
+    btnCompressFlyoutClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCompressFlyout(false);
+    });
+}
+
+document.addEventListener('click', (e) => {
+    if (imageCompressFlyout && !imageCompressFlyout.hidden && imageCompressFlyout.style.display !== 'none') {
+        if (!e.target.closest('#imageCompressFlyout') && !e.target.closest('#btnCompressFlyoutToggle')) {
+            toggleCompressFlyout(false);
+        }
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && imageCompressFlyout && !imageCompressFlyout.hidden && imageCompressFlyout.style.display !== 'none') {
+        toggleCompressFlyout(false);
+    }
+});
 
 function setupImageCompression(file) {
     if (file && file.type && file.type.startsWith('image/') && !file.type.includes('svg') && !file.type.includes('gif')) {
         originalImageFile = file;
-        if (imageCompressPanel) imageCompressPanel.hidden = false;
+        if (btnCompressFlyoutToggle) {
+            btnCompressFlyoutToggle.hidden = false;
+            btnCompressFlyoutToggle.style.display = 'inline-flex';
+        }
         updateCompressionEstimate();
+        // Od razu wysuwamy boczny dymek kompresji
+        toggleCompressFlyout(true);
     } else {
         originalImageFile = null;
-        if (imageCompressPanel) imageCompressPanel.hidden = true;
+        if (btnCompressFlyoutToggle) {
+            btnCompressFlyoutToggle.hidden = true;
+            btnCompressFlyoutToggle.style.display = 'none';
+        }
+        const targetWrap = document.getElementById('fsTargetSizeWrap');
+        if (targetWrap) targetWrap.style.display = 'none';
+        toggleCompressFlyout(false);
     }
 }
 
@@ -1373,14 +1443,33 @@ function updateCompressionEstimate() {
     if (!originalImageFile) return;
     const q = parseInt(compressQualitySlider?.value || '80', 10);
     currentCompressionQuality = q / 100;
-    if (compressQualityLabel) compressQualityLabel.textContent = `Jakość: ${q}%`;
+    
+    if (compressQualityLabel) compressQualityLabel.textContent = `${q}%`;
+    if (compressFlyoutQualityVal) compressFlyoutQualityVal.textContent = `${q}%`;
     
     // Szacunek wagi
     const estimatedRatio = 0.15 + (q / 100) * 0.55; 
     const estSize = Math.max(1024, Math.round(originalImageFile.size * estimatedRatio));
     const savedPercent = Math.round((1 - estSize / originalImageFile.size) * 100);
+    const savingsStr = savedPercent > 0 ? `(-${savedPercent}%)` : '(0%)';
+
+    if (compressMiniSavingsBadge) {
+        compressMiniSavingsBadge.textContent = savingsStr;
+    }
+
+    const targetWrap = document.getElementById('fsTargetSizeWrap');
+    const targetSizeEl = document.getElementById('fsTargetSize');
+    if (targetWrap && targetSizeEl) {
+        if (savedPercent > 0) {
+            targetSizeEl.textContent = formatBytes(estSize);
+            targetWrap.style.display = 'inline-flex';
+        } else {
+            targetWrap.style.display = 'none';
+        }
+    }
+
     if (estCompressedSize) {
-        estCompressedSize.textContent = `${formatBytes(estSize)} (ok. -${savedPercent > 0 ? savedPercent : 0}%)`;
+        estCompressedSize.textContent = `${formatBytes(estSize)} (ok. ${savingsStr})`;
     }
 }
 
@@ -1422,28 +1511,38 @@ async function compressImageOnCanvas(file, quality) {
             
             canvas.width = width;
             canvas.height = height;
+            
             const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
             
+            // Konwertuj do WebP (jeśli przeglądarka wspiera) lub JPEG
+            const outType = file.type === 'image/png' ? 'image/webp' : file.type;
             canvas.toBlob((blob) => {
-                if (blob && blob.size < file.size) {
-                    const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' });
-                    resolve(compressedFile);
-                } else {
+                if (!blob || blob.size >= file.size) {
+                    // Jeśli kompresja nie przyniosła zysku, zostaw oryginał
                     resolve(file);
+                } else {
+                    const newFileName = file.name.replace(/\.[^/.]+$/, "") + (outType === 'image/webp' ? '.webp' : '');
+                    const compressedFile = new File([blob], newFileName, { type: outType });
+                    resolve(compressedFile);
                 }
-            }, 'image/jpeg', quality);
+            }, outType, quality);
         };
         img.onerror = () => resolve(file);
     });
 }
 
-// === WŁASNY ALIAS LINKU (SLUG TOGGLE) ===
+// === WŁASNY ALIAS LINKU (SLUG FLYOUT) ===
 const slugToggleBtn = document.getElementById('slugToggleBtn');
 const customSlugBox = document.getElementById('customSlugBox');
 const slugArrow = document.getElementById('slugArrow');
+const btnSlugFlyoutClose = document.getElementById('btnSlugFlyoutClose');
+
 if (slugToggleBtn && customSlugBox) {
-    slugToggleBtn.addEventListener('click', () => {
+    slugToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (!isProUser()) {
             if (typeof showNotification === 'function') {
                 showNotification(typeof t === 'function' ? t('notify_pro_required_slug') : 'Własny alias linku to funkcja Dropsite PRO!', 'info');
@@ -1451,13 +1550,70 @@ if (slugToggleBtn && customSlugBox) {
             window.openProModal();
             return;
         }
-        const isHidden = customSlugBox.hidden || customSlugBox.style.display === 'none';
-        customSlugBox.hidden = !isHidden;
-        customSlugBox.style.display = isHidden ? 'block' : 'none';
-        slugToggleBtn.classList.toggle('active', isHidden);
-        slugToggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        const isOpen = customSlugBox.classList.contains('is-visible');
+        if (!isOpen) {
+            customSlugBox.hidden = false;
+            customSlugBox.style.display = 'block';
+            void customSlugBox.offsetWidth;
+            customSlugBox.classList.add('is-visible');
+        } else {
+            customSlugBox.classList.remove('is-visible');
+            setTimeout(() => {
+                if (!customSlugBox.classList.contains('is-visible')) {
+                    customSlugBox.hidden = true;
+                    customSlugBox.style.display = 'none';
+                }
+            }, 180);
+        }
+        slugToggleBtn.classList.toggle('active', !isOpen);
+        slugToggleBtn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
     });
 }
+
+if (btnSlugFlyoutClose && customSlugBox) {
+    btnSlugFlyoutClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        customSlugBox.classList.remove('is-visible');
+        setTimeout(() => {
+            customSlugBox.hidden = true;
+            customSlugBox.style.display = 'none';
+        }, 180);
+        if (slugToggleBtn) {
+            slugToggleBtn.classList.remove('active');
+            slugToggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    });
+}
+
+document.addEventListener('click', (e) => {
+    if (customSlugBox && customSlugBox.classList.contains('is-visible')) {
+        if (!e.target.closest('#customSlugBox') && !e.target.closest('#slugToggleBtn')) {
+            customSlugBox.classList.remove('is-visible');
+            setTimeout(() => {
+                customSlugBox.hidden = true;
+                customSlugBox.style.display = 'none';
+            }, 180);
+            if (slugToggleBtn) {
+                slugToggleBtn.classList.remove('active');
+                slugToggleBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && customSlugBox && customSlugBox.classList.contains('is-visible')) {
+        customSlugBox.classList.remove('is-visible');
+        setTimeout(() => {
+            customSlugBox.hidden = true;
+            customSlugBox.style.display = 'none';
+        }, 180);
+        if (slugToggleBtn) {
+            slugToggleBtn.classList.remove('active');
+            slugToggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    }
+});
 
 // === TRYB SZPIEGOWSKI (MISSION: IMPOSSIBLE 007 - VIRAL TOGGLE) ===
 const spyModeCheckbox = document.getElementById('spyModeCheckbox');
@@ -1654,74 +1810,89 @@ document.addEventListener('dropsite_language_changed', () => {
     }, 40);
 });
 
-// === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) - MODAL COCKPIT ===
-window.openAdvSettingsModal = function() {
-    const modal = document.getElementById('advSettingsModalWrap');
-    if (modal) {
-        if (typeof window.smoothOpenModal === 'function') {
-            window.smoothOpenModal(modal);
-        } else {
-            modal.removeAttribute('hidden');
-            modal.style.display = 'flex';
-        }
-        if (typeof updateAdvActiveBadges === 'function') {
-            updateAdvActiveBadges();
-        }
+// === ZAAWANSOWANE OPCJE TRANSFERU (HASŁO, NOTATKA, LIMIT) - BOCZNY DYMEK ===
+const advFlyoutCard = document.getElementById('advFlyoutCard');
+const advToggleBtn = document.getElementById('advToggleBtn');
+const btnAdvFlyoutClose = document.getElementById('btnAdvFlyoutClose');
+const btnApplyTransferSettings = document.getElementById('btnApplyTransferSettings');
+
+function toggleAdvFlyout(forceOpen) {
+    if (!advFlyoutCard) return;
+    const isCurrentlyOpen = advFlyoutCard.classList.contains('is-visible');
+    const shouldOpen = forceOpen !== undefined ? forceOpen : !isCurrentlyOpen;
+
+    if (shouldOpen) {
+        advFlyoutCard.hidden = false;
+        advFlyoutCard.style.display = 'block';
+        void advFlyoutCard.offsetWidth; // Wymuszenie reflow dla płynnej animacji
+        advFlyoutCard.classList.add('is-visible');
+    } else {
+        advFlyoutCard.classList.remove('is-visible');
+        setTimeout(() => {
+            if (!advFlyoutCard.classList.contains('is-visible')) {
+                advFlyoutCard.hidden = true;
+                advFlyoutCard.style.display = 'none';
+            }
+        }, 180);
     }
+
+    if (advToggleBtn) {
+        advToggleBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        advToggleBtn.classList.toggle('active', shouldOpen);
+    }
+    if (typeof updateAdvActiveBadges === 'function') {
+        updateAdvActiveBadges();
+    }
+}
+
+window.openAdvSettingsModal = function() {
+    toggleAdvFlyout(true);
 };
 
 window.closeAdvSettingsModal = function() {
-    const modal = document.getElementById('advSettingsModalWrap');
-    if (modal) {
-        modal.classList.add('is-closing');
-        setTimeout(() => {
-            modal.classList.remove('is-closing');
-            modal.setAttribute('hidden', '');
-            modal.style.display = 'none';
-            if (typeof updateAdvActiveBadges === 'function') {
-                updateAdvActiveBadges();
-            }
-        }, 140);
-    }
+    toggleAdvFlyout(false);
 };
-
-const advToggleBtn = document.getElementById('advToggleBtn');
-const closeAdvSettingsModalBtn = document.getElementById('closeAdvSettingsModal');
-const advSettingsModalWrap = document.getElementById('advSettingsModalWrap');
 
 if (advToggleBtn) {
     advToggleBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        window.openAdvSettingsModal();
+        e.stopPropagation();
+        toggleAdvFlyout();
     });
 }
 
-if (closeAdvSettingsModalBtn) {
-    closeAdvSettingsModalBtn.addEventListener('click', (e) => {
+if (btnAdvFlyoutClose) {
+    btnAdvFlyoutClose.addEventListener('click', (e) => {
         e.preventDefault();
-        window.closeAdvSettingsModal();
+        e.stopPropagation();
+        toggleAdvFlyout(false);
     });
 }
 
-if (advSettingsModalWrap) {
-    advSettingsModalWrap.addEventListener('click', (e) => {
-        if (e.target === advSettingsModalWrap) {
-            window.closeAdvSettingsModal();
-        }
+if (btnApplyTransferSettings) {
+    btnApplyTransferSettings.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleAdvFlyout(false);
     });
 }
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('advSettingsModalWrap');
-        if (modal && !modal.hasAttribute('hidden') && modal.style.display !== 'none') {
-            window.closeAdvSettingsModal();
+document.addEventListener('click', (e) => {
+    if (advFlyoutCard && advFlyoutCard.classList.contains('is-visible')) {
+        if (!e.target.closest('#advFlyoutCard') && !e.target.closest('#advToggleBtn')) {
+            toggleAdvFlyout(false);
         }
     }
 });
 
-// Obsługa zakładek w mini-modalu opcji zaawansowanych
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && advFlyoutCard && advFlyoutCard.classList.contains('is-visible')) {
+        toggleAdvFlyout(false);
+    }
+});
+
+// Obsługa zakładek w mini-panelu opcji zaawansowanych
+function initAdvTabs() {
     document.querySelectorAll('.adv-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const targetTab = btn.getAttribute('data-tab');
@@ -1731,7 +1902,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdvTabs);
+} else {
+    initAdvTabs();
+}
 
 // === REKURSYWNY ODCZYT FOLDERÓW Z DROPZONE (FAIL-SAFE) ===
 async function scanFilesAndFolders(dataTransfer) {
@@ -1847,6 +2024,10 @@ window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
 // === WYBÓR PLIKU I DUŻY PODGLĄD ===
 async function updateSelectedFile(filesList) {
     if (!filesList || filesList.length === 0) return;
+    
+    // Zapisujemy wysokość kapsułki PRZED pojawieniem się pliku/podglądu
+    const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    const initialHeight = uploadBoxEl ? uploadBoxEl.offsetHeight : 0;
     
     playSound('drop');
 
@@ -2014,6 +2195,7 @@ async function updateSelectedFile(filesList) {
                 console.error('Błąd pakowania ZIP:', e);
                 showError("Błąd pakowania plików do ZIP: " + (e.message || ''));
             }
+            scrollByCapsuleDelta(initialHeight);
         }, 50);
         return;
     } else {
@@ -2059,6 +2241,10 @@ async function updateSelectedFile(filesList) {
             const imgUrl = URL.createObjectURL(file);
             dropzone.innerHTML = `<img src="${imgUrl}" style="max-width: 100%; max-height: 250px; border-radius: 8px; object-fit: contain;">`;
             dropzone.style.padding = "10px";
+            const renderedImg = dropzone.querySelector('img');
+            if (renderedImg) {
+                renderedImg.onload = () => scrollByCapsuleDelta(initialHeight);
+            }
         } else if (isVidType) {
             const vidUrl = URL.createObjectURL(file);
             dropzone.innerHTML = `<video src="${vidUrl}" controls autoplay muted loop playsinline controlslist="nodownload" style="max-width: 100%; max-height: 280px; object-fit: contain; width: 100%; border-radius: 8px; background: #000; display: block; outline: none; box-shadow: 0 4px 16px rgba(0,0,0,0.5);"></video>`;
@@ -2081,7 +2267,52 @@ async function updateSelectedFile(filesList) {
             dropzone.innerHTML = `<div style="padding: 30px; text-align: center;">${iconSvg}</div><div style="color: var(--text-muted); padding-bottom: 20px; text-align: center; word-break: break-word;">${file.name}</div>`;
             dropzone.style.padding = "10px";
         }
+        
+        scrollByCapsuleDelta(initialHeight);
     }
+}
+
+// === SZYBKIE I PŁYNNE PRZESUNIĘCIE STRONY O PRZYROST WYSOKOŚCI KAPSUŁKI ===
+let _capsuleScrollAnimId = null;
+
+function smoothScrollByStep(delta, duration = 160) {
+    if (delta <= 0) return;
+    if (_capsuleScrollAnimId) cancelAnimationFrame(_capsuleScrollAnimId);
+
+    const startY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    const startTime = performance.now();
+
+    // Szybka, sprężysta krzywa płynności (easeOutQuad)
+    const easeOutQuad = (t) => t * (2 - t);
+
+    function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeVal = easeOutQuad(progress);
+
+        window.scrollTo(0, startY + (delta * easeVal));
+
+        if (progress < 1) {
+            _capsuleScrollAnimId = requestAnimationFrame(step);
+        } else {
+            _capsuleScrollAnimId = null;
+        }
+    }
+
+    _capsuleScrollAnimId = requestAnimationFrame(step);
+}
+
+function scrollByCapsuleDelta(initialHeight) {
+    const uploadBox = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    if (!uploadBox) return;
+
+    requestAnimationFrame(() => {
+        const currentHeight = uploadBox.offsetHeight;
+        const delta = currentHeight - initialHeight;
+        if (delta > 2) {
+            smoothScrollByStep(delta, 160);
+        }
+    });
 }
 
 // === DRAG & DROP (CINEMATIC) ===
@@ -2792,12 +3023,17 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
         const urls = buildTransferUrls(fileKey);
         if (urls && finalLink) {
             finalLink.href = urls.pageUrl;
+            finalLink.target = '_blank';
+            finalLink.rel = 'noopener noreferrer';
             finalLink.dataset.shareUrl = urls.smartShareUrl;
             finalLink.textContent = urls.smartShareUrl;
             finalLink.onclick = (e) => {
-                e.preventDefault();
-                window.location.href = urls.pageUrl;
+                e.stopPropagation();
             };
+            const finalLinkIcon = document.getElementById('finalLinkIcon');
+            if (finalLinkIcon) {
+                finalLinkIcon.href = urls.pageUrl;
+            }
         }
     }
 
@@ -2902,7 +3138,7 @@ function updateAdvActiveBadges() {
     if (document.getElementById('timeLockCheckbox')?.checked) badges.push({ color: 'purple', label: getSafeLabel('adv_timelock_title', 'Kapsuła Czasu') });
 
     const countEl = document.getElementById('advActiveBadgeCount');
-    const pillsBar = document.getElementById('advActivePillsBar');
+    const subtextEl = document.getElementById('advActiveSubtext');
 
     if (countEl) {
         if (badges.length > 0) {
@@ -2913,15 +3149,13 @@ function updateAdvActiveBadges() {
         }
     }
 
-    if (pillsBar) {
+    if (subtextEl) {
         if (badges.length > 0) {
-            const editTxt = getSafeLabel('adv_edit_link', 'Edytuj');
-            pillsBar.innerHTML = badges.map(b => `<span class="adv-active-pill-chip"><span class="chip-dot dot-${b.color}"></span>${b.label}</span>`).join('') +
-                `<button type="button" class="adv-active-pill-edit" onclick="if(window.openAdvSettingsModal) window.openAdvSettingsModal();">${editTxt}</button>`;
-            pillsBar.style.display = 'flex';
+            subtextEl.innerHTML = badges.map(b => `<span class="adv-sub-item sub-${b.color}">${b.label}</span>`).join('<span class="adv-sub-sep">•</span>');
+            subtextEl.style.display = 'flex';
         } else {
-            pillsBar.innerHTML = '';
-            pillsBar.style.display = 'none';
+            subtextEl.innerHTML = '';
+            subtextEl.style.display = 'none';
         }
     }
 }
@@ -3069,13 +3303,17 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
 
     if (finalLink) {
         finalLink.href = pageUrl;
+        finalLink.target = '_blank';
+        finalLink.rel = 'noopener noreferrer';
         finalLink.dataset.shareUrl = shareableUrl;
         finalLink.textContent = shareableUrl;
-        finalLink.removeAttribute('target');
         finalLink.onclick = (e) => {
-            e.preventDefault();
-            window.location.href = pageUrl;
+            e.stopPropagation();
         };
+        const finalLinkIcon = document.getElementById('finalLinkIcon');
+        if (finalLinkIcon) {
+            finalLinkIcon.href = pageUrl;
+        }
     }
     // Natychmiast zsynchronizuj wszystkie opcje zaawansowane z linkiem i plakietkami
     syncTransferSettingsToActiveLink(false);
@@ -3084,8 +3322,10 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     const btnCopyStreamLink = document.getElementById('btnCopyStreamLink');
     if (btnCopyStreamLink) {
         const isMedia = selectedFile && /\.(mp4|webm|mov|m4v|mp3|wav|flac|ogg|m4a)$/i.test(selectedFile.name);
+        const streamDot = document.getElementById('streamDividerDot');
         if (isMedia && finalUrlStr) {
             btnCopyStreamLink.style.display = 'inline-flex';
+            if (streamDot) streamDot.style.display = 'inline';
             btnCopyStreamLink.onclick = (e) => {
                 e.preventDefault();
                 navigator.clipboard.writeText(finalUrlStr).then(() => {
@@ -3099,6 +3339,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
             };
         } else {
             btnCopyStreamLink.style.display = 'none';
+            if (streamDot) streamDot.style.display = 'none';
         }
     }
 
@@ -3179,11 +3420,46 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         const sfcSecurityBadge = document.getElementById('sfcSecurityBadge');
         const sfcIconBox = document.getElementById('sfcIconBox');
 
+        const sfcThumbLink = document.getElementById('sfcThumbLink');
+        const btnDirectFileLink = document.getElementById('btnDirectFileLink');
+
+        if (finalUrlStr) {
+            if (sfcFileName) {
+                sfcFileName.href = finalUrlStr;
+                sfcFileName.target = '_blank';
+                sfcFileName.rel = 'noopener noreferrer';
+            }
+            if (sfcThumbLink) {
+                sfcThumbLink.href = finalUrlStr;
+                sfcThumbLink.target = '_blank';
+                sfcThumbLink.rel = 'noopener noreferrer';
+            }
+            if (btnDirectFileLink) {
+                btnDirectFileLink.href = finalUrlStr;
+                btnDirectFileLink.target = '_blank';
+                btnDirectFileLink.rel = 'noopener noreferrer';
+            }
+        }
+
         if (selectedFile) {
             if (sfcFileName) sfcFileName.textContent = selectedFile.name;
             if (sfcFileSize) sfcFileSize.textContent = formatBytes(selectedFile.size);
-            if (sfcIconBox && typeof getMiniFileSvg === 'function') {
-                sfcIconBox.innerHTML = getMiniFileSvg(selectedFile.name);
+            if (sfcIconBox) {
+                const ext = (selectedFile.name.split('.').pop() || '').toLowerCase();
+                if (selectedFile.type && selectedFile.type.startsWith('image/')) {
+                    const thumbUrl = URL.createObjectURL(selectedFile);
+                    sfcIconBox.innerHTML = `<img src="${thumbUrl}" alt="Thumbnail" class="sfc-live-thumb" />`;
+                } else if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) {
+                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>`;
+                } else if (['mp3', 'wav', 'flac', 'm4a', 'ogg'].includes(ext)) {
+                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+                } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
+                } else if (ext === 'pdf') {
+                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
+                } else {
+                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+                }
             }
         } else {
             if (sfcFileName) sfcFileName.textContent = fileKey.split('/').pop() || 'plik';
@@ -3192,13 +3468,13 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
 
         if (sfcRetention) {
             if (duration === 'burn' || window._activeSpyMode) {
-                sfcRetention.innerHTML = '<span style="color:#FF6B6B; font-weight:700;">🔥 Burn after read</span>';
+                sfcRetention.textContent = 'Burn after read';
             } else if (duration === '30d') {
-                sfcRetention.textContent = '⏳ Ważny 30 dni';
+                sfcRetention.textContent = 'Ważny 30 dni';
             } else if (duration === 'permanent') {
-                sfcRetention.textContent = '♾️ Bezterminowo';
+                sfcRetention.textContent = 'Bezterminowo';
             } else {
-                sfcRetention.textContent = '⏳ Ważny 24h';
+                sfcRetention.textContent = 'Ważny 24h';
             }
         }
 
@@ -5852,13 +6128,48 @@ window.handleSafeDelete = async function(btn, filename) {
 };
 
 // === SUCCESS FLOW FUNCTIONS ===
-function onCopyLinkFeedback() {
+function triggerButtonLightSplash(btn, e) {
+    if (!btn) return;
+    const splash = document.createElement('span');
+    splash.className = 'btn-light-splash';
+    const rect = btn.getBoundingClientRect();
+    let x = rect.width / 2;
+    let y = rect.height / 2;
+    const evt = e || (typeof window !== 'undefined' ? window.event : null);
+    if (evt && evt.clientX && evt.clientY) {
+        x = evt.clientX - rect.left;
+        y = evt.clientY - rect.top;
+    }
+    splash.style.left = `${x}px`;
+    splash.style.top = `${y}px`;
+    btn.appendChild(splash);
+    setTimeout(() => {
+        splash.remove();
+    }, 750);
+}
+
+function onCopyLinkFeedback(e) {
     playSound('click');
     showNotification('Link skopiowany do schowka!', 'success');
+
+    // Animacja głównego przycisku CTA
+    const mainBtn = document.getElementById('btnMainCopy');
+    const mainText = document.getElementById('mainCopyBtnText');
+    if (mainBtn) {
+        triggerButtonLightSplash(mainBtn, e);
+        mainBtn.classList.add('copied');
+        const oldText = mainText ? mainText.textContent : '';
+        if (mainText) mainText.textContent = '✓ Skopiowano do schowka!';
+        setTimeout(() => {
+            mainBtn.classList.remove('copied');
+            if (mainText) mainText.textContent = oldText || (typeof t === 'function' ? t('btn_copy_link') : 'Kopiuj link do schowka');
+        }, 2400);
+    }
 
     // Animacja przycisku szybkiego kopiowania w pasku linku
     const quickBtn = document.getElementById('smartLinkQuickCopyBtn');
     if (quickBtn) {
+        triggerButtonLightSplash(quickBtn, e);
         quickBtn.classList.add('copied');
         const idleSpan = quickBtn.querySelector('.sl-copy-idle');
         const copiedSpan = quickBtn.querySelector('.sl-copy-copied');
@@ -5871,27 +6182,15 @@ function onCopyLinkFeedback() {
             if (copiedSpan) copiedSpan.style.display = 'none';
         }, 2400);
     }
-
-    // Animacja głównego przycisku CTA
-    const mainBtn = document.getElementById('btnMainCopy');
-    const mainText = document.getElementById('mainCopyBtnText');
-    if (mainBtn) {
-        mainBtn.classList.add('copied');
-        const oldText = mainText ? mainText.textContent : '';
-        if (mainText) mainText.textContent = '✓ Skopiowano do schowka!';
-        setTimeout(() => {
-            mainBtn.classList.remove('copied');
-            if (mainText) mainText.textContent = oldText || (typeof t === 'function' ? t('btn_copy_link') : 'Kopiuj link do schowka');
-        }, 2400);
-    }
 }
 
-function copyToClipboard() {
+function copyToClipboard(e) {
+    const evt = e || (typeof window !== 'undefined' ? window.event : null);
     const linkElement = document.getElementById('finalLink');
     if (linkElement && linkElement.href && linkElement.href !== '#') {
         const urlToCopy = linkElement.dataset.shareUrl || linkElement.href;
         navigator.clipboard.writeText(urlToCopy).then(() => {
-            onCopyLinkFeedback();
+            onCopyLinkFeedback(evt);
         }).catch(() => {
             const textArea = document.createElement('textarea');
             textArea.value = urlToCopy;
@@ -5899,7 +6198,7 @@ function copyToClipboard() {
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            onCopyLinkFeedback();
+            onCopyLinkFeedback(evt);
         });
     }
 }
@@ -5980,28 +6279,140 @@ function showNotification(message, type = 'info') {
     toast.innerHTML = `
         ${iconSvg}
         <span class="toast-text">${message}</span>
+        <button type="button" class="toast-close-btn" aria-label="Zamknij powiadomienie" title="Zamknij">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
     `;
 
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.add('toast-hide');
+
+    let isDismissed = false;
+    function dismissToast(direction = 'up') {
+        if (isDismissed) return;
+        isDismissed = true;
+        clearTimeout(autoDismissTimer);
+        
+        if (direction === 'right') {
+            toast.style.transition = 'transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease';
+            toast.style.transform = 'translateX(120%) scale(0.9)';
+            toast.style.opacity = '0';
+        } else if (direction === 'left') {
+            toast.style.transition = 'transform 0.22s cubic-bezier(0.4, 0, 1, 1), opacity 0.22s ease';
+            toast.style.transform = 'translateX(-120%) scale(0.9)';
+            toast.style.opacity = '0';
+        } else {
+            toast.classList.add('toast-hide');
+        }
         setTimeout(() => toast.remove(), 240);
-    }, 3200);
+    }
+
+    // Kliknięcie w przycisk ✕
+    const closeBtn = toast.querySelector('.toast-close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismissToast('up');
+        });
+    }
+
+    // Gest Swipe (przesunięcie palcem lub myszą w lewo, w prawo lub do góry)
+    let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+
+    function onTouchStart(e) {
+        const touch = e.touches ? e.touches[0] : e;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        currentX = startX;
+        currentY = startY;
+        isDragging = true;
+        toast.style.transition = 'none';
+        clearTimeout(autoDismissTimer);
+    }
+
+    function onTouchMove(e) {
+        if (!isDragging) return;
+        const touch = e.touches ? e.touches[0] : e;
+        currentX = touch.clientX;
+        currentY = touch.clientY;
+        const diffX = currentX - startX;
+        const diffY = currentY - startY;
+
+        if (Math.abs(diffX) > 6 || diffY < -6) {
+            const opacity = Math.max(0.15, 1 - Math.abs(diffX) / 220 - (diffY < 0 ? Math.abs(diffY) / 100 : 0));
+            toast.style.transform = `translate(${diffX}px, ${Math.min(diffY, 0)}px)`;
+            toast.style.opacity = opacity.toString();
+        }
+    }
+
+    function onTouchEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        const diffX = currentX - startX;
+        const diffY = currentY - startY;
+
+        if (diffX > 55) {
+            dismissToast('right');
+        } else if (diffX < -55) {
+            dismissToast('left');
+        } else if (diffY < -30) {
+            dismissToast('up');
+        } else {
+            // Sprężynowy powrót na pozycję wyjściową
+            toast.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease';
+            toast.style.transform = 'translate(0px, 0px)';
+            toast.style.opacity = '1';
+            scheduleAutoDismiss(2500);
+        }
+    }
+
+    toast.addEventListener('touchstart', onTouchStart, { passive: true });
+    toast.addEventListener('touchmove', onTouchMove, { passive: true });
+    toast.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    // Obsługa myszy (drag to dismiss)
+    toast.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.toast-close-btn')) return;
+        onTouchStart(e);
+        const onMouseMove = (moveEvent) => onTouchMove(moveEvent);
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            onTouchEnd();
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    });
+
+    let autoDismissTimer = null;
+    function scheduleAutoDismiss(ms = 3500) {
+        clearTimeout(autoDismissTimer);
+        autoDismissTimer = setTimeout(() => {
+            dismissToast('up');
+        }, ms);
+    }
+
+    toast.addEventListener('mouseenter', () => clearTimeout(autoDismissTimer));
+    toast.addEventListener('mouseleave', () => scheduleAutoDismiss(2000));
+
+    scheduleAutoDismiss(3500);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     // Wyłączono magnetyczne podążanie za myszką - przyciski stoją stabilnie i sztywno w miejscu
 
-    // Efekt "ripple" (rozchodzącej się fali świetlnej) na przyciskach, zakładkach i filtrach
+    // Subtelny mikro-błysk świetlny (Micro-Sheen) na głównych przyciskach akcji
     document.addEventListener('click', (e) => {
-        const button = e.target.closest('.btn-primary, .btn-secondary, .subtab-btn, .mod-pill, .btn-copy-mod');
+        const button = e.target.closest('.btn-primary, .btn-select');
         if (button) {
+            if (button.disabled || button.getAttribute('disabled') !== null) return;
             const ripple = document.createElement('div');
             ripple.className = 'btn-ripple';
             
             const rect = button.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height) * 1.4;
+            const size = Math.max(rect.width, rect.height) * 1.2;
             const x = e.clientX - rect.left - size / 2;
             const y = e.clientY - rect.top - size / 2;
             
@@ -6010,7 +6421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ripple.style.top = y + 'px';
             
             button.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
+            setTimeout(() => ripple.remove(), 350);
         }
     });
     
@@ -6155,51 +6566,87 @@ const CinematicAudioEngine = (function() {
     const tracks = {
         piano: {
             name: 'Gentle Piano',
+            icon: '🎹',
+            desc: 'Ciepłe, kojące pianino (Cmaj7 – Am9)',
             chords: [
-                [130.81, 196.00, 261.63, 329.63, 493.88], // Cmaj7 with C3 bass
-                [110.00, 164.81, 220.00, 261.63, 392.00, 493.88], // Am9 with A2 bass
-                [87.31, 130.81, 174.61, 220.00, 261.63, 329.63], // Fmaj7 with F2 bass
-                [98.00, 146.83, 196.00, 246.94, 293.66, 392.00]  // Gsus4-G with G2 bass
+                [130.81, 196.00, 261.63, 329.63, 493.88],          // Cmaj7 (C3 bass)
+                [110.00, 164.81, 220.00, 261.63, 392.00, 493.88],  // Am9 (A2 bass)
+                [87.31, 130.81, 174.61, 220.00, 261.63, 329.63],   // Fmaj7 (F2 bass)
+                [98.00, 146.83, 196.00, 246.94, 293.66, 440.00]   // G6/9 (G2 bass)
             ],
             type: 'sine',
-            filterFreq: 2600,
-            tempo: 3.5
+            filterFreq: 2400,
+            tempo: 3.6
         },
         lofi: {
             name: 'Lo-Fi Sunset',
+            icon: '☕',
+            desc: 'Kawiarniany Rhodes & chill jazz (Dm9 – G13)',
             chords: [
-                [73.42, 110.00, 174.61, 220.00, 261.63, 329.63], // Dm9 with D2 bass
-                [98.00, 146.83, 174.61, 246.94, 329.63],         // G13 with G2 bass
-                [65.41, 98.00, 164.81, 196.00, 246.94, 293.66],  // Cmaj9 with C2 bass
-                [110.00, 164.81, 220.00, 261.63, 329.63, 392.00] // Am9 with A2 bass
+                [73.42, 110.00, 174.61, 220.00, 261.63, 329.63],  // Dm9 (D2 bass)
+                [98.00, 146.83, 174.61, 246.94, 329.63],          // G13 (G2 bass)
+                [65.41, 98.00, 164.81, 196.00, 246.94, 293.66],   // Cmaj9 (C2 bass)
+                [110.00, 164.81, 220.00, 261.63, 293.66, 392.00]  // Am11 (A2 bass)
             ],
             type: 'triangle',
-            filterFreq: 2000,
+            filterFreq: 1750,
             tempo: 3.8
         },
-        ambient: {
-            name: 'Cinematic Ambient',
-            chords: [
-                [73.42, 110.00, 146.83, 220.00, 329.63, 440.00], // D-drone cinematic
-                [58.27, 87.31, 116.54, 174.61, 233.08, 349.23],  // Bb-drone cinematic
-                [65.41, 98.00, 130.81, 196.00, 293.66, 392.00],  // C-sus2 space
-                [49.00, 73.42, 98.00, 146.83, 174.61, 220.00]   // Gm9 depth
-            ],
-            type: 'sine',
-            filterFreq: 1800,
-            tempo: 4.6
-        },
         acoustic: {
-            name: 'Acoustic Breeze',
+            name: 'Acoustic Sunset',
+            icon: '🎸',
+            desc: 'Akustyczne ciepłe brzmienie gitary (Gadd9 – Cadd9)',
             chords: [
-                [98.00, 146.83, 196.00, 246.94, 293.66, 392.00], // G major strum
-                [130.81, 164.81, 196.00, 293.66, 329.63],        // Cadd9
-                [82.41, 123.47, 164.81, 196.00, 293.66],         // Em7
-                [146.83, 220.00, 293.66, 392.00]                 // Dsus4
+                [98.00, 146.83, 196.00, 220.00, 246.94, 392.00],  // Gadd9 (G2 bass)
+                [130.81, 164.81, 196.00, 293.66, 329.63],         // Cadd9 (C3 bass)
+                [82.41, 123.47, 164.81, 196.00, 293.66],          // Em7 (E2 bass)
+                [73.42, 146.83, 220.00, 293.66, 369.99]          // Dadd4 (D2 bass)
             ],
             type: 'triangle',
-            filterFreq: 3000,
-            tempo: 3.2
+            filterFreq: 2700,
+            tempo: 3.4
+        },
+        ambient: {
+            name: 'Deep Cinematic',
+            icon: '🌌',
+            desc: 'Głęboka filmowa przestrzeń i spokój (D-drone – Bbmaj7)',
+            chords: [
+                [73.42, 110.00, 146.83, 220.00, 329.63, 440.00],  // D-drone cinematic
+                [58.27, 87.31, 116.54, 174.61, 233.08, 349.23],   // Bb-drone cinematic
+                [65.41, 98.00, 130.81, 196.00, 293.66, 392.00],   // C-sus2 space
+                [49.00, 73.42, 98.00, 146.83, 174.61, 220.00]    // Gm9 depth
+            ],
+            type: 'sine',
+            filterFreq: 1600,
+            tempo: 4.8
+        },
+        dreamy: {
+            name: 'Dreamy Chill',
+            icon: '✨',
+            desc: 'Błogi, świetlisty dream-pop (Fmaj9 – G6)',
+            chords: [
+                [87.31, 130.81, 174.61, 220.00, 261.63, 329.63, 392.00], // Fmaj9
+                [123.47, 146.83, 196.00, 246.94, 329.63, 392.00],        // G6/B
+                [82.41, 123.47, 164.81, 196.00, 246.94, 293.66, 369.99], // Em9
+                [110.00, 164.81, 220.00, 261.63, 293.66, 392.00]         // Am11
+            ],
+            type: 'sine',
+            filterFreq: 2500,
+            tempo: 3.7
+        },
+        zen: {
+            name: 'Zen Relax',
+            icon: '🍃',
+            desc: 'Medytacyjny relaks 432Hz (Dmaj9 – Gmaj7)',
+            chords: [
+                [73.42, 110.00, 146.83, 220.00, 277.18, 329.63, 369.99], // Dmaj9
+                [98.00, 146.83, 196.00, 246.94, 293.66, 369.99],         // Gmaj7
+                [61.74, 123.47, 146.83, 185.00, 220.00, 293.66],         // Bm7
+                [110.00, 164.81, 220.00, 293.66, 329.63, 440.00]         // Asus4
+            ],
+            type: 'sine',
+            filterFreq: 1500,
+            tempo: 5.0
         }
     };
 
@@ -6237,35 +6684,35 @@ const CinematicAudioEngine = (function() {
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(filterFreq, now);
-        filter.Q.setValueAtTime(1.2, now);
+        filter.Q.setValueAtTime(1.1, now);
         filter.connect(masterGain);
 
-        const perNoteGain = 0.82 / (frequencies.length + 0.5);
+        const perNoteGain = 0.85 / (frequencies.length + 0.6);
 
         frequencies.forEach((freq, idx) => {
             const osc = audioCtx.createOscillator();
             const noteGain = audioCtx.createGain();
 
             osc.type = type;
-            const startTime = now + idx * 0.035; // Delikatny arpeggio/strum
+            const startTime = now + idx * 0.04; // Delikatny arpeggio / naturalny strum
             osc.frequency.setValueAtTime(freq, startTime);
 
-            // Naturalny chorus (organiczne ocieplenie)
-            const detuneVal = ((idx % 2 === 0 ? 1 : -1) * (3.5 + Math.random() * 2));
+            // Naturalny chorus (organiczne ocieplenie harmoniczne)
+            const detuneVal = ((idx % 2 === 0 ? 1 : -1) * (3.0 + Math.random() * 2.2));
             osc.detune.setValueAtTime(detuneVal, startTime);
 
-            // Obwiednia głośności (szybki miękki atak, soczysty sustain, płynne wybrzmienie)
+            // Obwiednia głośności (miękki ciepły atak, głęboki sustain, organiczne wybrzmienie)
             noteGain.gain.setValueAtTime(0.0001, startTime);
-            noteGain.gain.linearRampToValueAtTime(perNoteGain, startTime + 0.12);
-            noteGain.gain.linearRampToValueAtTime(perNoteGain * 0.78, startTime + 0.4);
-            noteGain.gain.setValueAtTime(perNoteGain * 0.7, startTime + duration * 0.7);
+            noteGain.gain.linearRampToValueAtTime(perNoteGain, startTime + 0.16);
+            noteGain.gain.linearRampToValueAtTime(perNoteGain * 0.82, startTime + 0.5);
+            noteGain.gain.setValueAtTime(perNoteGain * 0.72, startTime + duration * 0.72);
             noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
             osc.connect(noteGain);
             noteGain.connect(filter);
 
             osc.start(startTime);
-            osc.stop(startTime + duration + 0.1);
+            osc.stop(startTime + duration + 0.15);
 
             activeOscillators.push(osc);
             setTimeout(() => {
@@ -6346,6 +6793,14 @@ const CinematicAudioEngine = (function() {
         return true;
     }
 
+    function switchTrack(trackKey, targetVol = 0.65) {
+        if (!tracks[trackKey]) return;
+        activeTrack = trackKey;
+        if (isPlaying) {
+            play(trackKey, targetVol);
+        }
+    }
+
     function setVolume(vol) {
         if (!audioCtx || !masterGain) return;
         masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
@@ -6355,11 +6810,15 @@ const CinematicAudioEngine = (function() {
     return {
         play,
         stop,
+        switchTrack,
         previewTrack,
         setVolume,
         ensureCtx,
         isPlaying: () => isPlaying,
         getTrackName: (key) => tracks[key]?.name || 'Gentle Piano',
+        getTrackIcon: (key) => tracks[key]?.icon || '🎵',
+        getTrackDesc: (key) => tracks[key]?.desc || '',
+        getAllTracks: () => Object.entries(tracks).map(([k, v]) => ({ key: k, ...v })),
         getActiveTrack: () => activeTrack
     };
 })();
@@ -6451,6 +6910,81 @@ let _cinematicIsSoundMuted = false;
 let _cinematicDownloadAllUrl = null;
 const SLIDE_DURATION_MS = 5000;
 
+function renderCinematicTrackDropdownList() {
+    const listEl = document.getElementById('cinematicTrackOptionsList');
+    if (!listEl) return;
+
+    const tracks = CinematicAudioEngine.getAllTracks();
+    const currentActiveKey = CinematicAudioEngine.getActiveTrack();
+
+    listEl.innerHTML = tracks.map(tr => {
+        const isActive = tr.key === currentActiveKey;
+        return `
+            <button type="button" class="cinematic-track-opt-btn ${isActive ? 'active' : ''}" data-track-key="${tr.key}">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px;">${tr.icon}</span>
+                    <div style="display: flex; flex-direction: column; text-align: left;">
+                        <span style="font-weight: 600; font-size: 12px; color: ${isActive ? '#F59E0B' : '#E2E8F0'};">${tr.name}</span>
+                        <span style="font-size: 10px; color: #94A3B8; margin-top: 1px;">${tr.desc}</span>
+                    </div>
+                </div>
+                ${isActive ? '<span style="color: #F59E0B; font-size: 12px; font-weight: 700; margin-left: 6px;">✓</span>' : ''}
+            </button>
+        `;
+    }).join('');
+
+    listEl.querySelectorAll('.cinematic-track-opt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const trackKey = btn.getAttribute('data-track-key');
+            selectCinematicTrack(trackKey);
+        });
+    });
+}
+
+function selectCinematicTrack(trackKey) {
+    if (!trackKey) return;
+    _cinematicIsSoundMuted = false;
+    CinematicAudioEngine.switchTrack(trackKey, 0.65);
+    
+    // Zaktualizuj etykietę w HUD
+    const soundLabel = document.getElementById('cinematicSoundLabel');
+    if (soundLabel) {
+        const icon = CinematicAudioEngine.getTrackIcon(trackKey);
+        const name = CinematicAudioEngine.getTrackName(trackKey);
+        soundLabel.textContent = `${icon} ${name}`;
+    }
+
+    // Korektor dźwięku
+    const eqBars = document.getElementById('cinematicEqBars');
+    if (eqBars) eqBars.classList.add('playing');
+
+    // Aktualizuj stan wyciszenia w menu
+    updateCinematicMuteBtnUI(false);
+
+    // Zamknij dropdown
+    const dropdown = document.getElementById('cinematicTrackDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    // Odśwież listę
+    renderCinematicTrackDropdownList();
+
+    if (typeof showNotification === 'function') {
+        showNotification('🎵 ' + (typeof t === 'function' ? t('cinematic_playing_track') : 'Muzyka:') + ' ' + CinematicAudioEngine.getTrackName(trackKey), 'info');
+    }
+}
+
+function updateCinematicMuteBtnUI(isMuted) {
+    const muteBtnText = document.getElementById('cinematicMuteBtnText');
+    const muteBtn = document.getElementById('btnCinematicMuteDirect');
+    if (muteBtnText) {
+        muteBtnText.textContent = isMuted ? 'Włącz' : 'Wycisz';
+    }
+    if (muteBtn) {
+        muteBtn.style.color = isMuted ? '#FCA5A5' : '#CBD5E1';
+    }
+}
+
 function launchCinematicSlideshow(photosList, trackName = 'piano', collectionTitle = 'Kolekcja Fotografii', dlAllUrl = null) {
     const modal = document.getElementById('cinematicModal');
     if (!modal) return;
@@ -6481,10 +7015,17 @@ function launchCinematicSlideshow(photosList, trackName = 'piano', collectionTit
     // Uruchom nastrojową muzykę
     CinematicAudioEngine.play(trackName, 0.65);
     const soundLabel = document.getElementById('cinematicSoundLabel');
-    if (soundLabel) soundLabel.textContent = CinematicAudioEngine.getTrackName(trackName);
+    if (soundLabel) {
+        const icon = CinematicAudioEngine.getTrackIcon(trackName);
+        const name = CinematicAudioEngine.getTrackName(trackName);
+        soundLabel.textContent = `${icon} ${name}`;
+    }
 
     const eqBars = document.getElementById('cinematicEqBars');
     if (eqBars) eqBars.classList.add('playing');
+
+    renderCinematicTrackDropdownList();
+    updateCinematicMuteBtnUI(false);
 
     // Wyświetl pierwszy slajd
     renderCinematicSlide(_cinematicCurrentIdx);
@@ -6581,9 +7122,10 @@ function toggleCinematicPlayPause() {
 
 function toggleCinematicSound() {
     _cinematicIsSoundMuted = !_cinematicIsSoundMuted;
-    CinematicAudioEngine.setVolume(_cinematicIsSoundMuted ? 0.001 : 0.65);
+    CinematicAudioEngine.setVolume(_cinematicIsSoundMuted ? 0.0001 : 0.65);
     const eqBars = document.getElementById('cinematicEqBars');
     if (eqBars) eqBars.classList.toggle('playing', !_cinematicIsSoundMuted);
+    updateCinematicMuteBtnUI(_cinematicIsSoundMuted);
 }
 
 function closeCinematicModal() {
@@ -6591,6 +7133,8 @@ function closeCinematicModal() {
     if (!modal) return;
     clearSlideTimers();
     CinematicAudioEngine.stop(true);
+    const dropdown = document.getElementById('cinematicTrackDropdown');
+    if (dropdown) dropdown.style.display = 'none';
     modal.hidden = true;
     modal.style.display = 'none';
     document.body.style.overflow = '';
@@ -6637,12 +7181,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDlSingle = document.getElementById('btnCinematicDlSingle');
     const btnDlAll = document.getElementById('btnCinematicDlAll');
     const btnFinishedDlAll = document.getElementById('btnCinematicFinishedDlAll');
+    const btnMuteDirect = document.getElementById('btnCinematicMuteDirect');
 
     if (btnClose) btnClose.onclick = closeCinematicModal;
     if (btnPlayPause) btnPlayPause.onclick = toggleCinematicPlayPause;
     if (btnNext) btnNext.onclick = nextCinematicSlide;
     if (btnPrev) btnPrev.onclick = prevCinematicSlide;
-    if (btnSound) btnSound.onclick = toggleCinematicSound;
+
+    if (btnSound) {
+        btnSound.onclick = (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('cinematicTrackDropdown');
+            if (!dropdown) return;
+            const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+            if (isHidden) {
+                renderCinematicTrackDropdownList();
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        };
+    }
+
+    if (btnMuteDirect) {
+        btnMuteDirect.onclick = (e) => {
+            e.stopPropagation();
+            toggleCinematicSound();
+        };
+    }
+
+    // Zamknięcie dropdownu przy kliknięciu poza niego
+    document.addEventListener('click', (e) => {
+        const wrap = document.getElementById('cinematicTrackSelectorWrap');
+        const dropdown = document.getElementById('cinematicTrackDropdown');
+        if (dropdown && dropdown.style.display !== 'none' && (!wrap || !wrap.contains(e.target))) {
+            dropdown.style.display = 'none';
+        }
+    });
+
     if (btnFullscreen) btnFullscreen.onclick = toggleCinematicFullscreen;
 
     if (btnReplay) {
@@ -7059,8 +7635,8 @@ function initDigitalUnboxingRecorder() {
 
     if (btnOpen) {
         btnOpen.addEventListener('click', () => {
-            const advModal = document.getElementById('advSettingsModalWrap');
-            if (advModal && !advModal.hasAttribute('hidden') && advModal.style.display !== 'none') {
+            const advFlyout = document.getElementById('advFlyoutCard');
+            if (advFlyout && advFlyout.classList.contains('is-visible')) {
                 openedFromAdvModal = true;
                 if (typeof window.closeAdvSettingsModal === 'function') window.closeAdvSettingsModal();
             } else {
@@ -7074,8 +7650,8 @@ function initDigitalUnboxingRecorder() {
 
     if (btnOpenVoice) {
         btnOpenVoice.addEventListener('click', () => {
-            const advModal = document.getElementById('advSettingsModalWrap');
-            if (advModal && !advModal.hasAttribute('hidden') && advModal.style.display !== 'none') {
+            const advFlyout = document.getElementById('advFlyoutCard');
+            if (advFlyout && advFlyout.classList.contains('is-visible')) {
                 openedFromAdvModal = true;
                 if (typeof window.closeAdvSettingsModal === 'function') window.closeAdvSettingsModal();
             } else {
@@ -7603,10 +8179,15 @@ function navigateToHome(resetUpload = true) {
 
     // 3. Przełącz widok na stronę główną
     const navLinks = document.querySelectorAll('.nav-btn');
+    const drawerLinks = document.querySelectorAll('.mobile-drawer-link');
     const views = document.querySelectorAll('.view-section');
 
     navLinks.forEach(nav => {
         nav.classList.toggle('active', nav.getAttribute('data-target') === 'view-glowna');
+    });
+
+    drawerLinks.forEach(dl => {
+        dl.classList.toggle('active', dl.getAttribute('data-target') === 'view-glowna');
     });
 
     views.forEach(view => {
@@ -7618,9 +8199,34 @@ function navigateToHome(resetUpload = true) {
     const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
     navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    if (typeof window.updateMobileHomeFabVisibility === 'function') {
+        window.updateMobileHomeFabVisibility();
+    }
 }
 window.navigateToHome = navigateToHome;
+
+function scrollToFaqSection() {
+    const contactView = document.getElementById('view-kontakt');
+    if (contactView) {
+        document.querySelectorAll('.view-section').forEach(v => {
+            v.hidden = true;
+            v.classList.remove('active');
+        });
+        contactView.hidden = false;
+        contactView.classList.add('active');
+        document.querySelectorAll('.nav-btn, .mobile-drawer-link').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-target') === 'view-kontakt');
+        });
+    }
+    setTimeout(() => {
+        const faqEl = document.getElementById('faq');
+        if (faqEl) {
+            faqEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 60);
+}
+window.scrollToFaqSection = scrollToFaqSection;
 
 // === SYSTEM ZAKŁADEK (SPA NAVIGATION) ===
 document.addEventListener('DOMContentLoaded', () => {
@@ -7667,7 +8273,10 @@ document.addEventListener('DOMContentLoaded', () => {
             window.loadToolboxScripts();
         }
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        if (typeof window.updateMobileHomeFabVisibility === 'function') {
+            window.updateMobileHomeFabVisibility();
+        }
     }
     window.switchView = switchView;
 
@@ -7746,18 +8355,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // === SMART AUTO-HIDE NAVBAR & SCROLL TO TOP BUTTON ===
+    // === SMART AUTO-HIDE NAVBAR & MOBILE QUICK-HOME THUMB FAB ===
     const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
-    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const mobileHomeFab = document.getElementById('mobileHomeFab') || document.getElementById('scrollToTopBtn');
 
-    if (scrollToTopBtn) {
-        scrollToTopBtn.addEventListener('click', () => {
+    function updateMobileHomeFabVisibility() {
+        if (!mobileHomeFab) return;
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const activeView = document.querySelector('.view-section.active');
+        const isNotHomeView = activeView && activeView.id !== 'view-glowna';
+
+        // Na mobile: jeśli użytkownik jest w innej zakładce (Narzędzia, Beam, Kontakt, Pobieranie) LUB zjechał w dół > 180px -> pokazujemy przycisk pod kciukiem
+        if (isNotHomeView || currentScrollY > 180) {
+            mobileHomeFab.classList.add('visible');
+        } else {
+            mobileHomeFab.classList.remove('visible');
+        }
+    }
+    window.updateMobileHomeFabVisibility = updateMobileHomeFabVisibility;
+
+    if (mobileHomeFab) {
+        mobileHomeFab.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof window.navigateToHome === 'function') {
+                window.navigateToHome(false);
+            }
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
             if (navFloatingElements.length) {
                 navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+            }
+            if (typeof window.closeAdvSettingsModal === 'function') {
+                window.closeAdvSettingsModal();
             }
         });
     }
@@ -7770,14 +8401,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.requestAnimationFrame(() => {
                 const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
 
-                // Pokaż przycisk powrotu na górę, gdy użytkownik przewinie stronę > 250px
-                if (scrollToTopBtn) {
-                    if (currentScrollY > 250) {
-                        scrollToTopBtn.classList.add('visible');
-                    } else {
-                        scrollToTopBtn.classList.remove('visible');
-                    }
-                }
+                updateMobileHomeFabVisibility();
 
                 // Schowaj logo i menu gdy użytkownik wyraźnie scrolluje w dół (>8px) i znajduje się poniżej 70px
                 if (navFloatingElements.length) {
@@ -8826,6 +9450,12 @@ async function initDownloadRouter() {
             badge.classList.toggle('has-items', total > 0);
         }
 
+        const lightboxBadge = document.getElementById('dlLightboxPinCountBadge');
+        if (lightboxBadge) {
+            lightboxBadge.textContent = total;
+            lightboxBadge.classList.toggle('has-items', total > 0);
+        }
+
         const toggleBtn = document.getElementById('btnProofingToggleDrawer');
         if (toggleBtn) {
             toggleBtn.classList.toggle('has-pins', total > 0);
@@ -8836,113 +9466,136 @@ async function initDownloadRouter() {
 
         const progressEl = document.getElementById('proofingDrawerProgress');
         if (progressEl) {
-            progressEl.textContent = `${resolved}/${total} wykonane`;
+            const template = typeof t === 'function' && typeof hasTranslation === 'function' && hasTranslation('proofing_progress_completed')
+                ? t('proofing_progress_completed')
+                : '{resolved}/{total} wykonane';
+            progressEl.textContent = template.replace('{resolved}', resolved).replace('{total}', total);
         }
     }
 
     function renderProofingPinsOnMedia() {
-        const layer = document.getElementById('proofingPinsLayer');
-        if (!layer) return;
-        layer.innerHTML = '';
+        const layers = [
+            { layer: document.getElementById('proofingPinsLayer'), overlay: document.getElementById('proofingOverlay') },
+            { layer: document.getElementById('dlLightboxPinsLayer'), overlay: document.getElementById('dlLightboxProofingOverlay') }
+        ];
 
-        // Jeśli to wideo - nie renderujemy wiszących w powietrzu pinesek na kadrze (zgodnie z życzeniem użytkownika, uwagi są zaznaczone wyłącznie na osi czasu)
-        const videoEl = document.getElementById('proofingVideoEl');
-        if (videoEl) return;
+        layers.forEach(({ layer, overlay }) => {
+            if (!layer) return;
+            layer.innerHTML = '';
 
-        if (!proofingActive) return;
+            // Jeśli to wideo - nie renderujemy wiszących w powietrzu pinesek na kadrze (uwagi są na osi czasu)
+            const videoEl = document.getElementById('proofingVideoEl');
+            if (videoEl && layer.id === 'proofingPinsLayer') return;
 
-        proofingPins.forEach((pin, idx) => {
-            const pinEl = document.createElement('div');
-            pinEl.className = `proofing-pin ${pin.resolved ? 'resolved' : ''}`;
-            pinEl.style.left = `${pin.xPct}%`;
-            pinEl.style.top = `${pin.yPct}%`;
-            pinEl.setAttribute('data-pin-id', pin.id);
+            if (!proofingActive) return;
 
-            const pinNum = idx + 1;
-            const timeLabel = pin.formattedTime ? pin.formattedTime : '#' + pinNum;
+            proofingPins.forEach((pin, idx) => {
+                const pinEl = document.createElement('div');
+                pinEl.className = `proofing-pin ${pin.resolved ? 'resolved' : ''}`;
+                pinEl.style.left = `${pin.xPct}%`;
+                pinEl.style.top = `${pin.yPct}%`;
+                pinEl.setAttribute('data-pin-id', pin.id);
 
-            pinEl.innerHTML = `
-                <div class="proofing-pin-pulse"></div>
-                <div class="proofing-pin-badge">
-                    <span>${timeLabel}</span>
-                </div>
-                <div class="proofing-pin-pointer"></div>
-                <div class="proofing-pin-anchor-dot"></div>
-                <div class="proofing-pin-tooltip">
-                    <div class="proofing-pin-tooltip-header">
-                        ${pin.formattedTime ? `<span class="proofing-pin-tooltip-time">${pin.formattedTime}</span>` : ''}
-                        <span class="proofing-pin-tooltip-author">${escapeHtml(pin.author)}</span>
+                const pinNum = idx + 1;
+                const timeLabel = pin.formattedTime ? pin.formattedTime : '#' + pinNum;
+
+                pinEl.innerHTML = `
+                    <div class="proofing-pin-pulse"></div>
+                    <div class="proofing-pin-badge">
+                        <span>${timeLabel}</span>
                     </div>
-                    <div class="proofing-pin-tooltip-text">${escapeHtml(pin.comment)}</div>
-                    <div class="proofing-pin-tooltip-hint">⠿ Przeciągnij, aby przesunąć</div>
-                </div>
-            `;
+                    <div class="proofing-pin-pointer"></div>
+                    <div class="proofing-pin-anchor-dot"></div>
+                    <div class="proofing-pin-tooltip">
+                        <div class="proofing-pin-tooltip-header">
+                            ${pin.formattedTime ? `<span class="proofing-pin-tooltip-time">${pin.formattedTime}</span>` : ''}
+                            <span class="proofing-pin-tooltip-author">${escapeHtml(pin.author)}</span>
+                        </div>
+                        <div class="proofing-pin-tooltip-text">${escapeHtml(pin.comment)}</div>
+                        <div class="proofing-pin-tooltip-hint">⠿ Przeciągnij / Kliknij, aby edytować</div>
+                    </div>
+                `;
 
-            let startX = 0, startY = 0;
-            let isDragging = false;
-            let hasDragged = false;
+                let startX = 0, startY = 0;
+                let isDragging = false;
+                let hasDragged = false;
 
-            const onPointerDown = (e) => {
-                if (e.button !== undefined && e.button !== 0) return;
-                e.stopPropagation();
-                startX = e.clientX;
-                startY = e.clientY;
-                hasDragged = false;
-                isDragging = false;
+                const onPointerDown = (e) => {
+                    if (e.button !== undefined && e.button !== 0) return;
+                    e.stopPropagation();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    hasDragged = false;
+                    isDragging = false;
 
-                const overlay = document.getElementById('proofingOverlay');
-                if (!overlay) return;
+                    const activeOverlay = overlay || document.getElementById('proofingOverlay');
+                    if (!activeOverlay) return;
 
-                const onPointerMove = (moveEvt) => {
-                    const dist = Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY);
-                    if (dist > 4) {
-                        isDragging = true;
-                        hasDragged = true;
-                        pinEl.classList.add('is-dragging');
-                    }
-                    if (!isDragging) return;
+                    const onPointerMove = (moveEvt) => {
+                        const dist = Math.hypot(moveEvt.clientX - startX, moveEvt.clientY - startY);
+                        if (dist > 4) {
+                            isDragging = true;
+                            hasDragged = true;
+                            pinEl.classList.add('is-dragging');
+                        }
+                        if (!isDragging) return;
 
-                    const rect = overlay.getBoundingClientRect();
-                    const curX = Math.max(1, Math.min(99, ((moveEvt.clientX - rect.left) / rect.width) * 100));
-                    const curY = Math.max(1, Math.min(99, ((moveEvt.clientY - rect.top) / rect.height) * 100));
+                        const rect = activeOverlay.getBoundingClientRect();
+                        const curX = Math.max(1, Math.min(99, ((moveEvt.clientX - rect.left) / rect.width) * 100));
+                        const curY = Math.max(1, Math.min(99, ((moveEvt.clientY - rect.top) / rect.height) * 100));
 
-                    pinEl.style.left = curX + '%';
-                    pinEl.style.top = curY + '%';
-                    pin.xPct = Math.round(curX * 10) / 10;
-                    pin.yPct = Math.round(curY * 10) / 10;
+                        pinEl.style.left = curX + '%';
+                        pinEl.style.top = curY + '%';
+                        pin.xPct = Math.round(curX * 10) / 10;
+                        pin.yPct = Math.round(curY * 10) / 10;
+                    };
+
+                    const onPointerUp = () => {
+                        window.removeEventListener('pointermove', onPointerMove);
+                        window.removeEventListener('pointerup', onPointerUp);
+                        window.removeEventListener('pointercancel', onPointerUp);
+
+                        if (isDragging) {
+                            pinEl.classList.remove('is-dragging');
+                            localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
+                            fetch(`${WORKER_URL}/api/proofing`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ key: currentProofingFileKey, pin: pin })
+                            }).catch(()=>{});
+                            if (typeof playSound === 'function') playSound('click');
+                            // Zsynchronizuj pozycje na obu warstwach
+                            document.querySelectorAll(`.proofing-pin[data-pin-id="${pin.id}"]`).forEach(pEl => {
+                                pEl.style.left = pin.xPct + '%';
+                                pEl.style.top = pin.yPct + '%';
+                            });
+                        }
+                    };
+
+                    window.addEventListener('pointermove', onPointerMove);
+                    window.addEventListener('pointerup', onPointerUp);
+                    window.addEventListener('pointercancel', onPointerUp);
                 };
 
-                const onPointerUp = () => {
-                    window.removeEventListener('pointermove', onPointerMove);
-                    window.removeEventListener('pointerup', onPointerUp);
-                    window.removeEventListener('pointercancel', onPointerUp);
+                pinEl.addEventListener('pointerdown', onPointerDown);
 
-                    if (isDragging) {
-                        pinEl.classList.remove('is-dragging');
-                        localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
-                        fetch(`${WORKER_URL}/api/proofing`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ key: currentProofingFileKey, pin: pin })
-                        }).catch(()=>{});
-                        if (typeof playSound === 'function') playSound('click');
-                    }
-                };
+                pinEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (hasDragged) return;
+                    openProofingModal({
+                        isEdit: true,
+                        pinId: pin.id,
+                        author: pin.author,
+                        comment: pin.comment,
+                        time: pin.time,
+                        formattedTime: pin.formattedTime,
+                        xPct: pin.xPct,
+                        yPct: pin.yPct
+                    });
+                });
 
-                window.addEventListener('pointermove', onPointerMove);
-                window.addEventListener('pointerup', onPointerUp);
-                window.addEventListener('pointercancel', onPointerUp);
-            };
-
-            pinEl.addEventListener('pointerdown', onPointerDown);
-
-            pinEl.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (hasDragged) return;
-                seekToPin(pin);
+                layer.appendChild(pinEl);
             });
-
-            layer.appendChild(pinEl);
         });
     }
 
@@ -9019,39 +9672,45 @@ async function initDownloadRouter() {
             </div>
         `;
 
-        popover.querySelector('.marker-popover-close').onclick = (e) => {
-            e.stopPropagation();
-            closeTimelineMarkerPopover();
-        };
-
-        const popoverPlayBtn = popover.querySelector('.btn-play-marker');
-        if (popoverPlayBtn) {
-            popoverPlayBtn.onclick = (e) => {
-                e.stopPropagation();
-                seekToPin(pin, true);
+        const playBtn = popover.querySelector('.btn-play-marker');
+        if (playBtn && video) {
+            playBtn.onclick = () => {
+                video.currentTime = pin.time;
+                video.play();
+                const playIcon = document.getElementById('proofingPlayIcon');
+                const pauseIcon = document.getElementById('proofingPauseIcon');
+                if (playIcon) playIcon.style.display = 'none';
+                if (pauseIcon) pauseIcon.style.display = 'block';
                 closeTimelineMarkerPopover();
             };
         }
 
-        popover.querySelector('.btn-resolve').onclick = (e) => {
-            e.stopPropagation();
-            if (typeof togglePinResolved === 'function') {
-                togglePinResolved(pin.id);
-            } else if (typeof toggleSidePinResolved === 'function') {
-                toggleSidePinResolved(pin.id);
-            }
-            closeTimelineMarkerPopover();
-        };
+        const resolveBtn = popover.querySelector('.btn-resolve');
+        if (resolveBtn) {
+            resolveBtn.onclick = () => {
+                if (typeof togglePinResolved === 'function') {
+                    togglePinResolved(pin.id);
+                } else if (typeof toggleSidePinResolved === 'function') {
+                    toggleSidePinResolved(pin.id);
+                }
+                closeTimelineMarkerPopover();
+            };
+        }
 
-        popover.querySelector('.btn-delete').onclick = (e) => {
-            e.stopPropagation();
-            if (typeof deletePin === 'function') {
-                deletePin(pin.id);
-            } else if (typeof deleteSidePin === 'function') {
-                deleteSidePin(pin.id);
-            }
-            closeTimelineMarkerPopover();
-        };
+        const delBtn = popover.querySelector('.btn-delete');
+        if (delBtn) {
+            delBtn.onclick = () => {
+                if (typeof deletePin === 'function') {
+                    deletePin(pin.id);
+                } else if (typeof deleteSidePin === 'function') {
+                    deleteSidePin(pin.id);
+                }
+                closeTimelineMarkerPopover();
+            };
+        }
+
+        const closeBtn = popover.querySelector('.marker-popover-close');
+        if (closeBtn) closeBtn.onclick = closeTimelineMarkerPopover;
 
         const targetContainer = trackEl || document.getElementById('proofingTimelineTrack') || document.getElementById('proofingTimelineWrap');
         if (targetContainer) {
@@ -9093,104 +9752,132 @@ async function initDownloadRouter() {
     }
 
     function renderProofingTasksList() {
-        const listEl = document.getElementById('proofingTasksList');
-        if (!listEl) return;
-        listEl.innerHTML = '';
+        const listContainers = [
+            document.getElementById('proofingTasksList'),
+            document.getElementById('dlLightboxTasksList')
+        ].filter(Boolean);
 
-        if (proofingPins.length === 0) {
-            listEl.innerHTML = `
-                <div class="proofing-empty-hint">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.6; margin-bottom: 4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <div>${typeof t === 'function' ? t('proofing_no_pins') : 'Brak dodanych uwag.'}</div>
-                    <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Kliknij przycisk „+ Dodaj uwagę” lub wciśnij <kbd style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 10px;">C</kbd>, aby zaznaczyć klatkę.</div>
-                </div>
-            `;
-            return;
-        }
+        listContainers.forEach(listEl => {
+            listEl.innerHTML = '';
 
-        proofingPins.forEach((pin, idx) => {
-            const item = document.createElement('div');
-            item.className = `proofing-task-item ${pin.resolved ? 'is-resolved' : ''}`;
-            item.setAttribute('data-pin-id', pin.id);
-
-            const hasTime = typeof pin.time === 'number' || Boolean(pin.formattedTime);
-            const timeLabel = pin.formattedTime || (hasTime ? formatProofingTime(pin.time) : `#${idx + 1}`);
-
-            item.innerHTML = `
-                <div class="proofing-task-left">
-                    <button type="button" class="proofing-checkbox-btn" title="${pin.resolved ? 'Oznacz jako do zrobienia' : 'Oznacz jako wykonane'}" aria-label="Status zadania">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </button>
-                    ${hasTime ? `
-                    <button type="button" class="proofing-time-pill proofing-play-seek-btn" title="Odtwórz wideo od sekundy ${timeLabel}">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="seek-play-icon"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                        <span>${timeLabel}</span>
-                    </button>
-                    ` : `
-                    <span class="proofing-time-pill" title="Punkt na grafice">#${idx + 1}</span>
-                    `}
-                    <span class="proofing-task-author-badge" title="Autor uwagi">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <span>${escapeHtml(pin.author || 'Klient')}</span>
-                    </span>
-                    <div class="proofing-task-text">${escapeHtml(pin.comment)}</div>
-                </div>
-                <div class="proofing-task-right">
-                    ${hasTime ? `
-                    <button type="button" class="btn-task-play" title="Odtwórz film w tej sekundzie (${timeLabel})">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                        <span>Odtwórz</span>
-                    </button>
-                    ` : ''}
-                    <button type="button" class="btn-task-del" title="Usuń uwagę" aria-label="Usuń uwagę">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </div>
-            `;
-
-            const checkBtn = item.querySelector('.proofing-checkbox-btn');
-            if (checkBtn) {
-                checkBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    togglePinResolved(pin.id);
-                });
+            if (proofingPins.length === 0) {
+                listEl.innerHTML = `
+                    <div class="proofing-empty-hint">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.6; margin-bottom: 4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <div>${typeof t === 'function' ? t('proofing_no_pins') : 'Brak dodanych uwag.'}</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Kliknij przycisk „+ Dodaj uwagę” lub wciśnij <kbd style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px; font-size: 10px;">C</kbd>, aby zaznaczyć punkt.</div>
+                    </div>
+                `;
+                return;
             }
 
-            const timePill = item.querySelector('.proofing-time-pill');
-            if (timePill) {
-                timePill.addEventListener('click', (e) => {
-                    e.stopPropagation();
+            proofingPins.forEach((pin, idx) => {
+                const item = document.createElement('div');
+                item.className = `proofing-task-item ${pin.resolved ? 'is-resolved' : ''}`;
+                item.setAttribute('data-pin-id', pin.id);
+
+                const hasTime = typeof pin.time === 'number' || Boolean(pin.formattedTime);
+                const timeLabel = pin.formattedTime || (hasTime ? formatProofingTime(pin.time) : `#${idx + 1}`);
+
+                item.innerHTML = `
+                    <div class="proofing-task-left">
+                        <button type="button" class="proofing-checkbox-btn" title="${pin.resolved ? 'Oznacz jako do zrobienia' : 'Oznacz jako wykonane'}" aria-label="Status zadania">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </button>
+                        ${hasTime ? `
+                        <button type="button" class="proofing-time-pill proofing-play-seek-btn" title="Odtwórz wideo od sekundy ${timeLabel}">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="seek-play-icon"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            <span>${timeLabel}</span>
+                        </button>
+                        ` : `
+                        <span class="proofing-time-pill" title="Punkt na grafice">#${idx + 1}</span>
+                        `}
+                        <span class="proofing-task-author-badge" title="Autor uwagi">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <span>${escapeHtml(pin.author || 'Klient')}</span>
+                        </span>
+                        <div class="proofing-task-text">${escapeHtml(pin.comment)}</div>
+                    </div>
+                    <div class="proofing-task-right">
+                        ${hasTime ? `
+                        <button type="button" class="btn-task-play" title="Odtwórz film w tej sekundzie (${timeLabel})">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            <span>Odtwórz</span>
+                        </button>
+                        ` : ''}
+                        <button type="button" class="btn-task-edit" title="Edytuj treść uwagi" aria-label="Edytuj uwagę">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-task-del" title="Usuń uwagę" aria-label="Usuń uwagę">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                const checkBtn = item.querySelector('.proofing-checkbox-btn');
+                if (checkBtn) {
+                    checkBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        togglePinResolved(pin.id);
+                    });
+                }
+
+                const editBtn = item.querySelector('.btn-task-edit');
+                if (editBtn) {
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openProofingModal({
+                            isEdit: true,
+                            pinId: pin.id,
+                            author: pin.author,
+                            comment: pin.comment,
+                            time: pin.time,
+                            formattedTime: pin.formattedTime,
+                            xPct: pin.xPct,
+                            yPct: pin.yPct
+                        });
+                    });
+                }
+
+                const timePill = item.querySelector('.proofing-time-pill');
+                if (timePill) {
+                    timePill.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        seekToPin(pin, true);
+                    });
+                }
+
+                const playBtn = item.querySelector('.btn-task-play');
+                if (playBtn) {
+                    playBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        seekToPin(pin, true);
+                    });
+                }
+
+                const delBtn = item.querySelector('.btn-task-del');
+                if (delBtn) {
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deletePin(pin.id);
+                    });
+                }
+
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.proofing-checkbox-btn') || e.target.closest('.btn-task-del') || e.target.closest('.btn-task-edit')) return;
                     seekToPin(pin, true);
                 });
-            }
 
-            const playBtn = item.querySelector('.btn-task-play');
-            if (playBtn) {
-                playBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    seekToPin(pin, true);
-                });
-            }
-
-            const delBtn = item.querySelector('.btn-task-del');
-            if (delBtn) {
-                delBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deletePin(pin.id);
-                });
-            }
-
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.proofing-checkbox-btn') || e.target.closest('.btn-task-del')) return;
-                seekToPin(pin, true);
+                listEl.appendChild(item);
             });
-
-            listEl.appendChild(item);
         });
     }
 
@@ -9229,8 +9916,7 @@ async function initDownloadRouter() {
             activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        const pinEl = document.querySelector(`.proofing-pin[data-pin-id="${pin.id}"]`);
-        if (pinEl) {
+        document.querySelectorAll(`.proofing-pin[data-pin-id="${pin.id}"]`).forEach(pinEl => {
             pinEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             pinEl.style.transform = 'translate(-50%, -125%) scale(1.35)';
             pinEl.style.zIndex = '100';
@@ -9238,7 +9924,7 @@ async function initDownloadRouter() {
                 pinEl.style.transform = '';
                 pinEl.style.zIndex = '';
             }, 800);
-        }
+        });
     }
 
     async function togglePinResolved(pinId) {
@@ -9247,28 +9933,33 @@ async function initDownloadRouter() {
         pin.resolved = !pin.resolved;
         pin.resolvedAt = pin.resolved ? new Date().toISOString() : null;
 
-        localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
         renderProofingUI();
-        if (typeof playSound === 'function') playSound('click');
+        localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
 
         fetch(`${WORKER_URL}/api/proofing/toggle`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: currentProofingFileKey, pinId })
         }).catch(()=>{});
+
+        if (typeof playSound === 'function') playSound('click');
     }
 
     async function deletePin(pinId) {
-        proofingPins = proofingPins.filter(p => p.id !== pinId);
-        localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
+        const idx = proofingPins.findIndex(p => p.id === pinId);
+        if (idx === -1) return;
+        proofingPins.splice(idx, 1);
+
         renderProofingUI();
-        if (typeof playSound === 'function') playSound('click');
+        localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
 
         fetch(`${WORKER_URL}/api/proofing/delete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: currentProofingFileKey, pinId })
         }).catch(()=>{});
+
+        if (typeof playSound === 'function') playSound('click');
     }
 
     function openProofingModal(pendingData) {
@@ -9281,6 +9972,10 @@ async function initDownloadRouter() {
 
         if (!modal) return;
 
+        if (window._proofingPinsVisible === false && typeof window.toggleProofingPinsVisibility === 'function') {
+            window.toggleProofingPinsVisibility(true);
+        }
+
         // Jeśli jesteśmy w trybie pełnoekranowym, przenieś modal do kontenera pełnoekranowego
         const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
         if (fsEl && modal.parentElement !== fsEl) {
@@ -9288,8 +9983,8 @@ async function initDownloadRouter() {
         }
 
         // Pokaż natychmiastowy świecący znacznik w miejscu kliknięcia
-        const layer = document.getElementById('proofingPinsLayer') || document.getElementById('sideProofingPinsLayer');
-        if (layer && pendingData.xPct !== undefined && pendingData.yPct !== undefined) {
+        const layer = document.getElementById('proofingPinsLayer') || document.getElementById('dlLightboxPinsLayer') || document.getElementById('sideProofingPinsLayer');
+        if (layer && pendingData.xPct !== undefined && pendingData.yPct !== undefined && !pendingData.isEdit) {
             let tempMarker = document.getElementById('proofingTempPlacementMarker');
             if (!tempMarker) {
                 tempMarker = document.createElement('div');
@@ -9307,25 +10002,46 @@ async function initDownloadRouter() {
             tempMarker.style.top = pendingData.yPct + '%';
         }
 
-        if (pendingData.formattedTime) {
+        if (pendingData.isEdit) {
+            titleEl.textContent = typeof t === 'function' ? t('proofing_modal_edit_title', 'Edytuj uwagę') : 'Edytuj uwagę';
+            if (pendingData.formattedTime) {
+                timeBadge.textContent = pendingData.formattedTime;
+                timeBadge.style.display = 'inline-block';
+            } else {
+                const foundIdx = proofingPins.findIndex(p => p.id === pendingData.pinId);
+                timeBadge.textContent = '#' + (foundIdx !== -1 ? foundIdx + 1 : 1);
+                timeBadge.style.display = 'inline-block';
+            }
+            if (authorInput) authorInput.value = pendingData.author || '';
+            if (commentInput) {
+                commentInput.value = pendingData.comment || '';
+                setTimeout(() => commentInput.focus(), 80);
+            }
+        } else if (pendingData.formattedTime) {
             timeBadge.textContent = pendingData.formattedTime;
             timeBadge.style.display = 'inline-block';
             titleEl.textContent = typeof t === 'function' ? t('proofing_modal_title_video') : 'Dodaj uwagę do klatki';
+            const savedAuthor = localStorage.getItem('dropsite_proofing_author') || '';
+            if (authorInput) authorInput.value = savedAuthor;
+            if (commentInput) {
+                commentInput.value = '';
+                setTimeout(() => commentInput.focus(), 80);
+            }
         } else {
             timeBadge.textContent = '#' + (proofingPins.length + 1);
             timeBadge.style.display = 'inline-block';
             titleEl.textContent = typeof t === 'function' ? t('proofing_modal_title_image') : 'Dodaj uwagę do punktu';
-        }
-
-        const savedAuthor = localStorage.getItem('dropsite_proofing_author') || '';
-        if (authorInput) authorInput.value = savedAuthor;
-        if (commentInput) {
-            commentInput.value = '';
-            setTimeout(() => commentInput.focus(), 80);
+            const savedAuthor = localStorage.getItem('dropsite_proofing_author') || '';
+            if (authorInput) authorInput.value = savedAuthor;
+            if (commentInput) {
+                commentInput.value = '';
+                setTimeout(() => commentInput.focus(), 80);
+            }
         }
 
         modal.hidden = false;
         modal.classList.remove('is-hidden');
+        modal.classList.add('is-open');
         modal.style.setProperty('display', 'flex', 'important');
     }
 
@@ -9334,6 +10050,7 @@ async function initDownloadRouter() {
         if (modal) {
             modal.hidden = true;
             modal.classList.add('is-hidden');
+            modal.classList.remove('is-open');
             modal.style.setProperty('display', 'none', 'important');
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (modal.parentElement !== document.body) {
@@ -9373,6 +10090,26 @@ async function initDownloadRouter() {
         if (tempMarker) tempMarker.remove();
 
         localStorage.setItem('dropsite_proofing_author', author);
+
+        if (currentPendingPin.isEdit && currentPendingPin.pinId) {
+            const existingPin = proofingPins.find(p => p.id === currentPendingPin.pinId);
+            if (existingPin) {
+                existingPin.author = author;
+                existingPin.comment = comment;
+                existingPin.updatedAt = new Date().toISOString();
+                localStorage.setItem('dropsite_proofing_' + currentProofingFileKey, JSON.stringify(proofingPins));
+                fetch(`${WORKER_URL}/api/proofing`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: currentProofingFileKey, pin: existingPin })
+                }).catch(()=>{});
+                closeProofingModal();
+                renderProofingUI();
+                if (typeof showNotification === 'function') showNotification('Zaktualizowano treść uwagi!', 'success');
+                if (typeof playSound === 'function') playSound('success');
+                return;
+            }
+        }
 
         const newPin = {
             id: 'pin_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
@@ -9517,6 +10254,67 @@ async function initDownloadRouter() {
         }
     }
 
+    window._proofingPinsVisible = true;
+
+    window.toggleProofingPinsVisibility = function(forceState) {
+        if (typeof forceState === 'boolean') {
+            window._proofingPinsVisible = forceState;
+        } else {
+            window._proofingPinsVisible = !window._proofingPinsVisible;
+        }
+
+        const isVisible = window._proofingPinsVisible;
+
+        // Aktualizacja klas na warstwach i kontenerach
+        const targets = [
+            document.getElementById('proofingPinsLayer'),
+            document.getElementById('dlLightboxPinsLayer'),
+            document.getElementById('proofingOverlay'),
+            document.getElementById('dlLightboxProofingOverlay'),
+            document.getElementById('proofingMediaContainer'),
+            document.getElementById('dlPreviewImageWrapper'),
+            document.getElementById('dlLightboxModal')
+        ];
+
+        targets.forEach(el => {
+            if (el) {
+                el.classList.toggle('is-hidden-pins', !isVisible);
+            }
+        });
+
+        // Aktualizacja przycisku w toolbarze podglądu
+        const toggleBtn = document.getElementById('btnProofingToggleVisibility');
+        const eyeOpen = document.getElementById('proofingEyeOpenIcon');
+        const eyeOff = document.getElementById('proofingEyeOffIcon');
+        const visText = document.getElementById('proofingVisibilityText');
+
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('is-pins-hidden', !isVisible);
+            toggleBtn.title = isVisible ? 'Ukryj pinezki z uwagami (H)' : 'Pokaż pinezki z uwagami (H)';
+        }
+        if (eyeOpen) eyeOpen.style.display = isVisible ? 'block' : 'none';
+        if (eyeOff) eyeOff.style.display = isVisible ? 'none' : 'block';
+        if (visText) visText.textContent = isVisible ? 'Ukryj uwagi' : 'Pokaż uwagi';
+
+        // Aktualizacja przycisku w belce Lightboxa
+        const lbToggleBtn = document.getElementById('dlLightboxToggleVisibilityBtn');
+        const lbEyeOpen = document.getElementById('dlLightboxEyeOpenIcon');
+        const lbEyeOff = document.getElementById('dlLightboxEyeOffIcon');
+        const lbVisText = document.getElementById('dlLightboxVisibilityText');
+
+        if (lbToggleBtn) {
+            lbToggleBtn.classList.toggle('is-pins-hidden', !isVisible);
+            lbToggleBtn.title = isVisible ? 'Ukryj pinezki z uwagami na zdjęciu (H)' : 'Pokaż pinezki z uwagami na zdjęciu (H)';
+        }
+        if (lbEyeOpen) lbEyeOpen.style.display = isVisible ? 'block' : 'none';
+        if (lbEyeOff) lbEyeOff.style.display = isVisible ? 'none' : 'block';
+        if (lbVisText) lbVisText.textContent = isVisible ? 'Ukryj' : 'Pokaż';
+
+        if (typeof showNotification === 'function') {
+            showNotification(isVisible ? 'Widok uwag włączony' : 'Ukryto pinezki z uwagami', 'info');
+        }
+    };
+
     function initClientProofingController({ cleanName, directUrl, fileKey, isVideo, isImage }) {
         initProofingModalListeners();
         loadProofingPins(fileKey);
@@ -9599,14 +10397,8 @@ async function initDownloadRouter() {
             };
         }
 
-        if (overlay && isImage) {
-            overlay.onclick = (e) => {
-                if (e.target.closest('.proofing-pin')) return;
-                if (window.openDownloadImageLightbox) {
-                    window.openDownloadImageLightbox(directUrl, cleanName);
-                }
-            };
-        }
+        // Podgląd powiększenia dostępny wyłącznie z przycisku Powiększ
+
 
         if (isVideo) {
             const video = document.getElementById('proofingVideoEl');
@@ -9935,6 +10727,11 @@ async function initDownloadRouter() {
                     } else if (e.key === 'l' || e.key === 'L' || e.key === 'u' || e.key === 'U') {
                         e.preventDefault();
                         if (toggleDrawerBtn) toggleDrawerBtn.click();
+                    } else if (e.key === 'h' || e.key === 'H') {
+                        e.preventDefault();
+                        if (typeof window.toggleProofingPinsVisibility === 'function') {
+                            window.toggleProofingPinsVisibility();
+                        }
                     } else if (e.key === 'c' || e.key === 'C' || e.key === 'p' || e.key === 'P') {
                         // Klawisz C lub P: natychmiastowe zaznaczenie momentu
                         e.preventDefault();
@@ -10425,6 +11222,7 @@ function openSideProofingModal(pendingData) {
 
     modal.hidden = false;
     modal.classList.remove('is-hidden');
+    modal.classList.add('is-open');
     modal.style.setProperty('display', 'flex', 'important');
 }
 
@@ -10433,6 +11231,7 @@ function closeSideProofingModal() {
     if (modal) {
         modal.hidden = true;
         modal.classList.add('is-hidden');
+        modal.classList.remove('is-open');
         modal.style.setProperty('display', 'none', 'important');
         if (!document.fullscreenElement && !document.webkitFullscreenElement) {
             if (modal.parentElement !== document.body) {
@@ -11217,18 +12016,18 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                 <div class="proofing-drawer-title-row">
                                     <div class="proofing-drawer-title">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                        <span>Lista uwag i poprawek</span>
+                                        <span data-i18n="proofing_drawer_title">${typeof t === 'function' ? t('proofing_drawer_title', 'Lista uwag i poprawek') : 'Lista uwag i poprawek'}</span>
                                     </div>
-                                    <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0 wykonane</span>
+                                    <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0</span>
                                 </div>
                                 <div class="proofing-drawer-actions">
-                                    <button type="button" class="proofing-link-btn" id="btnProofingExport" title="Kopiuj listę uwag do schowka">
+                                    <button type="button" class="proofing-link-btn" id="btnProofingExport" data-i18n-title="proofing_btn_copy" title="Kopiuj listę uwag do schowka">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                        <span>Kopiuj</span>
+                                        <span data-i18n="proofing_btn_copy">${typeof t === 'function' ? t('proofing_btn_copy', 'Kopiuj') : 'Kopiuj'}</span>
                                     </button>
-                                    <button type="button" class="proofing-link-btn" id="btnProofingDownloadTxt" title="Pobierz listę uwag jako plik .txt">
+                                    <button type="button" class="proofing-link-btn" id="btnProofingDownloadTxt" data-i18n-title="proofing_btn_txt" title="Pobierz listę uwag jako plik .txt">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        <span>.txt</span>
+                                        <span data-i18n="proofing_btn_txt">${typeof t === 'function' ? t('proofing_btn_txt', '.txt') : '.txt'}</span>
                                     </button>
                                     <button type="button" class="btn-drawer-close" id="btnProofingDrawerClose" title="Zwiń listę uwag">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -11257,43 +12056,54 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
             dlPreviewContainer.innerHTML = `
                 <div class="dl-preview-image-wrapper" id="dlPreviewImageWrapper">
-                    <div class="proofing-media-container" id="proofingMediaContainer" style="cursor: zoom-in;">
-                        <img id="proofingImageEl" src="${directUrl}" class="dl-preview-media" alt="${cleanName}" style="display: block; width: 100%; max-height: 380px; object-fit: contain; cursor: zoom-in;">
-                        <div class="proofing-overlay" id="proofingOverlay" title="Kliknij na zdjęcie, aby powiększyć">
+                    <div class="proofing-media-container" id="proofingMediaContainer" style="cursor: default;">
+                        <img id="proofingImageEl" src="${directUrl}" class="dl-preview-media" alt="${cleanName}" style="display: block; max-width: 100%; max-height: 330px; object-fit: contain; margin: 0 auto; border-radius: 12px; cursor: default;">
+                        <div class="proofing-overlay" id="proofingOverlay">
                             <div id="proofingPinsLayer" class="proofing-pins-layer"></div>
                         </div>
                     </div>
                     <div class="dl-preview-toolbar">
-                        <button type="button" class="dl-tool-pill dl-tool-zoom" id="dlQuickZoomBtn" title="Powiększ zdjęcie na pełnym ekranie">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <button type="button" class="dl-tool-pill dl-tool-zoom" id="dlQuickZoomBtn" data-i18n-title="btn_zoom_image_title" title="Powiększ zdjęcie na pełnym ekranie">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 <line x1="11" y1="8" x2="11" y2="14"></line>
                                 <line x1="8" y1="11" x2="14" y2="11"></line>
                             </svg>
-                            <span data-i18n="btn_zoom_image">Powiększ</span>
+                            <span data-i18n="btn_zoom_image">${typeof t === 'function' ? t('btn_zoom_image', 'Powiększ') : 'Powiększ'}</span>
                         </button>
-                        <button type="button" class="dl-tool-pill dl-tool-pin" id="dlQuickAddPinBtn" title="Dodaj pinezkę z uwagą do zdjęcia">
+                        <button type="button" class="dl-tool-pill dl-tool-pin" id="dlQuickAddPinBtn" data-i18n-title="btn_add_note_pin_title" title="Dodaj pinezkę z uwagą do zdjęcia">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            <span data-i18n="btn_add_note_pin">Dodaj uwagę</span>
+                            <span data-i18n="btn_add_note_pin">${typeof t === 'function' ? t('btn_add_note_pin', 'Dodaj uwagę') : 'Dodaj uwagę'}</span>
                         </button>
-                        <button type="button" class="dl-tool-pill dl-tool-remarks" id="btnProofingToggleDrawer" title="Rozwiń listę uwag (L)" aria-expanded="false">
+                        <button type="button" class="dl-tool-pill dl-tool-hide-pins" id="btnProofingToggleVisibility" data-i18n-title="btn_hide_pins" title="Ukryj / Pokaż pinezki z uwagami (H)">
+                            <svg id="proofingEyeOpenIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="proofingEyeOffIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                            <span id="proofingVisibilityText" data-i18n="btn_hide_pins">${typeof t === 'function' ? t('btn_hide_pins', 'Ukryj uwagi') : 'Ukryj uwagi'}</span>
+                        </button>
+                        <button type="button" class="dl-tool-pill dl-tool-remarks" id="btnProofingToggleDrawer" data-i18n-title="btn_remarks_title" title="Rozwiń listę uwag (L)" aria-expanded="false">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                             </svg>
-                            <span>Uwagi</span>
+                            <span data-i18n="btn_remarks">${typeof t === 'function' ? t('btn_remarks', 'Uwagi') : 'Uwagi'}</span>
                             <span class="proofing-remarks-count-pill" id="proofingPinCountBadge">0</span>
                         </button>
-                        <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="dl-tool-pill dl-tool-newtab" id="dlQuickNewTabBtn" title="Otwórz oryginalne zdjęcie w nowej karcie">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="dl-tool-pill dl-tool-newtab" id="dlQuickNewTabBtn" title="Otwórz oryginalny plik w nowej karcie (Direct Link)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>
                                 <line x1="10" y1="14" x2="21" y2="3"></line>
                             </svg>
-                            <span data-i18n="btn_newtab_image">Otwórz w nowej karcie</span>
+                            <span>Direct ↗</span>
                         </a>
                     </div>
                     <!-- Wysuwana lista uwag do zdjęcia -->
@@ -11327,7 +12137,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 </div>
             `;
 
-            // Kliknięcie w zdjęcie lub przycisk powiększenia otwiera Lightbox podglądu
+            // Powiększenie zdjęcia wyłącznie na kliknięcie przycisku "Powiększ"
             const openZoom = (e) => {
                 if (e) e.stopPropagation();
                 if (window.openDownloadImageLightbox) {
@@ -11338,15 +12148,14 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             const quickZoomBtn = document.getElementById('dlQuickZoomBtn');
             if (quickZoomBtn) quickZoomBtn.addEventListener('click', openZoom);
 
-            const imgEl = document.getElementById('proofingImageEl');
-            if (imgEl) imgEl.addEventListener('click', openZoom);
-
-            const overlayEl = document.getElementById('proofingOverlay');
-            if (overlayEl) {
-                overlayEl.addEventListener('click', (e) => {
-                    // Jeśli kliknięto w istniejącą pinezkę, nie otwieraj lightboxa
-                    if (e.target.closest('.proofing-pin')) return;
-                    openZoom(e);
+            // Przycisk "Ukryj / Pokaż uwagi"
+            const toggleVisBtn = document.getElementById('btnProofingToggleVisibility');
+            if (toggleVisBtn) {
+                toggleVisBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof window.toggleProofingPinsVisibility === 'function') {
+                        window.toggleProofingPinsVisibility();
+                    }
                 });
             }
 
@@ -11462,7 +12271,29 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 });
             }, 50);
         } else if (isPdf) {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg></div>';
+            dlPreviewContainer.innerHTML = `
+                <div class="dl-doc-showcase-card">
+                    <div class="dl-doc-icon-badge pdf">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div class="dl-doc-info">
+                        <strong class="dl-doc-title">Dokument PDF</strong>
+                        <span class="dl-doc-sub">Gotowy do bezpiecznego odczytu</span>
+                    </div>
+                    <a href="${directUrl}" target="_blank" rel="noopener noreferrer" class="dl-doc-action-btn" title="Otwórz podgląd PDF w nowej karcie">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                        <span>Otwórz</span>
+                    </a>
+                </div>
+            `;
         } else if (isArchive) {
             dlPreviewContainer.classList.add('has-archive');
             const isCinematicVisible = document.getElementById('cinematicRecipientSection') && document.getElementById('cinematicRecipientSection').style.display !== 'none';
@@ -11605,8 +12436,8 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                     const dlFileNameEl = document.getElementById('dlFileName');
                                     const dlFileSizeEl = document.getElementById('dlFileSize');
                                     const dlBtnEl = document.getElementById('dlDownloadBtn');
-                                    if (dlFileNameEl && (cleanName.startsWith('Paczka_') || cleanName.startsWith('Album_') || cleanName.endsWith('.zip'))) {
-                                        dlFileNameEl.textContent = `📸 Album fotograficzny (${imgEntries.length} zdjęć)`;
+                                    if (dlFileNameEl && (cleanName.startsWith('Paczka_') || cleanName.startsWith('Album_') || cleanName.endsWith('.zip') || isAlbumArchive)) {
+                                        dlFileNameEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 8px; color: #38BDF8; display: inline-block;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Album fotograficzny (${imgEntries.length} zdjęć)`;
                                     }
                                     if (dlFileSizeEl) {
                                         dlFileSizeEl.textContent = `${imgEntries.length} fotografii • ${formatBytes(totalUncompressedSize)} (pełna jakość)`;
@@ -11750,7 +12581,22 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     });
             }
         } else {
-            dlPreviewContainer.innerHTML = '<div style="padding: 24px; text-align: center;"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>';
+            dlPreviewContainer.innerHTML = `
+                <div class="dl-doc-showcase-card">
+                    <div class="dl-doc-icon-badge generic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                    </div>
+                    <div class="dl-doc-info">
+                        <strong class="dl-doc-title">Plik do pobrania</strong>
+                        <span class="dl-doc-sub">Gotowy do bezpiecznego transferu</span>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -11772,8 +12618,13 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         }
 
         const cleanName = data.originalName || data.name || cleanFileName(data.key);
-        dlFileName.innerText = cleanName;
-        dlFileSize.innerText = `Rozmiar pliku: ${formatBytes(data.size)}`;
+        if (data.isAlbum || cleanName.startsWith('Album_') || urlParams.get('album') === '1') {
+            const matchCount = cleanName.match(/Album_(\d+)_zdjec/);
+            const countStr = matchCount ? ` (${matchCount[1]} zdjęć)` : '';
+            dlFileName.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 8px; color: #38BDF8; display: inline-block;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Album fotograficzny${countStr}`;
+        } else {
+            dlFileName.innerText = cleanName;
+        }
 
         if (dlViewCount) dlViewCount.textContent = (data.views || 1);
         if (dlDownloadCount) dlDownloadCount.textContent = (data.downloads || 0);
@@ -12439,26 +13290,65 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
         }
 
-        // Badges (streamlined, unified hierarchy)
-        let badgeHtml = '';
-        if (isSpy) {
-            badgeHtml = '<span class="dl-badge spy-badge">🕵️ Tryb Szpiegowski</span>';
-            if (dlBurnWarning) dlBurnWarning.hidden = true;
-        } else if (data.isBurn) {
-            badgeHtml = '<span class="dl-badge burn">🔥 Jednorazowy</span>';
-            if (dlBurnWarning) dlBurnWarning.hidden = false;
-        } else if (data.expiryType === 'permanent') {
-            badgeHtml = '<span class="dl-badge perm">♾️ Bezterminowy</span>';
-        } else {
-            const expLabel = data.expiryType === '1d' ? '1 dzień' : '30 dni';
-            badgeHtml = `<span class="dl-badge temp">⏱️ Wygasa za ${expLabel}</span>`;
-        }
+        window._currentRecipientFileData = data;
+        window._currentRecipientCleanName = cleanName;
 
-        if (data.maxDownloads) {
-            badgeHtml += ` <span class="dl-badge limit-badge">Limit: ${data.downloads || 0}/${data.maxDownloads} pobrań</span>`;
-        }
+        window.renderRecipientMetadataRow = function() {
+            const currentData = window._currentRecipientFileData;
+            if (!currentData) return;
+            const cName = window._currentRecipientCleanName || currentData.name || 'plik';
+            const spyMode = Boolean(currentData.isSpy || currentData.is_spy || currentData.mode === 'spy');
 
-        if (dlBadgeWrap) dlBadgeWrap.innerHTML = badgeHtml;
+            let badgeClass = 'temp';
+            let expLabel = '';
+
+            if (spyMode) {
+                badgeClass = 'spy';
+                expLabel = typeof t === 'function' ? t('exp_spy', 'Tryb Szpiegowski') : 'Tryb Szpiegowski';
+                if (dlBurnWarning) dlBurnWarning.hidden = true;
+            } else if (currentData.isBurn) {
+                badgeClass = 'burn';
+                expLabel = typeof t === 'function' ? t('exp_self_destruct', 'Samozniszczenie') : 'Samozniszczenie';
+                if (dlBurnWarning) dlBurnWarning.hidden = false;
+            } else if (currentData.expiryType === 'permanent' || currentData.isPermanent) {
+                badgeClass = 'perm';
+                expLabel = typeof t === 'function' ? t('exp_permanent', 'Bezterminowy') : 'Bezterminowy';
+            } else {
+                badgeClass = 'temp';
+                const raw = currentData.expiryType || currentData.expiry || '24h';
+                let expDays = '24h';
+                if (raw === '1d' || raw === '24h' || raw === '1') expDays = typeof t === 'function' ? t('exp_days_1', '24h') : '24h';
+                else if (raw === '7d' || raw === '7') expDays = typeof t === 'function' ? t('exp_days_7', '7 dni') : '7 dni';
+                else if (raw === '30d' || raw === '30') expDays = typeof t === 'function' ? t('exp_days_30', '30 dni') : '30 dni';
+                else expDays = raw;
+
+                const expTemplate = typeof t === 'function' ? t('exp_expires_in', 'Wygasa za {time}') : 'Wygasa za {time}';
+                expLabel = expTemplate.replace('{time}', expDays);
+            }
+
+            const extLabel = cName.includes('.') ? cName.split('.').pop().toUpperCase() : 'PLIK';
+            const formattedSize = typeof formatBytes === 'function' ? formatBytes(currentData.size || 0) : '';
+
+            if (dlFileSize) {
+                dlFileSize.innerHTML = `
+                    <div class="dl-meta-row">
+                        <span class="dl-meta-pill">${formattedSize}</span>
+                        <span class="dl-meta-sep">•</span>
+                        <span class="dl-meta-pill">${extLabel}</span>
+                        <span class="dl-meta-sep">•</span>
+                        <span class="dl-meta-status ${badgeClass}"><span class="dl-badge-dot ${badgeClass}"></span> ${expLabel}</span>
+                        ${currentData.maxDownloads ? `<span class="dl-meta-sep">•</span> <span class="dl-meta-pill">Limit: ${currentData.downloads || 0}/${currentData.maxDownloads}</span>` : ''}
+                    </div>
+                `;
+            }
+        };
+
+        window.renderRecipientMetadataRow();
+
+        if (dlBadgeWrap) {
+            dlBadgeWrap.style.display = 'none';
+            dlBadgeWrap.innerHTML = '';
+        }
 
         // Obsługa blokady hasłem (z serwera, URL lub pamięci lokalnej)
         const hasPasswordFlag = Boolean(data.hasPassword || urlParams.get('haspwd') === '1' || urlParams.get('pwd') === '1' || localStorage.getItem('dropsite_pwd_' + fileKey) || localStorage.getItem('dropsite_pwd_' + (data.key || '')));
@@ -12521,7 +13411,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             
                             const downloadUrl = data.isBurn 
                                 ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
-                                : data.directUrl;
+                                : (data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`);
                             if (dlDownloadBtn) {
                                 dlDownloadBtn.href = downloadUrl;
                                 if (!data.isBurn) dlDownloadBtn.setAttribute('download', cleanName);
@@ -12549,9 +13439,10 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             if (dlContentWrap) dlContentWrap.hidden = false;
 
             if (data.isBurn) {
-                dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}`;
+                dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}`;
             } else {
-                dlDownloadBtn.href = data.directUrl;
+                const directDlUrl = data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`;
+                dlDownloadBtn.href = directDlUrl;
                 dlDownloadBtn.setAttribute('download', cleanName);
             }
 
@@ -12588,22 +13479,35 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
         })();
 
-        // Jeśli plik jest zaszyfrowany AES-256 (Zero-Knowledge), odszyfruj w locie w RAM
-        if (encKeyB64) {
-            dlDownloadBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopImmediatePropagation();
+        // POBIERANIE PLIKU (WYMUSZENIE POBRANIA NA DYSK ZAMIAST OTWIERANIA W OKNIE)
+        dlDownloadBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
+            const textSpan = dlDownloadBtn.querySelector('.btn-text');
+            const origText = textSpan ? textSpan.textContent : 'Pobierz plik';
+
+            // Funkcja pomocnicza do zapisu Blob na dysku
+            const saveBlobToDisk = (blob, filename) => {
+                const blobUrl = URL.createObjectURL(blob);
+                const tempLink = document.createElement('a');
+                tempLink.style.display = 'none';
+                tempLink.href = blobUrl;
+                tempLink.download = filename;
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                setTimeout(() => {
+                    if (tempLink.parentNode) tempLink.parentNode.removeChild(tempLink);
+                    URL.revokeObjectURL(blobUrl);
+                }, 20000);
+            };
+
+            // 1. Jeśli plik jest zaszyfrowany AES-256 (Zero-Knowledge)
+            if (encKeyB64) {
                 // Jeśli plik został już odszyfrowany w RAM (np. na potrzeby podglądu multimediów)
                 if (window._activeDecryptedBlob && window._activeDecryptedBlob.blob && 
                     (window._activeDecryptedBlob.fileKey === fileKey || window._activeDecryptedBlob.fileKey === (data.key || ''))) {
-                    const link = document.createElement('a');
-                    link.href = window._activeDecryptedBlob.blobUrl;
-                    link.download = cleanName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-
+                    saveBlobToDisk(window._activeDecryptedBlob.blob, cleanName);
                     playSound('drop');
                     if (typeof showNotification === 'function') {
                         showNotification('🛡️ Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
@@ -12614,20 +13518,18 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         dlDownloadCount.textContent = current + 1;
                     }
                     if (isSpy) {
-                        setTimeout(() => {
-                            executeSpySelfDestruct();
-                        }, 1200);
+                        setTimeout(() => { executeSpySelfDestruct(); }, 1200);
                     }
                     return;
                 }
 
-                const textSpan = dlDownloadBtn.querySelector('.btn-text');
-                const origText = textSpan ? textSpan.textContent : 'Pobierz';
                 if (textSpan) textSpan.textContent = 'Odszyfrowywanie AES-256...';
                 dlDownloadBtn.style.pointerEvents = 'none';
 
                 try {
-                    const downloadUrl = data.isBurn ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key)}` : data.directUrl;
+                    const downloadUrl = data.isBurn 
+                        ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
+                        : (data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`);
                     const fRes = await fetch(downloadUrl);
                     if (!fRes.ok) throw new Error('Błąd pobierania zaszyfrowanych danych.');
                     const encData = await fRes.arrayBuffer();
@@ -12635,15 +13537,9 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     const cryptoKey = await importKeyBase64(encKeyB64);
                     const decData = await decryptBufferAESGCM(encData, cryptoKey);
 
-                    const blob = new Blob([decData], { type: 'application/octet-stream' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = cleanName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                    const mimeType = (typeof getMimeTypeForFilename === 'function') ? getMimeTypeForFilename(cleanName) : 'application/octet-stream';
+                    const blob = new Blob([decData], { type: mimeType });
+                    saveBlobToDisk(blob, cleanName);
 
                     playSound('drop');
                     if (typeof showNotification === 'function') {
@@ -12657,9 +13553,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         dlDownloadCount.textContent = current + 1;
                     }
                     if (isSpy) {
-                        setTimeout(() => {
-                            executeSpySelfDestruct();
-                        }, 1200);
+                        setTimeout(() => { executeSpySelfDestruct(); }, 1200);
                     }
                 } catch (err) {
                     console.error('Decryption failed:', err);
@@ -12670,11 +13564,84 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 } finally {
                     dlDownloadBtn.style.pointerEvents = 'auto';
                 }
-            });
-        }
+                return;
+            }
 
-        // Zwiększ licznik pobrań po kliknięciu i obsłuż samozniszczenie
-        dlDownloadBtn.addEventListener('click', () => {
+            // 2. Jeśli plik jest standardowy (niezaszyfrowany) lub Jednorazowy / Burn
+            const streamFetchUrl = `${WORKER_URL}/stream?key=${encodeURIComponent(data.key || fileKey)}`;
+            const directFileUrl = data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`;
+            const workerDownloadUrl = data.isBurn 
+                ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
+                : `${WORKER_URL}/download?key=${encodeURIComponent(data.key || fileKey)}&name=${encodeURIComponent(cleanName)}`;
+
+            // Sprawdź czy mamy już aktywny odszyfrowany/wczytany blob w pamięci
+            if (window._activeDecryptedBlob && window._activeDecryptedBlob.blob && 
+                (window._activeDecryptedBlob.fileKey === fileKey || window._activeDecryptedBlob.fileKey === (data.key || ''))) {
+                saveBlobToDisk(window._activeDecryptedBlob.blob, cleanName);
+            } else {
+                if (textSpan) textSpan.textContent = 'Pobieranie...';
+                dlDownloadBtn.style.pointerEvents = 'none';
+
+                let downloaded = false;
+
+                // Krok 1: Próba pobrania przez endpoint /stream (zawierający pełne nagłówki CORS *)
+                try {
+                    const response = await fetch(data.isBurn ? workerDownloadUrl : streamFetchUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        saveBlobToDisk(blob, cleanName);
+                        downloaded = true;
+                    }
+                } catch (e1) {
+                    console.warn('Stream fetch download failed, trying direct CDN:', e1);
+                }
+
+                // Krok 2: Bezpośrednie pobranie z CDN R2 jako Blob
+                if (!downloaded && !data.isBurn) {
+                    try {
+                        const response = await fetch(directFileUrl);
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            saveBlobToDisk(blob, cleanName);
+                            downloaded = true;
+                        }
+                    } catch (e2) {
+                        console.warn('Direct CDN fetch failed:', e2);
+                    }
+                }
+
+                // Krok 3: Jeśli to grafika wyświetlona w podglądzie (np. GIF, JPG, PNG, WebP)
+                if (!downloaded && /\.(gif|jpg|jpeg|png|webp|svg)$/i.test(cleanName)) {
+                    const imgEl = document.getElementById('proofingImageEl') || document.querySelector('.dl-preview-media');
+                    if (imgEl && imgEl.src) {
+                        try {
+                            const imgRes = await fetch(imgEl.src);
+                            if (imgRes.ok) {
+                                const blob = await imgRes.blob();
+                                saveBlobToDisk(blob, cleanName);
+                                downloaded = true;
+                            }
+                        } catch (e3) {
+                            console.warn('Image element fetch failed:', e3);
+                        }
+                    }
+                }
+
+                // Krok 4: Niezawodny fallback przez ukryty iframe i nagłówek Content-Disposition: attachment
+                if (!downloaded) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = workerDownloadUrl;
+                    document.body.appendChild(iframe);
+                    setTimeout(() => {
+                        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                    }, 10000);
+                }
+
+                if (textSpan) textSpan.textContent = origText;
+                dlDownloadBtn.style.pointerEvents = 'auto';
+            }
+
             playSound('drop');
             fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=download`, { method: 'POST' }).catch(()=>{});
             if (dlDownloadCount) {
@@ -12683,9 +13650,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
 
             if (isSpy) {
-                setTimeout(() => {
-                    executeSpySelfDestruct();
-                }, 1200);
+                setTimeout(() => { executeSpySelfDestruct(); }, 1200);
             } else if (data.isBurn) {
                 setTimeout(() => {
                     const btnText = dlDownloadBtn.querySelector('.btn-text');
@@ -12769,6 +13734,7 @@ function initDownloadLightboxSystem() {
     if (!modal) return;
 
     const bodyEl = document.getElementById('dlLightboxBody');
+    const stageEl = document.getElementById('dlLightboxMediaStage');
     const imgEl = document.getElementById('dlLightboxImg');
     const closeBtn = document.getElementById('dlLightboxCloseBtn');
     const zoomBtn = document.getElementById('dlLightboxZoomToggle') || document.getElementById('dlLightboxZoomBtn');
@@ -12778,6 +13744,11 @@ function initDownloadLightboxSystem() {
     const prevBtn = document.getElementById('dlLightboxPrevBtn');
     const nextBtn = document.getElementById('dlLightboxNextBtn');
     const backdrop = document.getElementById('dlLightboxBackdrop');
+    const addPinBtn = document.getElementById('dlLightboxAddPinBtn');
+    const toggleDrawerBtn = document.getElementById('dlLightboxToggleDrawerBtn');
+    const lightboxDrawer = document.getElementById('dlLightboxDrawer');
+    const drawerCloseBtn = document.getElementById('btnDlLightboxDrawerClose');
+    const proofingOverlay = document.getElementById('dlLightboxProofingOverlay');
 
     // Parametry silnika Pan & Zoom
     let scale = 1;
@@ -12794,15 +13765,17 @@ function initDownloadLightboxSystem() {
     const MIN_SCALE = 1;
     const MAX_SCALE = 6;
 
+    const targetTransformEl = stageEl || imgEl;
+
     const updateTransform = (animate = false) => {
-        if (!imgEl) return;
-        imgEl.style.transition = animate ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
-        imgEl.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+        if (!targetTransformEl) return;
+        targetTransformEl.style.transition = animate ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
+        targetTransformEl.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
 
         if (scale > 1.05) {
-            imgEl.style.cursor = isDragging ? 'grabbing' : 'grab';
+            targetTransformEl.style.cursor = isDragging ? 'grabbing' : 'grab';
         } else {
-            imgEl.style.cursor = 'zoom-in';
+            targetTransformEl.style.cursor = 'default';
         }
 
         if (zoomInIcon) zoomInIcon.style.display = scale > 1.05 ? 'none' : 'block';
@@ -12822,9 +13795,9 @@ function initDownloadLightboxSystem() {
     window._resetLightboxPanZoom = resetZoom;
 
     const clampPan = () => {
-        if (!bodyEl || !imgEl) return;
+        if (!bodyEl || !targetTransformEl) return;
         const bRect = bodyEl.getBoundingClientRect();
-        const iRect = imgEl.getBoundingClientRect();
+        const iRect = targetTransformEl.getBoundingClientRect();
 
         const maxPanX = Math.max(0, (iRect.width - bRect.width) / 2) + bRect.width * 0.2;
         const maxPanY = Math.max(0, (iRect.height - bRect.height) / 2) + bRect.height * 0.2;
@@ -12874,7 +13847,7 @@ function initDownloadLightboxSystem() {
         // Przeciąganie myszką (Drag to Pan)
         bodyEl.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            if (e.target.closest('.dl-lightbox-nav-btn')) return;
+            if (e.target.closest('.dl-lightbox-nav-btn') || e.target.closest('.proofing-pin') || e.target.closest('#dlLightboxDrawer')) return;
 
             isDragging = true;
             hasDragged = false;
@@ -12883,8 +13856,8 @@ function initDownloadLightboxSystem() {
             startPanX = panX;
             startPanY = panY;
 
-            if (scale > 1.05 && imgEl) {
-                imgEl.style.cursor = 'grabbing';
+            if (scale > 1.05 && targetTransformEl) {
+                targetTransformEl.style.cursor = 'grabbing';
             }
         });
 
@@ -12908,8 +13881,8 @@ function initDownloadLightboxSystem() {
         window.addEventListener('mouseup', (e) => {
             if (!isDragging) return;
             isDragging = false;
-            if (scale > 1.05 && imgEl) {
-                imgEl.style.cursor = 'grab';
+            if (scale > 1.05 && targetTransformEl) {
+                targetTransformEl.style.cursor = 'grab';
             }
         });
 
@@ -12966,20 +13939,79 @@ function initDownloadLightboxSystem() {
         });
     }
 
-    // Kliknięcie / dwuklik zdjęcia
-    if (imgEl) {
-        imgEl.addEventListener('click', (e) => {
+    // Przycisk "Ukryj / Pokaż uwagi" w nagłówku lightboxa
+    const lbToggleVisBtn = document.getElementById('dlLightboxToggleVisibilityBtn');
+    if (lbToggleVisBtn) {
+        lbToggleVisBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (typeof window.toggleProofingPinsVisibility === 'function') {
+                window.toggleProofingPinsVisibility();
+            }
+        });
+    }
+
+    // Przycisk "Dodaj uwagę" w nagłówku lightboxa
+    if (addPinBtn) {
+        addPinBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof openProofingModal === 'function') {
+                openProofingModal({
+                    time: null,
+                    formattedTime: null,
+                    xPct: 50,
+                    yPct: 35
+                });
+            }
+        });
+    }
+
+    // Szuflada uwag w Lightboxie
+    const toggleLightboxDrawer = (force) => {
+        if (!lightboxDrawer) return;
+        const shouldOpen = typeof force === 'boolean' ? force : (lightboxDrawer.style.display === 'none' || lightboxDrawer.hidden);
+        lightboxDrawer.hidden = !shouldOpen;
+        lightboxDrawer.style.display = shouldOpen ? 'block' : 'none';
+        if (toggleDrawerBtn) toggleDrawerBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        if (shouldOpen && typeof renderProofingTasksList === 'function') {
+            renderProofingTasksList();
+        }
+    };
+
+    if (toggleDrawerBtn) {
+        toggleDrawerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLightboxDrawer();
+        });
+    }
+
+    if (drawerCloseBtn) {
+        drawerCloseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleLightboxDrawer(false);
+        });
+    }
+
+    // Kliknięcie na nakładkę zdjęcia w Lightboxie – jeśli nie przeciągano, pozwala postawić uwagę
+    if (proofingOverlay) {
+        proofingOverlay.addEventListener('click', (e) => {
+            if (e.target.closest('.proofing-pin')) return;
             if (hasDragged) {
                 hasDragged = false;
                 return;
             }
-            toggleZoom(e.clientX, e.clientY);
-        });
+            // Oblicz pozycję kliknięcia względem zdjęcia
+            const rect = proofingOverlay.getBoundingClientRect();
+            const xPct = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
+            const yPct = Math.max(1, Math.min(99, ((e.clientY - rect.top) / rect.height) * 100));
 
-        imgEl.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            toggleZoom(e.clientX, e.clientY);
+            if (typeof openProofingModal === 'function') {
+                openProofingModal({
+                    time: null,
+                    formattedTime: null,
+                    xPct: Math.round(xPct * 10) / 10,
+                    yPct: Math.round(yPct * 10) / 10
+                });
+            }
         });
     }
 
@@ -12998,6 +14030,10 @@ function initDownloadLightboxSystem() {
 
     const closeModal = () => {
         resetZoom(false);
+        if (lightboxDrawer) {
+            lightboxDrawer.hidden = true;
+            lightboxDrawer.style.display = 'none';
+        }
         if (typeof window.smoothCloseModal === 'function') {
             window.smoothCloseModal(modal, () => {
                 if (imgEl) imgEl.src = '';
@@ -13022,7 +14058,31 @@ function initDownloadLightboxSystem() {
     document.addEventListener('keydown', (e) => {
         if (modal.hidden || modal.style.display === 'none') return;
         if (e.key === 'Escape') {
+            // Jeśli otwarty modal dodawania uwagi, nie zamykaj lightboxa
+            const commentModal = document.getElementById('proofingCommentModal');
+            if (commentModal && commentModal.classList.contains('is-open')) return;
+
+            if (lightboxDrawer && !lightboxDrawer.hidden && lightboxDrawer.style.display !== 'none') {
+                toggleLightboxDrawer(false);
+                return;
+            }
             closeModal();
+        } else if (e.key === 'h' || e.key === 'H') {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'textarea') return;
+            if (typeof window.toggleProofingPinsVisibility === 'function') {
+                window.toggleProofingPinsVisibility();
+            }
+        } else if (e.key === 'c' || e.key === 'C') {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'textarea') return;
+            if (typeof openProofingModal === 'function') {
+                openProofingModal({ time: null, formattedTime: null, xPct: 50, yPct: 35 });
+            }
+        } else if (e.key === 'l' || e.key === 'L') {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'textarea') return;
+            toggleLightboxDrawer();
         } else if (e.key === 'ArrowLeft') {
             if (window._albumPhotosList && window._albumPhotosList.length > 1 && window._currentLightboxIndex !== undefined) {
                 e.preventDefault();
@@ -13070,7 +14130,7 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
     imgEl.src = imageUrl;
 
     if (titleEl) titleEl.textContent = title || 'Podgląd zdjęcia';
-    if (counterEl) counterEl.innerHTML = 'Kółko myszy / kliknięcie przybliża &bull; Przeciągnij, aby przesuwać &bull; <strong>Esc</strong> zamyka';
+    if (counterEl) counterEl.innerHTML = 'Kółko myszy / kliknięcie przybliża &bull; Kliknij „Dodaj uwagę” lub w dowolne miejsce, aby zaznaczyć punkt &bull; <strong>Esc</strong> zamyka';
     if (newTabBtn) {
         newTabBtn.href = imageUrl;
         newTabBtn.style.display = 'inline-flex';
@@ -13094,6 +14154,16 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
         modal.classList.remove('is-hidden');
         modal.style.display = 'flex';
     }
+
+    // Odśwież i zsynchronizuj pinezki w Lightboxie
+    setTimeout(() => {
+        if (typeof renderProofingPinsOnMedia === 'function') {
+            renderProofingPinsOnMedia();
+        }
+        if (typeof updateProofingBadge === 'function') {
+            updateProofingBadge();
+        }
+    }, 50);
 };
 
 window.openAlbumLightbox = function(index) {
@@ -14019,3 +15089,47 @@ function initDropsiteBeamUI() {
     }
 }
 window.initDropsiteBeamUI = initDropsiteBeamUI;
+
+// =========================================================================
+// REAKTYWNY DYNAMICZNY TRANSLATOR DLA WIDOKU POBIERANIA I PROOFINGU
+// =========================================================================
+document.addEventListener('dropsite_language_changed', () => {
+    if (typeof window.renderRecipientMetadataRow === 'function') {
+        window.renderRecipientMetadataRow();
+    }
+    if (typeof updateProofingBadge === 'function') {
+        updateProofingBadge();
+    }
+    const visText = document.getElementById('proofingVisibilityText');
+    if (visText) {
+        visText.textContent = window._proofingPinsVisible !== false
+            ? (typeof t === 'function' ? t('btn_hide_pins', 'Ukryj uwagi') : 'Ukryj uwagi')
+            : (typeof t === 'function' ? t('btn_show_pins', 'Pokaż uwagi') : 'Pokaż uwagi');
+    }
+    const lbVisText = document.getElementById('dlLightboxVisibilityText');
+    if (lbVisText) {
+        lbVisText.textContent = window._proofingPinsVisible !== false
+            ? (typeof t === 'function' ? t('btn_hide_pins_short', 'Ukryj') : 'Ukryj')
+            : (typeof t === 'function' ? t('btn_show_pins_short', 'Pokaż') : 'Pokaż');
+    }
+    const uploadBtnEl = document.getElementById('uploadBtn');
+    if (uploadBtnEl && !uploadBtnEl.classList.contains('loading')) {
+        const btnTxt = uploadBtnEl.querySelector('.btn-text');
+        if (btnTxt && typeof t === 'function') {
+            btnTxt.textContent = t('btn_upload', 'Prześlij plik');
+        }
+    }
+    document.querySelectorAll('#view-download [data-i18n], #dlLightboxModal [data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (typeof t === 'function' && typeof hasTranslation === 'function' && hasTranslation(key)) {
+            el.textContent = t(key);
+        }
+    });
+    document.querySelectorAll('#view-download [data-i18n-title], #dlLightboxModal [data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        if (typeof t === 'function' && typeof hasTranslation === 'function' && hasTranslation(key)) {
+            el.setAttribute('title', t(key));
+        }
+    });
+});
+

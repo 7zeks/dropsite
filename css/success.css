@@ -2,9 +2,40 @@
    DROPSITE CLEAN TRANSFER SUCCESS VIEW (Apple & Linear Minimalist Aesthetic)
    ========================================================================== */
 
+/* Automatyczne dopasowanie i wysmuklenie karty głównej oraz świetlnej ramy po udanym przesłaniu */
+.studio-hero-right:has(#successFlow:not([hidden])),
+.siri-glow-frame:has(#successFlow:not([hidden])),
+.upload-container:has(#successFlow:not([hidden])),
+.studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
+    max-width: 520px !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.upload-container:has(#successFlow:not([hidden])),
+.studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
+    width: 100% !important;
+    padding: 30px 28px 24px 28px !important;
+    box-shadow: 
+        0 24px 70px -10px rgba(0, 0, 0, 0.85),
+        0 0 45px rgba(52, 211, 153, 0.14),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Ukryj przełącznik trybów Chmura/Beam gdy plik jest już wrzucony (niepotrzebny clutter) */
+.upload-container:has(#successFlow:not([hidden])) .transfer-mode-switcher {
+    display: none !important;
+}
+
+/* Ukryj zewnętrzny slot reklamowy strony głównej, gdy ekran sukcesu ma już własny baner */
+.studio-split-hero:has(#successFlow:not([hidden])) #homeAdSlot {
+    display: none !important;
+}
+
 .success-flow {
-    padding: 8px 0 2px 0;
+    padding: 2px 0 0 0;
     width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
     box-sizing: border-box;
     animation: cleanSuccessIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -13,122 +44,338 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 15px;
 }
 
 @keyframes cleanSuccessIn {
     from {
         opacity: 0;
-        transform: translateY(16px);
+        transform: translateY(14px) scale(0.98);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
-/* --- 1. Sygnet Sukcesu --- */
+/* --- 1. Sygnet Sukcesu (Sam Ptaszek + Sparkle Stars) --- */
 .success-vault-badge {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 60px;
-    height: 60px;
-    margin: 2px auto 0;
+    height: 52px;
+    margin: 0 auto 4px;
 }
 
 .vault-badge-halo {
+    display: block;
     position: absolute;
-    inset: -12px;
+    inset: -8px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.4) 0%, rgba(56, 189, 248, 0.15) 50%, transparent 75%);
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(52, 211, 153, 0.12) 50%, transparent 70%);
     filter: blur(12px);
-    opacity: 0.85;
-    animation: badgeHaloPulse 3s ease-in-out infinite;
+    opacity: 0;
+    animation: haloPulseIn 0.7s 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     pointer-events: none;
 }
 
-@keyframes badgeHaloPulse {
-    0%, 100% { transform: scale(1); opacity: 0.75; }
-    50% { transform: scale(1.15); opacity: 1; }
+/* Sparkles (Błyski Studio/AI) */
+.vault-sparkle {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0);
+}
+
+.vault-sparkle.sparkle-1 {
+    top: -2px;
+    right: 2px;
+    color: #38BDF8;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
+    animation: sparkleBurst 0.6s 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               sparkleTwinkle 2.6s 0.85s ease-in-out infinite alternate;
+}
+
+.vault-sparkle.sparkle-2 {
+    bottom: 2px;
+    left: 2px;
+    color: #6EE7B7;
+    filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.75));
+    animation: sparkleBurst 0.6s 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               sparkleTwinkle 3s 0.95s ease-in-out infinite alternate-reverse;
+}
+
+.vault-sparkle.sparkle-3 {
+    top: 6px;
+    left: -4px;
+    color: #BAE6FD;
+    filter: drop-shadow(0 0 4px rgba(186, 230, 253, 0.75));
+    animation: sparkleBurst 0.55s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               sparkleTwinkle 2.2s 1s ease-in-out infinite alternate;
 }
 
 .vault-badge-circle {
     position: relative;
     z-index: 1;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 15, 12, 0.95) 100%);
-    border: 1.5px solid rgba(52, 211, 153, 0.55);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    width: auto;
+    height: auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #34D399;
+    color: #38BDF8;
+    animation: checkLevitate 3.2s 0.55s ease-in-out infinite;
 }
 
 .vault-check-svg {
-    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.7));
-    animation: checkmarkPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    stroke-dasharray: 32;
+    stroke-dashoffset: 32;
+    color: #38BDF8;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 2px #38BDF8);
+    animation: drawCheckmark 0.45s 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               checkGlowBreath 3.2s 0.55s ease-in-out infinite;
 }
 
-@keyframes checkmarkPop {
-    0% { transform: scale(0.6); opacity: 0; }
-    70% { transform: scale(1.1); }
-    100% { transform: scale(1); opacity: 1; }
+@keyframes checkPopIn {
+    0% {
+        transform: scale(0.65);
+        opacity: 0;
+    }
+    65% {
+        transform: scale(1.12);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
-/* --- 2. Tytuł + Czyste Metadane (Bez ciężkiej kapsułki!) --- */
+@keyframes drawCheckmark {
+    0% {
+        stroke-dashoffset: 32;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes checkLevitate {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-3px) scale(1.04);
+    }
+}
+
+@keyframes checkGlowBreath {
+    0%, 100% {
+        filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 2px #38BDF8);
+    }
+    50% {
+        filter: drop-shadow(0 0 13px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 4px #6EE7B7);
+    }
+}
+
+@keyframes haloPulseIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+    60% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+}
+
+@keyframes sparkleBurst {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(-30deg);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.3) rotate(15deg);
+    }
+    100% {
+        opacity: 0.9;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes sparkleTwinkle {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.85) rotate(-5deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.15) rotate(10deg);
+    }
+    100% {
+        opacity: 0.5;
+        transform: scale(0.85) rotate(-5deg);
+    }
+}
+
+/* --- 2. Tytuł Sukcesu --- */
 .success-header {
     text-align: center;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
 
 .success-title {
     margin: 0;
-    font-size: 20px;
+    font-size: 21px;
     font-weight: 800;
     letter-spacing: -0.3px;
     color: #FFFFFF;
 }
 
-.success-file-meta-clean {
-    margin: 7px auto 0;
-    display: inline-flex;
+/* --- 3. Wizytówka Pliku (Asset Showcase Hero Card) --- */
+.success-file-card {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #94A3B8;
-    max-width: 92%;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 13px;
+    transition: all 0.2s ease;
 }
 
-.success-file-meta-clean .sfc-filename {
-    font-weight: 700;
-    color: #E2E8F0;
+.success-file-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.sfc-thumb-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    color: #38BDF8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sfc-thumb-box:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.45);
+    transform: scale(1.05);
+}
+
+.sfc-live-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.sfc-info-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 2px;
+}
+
+.sfc-filename {
+    font-size: 13px;
+    font-weight: 600;
+    color: #F8FAFC;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 180px;
+    max-width: 100%;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.18s ease;
 }
 
-.success-file-meta-clean .sfc-size {
+.sfc-filename:hover {
+    color: #38BDF8;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.sfc-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
     color: #94A3B8;
+}
+
+.sfc-size {
     font-weight: 500;
+    color: #CBD5E1;
 }
 
-.success-file-meta-clean .sfc-retention {
+.sfc-retention-text {
+    font-weight: 500;
+    color: #94A3B8;
+}
+
+.sfc-sep {
+    color: rgba(255, 255, 255, 0.18);
+    font-size: 9px;
+}
+
+.sfc-status-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
     color: #34D399;
-    font-weight: 600;
 }
 
-.success-file-meta-clean .sfc-dot {
-    opacity: 0.4;
+.sfc-live-pulse {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #34D399;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+    animation: liveDotPulse 2s infinite ease-in-out;
 }
 
-/* --- 3. Plakietki zaawansowane (Tylko gdy aktywne) --- */
+@keyframes liveDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* --- 4. Plakietki zaawansowane (Tylko gdy aktywne) --- */
 .success-settings-status {
     width: 100%;
 }
@@ -144,8 +391,8 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 9px;
-    border-radius: 20px;
+    padding: 3px 10px;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     background: rgba(255, 255, 255, 0.05);
@@ -153,179 +400,342 @@
     color: #E2E8F0;
 }
 
-/* --- 4. Główny Hero Link Bar (Pojedyncza, luksusowa belka z przyciskiem Kopiuj) --- */
+/* --- 5. Główny Hero Link Bar (Sleek Glass Bar) --- */
 .clean-hero-link-bar {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
     box-sizing: border-box;
-    padding: 6px 7px 6px 15px;
-    border-radius: 14px;
-    border: 1px solid rgba(52, 211, 153, 0.35);
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
-    background: radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.1) 0%, rgba(7, 12, 20, 0.95) 100%);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 24px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    padding: 6px 6px 6px 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    box-shadow: 
+        0 8px 24px -4px rgba(0, 0, 0, 0.45), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: all 0.25s ease;
 }
 
 .clean-hero-link-bar:hover {
-    border-color: rgba(52, 211, 153, 0.65);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 32px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.22);
+    border-top-color: rgba(255, 255, 255, 0.32);
+    box-shadow: 
+        0 10px 28px -4px rgba(0, 0, 0, 0.55), 
+        0 0 20px rgba(255, 255, 255, 0.04), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .clean-link-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     flex: 1;
     min-width: 0;
 }
 
-.clean-link-icon {
-    color: #34D399;
+.clean-link-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #38BDF8;
     flex-shrink: 0;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clean-link-icon-wrap:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #FFFFFF;
+    transform: scale(1.06);
+}
+
+.clean-hero-link-bar:hover .clean-link-icon-wrap {
+    background: rgba(56, 189, 248, 0.15);
+    color: #FFFFFF;
 }
 
 .clean-link-text {
     color: #F8FAFC;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 13.5px;
+    font-weight: 500;
     text-decoration: none;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: all;
     text-align: left;
+    cursor: pointer;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.clean-link-text:hover {
+    color: #38BDF8;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .clean-copy-btn {
+    position: relative;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-top: 1px solid rgba(255, 255, 255, 0.85);
-    background: linear-gradient(125deg, #10B981 0%, #34D399 45%, #2DD4BF 80%, #38BDF8 100%);
-    color: #03140C;
-    font-size: 13.5px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(12px);
+    color: #F8FAFC;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
     font-family: inherit;
     cursor: pointer;
     flex-shrink: 0;
-    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transition: filter 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .clean-copy-btn:hover {
-    filter: brightness(1.06);
-    transform: scale(1.02);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.28);
+    border-top-color: rgba(255, 255, 255, 0.4);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .clean-copy-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
 }
 
 .clean-copy-btn.copied {
-    background: #10B981 !important;
-    color: #FFFFFF !important;
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-color: rgba(52, 211, 153, 0.45) !important;
+    color: #34D399 !important;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
-/* --- 5. Rząd akcji pomocniczych (Lekkie, minimalistyczne) --- */
-.clean-actions-row {
-    display: flex;
-    gap: 8px;
+/* --- Aksamitny, gładki rozbryzg światła (Smooth Light Splash) --- */
+.btn-light-splash {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(52, 211, 153, 0.55) 28%, rgba(56, 189, 248, 0.2) 55%, transparent 72%);
+    filter: blur(8px);
+    transform: translate(-50%, -50%) scale(0.05);
+    animation: smoothLightSplash 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    z-index: 2;
+    mix-blend-mode: screen;
+}
+
+@keyframes smoothLightSplash {
+    0% {
+        transform: translate(-50%, -50%) scale(0.08);
+        opacity: 0.85;
+    }
+    35% {
+        opacity: 0.65;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.6);
+        opacity: 0;
+    }
+}
+
+/* --- 6. Zbalansowany Smart Action Dock --- */
+.success-actions-dock {
     width: 100%;
-    justify-content: center;
-}
-
-.clean-tool-btn {
-    flex: 1;
-    box-sizing: border-box;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 6px;
-    padding: 9px 12px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #CBD5E1;
-    font-size: 12.5px;
-    font-weight: 600;
-    font-family: inherit;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
-.clean-tool-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.18);
-    color: #FFFFFF;
-}
-
-.clean-stream-btn {
-    color: #38BDF8;
-    border-color: rgba(56, 189, 248, 0.2);
-    background: rgba(56, 189, 248, 0.05);
-}
-
-.clean-stream-btn:hover {
-    border-color: rgba(56, 189, 248, 0.4);
-    background: rgba(56, 189, 248, 0.12);
-    color: #E0F2FE;
-}
-
-/* --- 6. Prześlij kolejny plik (Dyskretny text link, BEZ ramki!) --- */
-.clean-reset-link {
+.success-dock-primary-btn {
+    width: 100%;
+    box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    padding: 6px 12px;
+    gap: 8px;
+    padding: 10.5px 18px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    color: #F8FAFC;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    text-decoration: none;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.success-dock-primary-btn:hover {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(56, 189, 248, 0.08) 100%);
+    border-color: rgba(255, 255, 255, 0.25);
+    border-top-color: rgba(255, 255, 255, 0.5);
+    color: #FFFFFF;
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 20px rgba(56, 189, 248, 0.12);
+}
+
+.success-dock-primary-btn:hover .dock-arrow-icon {
+    transform: translate(2px, -2px);
+}
+
+.dock-arrow-icon {
+    transition: transform 0.2s ease;
+    opacity: 0.85;
+}
+
+/* Zintegrowana, minimalistyczna listwa narzędziowa (bez bąbli) */
+.success-utility-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 2px 0;
+}
+
+.clean-strip-item {
+    position: relative;
     background: transparent;
     border: none;
     color: #94A3B8;
     font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: color 0.2s ease;
-    margin-top: 1px;
+    text-decoration: none;
+    user-select: none;
+    transition: all 0.18s ease;
 }
 
-.clean-reset-link svg {
-    transition: transform 0.3s ease;
+.clean-strip-item svg {
+    color: #94A3B8;
+    transition: color 0.18s ease, transform 0.2s ease;
 }
 
-.clean-reset-link:hover {
-    color: #34D399;
+.clean-strip-item:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.06);
 }
 
-.clean-reset-link:hover svg {
-    transform: rotate(-60deg);
+.clean-strip-item:hover svg {
+    color: #38BDF8;
+    transform: scale(1.08);
 }
 
-/* --- 7. Czyszczona notka na dole (BEZ ciężkiego boxa!) --- */
+.clean-strip-dot {
+    color: rgba(255, 255, 255, 0.15);
+    font-size: 10px;
+    user-select: none;
+}
+
+/* --- 7. Slot reklamowy na ekranie sukcesu --- */
+#successAdSlot,
+.ad-slot-success {
+    width: 100%;
+    margin: 4px 0 2px 0 !important;
+    overflow: visible !important;
+}
+
+.ad-slot-success .dropsite-ad-banner {
+    padding: 15px 16px 13px 16px !important;
+    border-radius: 14px !important;
+}
+
+/* --- 8. Certyfikat bezpieczeństwa Zero-Knowledge (Czysty podpis) --- */
 .clean-security-caption {
-    margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    padding: 6px 0 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
     color: #64748B;
     font-size: 11.5px;
     font-weight: 500;
+    letter-spacing: 0.1px;
+    margin: 2px auto 0;
 }
 
 .clean-security-caption svg {
     color: #10B981;
-    opacity: 0.8;
+    opacity: 0.75;
+}
+
+/* --- Responsywność dla Telefonów (<= 600px) --- */
+@media (max-width: 600px) {
+    .studio-hero-right:has(#successFlow:not([hidden])),
+    .siri-glow-frame:has(#successFlow:not([hidden])),
+    .upload-container:has(#successFlow:not([hidden])),
+    .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
+        padding: 22px 16px 18px 16px !important;
+        border-radius: 20px !important;
+        max-width: 100% !important;
+    }
+
+    .success-title {
+        font-size: 18px !important;
+    }
+
+    .clean-hero-link-bar {
+        padding: 4px 4px 4px 12px !important;
+    }
+
+    .clean-link-text {
+        font-size: 12px !important;
+    }
+
+    .clean-copy-btn {
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+    }
+
+    .clean-actions-row {
+        gap: 6px !important;
+    }
+
+    .clean-tool-btn {
+        padding: 7px 8px !important;
+        font-size: 11.5px !important;
+        gap: 5px !important;
+    }
+
+    .clean-tool-btn svg {
+        width: 13px !important;
+        height: 13px !important;
+    }
 }
 
 /* --- Globalny Przycisk Drugorzędny (Sleek Cyber Glass) --- */
@@ -366,7 +776,7 @@
     transform: translateY(0);
 }
 
-/* --- Dedykowane przyciski w modalu Kod QR (Pobierz QR, Udostępnij) --- */
+/* --- Dedykowane przyciski w modalu Kod QR --- */
 .qr-modal-actions {
     display: flex;
     gap: 10px;

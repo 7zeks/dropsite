@@ -48,25 +48,52 @@ To narzędzie dla nowoczesnych profesjonalistów, twórców, agencji i wymagają
   - Dzięki temu na dużych monitorach użytkownik nie musi skanować wzrokiem 2000 pikseli pustki, a na laptopach nic się nie rozjeżdża.
   - Całość sekcji Hero musi idealnie mieścić się w pionie w jednym oknie (1 viewport), bez obcinania dołu kapsuły.
 
-### 3.2. Paleta Barw i Światła
-* **Głębokie tło kosmiczne**: `#0B0F19` z domieszką `#070A11` – czyste, nieodpychające, z subtelnymi gwiazdami w tle.
-* **Akcenty Główne (Sygnatura Dropsite)**:
-  - **Mięta / Szmaragd**: `#34D399` / `#10B981` (symbol bezpieczeństwa, życia, aktywnego łącza, sukcesu).
-  - **Cyjan / Sky Blue**: `#38BDF8` / `#00F0FF` (symbol prędkości, transferu w chmurze, lekkości).
-  - **Luksusowy fiolet / lawenda**: `#C4B5FD` (akcent uzupełniający w gradientach tekstu).
-  - **Złoto PRO**: `#FBBF24` / `#FFBC39` (zarezerwowane wyłącznie dla funkcji i statusu PRO).
+### 3.1. Zasada Czystości: Zero Nadmiaru Kapsułek (Anti-Pill Overload & Clean Look)
+* **ZAKAZ oblepiania interfejsu rzędami ciężkich pigułek**:
+  - Nie zamykamy każdego słowa, etykiety czy parametru w osobnej ciemnej ramce/kapsułce.
+  - Zamiast 4–5 poziomów ciemnych boksów stosujemy: **czystą typografię, przestrzeń (whitespace), subtelne kropki separatora `•` oraz delikatne linie podziału**.
+* **Akcje pomocnicze jako Ghost Actions / Czysty Tekst z Ikoną**:
+  - Przyciski pomocnicze (np. *Udostępnij*, *Nowy plik*, *Powiększ*, *Direct link*) mają postać lekkich, szklanych akcji bez ciężkich teł, które elegancko rozświetlają się dopiero przy najechaniu lub dotknięciu.
+* **Estetyka klasy Awwwards**:
+  - Interfejs ma sprawiać wrażenie lewitującego, krystalicznie czystego kokpitu – przestronny, minimalistyczny, z idealnym balansem światła i cienia.
+
+### 3.2. Paleta Barw – Żywa, Pozytywna Mięta i Świeży Kosmos
+* **Głębokie tło Obsidian Glass**:
+  - `#090E17` do `#131D2E` – głęboka, aksamitna czerń z nutą nocy, wzbogacona o wielowarstwowe rozmycie `backdrop-filter: blur(20px)`.
+* **Główny Bohater – Cyber Mint & Fresh Emerald**:
+  - `#34D399` / `#10B981` / `#C4E7D4` / `#6EE7B7` – wiodący, promienny kolor marki dający poczucie świeżości, ultraszybkiego transferu, bezpieczeństwa i sukcesu.
+* **Towarzysz – Neon Cyan & Electric Sky**:
+  - `#38BDF8` / `#00D2FF` / `#06B6D4` – błękit transferu chmurowego, kompresji grafiki i harmonijnych miętowo-lazurowych gradientów.
+* **Świeże Akcenty Wzbogacające Vibe**:
+  - **Solar Gold** (`#FFBC39` / `#FBBF24`): prestiżowy akcent PRO, nielimitowanych transferów i funkcji premium.
+  - **Electric Violet** (`#A855F7` / `#C084FC`): Kapsuła Czasu (TimeLock) i szyfrowanie Zero-Knowledge.
+  - **Neon Coral Flame** (`#FF4439` / `#F43F5E`): Tryb Szpiegowski (Burn after read) oraz alerty.
 * **Typografia**:
   - Teksty główne i nagłówki: śnieżnobiałe `#FFFFFF` lub ożywione płynącym gradientem światła (`animation: shine 6s linear infinite`).
-  - Teksty pomocnicze i opisy: elegancki slate `#CBD5E1` oraz `#94A3B8` (nigdy brudna szarość).
+  - Teksty pomocnicze: elegancki slate `#CBD5E1` oraz `#94A3B8` (nigdy ponura, brudna szarość).
 
-### 3.3. Ruch, Animacje i Interakcje (Micro-Motion)
+### 3.3. Ruch, Animacje i Interakcje (Micro-Motion & Tactile Light)
 * **ZŁOTA ZASADA: Zero skakania i uciekania elementów pod kursorem**:
-  - **NIGDY** nie dodajemy fizycznych przesunięć (`translate`), szarpania ani podążania za myszką na elementach nawigacji czy logo.
+  - **NIGDY** nie dodajemy fizycznych przesunięć (`translate`), szarpania ani uciekania pod myszką na elementach nawigacji czy logo.
   - Użytkownik musi czuć, że klikany element jest pewny, solidny i stabilny jak skała.
-* **Ruch ma być organiczny i świetlny**:
+* **Subtelny, Aksamitny Błysk Kliknięcia (Delicate Tactile Glow & Micro-Sheen)**:
+  - **ZAKAZ agresywnych, jaskrawych plam i wielkich fal (Zero ciężkich ripple effects)**: Animacja nie może rozlewać się po przycisku jak nieestetyczna plama ani przesłaniać tekstu.
+  - Efekt dotknięcia/kliknięcia jest **ultra-delikatny, dyskretny i aksamitny**:
+    - Miękkie rozświetlenie krawędzi lub mikro-poświata o niskim kryciu (`opacity: 0.15–0.25`, rozmyte miękkie światło).
+    - Sprężyste, mikro-taktilne wciśnięcie (`transform: scale(0.985)`) z natychmiastowym, płynnym powrotem (`transition: transform 0.15s ease`).
+    - Daje to eleganckie, dotykowe poczucie precyzyjnego mechanizmu klasy Apple / Linear / macOS.
+* **Organiczny oddech światła**:
   - Pulsująca aura w tle (`navAuraBreath`) – delikatny oddech światła.
-  - Płynąca fala światła na literach – hipnotyzujący, luksusowy shimmer bez ruszania tekstu z miejsca.
-  - Strumień uploadu w strzałce sygnetu (`uploadStreamLoop`) – ruch odbywa się wewnątrz piktogramu, a nie całym logotypem.
+  - Płynąca fala światła na literach nagłówków – hipnotyzujący, luksusowy shimmer bez ruszania tekstu z miejsca.
+  - Strumień uploadu w strzałce sygnetu (`uploadStreamLoop`) – ruch odbywa się wewnątrz piktogramu.
+
+### 3.4. Ergonomia Mobile (Thumb-Zone & Native Sheets)
+* **Wszystko pod kciukiem**:
+  - Główne akcje, przycisk uploadu oraz dedykowany neonowy **Quick-Home FAB** znajdują się w dolnej strefie ekranu (`bottom: calc(22px + safe-area); right: 20px;`), aby powrót nie wymagał sięgania na samą górę monitora telefonu.
+* **Natywne panele Bottom-Sheet Drawer**:
+  - Złożone panele (Kompresja, Zaawansowane Opcje Transferu) wysuwają się od dołu z pełną przestrzenią (do `86vh`) i uchwytem pull-bar, zamiast zamykać się w ciasnych kapsułkach wewnątrz formularza.
+* **Swipe to Dismiss na powiadomieniach**:
+  - Powiadomienia można zamknąć czystą ikonką `✕` (bez tła) lub swobodnie wyrzucić gestem przesunięcia palcem w bok lub do góry.
 
 ---
 
@@ -75,11 +102,11 @@ To narzędzie dla nowoczesnych profesjonalistów, twórców, agencji i wymagają
 Każdy nowy komponent (modal, przycisk, karta, formularz, powiadomienie) musi spełniać poniższe kryteria:
 
 1. **Modale i okna dialogowe**:
-   - Zawsze wyśrodkowane w bieżącym oknie widoku (`position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 9999`).
-   - Tło: luksusowe ciemne szkło (`rgba(15, 23, 42, 0.88)` z `backdrop-filter: blur(20px)`), z delikatnym neonowym borderem `rgba(52, 211, 153, 0.25)`.
+   - Zawsze wyśrodkowane w bieżącym oknie widoku na desktopie, a na mobile wysuwane jako elegancki Bottom-Sheet od dołu.
+   - Tło: luksusowe ciemne szkło (`rgba(15, 23, 42, 0.92)` z `backdrop-filter: blur(20px)`), z delikatnym neonowym borderem `rgba(52, 211, 153, 0.25)`.
    - Zamykanie: po kliknięciu w tło (backdrop), klawiszem `ESC` lub dedykowanym przyciskiem `✕`.
 2. **Przyciski Akcji (CTA)**:
-   - Główny przycisk: Soczysty gradient szmaragdowo-miętowy (`#10B981` → `#34D399`), z miękkim neonowym cieniem.
+   - Główny przycisk: Soczysty gradient szmaragdowo-miętowy (`#10B981` → `#34D399`), z miękkim neonowym cieniem oraz wewnętrzną falą świetlną na kliknięcie.
    - Drugorzędny przycisk: Szklany ghost (`rgba(255, 255, 255, 0.05)` z obwódką).
    - Każdy kliknięty przycisk daje natychmiastowy feedback dźwiękowy i wizualny.
 3. **Pola formularzy i przełączniki**:
@@ -91,9 +118,10 @@ Każdy nowy komponent (modal, przycisk, karta, formularz, powiadomienie) musi sp
 ## 5. CHECKLISTA PRZED WDROŻENIEM JAKIEJKOLWIEK ZMIANY
 
 Zanim zatwierdzisz jakąkolwiek zmianę w kodzie, zweryfikuj:
-- [ ] Czy strona nie stała się ciemna, ponura lub klaustrofobiczna?
-- [ ] Czy elementy na monitorze 2K / 27" nie rozjeżdżają się na boki i czy u dołu nie wystają niepotrzebnie sekcje z drugiego ekranu?
+- [ ] **Czy interfejs nie jest przeładowany kapsułkami/pigułkami?** (Zastosuj czysty tekst, spacje i separatory `•`).
+- [ ] Czy strona zachowuje żywy, promienny i bezpieczny klimat (Cyber Mint + Neon Cyan + Obsidian Glass)?
+- [ ] Czy przycisk po kliknięciu wypełnia się miękkim światłem bez mechanicznego szarpania?
+- [ ] Czy na telefonie elementy są łatwo dostępne pod kciukiem (Bottom-Sheet, Quick-Home FAB)?
+- [ ] Czy elementy na monitorze 2K / 27" nie rozjeżdżają się na boki i mieszczą się w jednym oknie (1 viewport)?
 - [ ] Czy żaden element pod kursorem myszy nie „ucieka”, nie trzęsie się i nie podąża w denerwujący sposób?
-- [ ] Czy zachowano pełną przezroczystość i przestrzeń tła (brak sztucznych, ciemnych belek)?
-- [ ] Czy kolorystyka ściśle trzyma się palety: miętowy szmaragd, cyjan, głęboki granat/czerń kosmiczna i biel?
-- [ ] Czy komunikat dla klienta jest prosty, uspokajający i budzi zaufanie?
+- [ ] Czy komunikat dla klienta jest prosty, uspokajający i budzi bezwzględne zaufanie?

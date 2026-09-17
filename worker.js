@@ -1240,6 +1240,42 @@ export default {
         }
     }
 
+    // Pobieranie bezpośrednie z wymuszeniem zapisu (Content-Disposition: attachment)
+    if ((url.pathname === "/download" || url.pathname === "/api/download") && request.method === "GET") {
+        const key = url.searchParams.get("key");
+        if (!key || !env.BUCKET) {
+            return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+        }
+
+        try {
+            const object = await env.BUCKET.get(key);
+            if (!object) {
+                return new Response("Plik wygasł lub nie istnieje na serwerze.", { status: 404, headers: corsHeaders });
+            }
+
+            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+            if (lockUntil && Date.now() < lockUntil) {
+                return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
+            }
+
+            const headers = new Headers();
+            object.writeHttpMetadata(headers);
+            headers.set("etag", object.httpEtag);
+            headers.set("Access-Control-Allow-Origin", allowOrigin);
+            headers.set("X-Content-Type-Options", "nosniff");
+
+            const meta = object.customMetadata || {};
+            const requestedName = url.searchParams.get("name");
+            const rawFilename = requestedName || meta.originalName || key.split('/').pop() || key;
+            const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
+            headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
+
+            return new Response(object.body, { headers });
+        } catch (err) {
+            return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+        }
+    }
+
     // Pobieranie z natychmiastowym zniszczeniem (Burn after read)
     if (url.pathname === "/burn-download" && request.method === "GET") {
         const key = url.searchParams.get("key");
