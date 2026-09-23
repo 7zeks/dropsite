@@ -1526,8 +1526,12 @@ if (navDropdownSoundBtn) {
 if (navDropdownHistoryBtn) {
     navDropdownHistoryBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        const deskHist = document.getElementById('openHistoryBtn');
-        if (deskHist) deskHist.click();
+        if (typeof window.openUserHistoryModal === 'function') {
+            window.openUserHistoryModal();
+        } else {
+            const deskHist = document.getElementById('openHistoryBtn');
+            if (deskHist) deskHist.click();
+        }
     });
 }
 
@@ -9350,8 +9354,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileHistoryBtn) {
         mobileHistoryBtn.addEventListener('click', () => {
             closeMobileDrawer();
-            const deskHist = document.getElementById('openHistoryBtn');
-            if (deskHist) deskHist.click();
+            if (typeof window.openUserHistoryModal === 'function') {
+                window.openUserHistoryModal();
+            } else {
+                const deskHist = document.getElementById('openHistoryBtn');
+                if (deskHist) deskHist.click();
+            }
         });
     }
 
@@ -9367,8 +9375,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileSoundBtn = document.getElementById('mobileSoundToggleBtn');
     if (mobileSoundBtn) {
         mobileSoundBtn.addEventListener('click', () => {
-            const deskSound = document.getElementById('soundToggleBtn');
-            if (deskSound) deskSound.click();
+            if (typeof toggleGlobalSound === 'function') {
+                toggleGlobalSound();
+            } else {
+                const deskSound = document.getElementById('soundToggleBtn');
+                if (deskSound) deskSound.click();
+            }
         });
     }
 
@@ -10258,19 +10270,22 @@ function renderUserHistory() {
     });
 }
 
-if (openHistoryBtn && historyModalWrap) {
-    openHistoryBtn.addEventListener('click', async () => {
-        renderUserHistory(); // Optymistyczny render (cache)
-        window.smoothOpenModal(historyModalWrap);
-        
-        // Tło: synchronizacja z chmurą
-        if (typeof syncUserHistory === 'function') {
-            const synced = await syncUserHistory();
-            if (synced) {
-                renderUserHistory(); // Przeładuj zaktualizowane dane
-            }
+window.openUserHistoryModal = async function() {
+    if (!historyModalWrap) return;
+    renderUserHistory(); // Optymistyczny render (cache)
+    window.smoothOpenModal(historyModalWrap);
+    
+    // Tło: synchronizacja z chmurą
+    if (typeof syncUserHistory === 'function') {
+        const synced = await syncUserHistory();
+        if (synced) {
+            renderUserHistory(); // Przeładuj zaktualizowane dane
         }
-    });
+    }
+};
+
+if (openHistoryBtn && historyModalWrap) {
+    openHistoryBtn.addEventListener('click', window.openUserHistoryModal);
 }
 
 if (closeHistoryModal && historyModalWrap) {
