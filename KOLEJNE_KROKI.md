@@ -25,6 +25,11 @@ Zadania wdrożone i przetestowane produkcyjnie:
 * **Wdrożono:** Pełny player wideo z playlistą (Video Showcase) wewnątrz paczek ZIP.
 * **Publiczne Linki:** Wszystkie linki generują adres produkcyjny `https://dropsite.pages.dev` i inteligentne podglądy Smart Embeds.
 
+### E. Inteligentna Sugestia przy Dropzone: ZIP vs Kolekcja / Album (Sekcja 0.D) ✅
+* **Smart Context Prompt w Omni-Dropzone (`js/omni-dropzone.js`):** Przy upuszczeniu wielu plików system analizuje formaty (wideo, zdjęcia, miks) i wyświetla luksusowy dymek z 1-kliknięciem: `🎬 Kolekcja Wideo (Player Online)` lub `📦 Spakuj w ZIP`.
+* **Segmented Pill Switcher w Dropzone (`.mf-mode-switcher`):** Interaktywny przełącznik trybów z podglądem kafelkowym miniaturek (wideo z podświetlaną ikoną Play, zdjęcia, dokumenty).
+* **Bezkompresyjna Kolekcja Multimedialna (`uploadCollectionMultiFiles`):** Wgrywanie plików bezpośrednio na R2 bez narzutu kompresji ZIP, automatyczne tworzenie kolekcji przez `/api/albums/create` (z obsługą gości oraz zalogowanych) i natychmiastowy link publiczny `?album=alb_...`.
+
 ---
 
 ## 📦 1. Wdrożenie Produkcyjne (Git & Cloudflare)

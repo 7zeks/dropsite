@@ -2175,11 +2175,600 @@ window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
     if (typeof showNotification === 'function') showNotification(`Pobrano plik: ${filename}`, 'success');
 };
 
-// === WYBÓR PLIKU I DUŻY PODGLĄD ===
+// === WYBÓR PLIKU I INTELIGENTNY SYSTEM MULTI-FILE (ZIP VS KOLEKCJA/ALBUM) ===
+window._rawMultiFiles = null;
+window._multiUploadMode = 'collection'; // 'collection' | 'zip'
+window._collectionCustomTitle = '';
+
+function renderMultiFileDropzone(filesList, mode) {
+    if (!filesList || filesList.length === 0) return;
+    const isEng = (typeof t === 'function' && t('lang_code') === 'en') || (localStorage.getItem('dropsite_lang') === 'en');
+    
+    let totalRawSize = 0;
+    let videoCount = 0;
+    let imageCount = 0;
+    for (let f of filesList) {
+        totalRawSize += (f.size || 0);
+        if (/\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || '')) videoCount++;
+        else if (/\.(jpg|jpeg|png|webp|heic|bmp|gif)$/i.test(f.name || '')) imageCount++;
+    }
+    
+    const isMultiPhotoAlbum = imageCount === filesList.length;
+    const isMultiVideoShowcase = videoCount === filesList.length;
+
+    let bundleName = isMultiPhotoAlbum ? `Album_${filesList.length}_zdjec.zip` : `Paczka_${filesList.length}_plikow.zip`;
+    if (filesList[0]?.fullRelativePath?.includes('/')) {
+        const topDir = filesList[0].fullRelativePath.split('/')[0];
+        if (topDir) bundleName = `${topDir}.zip`;
+    }
+
+    const defaultCollectionTitle = isMultiVideoShowcase 
+        ? (isEng ? `Video Showcase (${filesList.length} Videos)` : `Kolekcja Wideo (${filesList.length} filmów)`)
+        : isMultiPhotoAlbum
+            ? (isEng ? `Photo Album (${filesList.length} Photos)` : `Album Fotograficzny (${filesList.length} zdjęć)`)
+            : (isEng ? `Media Collection (${filesList.length} Files)` : `Kolekcja Multimedialna (${filesList.length} plików)`);
+
+    const currentTitle = window._collectionCustomTitle || defaultCollectionTitle;
+
+    // Switcher HTML
+    const switcherHtml = `
+        <div class="mf-mode-switcher">
+            <button type="button" class="mf-mode-tab ${mode === 'collection' ? 'active' : ''}" onclick="window.setMultiUploadMode('collection')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+                <span>${isEng ? 'Showcase / Album' : '🎬 Kolekcja / Album'}</span>
+                <span class="mf-mode-badge ${mode === 'collection' ? 'mf-badge-highlight' : ''}">${isEng ? 'Player 4K' : 'Player Online'}</span>
+            </button>
+            <button type="button" class="mf-mode-tab ${mode === 'zip' ? 'active' : ''}" onclick="window.setMultiUploadMode('zip')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>
+                <span>${isEng ? 'ZIP Archive' : '📦 Paczka ZIP'}</span>
+                <span class="mf-mode-badge">${isEng ? '1 Archive' : '1 Archiwum'}</span>
+            </button>
+        </div>
+    `;
+
+    let bodyHtml = '';
+
+    if (mode === 'collection') {
+        // Render Collection Grid
+        const cardsHtml = Array.from(filesList).map((f) => {
+            const isVid = /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || '');
+            const isImg = /\.(jpg|jpeg|png|webp|heic|bmp|gif)$/i.test(f.name || '');
+            const ext = (f.name.split('.').pop() || 'FILE').toUpperCase();
+
+            let thumbContent = '';
+            if (isVid) {
+                const vidUrl = URL.createObjectURL(f);
+                thumbContent = `
+                    <video src="${vidUrl}#t=0.1" preload="metadata" muted playsinline></video>
+                    <div class="mf-collection-play-icon">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </div>
+                `;
+            } else if (isImg) {
+                const imgUrl = URL.createObjectURL(f);
+                thumbContent = `<img src="${imgUrl}" alt="${escapeHtml(f.name)}" loading="lazy">`;
+            } else {
+                thumbContent = `<span style="font-size: 26px;">📄</span>`;
+            }
+
+            return `
+                <div class="mf-collection-card">
+                    <div class="mf-collection-thumb-box">
+                        ${thumbContent}
+                        <span class="mf-collection-type-tag">${ext}</span>
+                    </div>
+                    <div class="mf-collection-card-info">
+                        <span class="mf-collection-card-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                        <span class="mf-collection-card-size">${formatBytes(f.size || 0)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        bodyHtml = `
+            <div class="mf-collection-custom-title-wrap">
+                <input type="text" id="mfCollectionTitleInput" class="mf-collection-input" 
+                       value="${escapeHtml(currentTitle)}" 
+                       placeholder="${isEng ? 'Enter album / showcase title...' : 'Wpisz tytuł kolekcji / albumu...'}" 
+                       oninput="window._collectionCustomTitle = this.value;"
+                       title="${isEng ? 'Collection Title' : 'Tytuł Kolekcji'}">
+            </div>
+            <div class="mf-collection-grid">
+                ${cardsHtml}
+            </div>
+            <div class="mf-video-streaming-tip" style="margin-top: 10px; padding: 10px 12px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.28); border-radius: 9px; font-size: 11.5px; color: #A7F3D0; display: flex; align-items: flex-start; gap: 8px; text-align: left;">
+                <span style="font-size: 15px; line-height: 1;">✨</span>
+                <div style="line-height: 1.45;">
+                    <strong style="color: #ECFDF5;">${isEng ? 'Zero Compression & Instant Showcase:' : 'Zero kompresji i natychmiastowy player:'}</strong> 
+                    ${isEng ? 'Each video/photo is stored individually on R2. The recipient gets a rich online gallery & 4K video player with no ZIP extraction needed.' : 'Każde wideo i zdjęcie jest wgrywane osobno na R2. Odbiorca otrzymuje interaktywną galerię z wbudowanym playerem 4K bez konieczności rozpakowywania ZIP.'}
+                </div>
+            </div>
+        `;
+
+        fileStatusBox.classList.add('visible');
+        fsTrack.hidden = true;
+        fsProgressBar.style.width = '0%';
+        fsName.textContent = currentTitle;
+        fsSizeOrProgress.innerText = isEng 
+            ? `Ready to upload: ${filesList.length} files (${formatBytes(totalRawSize)})` 
+            : `Gotowe do utworzenia: ${filesList.length} plików (${formatBytes(totalRawSize)})`;
+
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('loading');
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) {
+            btnTextSpan.textContent = isEng ? `Create Collection (${filesList.length} files)` : `🎬 Stwórz Kolekcję (${filesList.length} plików)`;
+        }
+
+    } else {
+        // Render ZIP Preview
+        let previewInnerHtml = '';
+        if (isMultiPhotoAlbum) {
+            const thumbItemsHtml = Array.from(filesList).slice(0, 8).map(f => {
+                const url = URL.createObjectURL(f);
+                return `
+                    <div class="mf-album-tile">
+                        <img src="${url}" alt="${escapeHtml(f.name)}">
+                        <span class="mf-album-tile-badge">${(f.name.split('.').pop() || 'IMG').toUpperCase()}</span>
+                    </div>
+                `;
+            }).join('');
+            const extraCount = filesList.length > 8 ? `<div class="mf-album-tile-more">+${filesList.length - 8} więcej</div>` : '';
+            previewInnerHtml = `
+                <div class="mf-album-mosaic-grid">
+                    ${thumbItemsHtml}
+                    ${extraCount}
+                </div>
+            `;
+        } else {
+            const fileItemsHtml = Array.from(filesList).slice(0, 15).map(f => {
+                const relName = f.fullRelativePath || f.name;
+                return `
+                    <div class="mf-file-row">
+                        <div class="mf-file-left">
+                            <span class="mf-file-icon">${getMiniFileSvg(relName)}</span>
+                            <span class="mf-file-name" title="${escapeHtml(relName)}">${escapeHtml(relName)}</span>
+                        </div>
+                        <div class="mf-file-right">
+                            <span class="mf-size-badge">${formatBytes(f.size || 0)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            const extraCount = filesList.length > 15 ? `<div style="text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px;">... i jeszcze ${filesList.length - 15} plików</div>` : '';
+            previewInnerHtml = `
+                <div class="mf-list-scroll">
+                    ${fileItemsHtml}
+                    ${extraCount}
+                </div>
+            `;
+
+            if (videoCount > 0) {
+                previewInnerHtml += `
+                    <div class="mf-video-streaming-tip" style="margin-top: 10px; padding: 10px 12px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 9px; font-size: 11.5px; color: #BAE6FD; display: flex; align-items: flex-start; gap: 8px; text-align: left;">
+                        <span style="font-size: 15px; line-height: 1;">🎬</span>
+                        <div style="line-height: 1.45;">
+                            <strong style="color: #F0F9FF;">Zero-RAM ZIP Streaming:</strong> Wykryto pliki wideo w paczce ZIP. Odbiorca będzie mógł odtwarzać je w locie w playerze wideo bez konieczności pobierania całego archiwum na dysk.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        bodyHtml = `
+            <div class="mf-header">
+                <div class="mf-folder-icon-box ${isMultiPhotoAlbum ? 'mf-album-icon-box' : ''}">
+                    ${isMultiPhotoAlbum ? `
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    ` : `
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    `}
+                </div>
+                <div class="mf-title-box">
+                    <strong class="mf-bundle-title">${isMultiPhotoAlbum ? `Kolekcja zdjęć (${filesList.length} fotografii)` : bundleName}</strong>
+                    <span class="mf-bundle-sub">${filesList.length} ${filesList.length === 1 ? 'plik' : (isMultiPhotoAlbum ? 'zdjęć w pełnej jakości' : 'plików')} &bull; ${formatBytes(totalRawSize)}</span>
+                </div>
+            </div>
+            ${previewInnerHtml}
+        `;
+    }
+
+    dropzone.innerHTML = `
+        <div class="multifile-upload-preview">
+            ${switcherHtml}
+            ${bodyHtml}
+        </div>
+    `;
+    dropzone.style.padding = "10px";
+}
+
+async function prepareZipBundle(filesList) {
+    const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name || ''));
+    uploadBtn.disabled = true;
+    window._isUploadingAlbum = Boolean(isMultiPhotoAlbum);
+    const btnTextSpan = uploadBtn.querySelector('.btn-text');
+    if (btnTextSpan) btnTextSpan.textContent = isMultiPhotoAlbum ? 'Przygotowywanie albumu...' : 'Pakowanie ZIP...';
+
+    let bundleName = isMultiPhotoAlbum ? `Album_${filesList.length}_zdjec.zip` : `Paczka_${filesList.length}_plikow.zip`;
+    if (filesList[0]?.fullRelativePath?.includes('/')) {
+        const topDir = filesList[0].fullRelativePath.split('/')[0];
+        if (topDir) bundleName = `${topDir}.zip`;
+    }
+
+    let totalRawSize = 0;
+    for (let i = 0; i < filesList.length; i++) totalRawSize += filesList[i].size || 0;
+
+    fileStatusBox.classList.add('visible');
+    fsTrack.hidden = false;
+    fsProgressBar.style.width = '100%';
+    fsName.textContent = isMultiPhotoAlbum ? `📸 Album (${filesList.length} zdjęć)` : bundleName;
+    fsSizeOrProgress.innerText = isMultiPhotoAlbum 
+        ? `Przygotowywanie albumu ${filesList.length} zdjęć (${formatBytes(totalRawSize)})...`
+        : `Pakowanie ${filesList.length} plików (${formatBytes(totalRawSize)})...`;
+
+    setTimeout(async () => {
+        try {
+            if (window._multiUploadMode !== 'zip') return; // Anulowano lub przełączono tryb
+
+            const zipFiles = {};
+            for (let i = 0; i < filesList.length; i++) {
+                const f = filesList[i];
+                let pathKey = f.fullRelativePath || f.name || `plik_${i + 1}`;
+                if (zipFiles[pathKey]) {
+                    const dotIdx = pathKey.lastIndexOf('.');
+                    if (dotIdx > 0) {
+                        pathKey = `${pathKey.slice(0, dotIdx)}_${i + 1}${pathKey.slice(dotIdx)}`;
+                    } else {
+                        pathKey = `${pathKey}_${i + 1}`;
+                    }
+                }
+                zipFiles[pathKey] = new Uint8Array(await f.arrayBuffer());
+            }
+
+            let zippedData;
+            if (typeof fflate !== 'undefined' && typeof fflate.zipSync === 'function') {
+                zippedData = fflate.zipSync(zipFiles, { level: 0 });
+            } else if (typeof fflate !== 'undefined' && typeof fflate.zip === 'function') {
+                zippedData = await new Promise((resolve, reject) => {
+                    fflate.zip(zipFiles, { level: 0 }, (err, data) => {
+                        if (err) reject(err);
+                        else resolve(data);
+                    });
+                });
+            } else {
+                throw new Error('Biblioteka pakowania ZIP nie jest załadowana.');
+            }
+
+            selectedFile = new File([zippedData], bundleName, { type: 'application/zip' });
+
+            if (window._multiUploadMode === 'zip') {
+                fsTrack.hidden = true;
+                fsProgressBar.style.width = '0%';
+                if (isMultiPhotoAlbum) {
+                    fsSizeOrProgress.innerText = `Gotowy album fotograficzny: ${filesList.length} zdjęć w pełnej jakości (${formatBytes(selectedFile.size)})`;
+                    if (btnTextSpan) {
+                        btnTextSpan.textContent = `Wyślij album (${filesList.length} zdjęć)`;
+                    }
+                } else {
+                    fsSizeOrProgress.innerText = `Gotowy do wysyłki: ${formatBytes(selectedFile.size)} (${filesList.length} plików)`;
+                    if (btnTextSpan) {
+                        btnTextSpan.textContent = typeof t === 'function' ? (t('btn_upload') || 'Upload') : 'Upload';
+                    }
+                }
+                uploadBtn.disabled = false;
+                uploadBtn.classList.remove('loading');
+            }
+        } catch (e) {
+            console.error('Błąd pakowania ZIP:', e);
+            showError("Błąd pakowania plików do ZIP: " + (e.message || ''));
+            uploadBtn.disabled = false;
+        }
+    }, 50);
+}
+
+window.setMultiUploadMode = function(mode) {
+    window._multiUploadMode = mode;
+    if (!window._rawMultiFiles || window._rawMultiFiles.length === 0) return;
+    
+    renderMultiFileDropzone(window._rawMultiFiles, mode);
+    
+    if (mode === 'zip') {
+        prepareZipBundle(window._rawMultiFiles);
+    } else {
+        selectedFile = null;
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('loading');
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) {
+            btnTextSpan.textContent = `🎬 Stwórz Kolekcję (${window._rawMultiFiles.length} plików)`;
+        }
+    }
+};
+
+// Pomocnik do uploadu pojedynczego dużego pliku multipart w pętli kolekcji
+async function uploadSingleFileMultipartRaw(file, duration, pwd, brand, onProgress) {
+    const proKey = getProKey();
+    const currentEmail = getCurrentUserEmail();
+    const CHUNK_SIZE = 10 * 1024 * 1024;
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+    let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
+    if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
+    if (brand) urlReq += `&brand=${encodeURIComponent(brand)}`;
+    if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
+    if (currentEmail) urlReq += `&userEmail=${encodeURIComponent(currentEmail)}`;
+
+    const headers = proKey ? { 'X-Pro-Key': proKey } : {};
+    if (currentEmail) headers['X-User-Email'] = currentEmail;
+    const response = await fetch(urlReq, { headers });
+    const data = await response.json();
+
+    if (!data.success) {
+        throw new Error(data.message || "Błąd generowania sesji uploadu multipart");
+    }
+
+    const uploadId = data.uploadId;
+    const key = data.key;
+    const parts = [];
+    const chunkLoadedBytes = new Array(totalChunks).fill(0);
+
+    const updateProg = () => {
+        const currentTotal = chunkLoadedBytes.reduce((a, b) => a + b, 0);
+        if (typeof onProgress === 'function') onProgress(currentTotal);
+    };
+
+    for (let i = 0; i < totalChunks; i++) {
+        const partNumber = i + 1;
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const chunkData = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener("progress", (event) => {
+                if (event.lengthComputable) {
+                    chunkLoadedBytes[i] = event.loaded;
+                    updateProg();
+                }
+            });
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const parsed = JSON.parse(xhr.responseText);
+                        if (parsed.success) {
+                            chunkLoadedBytes[i] = chunk.size;
+                            updateProg();
+                            resolve(parsed);
+                        } else {
+                            reject(new Error(parsed.message || `Serwer odrzucił chunk #${partNumber}`));
+                        }
+                    } catch (e) {
+                        reject(new Error(`Niepoprawna odpowiedź dla chunk #${partNumber}`));
+                    }
+                } else {
+                    reject(new Error(`Błąd HTTP ${xhr.status} dla chunk #${partNumber}`));
+                }
+            });
+            xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
+            xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
+            if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
+            if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
+            xhr.send(chunk);
+        });
+        parts.push({ partNumber: chunkData.partNumber, etag: chunkData.etag });
+    }
+
+    parts.sort((a, b) => a.partNumber - b.partNumber);
+
+    const completeRes = await fetch(`${WORKER_URL}/multipart/complete?key=${encodeURIComponent(key)}&uploadId=${uploadId}${currentEmail ? `&userEmail=${encodeURIComponent(currentEmail)}` : ''}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(proKey ? { 'X-Pro-Key': proKey } : {}),
+            ...(currentEmail ? { 'X-User-Email': currentEmail } : {})
+        },
+        body: JSON.stringify({ parts })
+    });
+    const completeData = await completeRes.json();
+    if (!completeData.success) {
+        throw new Error(completeData.message || "Błąd podczas finalizowania pliku.");
+    }
+    return key;
+}
+
+// Główny silnik wysyłania kolekcji wielu plików (każdy plik osobno na R2 + /api/albums/create)
+async function uploadCollectionMultiFiles(filesList) {
+    if (!filesList || filesList.length === 0) return;
+    
+    let totalRawSize = 0;
+    for (let f of filesList) totalRawSize += (f.size || 0);
+
+    const isPro = isProUser();
+    const FREE_LIMIT = 250 * 1024 * 1024; // 250 MB
+    if (!isPro && totalRawSize > FREE_LIMIT) {
+        showError(`Kolekcja (${formatBytes(totalRawSize)}) przekracza limit 250 MB dla konta darmowego.`);
+        if (typeof showNotification === 'function') {
+            showNotification('Wysyłanie kolekcji powyżej 250 MB wymaga konta Dropsite PRO!', 'info');
+        }
+        window.openProModal({
+            reason: 'file_limit',
+            fileName: `Kolekcja (${filesList.length} plików)`,
+            fileSize: totalRawSize
+        });
+        return;
+    }
+
+    if (totalRawSize > currentFreeSpace) {
+        showError(`Brakuje miejsca na dysku! Pliki zajmują ${formatBytes(totalRawSize)}, a zostało tylko ${formatBytes(currentFreeSpace)} wolnego.`);
+        return;
+    }
+
+    let duration = document.querySelector('input[name="duration"]:checked')?.value || '1d';
+    const isSpyMode = Boolean(document.getElementById('spyModeCheckbox')?.checked);
+    if (isSpyMode) duration = 'burn';
+    window._activeSpyMode = isSpyMode;
+
+    const filePassword = document.getElementById('filePasswordInput')?.value.trim() || '';
+    const fileNote = document.getElementById('fileNoteInput')?.value.trim() || '';
+    const creatorBrand = document.getElementById('creatorBrandInput')?.value.trim() || '';
+    const currentEmail = getCurrentUserEmail();
+    const proKey = getProKey();
+
+    const titleInput = document.getElementById('mfCollectionTitleInput');
+    const hasVideos = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi)$/i.test(f.name || ''));
+    const defaultTitle = hasVideos ? `Kolekcja Wideo (${filesList.length} materiałów)` : `Kolekcja Multimedialna (${filesList.length} plików)`;
+    const collectionTitle = (titleInput?.value || '').trim() || defaultTitle;
+    window._collectionCustomTitle = collectionTitle;
+
+    uploadBtn.disabled = true;
+    uploadBtn.classList.add('loading');
+    const btnTextSpan = uploadBtn.querySelector('.btn-text');
+    if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie kolekcji... (0/${filesList.length})`;
+
+    fileStatusBox.classList.add('visible');
+    fsTrack.hidden = false;
+    fsProgressBar.style.width = '0%';
+    fsSizeOrProgress.innerText = `0% - 0 B z ${formatBytes(totalRawSize)}`;
+    statusDiv.innerText = '';
+
+    const fsTelemetry = document.getElementById('fsTelemetry');
+    if (fsTelemetry) {
+        fsTelemetry.hidden = false;
+        fsTelemetry.classList.remove('is-hidden');
+    }
+    const elSpeed = document.getElementById('fsSpeed');
+    const elEta = document.getElementById('fsEta');
+    if (elSpeed) elSpeed.textContent = '-- MB/s';
+    if (elEta) elEta.textContent = 'Szacowanie...';
+
+    const uploadStartTime = Date.now();
+    let overallLoaded = 0;
+    const uploadedFileKeys = [];
+
+    const updateCollectionTelemetry = (currentFileLoaded, fileIndex) => {
+        const currentTotalLoaded = overallLoaded + currentFileLoaded;
+        const elapsedSec = (Date.now() - uploadStartTime) / 1000;
+        const percent = Math.min(99, Math.round((currentTotalLoaded / totalRawSize) * 100));
+        fsProgressBar.style.width = percent + '%';
+        fsSizeOrProgress.innerText = `Plik ${fileIndex + 1}/${filesList.length} (${percent}%) • ${formatBytes(currentTotalLoaded)} z ${formatBytes(totalRawSize)}`;
+
+        if (elapsedSec > 0.1 && currentTotalLoaded > 0) {
+            const speedBytes = currentTotalLoaded / elapsedSec;
+            const speedMB = (speedBytes / (1024 * 1024)).toFixed(1);
+            const remainingBytes = Math.max(0, totalRawSize - currentTotalLoaded);
+            const remainingSec = speedBytes > 0 ? Math.max(0, Math.round(remainingBytes / speedBytes)) : 0;
+            
+            if (elSpeed) elSpeed.textContent = `${speedMB} MB/s`;
+            if (elEta) {
+                if (currentTotalLoaded >= totalRawSize) {
+                    elEta.textContent = 'Tworzenie albumu...';
+                } else if (remainingSec > 60) {
+                    elEta.textContent = `Pozostało: ~${Math.ceil(remainingSec / 60)} min`;
+                } else {
+                    elEta.textContent = `Pozostało: ~${remainingSec}s`;
+                }
+            }
+        }
+    };
+
+    window._isUploadingActive = true;
+
+    try {
+        for (let i = 0; i < filesList.length; i++) {
+            const curFile = filesList[i];
+            if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie ${i + 1}/${filesList.length}: ${curFile.name}`;
+
+            let fileKey = '';
+            if (curFile.size <= 10 * 1024 * 1024) {
+                fileKey = await new Promise((resolve, reject) => {
+                    let urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(curFile.name)}&expiry=${duration}`;
+                    if (filePassword) urlReq += `&pwd=${encodeURIComponent(filePassword)}`;
+                    if (creatorBrand) urlReq += `&brand=${encodeURIComponent(creatorBrand)}`;
+                    if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
+                    if (currentEmail) urlReq += `&userEmail=${encodeURIComponent(currentEmail)}`;
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", (event) => {
+                        if (event.lengthComputable) {
+                            updateCollectionTelemetry(event.loaded, i);
+                        }
+                    });
+                    xhr.addEventListener("load", () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const res = JSON.parse(xhr.responseText);
+                                if (res.success && res.key) resolve(res.key);
+                                else reject(new Error(res.message || 'Błąd wgrywania pliku ' + curFile.name));
+                            } catch (e) {
+                                reject(e);
+                            }
+                        } else {
+                            reject(new Error('Błąd serwera: HTTP ' + xhr.status));
+                        }
+                    });
+                    xhr.addEventListener("error", () => reject(new Error('Błąd połączenia sieciowego.')));
+                    xhr.addEventListener("abort", () => reject(new Error('Wgrywanie przerwane.')));
+                    xhr.open("POST", urlReq, true);
+                    xhr.setRequestHeader("Content-Type", curFile.type || "application/octet-stream");
+                    xhr.send(curFile);
+                });
+            } else {
+                fileKey = await uploadSingleFileMultipartRaw(curFile, duration, filePassword, creatorBrand, (loaded) => {
+                    updateCollectionTelemetry(loaded, i);
+                });
+            }
+
+            uploadedFileKeys.push(fileKey);
+            overallLoaded += curFile.size;
+            updateCollectionTelemetry(0, i + 1 >= filesList.length ? i : i + 1);
+        }
+
+        // Wszystkie pliki wgrane na R2 -> Utwórz Album/Kolekcję przez /api/albums/create
+        if (btnTextSpan) btnTextSpan.textContent = 'Finalizowanie kolekcji...';
+        fsProgressBar.style.width = '100%';
+        fsSizeOrProgress.innerText = 'Tworzenie albumu multimedialnego...';
+
+        const createRes = await fetch(`${WORKER_URL}/api/albums/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Email': currentEmail || 'guest@dropsite.pl'
+            },
+            body: JSON.stringify({
+                title: collectionTitle,
+                description: fileNote || '',
+                fileKeys: uploadedFileKeys,
+                theme: 'gallery',
+                password: filePassword || ''
+            })
+        });
+
+        const createData = await createRes.json();
+        if (!createData.success || !createData.albumId) {
+            throw new Error(createData.message || 'Nie udało się wygenerować kolekcji.');
+        }
+
+        const albumUrl = createData.albumUrl || (`${PUBLIC_APP_URL || 'https://dropsite.pages.dev'}/?album=${createData.albumId}`);
+        showSuccessScreen(albumUrl, createData.albumId, duration);
+
+        if (typeof showNotification === 'function') {
+            showNotification(`🎬 Kolekcja "${collectionTitle}" (${filesList.length} plików) została pomyślnie utworzona!`, 'success');
+        }
+
+    } catch (err) {
+        console.error('Collection upload error:', err);
+        showError('Błąd tworzenia kolekcji: ' + (err.message || ''));
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('loading');
+        if (btnTextSpan) btnTextSpan.textContent = 'Spróbuj ponownie';
+    } finally {
+        window._isUploadingActive = false;
+    }
+}
+
 async function updateSelectedFile(filesList) {
     if (!filesList || filesList.length === 0) return;
     
-    // Zapisujemy wysokość kapsułki PRZED pojawieniem się pliku/podglądu
     const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
     const initialHeight = uploadBoxEl ? uploadBoxEl.offsetHeight : 0;
     
@@ -2195,183 +2784,99 @@ async function updateSelectedFile(filesList) {
         window.DropsiteOmniDropzone.showForFiles(filesList);
     }
 
-    // Opcja Cinematic Delivery (muzyka) dostępna WYŁĄCZNIE dla kolekcji / albumu wielu zdjęć
-    const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name));
-    const cinematicCard = document.getElementById('cinematicOptionCard');
-    if (cinematicCard) {
-        cinematicCard.style.display = isMultiPhotoAlbum ? 'block' : 'none';
-        if (!isMultiPhotoAlbum) {
+    // Jeśli upuszczono wiele plików lub folder
+    if (filesList.length > 1 || filesList[0]?.fullRelativePath?.includes('/')) {
+        setupImageCompression(null);
+        window._rawMultiFiles = Array.from(filesList);
+
+        const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name || ''));
+        const hasVideos = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || ''));
+        
+        // Domyślny tryb: kolekcja dla filmów i zdjęć, ZIP dla folderów/plików mieszanych
+        if (!window._multiUploadMode) {
+            window._multiUploadMode = (hasVideos || isMultiPhotoAlbum) ? 'collection' : 'zip';
+        }
+
+        const cinematicCard = document.getElementById('cinematicOptionCard');
+        if (cinematicCard) {
+            cinematicCard.style.display = isMultiPhotoAlbum ? 'block' : 'none';
+        }
+
+        renderMultiFileDropzone(filesList, window._multiUploadMode);
+
+        if (window._multiUploadMode === 'zip') {
+            prepareZipBundle(filesList);
+        }
+
+        scrollByCapsuleDelta(initialHeight);
+        return;
+    } else {
+        // Pojedynczy plik
+        window._rawMultiFiles = null;
+        window._multiUploadMode = null;
+        window._collectionCustomTitle = null;
+        selectedFile = filesList[0];
+        const file = selectedFile;
+        window._isUploadingAlbum = false;
+        
+        const cinematicCard = document.getElementById('cinematicOptionCard');
+        if (cinematicCard) {
+            cinematicCard.style.display = 'none';
             const chk = document.getElementById('chkCinematicDelivery');
             if (chk) chk.checked = false;
             const picker = document.getElementById('cinematicTrackPicker');
             if (picker) picker.style.display = 'none';
         }
-    }
 
-    // Jeśli wiele plików lub folder z podkatalogami, zrób ZIP za pomocą fflate
-    if (filesList.length > 1 || filesList[0]?.fullRelativePath?.includes('/')) {
-        setupImageCompression(null);
-        uploadBtn.disabled = true;
-        window._isUploadingAlbum = Boolean(isMultiPhotoAlbum);
-        const btnTextSpan = uploadBtn.querySelector('.btn-text');
-        if (btnTextSpan) btnTextSpan.textContent = isMultiPhotoAlbum ? 'Przygotowywanie albumu...' : 'Pakowanie ZIP...';
+        setupImageCompression(file);
         
-        let bundleName = isMultiPhotoAlbum ? `Album_${filesList.length}_zdjec.zip` : `Paczka_${filesList.length}_plikow.zip`;
-        if (filesList[0]?.fullRelativePath?.includes('/')) {
-            const topDir = filesList[0].fullRelativePath.split('/')[0];
-            if (topDir) bundleName = `${topDir}.zip`;
-        }
-
-        let totalRawSize = 0;
-        for (let i = 0; i < filesList.length; i++) totalRawSize += filesList[i].size || 0;
-
         fileStatusBox.classList.add('visible'); 
-        fsTrack.hidden = false; 
-        fsProgressBar.style.width = '100%';
-        fsName.textContent = isMultiPhotoAlbum ? `📸 Album (${filesList.length} zdjęć)` : bundleName;
-        fsSizeOrProgress.innerText = isMultiPhotoAlbum 
-            ? `Przygotowywanie albumu ${filesList.length} zdjęć (${formatBytes(totalRawSize)})...`
-            : `Pakowanie ${filesList.length} plików (${formatBytes(totalRawSize)})...`;
-
-        let previewBodyHtml = '';
-        if (isMultiPhotoAlbum) {
-            const thumbItemsHtml = Array.from(filesList).slice(0, 8).map(f => {
-                const url = URL.createObjectURL(f);
-                return `
-                    <div class="mf-album-tile">
-                        <img src="${url}" alt="${f.name}">
-                        <span class="mf-album-tile-badge">${(f.name.split('.').pop() || 'IMG').toUpperCase()}</span>
-                    </div>
-                `;
-            }).join('');
-            const extraCount = filesList.length > 8 ? `<div class="mf-album-tile-more">+${filesList.length - 8} więcej</div>` : '';
-            previewBodyHtml = `
-                <div class="mf-album-mosaic-grid">
-                    ${thumbItemsHtml}
-                    ${extraCount}
-                </div>
-            `;
+        fsTrack.hidden = true; 
+        fsProgressBar.style.width = '0%';
+        
+        fsName.textContent = file.name;
+        if (!isProUser() && file.size > 250 * 1024 * 1024) {
+            fsSizeOrProgress.innerHTML = `<span style="color:#FF4D6D; font-weight:700;">${formatBytes(file.size)} ⚡ (Wymaga konta PRO)</span>`;
         } else {
-            const fileItemsHtml = Array.from(filesList).slice(0, 15).map(f => {
-                const relName = f.fullRelativePath || f.name;
-                return `
-                    <div class="mf-file-row">
-                        <div class="mf-file-left">
-                            <span class="mf-file-icon">${getMiniFileSvg(relName)}</span>
-                            <span class="mf-file-name" title="${relName}">${relName}</span>
-                        </div>
-                        <div class="mf-file-right">
-                            <span class="mf-size-badge">${formatBytes(f.size || 0)}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            const extraCount = filesList.length > 15 ? `<div style="text-align: center; font-size: 11px; color: var(--text-muted); padding: 4px;">... i jeszcze ${filesList.length - 15} plików</div>` : '';
-            previewBodyHtml = `
-                <div class="mf-list-scroll">
-                    ${fileItemsHtml}
-                    ${extraCount}
+            fsSizeOrProgress.innerText = formatBytes(file.size);
+        }
+        
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('loading');
+        const btnTextSpan = uploadBtn.querySelector('.btn-text');
+        if (btnTextSpan) {
+            btnTextSpan.textContent = typeof t === 'function' ? (t('btn_upload') || 'Upload') : 'Upload';
+        }
+        statusDiv.textContent = '';
+
+        const isImgType = (file.type && file.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(file.name);
+        const isVidType = (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+
+        if (isImgType) {
+            const imgUrl = URL.createObjectURL(file);
+            dropzone.innerHTML = `<img src="${imgUrl}" style="max-width: 100%; max-height: 250px; border-radius: 8px; object-fit: contain;">`;
+            dropzone.style.padding = "10px";
+            const renderedImg = dropzone.querySelector('img');
+            if (renderedImg) {
+                renderedImg.onload = () => scrollByCapsuleDelta(initialHeight);
+            }
+        } else if (isVidType) {
+            const vidUrl = URL.createObjectURL(file);
+            dropzone.innerHTML = `<video src="${vidUrl}" controls autoplay muted loop playsinline controlslist="nodownload" style="max-width: 100%; max-height: 280px; object-fit: contain; width: 100%; border-radius: 8px; background: #000; display: block; outline: none; box-shadow: 0 4px 16px rgba(0,0,0,0.5);"></video>`;
+            dropzone.style.padding = "10px";
+        } else {
+            dropzone.innerHTML = `
+                <div style="padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                    <div style="font-size: 32px;">${getFileEmoji(file.name)}</div>
+                    <strong style="color: #FFFFFF; font-size: 14px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</strong>
+                    <span style="color: var(--text-muted); font-size: 12px;">${formatBytes(file.size)}</span>
                 </div>
             `;
-
-            const hasVideoFiles = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi)$/i.test(f.name));
-            if (hasVideoFiles) {
-                previewBodyHtml += `
-                    <div class="mf-video-streaming-tip" style="margin-top: 10px; padding: 10px 12px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 9px; font-size: 11.5px; color: #BAE6FD; display: flex; align-items: flex-start; gap: 8px; text-align: left;">
-                        <span style="font-size: 15px; line-height: 1;">🎬</span>
-                        <div style="line-height: 1.45;">
-                            <strong style="color: #F0F9FF;">Nowość w Dropsite:</strong> Wykryto pliki wideo w paczce ZIP. Odbiorca będzie mógł odtwarzać je <strong>w locie w playerze wideo bez konieczności pobierania całego archiwum na dysk</strong> (Zero-RAM Streaming).
-                        </div>
-                    </div>
-                `;
-            }
+            dropzone.style.padding = "10px";
         }
-
-        dropzone.innerHTML = `
-            <div class="multifile-upload-preview">
-                <div class="mf-header">
-                    <div class="mf-folder-icon-box ${isMultiPhotoAlbum ? 'mf-album-icon-box' : ''}">
-                        ${isMultiPhotoAlbum ? `
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        ` : `
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                        `}
-                    </div>
-                    <div class="mf-title-box">
-                        <strong class="mf-bundle-title">${isMultiPhotoAlbum ? `Kolekcja zdjęć (${filesList.length} fotografii)` : bundleName}</strong>
-                        <span class="mf-bundle-sub">${filesList.length} ${filesList.length === 1 ? 'plik' : (isMultiPhotoAlbum ? 'zdjęć w pełnej jakości' : 'plików')} &bull; ${formatBytes(totalRawSize)}</span>
-                    </div>
-                </div>
-                ${previewBodyHtml}
-            </div>
-        `;
-        dropzone.style.padding = "10px";
-
-        setTimeout(async () => {
-            try {
-                const zipFiles = {};
-                for (let i = 0; i < filesList.length; i++) {
-                    const f = filesList[i];
-                    let pathKey = f.fullRelativePath || f.name || `plik_${i + 1}`;
-                    if (zipFiles[pathKey]) {
-                        const dotIdx = pathKey.lastIndexOf('.');
-                        if (dotIdx > 0) {
-                            pathKey = `${pathKey.slice(0, dotIdx)}_${i + 1}${pathKey.slice(dotIdx)}`;
-                        } else {
-                            pathKey = `${pathKey}_${i + 1}`;
-                        }
-                    }
-                    zipFiles[pathKey] = new Uint8Array(await f.arrayBuffer());
-                }
-                
-                let zippedData;
-                if (typeof fflate !== 'undefined' && typeof fflate.zipSync === 'function') {
-                    zippedData = fflate.zipSync(zipFiles, { level: 0 });
-                } else if (typeof fflate !== 'undefined' && typeof fflate.zip === 'function') {
-                    zippedData = await new Promise((resolve, reject) => {
-                        fflate.zip(zipFiles, { level: 0 }, (err, data) => {
-                            if (err) reject(err);
-                            else resolve(data);
-                        });
-                    });
-                } else {
-                    throw new Error('Biblioteka pakowania ZIP nie jest załadowana.');
-                }
-                
-                selectedFile = new File([zippedData], bundleName, { type: 'application/zip' });
-                
-                fsTrack.hidden = true; 
-                fsProgressBar.style.width = '0%';
-                if (isMultiPhotoAlbum) {
-                    fsSizeOrProgress.innerText = `Gotowy album fotograficzny: ${filesList.length} zdjęć w pełnej jakości (${formatBytes(selectedFile.size)})`;
-                    if (btnTextSpan) {
-                        btnTextSpan.textContent = `Wyślij album (${filesList.length} zdjęć)`;
-                    }
-                } else {
-                    fsSizeOrProgress.innerText = `Gotowy do wysyłki: ${formatBytes(selectedFile.size)} (${filesList.length} plików)`;
-                    if (btnTextSpan) {
-                        btnTextSpan.textContent = typeof t === 'function' ? (t('btn_upload') || 'Upload') : 'Upload';
-                    }
-                }
-                uploadBtn.disabled = false;
-                uploadBtn.classList.remove('loading');
-                
-                if (fsTelemetry) {
-                    fsTelemetry.hidden = true;
-                    fsTelemetry.classList.add('is-hidden');
-                }
-                
-            } catch (e) {
-                console.error('Błąd pakowania ZIP:', e);
-                showError("Błąd pakowania plików do ZIP: " + (e.message || ''));
-            }
-            scrollByCapsuleDelta(initialHeight);
-        }, 50);
-        return;
-    } else {
-        selectedFile = filesList[0];
-        const file = selectedFile;
-        window._isUploadingAlbum = false;
+        scrollByCapsuleDelta(initialHeight);
+    }
+}
         
         // Ukryj opcję Cinematic Delivery (muzyka) dla pojedynczych plików
         const cinematicCard = document.getElementById('cinematicOptionCard');
@@ -2754,6 +3259,11 @@ window.addEventListener('beforeunload', (e) => {
 
 // === NOWY SYSTEM WGRYWANIA (Z OBSŁUGĄ PRO, MULTIPART I TELEMETRII) ===
 async function uploadFile() {
+    // 0. Obsługa trybu kolekcji wielu plików (Zero-ZIP, Instant Multimedia Showcase)
+    if (window._rawMultiFiles && window._rawMultiFiles.length > 1 && window._multiUploadMode === 'collection') {
+        return uploadCollectionMultiFiles(window._rawMultiFiles);
+    }
+
     if (!selectedFile) return;
 
     // WERYFIKACJA BEZPIECZEŃSTWA: Blokada niebezpiecznych rozszerzeń
@@ -3722,10 +4232,11 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     playSound('success');
 
     // Generuj adresy transferu (domyślnie publiczne https://dropsite.pages.dev oraz Smart Share Worker URL)
-    let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    const isAlbumTransfer = typeof fileKey === 'string' && fileKey.startsWith('alb_');
     const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
-    let pageUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
-    let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
+    let cleanKeyPath = isAlbumTransfer ? fileKey : fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    let pageUrl = isAlbumTransfer ? `${baseOrigin}/?album=${encodeURIComponent(fileKey)}` : `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
+    let smartShareUrl = isAlbumTransfer ? `${baseOrigin}/?album=${encodeURIComponent(fileKey)}` : `${WORKER_URL}/f/${cleanKeyPath}`;
     
     // Branding twórcy i notatka są w metadanych serwera R2 (link pozostaje ultra-krótki)
 
@@ -3935,7 +4446,13 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
             }
         }
 
-        if (selectedFile) {
+        if (isAlbumTransfer) {
+            if (sfcFileName) sfcFileName.textContent = window._collectionCustomTitle || 'Kolekcja Multimedialna';
+            if (sfcFileSize) sfcFileSize.textContent = window._rawMultiFiles ? `${window._rawMultiFiles.length} materiałów` : 'Kolekcja';
+            if (sfcIconBox) {
+                sfcIconBox.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>`;
+            }
+        } else if (selectedFile) {
             if (sfcFileName) sfcFileName.textContent = selectedFile.name;
             if (sfcFileSize) sfcFileSize.textContent = formatBytes(selectedFile.size);
             if (sfcIconBox) {
@@ -8567,6 +9084,13 @@ function resetUploadFlow() {
     selectedFile = null;
     originalImageFile = null;
     currentCompressionQuality = 0.82;
+    window._rawMultiFiles = null;
+    window._multiUploadMode = null;
+    window._collectionCustomTitle = null;
+
+    if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
+        window.DropsiteOmniDropzone.hide();
+    }
 
     const fileInput = document.getElementById('fileInput');
     if (fileInput) fileInput.value = '';

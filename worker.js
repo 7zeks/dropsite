@@ -2105,11 +2105,10 @@ export default {
     // =========================================================================
     // MODUŁ ALBUMÓW I KOLEKCJI (DROPSITE ALBUMS)
     // =========================================================================
-    // A. Tworzenie nowego albumu
     if (url.pathname === "/api/albums/create" && request.method === "POST") {
-      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      let userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
       if (!userEmail) {
-        return new Response(JSON.stringify({ success: false, message: "Musisz być zalogowany, aby tworzyć albumy." }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        userEmail = "guest@dropsite.pl";
       }
       try {
         const body = await request.json();

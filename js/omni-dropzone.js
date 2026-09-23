@@ -35,6 +35,17 @@
 
     function detectCategory(filesList) {
         if (!filesList || filesList.length === 0) return null;
+        
+        if (filesList.length > 1) {
+            const isAllVid = Array.from(filesList).every(f => /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || ''));
+            if (isAllVid) return 'multi-video';
+            const isAllImg = Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|heic|bmp|gif)$/i.test(f.name || ''));
+            if (isAllImg) return 'multi-image';
+            const hasVid = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || ''));
+            if (hasVid) return 'multi-video-mixed';
+            return 'multi-mixed';
+        }
+
         const firstFile = filesList[0];
         const name = (firstFile.name || '').toLowerCase();
 
@@ -78,7 +89,116 @@
         let desc = '';
         let actions = [];
 
-        if (category === 'pdf') {
+        if (category === 'multi-video' || category === 'multi-video-mixed') {
+            iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                <line x1="7" y1="2" x2="7" y2="22"></line>
+                <line x1="17" y1="2" x2="17" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+            </svg>`;
+            title = en ? `Detected ${filesList.length} Video Files` : `Wykryto ${filesList.length} filmów wideo`;
+            badge = en ? 'Smart Showcase' : 'Kolekcja Wideo';
+            desc = en
+                ? 'Choose how to share: create an Instant Media Showcase (0 ZIP overhead & online video player) or bundle into a single ZIP archive:'
+                : 'Wybierz formę udostępnienia: stwórz gotową Kolekcję Wideo (player 4K online, 0 narzutu ZIP) lub spakuj do jednego archiwum ZIP:';
+            actions = [
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+                    label: en ? 'Create Video Showcase (No ZIP)' : '🎬 Kolekcja Wideo (Player Online)',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
+                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+                    label: en ? 'Beam P2P (Unlimited)' : '⚡ Beam P2P',
+                    highlight: false,
+                    onClick: () => {
+                        const beamBtn = document.querySelector('.nav-btn[data-target="view-beam"]') || document.querySelector('[data-target="view-beam"]');
+                        if (beamBtn) beamBtn.click();
+                    }
+                }
+            ];
+        } else if (category === 'multi-image') {
+            iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>`;
+            title = en ? `Detected ${filesList.length} Photos` : `Wykryto ${filesList.length} fotografii`;
+            badge = en ? 'Smart Album' : 'Album & Galeria';
+            desc = en
+                ? 'Create a cinematic online gallery with full-resolution viewing or bundle photos into a single ZIP archive:'
+                : 'Stwórz interaktywną galerię online w pełnej rozdzielczości lub spakuj fotografie do jednego pliku ZIP:';
+            actions = [
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 7h10v10H7z"></path></svg>`,
+                    label: en ? 'Create Online Album (Cinematic)' : '🖼️ Galeria / Album (Cinematic)',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
+                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+                    label: en ? 'Strip GPS & EXIF' : '🛡️ Wyczyść GPS / EXIF',
+                    highlight: false,
+                    onClick: () => {
+                        const exifCheckbox = document.getElementById('stripExifCheckbox');
+                        if (exifCheckbox) {
+                            exifCheckbox.checked = true;
+                            if (typeof window.showNotification === 'function') {
+                                window.showNotification(en ? 'EXIF & GPS metadata scrubbing enabled!' : 'Włączono czyszczenie danych EXIF i GPS!', 'success');
+                            }
+                        }
+                    }
+                }
+            ];
+        } else if (category === 'multi-mixed') {
+            iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>`;
+            title = en ? `Detected ${filesList.length} Files` : `Wykryto ${filesList.length} plików`;
+            badge = en ? 'Multi-Upload' : 'Paczka Plików';
+            desc = en
+                ? 'Send as a single ZIP archive or create an online Collection for direct individual downloads:'
+                : 'Możesz wysłać pliki w jednym archiwum ZIP lub utworzyć Kolekcję do indywidualnego pobierania:';
+            actions = [
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
+                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
+                    label: en ? 'Create Online Collection' : '🎬 Kolekcja Online (Bez ZIP)',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
+                    }
+                }
+            ];
+        } else if (category === 'pdf') {
             iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
