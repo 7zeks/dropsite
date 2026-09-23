@@ -117,6 +117,15 @@
             keywords: ['kompresor wideo', 'wideo 25mb', 'mp4', 'zmniejsz film', 'discord'],
             action: () => { if (window.openVideoCompressor) window.openVideoCompressor(); }
         },
+        {
+            id: 'media-grabber',
+            category: 'Transfer & B2B',
+            title: 'Pobieracz Wideo & Audio (TikTok, YT, Insta)',
+            desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka, YouTube, Instagrama lub zapisz w chmurze R2',
+            tag: 'Pobieracz',
+            keywords: ['tiktok', 'youtube', 'instagram', 'twitter', 'x', 'pinterest', 'pobierz', 'grabber', 'mp4', 'mp3', 'wideo', 'film', 'bez znaku'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('grabber'); }
+        },
 
         // 3. NAWIGACJA
         {

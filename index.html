@@ -269,6 +269,7 @@
             <li><a href="#" class="nav-btn active" data-target="view-glowna" data-i18n="nav_home">Home</a></li>
             <li><a href="#" class="nav-btn nav-btn-tools" data-target="view-narzedzia"><span
                         data-i18n="nav_tools">Tools</span> <span class="nav-tool-tag">PDF</span></a></li>
+            <li><a href="#" class="nav-btn nav-btn-grabber" onclick="if(window.switchToolTab){ window.switchToolTab('grabber'); return false; }"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" style="vertical-align:-2px; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span data-i18n="nav_grabber">Pobierz Wideo</span> <span class="nav-tool-tag" style="background:rgba(52,211,153,0.18); color:#34D399; border-color:rgba(52,211,153,0.35);">HD</span></a></li>
             <li><a href="#" class="nav-btn" data-target="view-funkcje" data-i18n="nav_features">Features</a></li>
             <li><a href="#" class="nav-btn" data-target="view-cennik" data-i18n="nav_pricing">Pricing</a></li>
             <li><a href="#" class="nav-btn" data-target="view-kontakt" data-i18n="nav_contact">Contact</a></li>
@@ -374,6 +375,16 @@
                     </path>
                 </svg>
                 <span data-i18n="nav_tools">Tools</span>
+            </a>
+            <a href="#" class="mobile-drawer-link" onclick="if(window.switchToolTab){ window.switchToolTab('grabber'); const d = document.getElementById('mobileNavDrawer'); if(d) d.classList.remove('active'); return false; }">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span data-i18n="nav_grabber">Pobierz Wideo</span>
+                <span class="mobile-hud-badge" style="color:#34D399; border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.1);">HD</span>
             </a>
             <button type="button" class="mobile-drawer-link mobile-drawer-radial-btn btn-open-radial-wheel"
                 id="mobileRadialBtn">
@@ -555,6 +566,35 @@
                                     </svg>
                                     <span class="radial-trigger-lens-arc"></span>
                                     <span class="radial-trigger-lens-glow"></span>
+                                </button>
+                            </div>
+
+                            <!-- Szybkie Skróty do Narzędzi (Hero Quick Action Pills) -->
+                            <div class="hero-quick-tools-row">
+                                <button type="button" class="hero-quick-pill hero-grabber-pill" onclick="if(window.switchToolTab) window.switchToolTab('grabber');" title="Pobieraj wideo z TikToka bez znaku wodnego, YouTube, Instagrama">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    <span>Pobierz Wideo (TikTok / YT / Insta)</span>
+                                    <span class="pill-badge-mint">HD</span>
+                                </button>
+                                <button type="button" class="hero-quick-pill" onclick="if(window.switchToolTab) window.switchToolTab('edit');" title="Podpis cyfrowy i pieczęć eIDAS">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2">
+                                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                    </svg>
+                                    <span>Podpisz PDF</span>
+                                </button>
+                                <button type="button" class="hero-quick-pill" onclick="if(window.switchToolTab) window.switchToolTab('compress');" title="Kompresor plików w RAM">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2">
+                                        <polyline points="4 14 10 14 10 20"></polyline>
+                                        <polyline points="20 10 14 10 14 4"></polyline>
+                                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                                    </svg>
+                                    <span>Kompresor 25MB</span>
                                 </button>
                             </div>
                         </div>
@@ -5876,6 +5916,18 @@
             <span class="dock-label">Admin</span>
         </button>
         <span class="dock-divider dock-admin-divider" style="display: none;"></span>
+
+        <!-- Przycisk Pobieracza Wideo (Media Grabber) -->
+        <button id="dockGrabberBtn" class="dock-item dock-grabber-btn" title="Pobieracz Wideo z Social Media (TikTok HD, YouTube, Instagram)" onclick="if(window.switchToolTab) window.switchToolTab('grabber');">
+            <svg class="dock-icon icon-emerald" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="dock-label">Pobierz Wideo</span>
+        </button>
+
+        <span class="dock-divider"></span>
 
         <!-- Przycisk Asystenta Dropsite Concierge -->
         <button type="button" id="conciergeLauncherBtn" class="dock-item dock-concierge-btn"

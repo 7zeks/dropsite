@@ -481,3 +481,75 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   QUICK ACCESS PILL & NAV BUTTONS FOR MEDIA GRABBER
+   ========================================================================== */
+.nav-btn-grabber {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.nav-btn-grabber:hover {
+    color: #34D399 !important;
+}
+
+.hero-quick-tools-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.hero-quick-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 15px;
+    border-radius: 100px;
+    background: rgba(14, 18, 26, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+    user-select: none;
+    font-family: inherit;
+}
+
+.hero-quick-pill:hover {
+    background: rgba(20, 26, 38, 0.9);
+    border-color: rgba(52, 211, 153, 0.5);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(52, 211, 153, 0.25);
+}
+
+.hero-grabber-pill {
+    background: linear-gradient(135deg, rgba(14, 18, 26, 0.9), rgba(6, 78, 59, 0.35));
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+.pill-badge-mint {
+    background: rgba(52, 211, 153, 0.2);
+    color: #34D399;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    letter-spacing: 0.04em;
+}
+
+.dock-grabber-btn:hover .icon-emerald {
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6));
+}
+

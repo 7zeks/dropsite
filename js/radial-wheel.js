@@ -116,6 +116,15 @@
             title: 'Kompresor Wideo 25 MB',
             descKey: 'radial_tool_video_compress_detail',
             desc: 'Zmniejszaj wagę filmów MP4/MOV bez wysyłania do chmury, idealnie pod limity e-maila i Discorda.'
+        },
+        'media-grabber': {
+            badgeKey: 'radial_tool_grabber_badge',
+            badge: 'HD NO WATERMARK',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            titleKey: 'radial_tool_grabber_name',
+            title: 'Pobieracz Wideo & Foto',
+            descKey: 'radial_tool_grabber_detail',
+            desc: 'Pobieraj czyste filmy bez znaku wodnego z TikToka, YouTube i Instagrama oraz zapisuj prosto na dysk lub R2.'
         }
     };
 
@@ -274,6 +283,10 @@
                 break;
             case 'video-compress':
                 if (window.openVideoCompressor) window.openVideoCompressor();
+                break;
+            case 'media-grabber':
+            case 'grabber':
+                if (window.switchToolTab) window.switchToolTab('grabber');
                 break;
             default:
                 const toolsNav = document.querySelector('[data-target="view-narzedzia"]');
