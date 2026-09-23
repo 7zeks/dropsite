@@ -161,8 +161,8 @@
 
 .radial-hud-container {
     position: relative;
-    width: 780px;
-    height: 700px;
+    width: 860px;
+    height: 740px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -295,9 +295,9 @@
 /* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (ANTI-PILL OBSIDIAN GLASS) */
 .radial-sector-node {
     position: absolute;
-    width: 255px;
-    padding: 16px 18px;
-    background: linear-gradient(155deg, rgba(16, 24, 42, 0.92) 0%, rgba(8, 12, 22, 0.96) 100%);
+    width: 275px;
+    padding: 14px 16px;
+    background: linear-gradient(155deg, rgba(16, 24, 42, 0.94) 0%, rgba(8, 12, 22, 0.97) 100%);
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 20px;
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
@@ -305,7 +305,7 @@
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     z-index: 5;
     box-sizing: border-box;
 }
@@ -318,7 +318,7 @@
 
 /* Pozycje wierzchołków trójkąta (Desktop) */
 .radial-sector-node.top {
-    top: 10px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
     border-top: 2px solid #F59E0B;
@@ -330,8 +330,8 @@
 }
 
 .radial-sector-node.left {
-    bottom: 20px;
-    left: 10px;
+    bottom: 10px;
+    left: 8px;
     border-top: 2px solid #10B981;
 }
 .radial-sector-node.left:hover,
@@ -341,8 +341,8 @@
 }
 
 .radial-sector-node.right {
-    bottom: 20px;
-    right: 10px;
+    bottom: 10px;
+    right: 8px;
     border-top: 2px solid #06B6D4;
 }
 .radial-sector-node.right:hover,

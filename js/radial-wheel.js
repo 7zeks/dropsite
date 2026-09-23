@@ -125,6 +125,33 @@
             title: 'Pobieracz Wideo & Foto',
             descKey: 'radial_tool_grabber_detail',
             desc: 'Pobieraj czyste filmy bez znaku wodnego z TikToka, YouTube i Instagrama oraz zapisuj prosto na dysk lub R2.'
+        },
+        'beam-p2p': {
+            badgeKey: 'radial_tool_beam_badge',
+            badge: 'P2P WEBRTC 0B CHMURY',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+            titleKey: 'radial_tool_beam_name',
+            title: 'Beam P2P (Bez Limitu)',
+            descKey: 'radial_tool_beam_detail',
+            desc: 'Bezpośredni transfer WebRTC z przeglądarki do przeglądarki z prędkością sieci lokalnej bez zapisu na serwerze.'
+        },
+        'pdf-compress': {
+            badgeKey: 'radial_tool_compress_badge',
+            badge: 'KOMPRESJA RAM',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>`,
+            titleKey: 'radial_tool_compress_name',
+            title: 'Kompresor PDF',
+            descKey: 'radial_tool_compress_detail',
+            desc: 'Zmniejszaj rozmiar ciężkich plików PDF z zachowaniem czytelności tekstu w pamięci podręcznej.'
+        },
+        'pdf-convert': {
+            badgeKey: 'radial_tool_convert_badge',
+            badge: 'KONWERSJA FORMACIE',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
+            titleKey: 'radial_tool_convert_name',
+            title: 'Konwerter Obrazów do PDF',
+            descKey: 'radial_tool_convert_detail',
+            desc: 'Błyskawiczna zmiana formatów między PNG, JPG, WebP oraz łączenie zdjęć w wielostronicowy plik PDF.'
         }
     };
 
@@ -289,6 +316,18 @@
                 const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
                 if (grabberNav) grabberNav.click();
                 else if (window.switchView) window.switchView('view-pobieracz');
+                break;
+            case 'beam-p2p':
+            case 'beam':
+                const beamNav = document.querySelector('[data-target="view-beam"]');
+                if (beamNav) beamNav.click();
+                else if (window.switchView) window.switchView('view-beam');
+                break;
+            case 'pdf-compress':
+                if (window.switchToolTab) window.switchToolTab('compress');
+                break;
+            case 'pdf-convert':
+                if (window.switchToolTab) window.switchToolTab('convert');
                 break;
             default:
                 const toolsNav = document.querySelector('[data-target="view-narzedzia"]');
