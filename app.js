@@ -3103,6 +3103,17 @@ window.addEventListener('paste', (e) => {
         } else if (typeof showNotification === 'function') {
             showNotification(`Wklejono ze schowka: ${pastedFiles.map(f => f.name).join(', ')}`, 'success');
         }
+    } else if (e.clipboardData) {
+        const text = (e.clipboardData.getData('text/plain') || '').trim();
+        if (/https?:\/\/(www\.)?(vm\.|vt\.|v\.)?(tiktok\.com|youtube\.com|youtu\.be|instagram\.com|twitter\.com|x\.com|pinterest\.com|pin\.it)/i.test(text)) {
+            if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.showForUrl === 'function') {
+                window.DropsiteOmniDropzone.showForUrl(text);
+                if (typeof playSound === 'function') playSound('click');
+                if (window.showToast) {
+                    window.showToast('📥 Wykryto link do wideo! Sprawdź opcje pobierania.', 'info');
+                }
+            }
+        }
     }
 });
 

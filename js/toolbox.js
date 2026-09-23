@@ -48,7 +48,7 @@
             const toolParam = params.get('tool') || params.get('tab');
             const hash = window.location.hash.toLowerCase();
 
-            if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
+            if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress', 'grabber'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -99,7 +99,8 @@
         'edit': 'security',
         'watermark': 'security',
         'compress': 'convert',
-        'convert': 'convert'
+        'convert': 'convert',
+        'grabber': 'convert'
     };
 
     function selectCategory(catId) {

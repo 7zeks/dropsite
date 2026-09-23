@@ -185,6 +185,7 @@
     <link rel="stylesheet" href="css/video-compress.css">
     <link rel="stylesheet" href="css/command-palette.css">
     <link rel="stylesheet" href="css/radial-wheel.css">
+    <link rel="stylesheet" href="css/media-grabber.css">
     <link rel="manifest" href="manifest.json">
     <script src="js/i18n.js" defer></script>
 
@@ -1978,7 +1979,7 @@
                                 </path>
                             </svg>
                             <span data-i18n="toolbox_cat_convert">Optymalizacja &amp; Konwersja</span>
-                            <span class="toolbox-cat-count">2</span>
+                            <span class="toolbox-cat-count">3</span>
                         </button>
                     </div>
 
@@ -2063,6 +2064,15 @@
                                     </path>
                                 </svg>
                                 <span data-i18n="tool_tab_convert">Konwerter Obrazów</span>
+                            </button>
+                            <button type="button" class="toolbox-tab-btn" data-tool="grabber">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span data-i18n="tool_tab_grabber">Pobieracz Wideo &amp; Foto</span>
                             </button>
                         </div>
                     </div>
@@ -3145,6 +3155,72 @@
                             </button>
 
                             <div id="compressResultBox" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 5: POBIERACZ WIDEO & ZDJĘĆ Z SOCIAL MEDIA (TIKTOK, YT, INSTA, X, PINTEREST) -->
+                    <div id="toolPanel_grabber" class="tool-panel" style="display: none;">
+                        <div class="grabber-container" id="mediaGrabberContainer">
+                            <div class="grabber-input-card">
+                                <div class="grabber-input-header">
+                                    <div class="grabber-title-wrap">
+                                        <div class="grabber-icon-badge">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                            </svg>
+                                        </div>
+                                        <div class="grabber-title-text">
+                                            <h3>Inteligentny Pobieracz Multimediów</h3>
+                                            <p>Pobieraj wideo HD bez znaku wodnego, ścieżki MP3 i zdjęcia prosto na dysk lub do chmury R2</p>
+                                        </div>
+                                    </div>
+                                    <div class="grabber-platforms-row">
+                                        <span class="grabber-platform-pill" data-platform="tiktok">
+                                            <span>TikTok</span>
+                                        </span>
+                                        <span class="grabber-platform-pill" data-platform="youtube">
+                                            <span>YouTube</span>
+                                        </span>
+                                        <span class="grabber-platform-pill" data-platform="instagram">
+                                            <span>Instagram</span>
+                                        </span>
+                                        <span class="grabber-platform-pill" data-platform="twitter">
+                                            <span>X / Twitter</span>
+                                        </span>
+                                        <span class="grabber-platform-pill" data-platform="pinterest">
+                                            <span>Pinterest</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="grabber-search-box">
+                                    <input type="url" class="grabber-url-input" id="grabberUrlInput" placeholder="Wklej link do wideo (np. https://vm.tiktok.com/... lub https://youtube.com/shorts/...)" autocomplete="off">
+                                    <button type="button" class="grabber-btn-paste" id="grabberPasteBtn" title="Wklej ze schowka">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                        </svg>
+                                        <span>Wklej</span>
+                                    </button>
+                                    <button type="button" class="grabber-btn-submit" id="grabberSubmitBtn">
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        <span>Pobierz</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grabber-loading-wrap" id="grabberLoadingWrap" style="display: none;">
+                                <div class="grabber-radar"></div>
+                                <div class="grabber-loading-text">Dekodowanie strumienia wideo HD bez znaku wodnego...</div>
+                            </div>
+
+                            <div class="grabber-results-wrap" id="grabberResultsWrap"></div>
                         </div>
                     </div>
                 </div>
@@ -8369,6 +8445,7 @@
                     .then(function () { return loadScript('js/pdf-matrix.js'); })
                     .then(function () { return loadScript('js/watermark-studio.js'); })
                     .then(function () { return loadScript('js/rodo-guard.js'); })
+                    .then(function () { return loadScript('js/media-grabber.js'); })
                     .then(resolve)
                     .catch(reject);
             });
@@ -8395,7 +8472,7 @@
             });
             const urlParams = new URLSearchParams(window.location.search);
             const path = (window.location.pathname || '').toLowerCase();
-            const isToolPath = ['/podpisz-pdf', '/polacz-pdf', '/podziel-pdf', '/rozdziel-pdf', '/kompresor-pdf', '/kompresuj-pdf', '/uklad-pdf', '/organizuj-pdf', '/matryca-pdf', '/znak-wodny-pdf', '/cenzura-pdf', '/rodo-pdf', '/anonimizuj-pdf', '/konwertuj-pdf', '/narzedzia', '/tools'].includes(path);
+            const isToolPath = ['/podpisz-pdf', '/polacz-pdf', '/podziel-pdf', '/rozdziel-pdf', '/kompresor-pdf', '/kompresuj-pdf', '/uklad-pdf', '/organizuj-pdf', '/matryca-pdf', '/znak-wodny-pdf', '/cenzura-pdf', '/rodo-pdf', '/anonimizuj-pdf', '/konwertuj-pdf', '/pobierz-wideo', '/tiktok-downloader', '/pobierz-z-youtube', '/instagram-downloader', '/media-grabber', '/narzedzia', '/tools'].includes(path);
             if (urlParams.get('tool') || urlParams.get('tab') === 'tools' || window.location.hash.includes('narzedzia') || isToolPath) {
                 window.loadToolboxScripts();
             }
@@ -8417,6 +8494,7 @@
     <script src="js/dead-drop.js"></script>
     <script src="js/qr-studio.js"></script>
     <script src="js/video-compress.js"></script>
+    <script src="js/media-grabber.js"></script>
     <script src="js/command-palette.js"></script>
     <script src="js/radial-wheel.js"></script>
     <script>

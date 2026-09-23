@@ -398,6 +398,96 @@
         card.style.display = 'flex';
     }
 
+    function showForUrl(rawUrl) {
+        if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return;
+        const card = getOrCreateContainer();
+        if (!card) return;
+
+        const en = isEnglish();
+        const url = rawUrl.trim();
+        let platform = 'Wideo & Multimedia';
+        if (/tiktok\.com|douyin\.com/i.test(url)) platform = 'TikTok';
+        else if (/youtu\.be|youtube\.com/i.test(url)) platform = 'YouTube';
+        else if (/instagram\.com/i.test(url)) platform = 'Instagram';
+        else if (/twitter\.com|x\.com/i.test(url)) platform = 'X / Twitter';
+        else if (/pinterest\.com|pin\.it/i.test(url)) platform = 'Pinterest';
+
+        const iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>`;
+
+        const title = en ? `Detected ${platform} Link` : `Wykryto link z ${platform}`;
+        const badge = en ? 'Media Grabber' : 'Pobieracz Wideo';
+        const desc = en
+            ? 'Download clean watermark-free HD video, audio MP3, or save directly to your Dropsite cloud without using local bandwidth:'
+            : 'Pobierz czysty plik HD bez znaku wodnego, ścieżkę MP3 lub zapisz bezpośrednio w chmurze Dropsite bez zużywania transferu:';
+
+        const actions = [
+            {
+                iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+                label: en ? 'Grab HD Media' : 'Pobierz Wideo HD / MP3',
+                highlight: true,
+                onClick: () => {
+                    hide();
+                    if (window.DropsiteMediaGrabber && typeof window.DropsiteMediaGrabber.grabFromUrl === 'function') {
+                        window.DropsiteMediaGrabber.grabFromUrl(url);
+                    } else if (typeof window.switchToolTab === 'function') {
+                        window.switchToolTab('grabber');
+                    }
+                }
+            },
+            {
+                iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
+                label: en ? 'Save to Dropsite Cloud' : 'Zapisz w Chmurze R2',
+                highlight: false,
+                onClick: () => {
+                    hide();
+                    if (window.DropsiteMediaGrabber && typeof window.DropsiteMediaGrabber.grabFromUrl === 'function') {
+                        window.DropsiteMediaGrabber.grabFromUrl(url);
+                    }
+                }
+            }
+        ];
+
+        card.innerHTML = `
+            <div class="omni-flyout-arrow"></div>
+            <div class="omni-card-header">
+                <div class="omni-card-title-box">
+                    <span class="omni-card-icon">${iconSvg}</span>
+                    <span class="omni-card-title">${title}</span>
+                    <span class="omni-card-badge">${badge}</span>
+                </div>
+                <button type="button" class="omni-close-btn" aria-label="Zamknij podpowiedź">✕</button>
+            </div>
+            <p class="omni-card-desc">${desc}</p>
+            <div class="omni-actions-row"></div>
+        `;
+
+        const actionsRow = card.querySelector('.omni-actions-row');
+        actions.forEach(act => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `omni-action-chip ${act.highlight ? 'is-highlight' : ''}`;
+            btn.innerHTML = `${act.iconSvg || ''}<span>${act.label}</span>`;
+            btn.addEventListener('click', () => {
+                if (typeof window.playSound === 'function') window.playSound('click');
+                act.onClick();
+            });
+            actionsRow.appendChild(btn);
+        });
+
+        const closeBtn = card.querySelector('.omni-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                hide();
+            });
+        }
+
+        card.style.display = 'flex';
+    }
+
     function hide() {
         const card = document.getElementById('omniContextCard');
         if (card) {
@@ -408,6 +498,7 @@
     // Publiczne API
     const omniApi = {
         showForFiles,
+        showForUrl,
         hide
     };
 

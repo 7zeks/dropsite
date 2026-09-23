@@ -464,6 +464,389 @@ export default {
       }
     }
     // =========================================================================
+    // ENDPOINTS: DROPSITE MEDIA GRABBER (TIKTOK, YOUTUBE, INSTAGRAM, X, PINTEREST)
+    // =========================================================================
+    if (url.pathname === "/api/grab-media" && request.method === "POST") {
+      try {
+        let reqData = {};
+        try {
+          reqData = await request.json();
+        } catch (_) {}
+
+        const targetUrl = (reqData.url || "").trim();
+        if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: "Podaj prawidłowy link URL (rozpoczynający się od http:// lub https://)." 
+          }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const isTikTok = /tiktok\.com|douyin\.com/i.test(targetUrl);
+        const isYouTube = /youtu\.be|youtube\.com/i.test(targetUrl);
+        const isInstagram = /instagram\.com/i.test(targetUrl);
+        const isTwitter = /twitter\.com|x\.com/i.test(targetUrl);
+        const isPinterest = /pinterest\.com|pin\.it/i.test(targetUrl);
+        const isReddit = /reddit\.com/i.test(targetUrl);
+
+        // 1. DEDYKOWANY OBSŁUGIWANY SILNIK DLA TIKTOKA (TikWM - 100% HD No-Watermark + Audio)
+        if (isTikTok) {
+          try {
+            const tikwmRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(targetUrl)}&hd=1`, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              }
+            });
+            if (tikwmRes.ok) {
+              const tikwm = await tikwmRes.json();
+              if (tikwm && tikwm.code === 0 && tikwm.data) {
+                const d = tikwm.data;
+                const mediaItems = [];
+                
+                // Wideo HD bez znaku wodnego
+                const hdUrl = d.hdplay || d.play;
+                if (hdUrl) {
+                  mediaItems.push({
+                    type: "video",
+                    label: "Wideo HD (Bez znaku wodnego)",
+                    quality: "HD 1080p / Original",
+                    format: "mp4",
+                    url: hdUrl.startsWith("http") ? hdUrl : `https://www.tikwm.com${hdUrl}`,
+                    isPrimary: true
+                  });
+                }
+                // Dźwięk MP3
+                if (d.music) {
+                  mediaItems.push({
+                    type: "audio",
+                    label: "Ścieżka Dźwiękowa (Audio MP3)",
+                    quality: "MP3 Audio",
+                    format: "mp3",
+                    url: d.music.startsWith("http") ? d.music : `https://www.tikwm.com${d.music}`,
+                    isAudio: true
+                  });
+                }
+
+                const photos = Array.isArray(d.images) ? d.images.map((imgUrl, idx) => ({
+                  type: "photo",
+                  label: `Zdjęcie #${idx + 1}`,
+                  url: imgUrl.startsWith("http") ? imgUrl : `https://www.tikwm.com${imgUrl}`,
+                  format: "jpg"
+                })) : [];
+
+                return new Response(JSON.stringify({
+                  success: true,
+                  platform: "tiktok",
+                  title: d.title || "Wideo TikTok",
+                  author: d.author ? {
+                    name: d.author.nickname || d.author.unique_id || "Twórca TikTok",
+                    handle: d.author.unique_id ? `@${d.author.unique_id}` : "",
+                    avatar: d.author.avatar || ""
+                  } : null,
+                  thumbnail: d.cover || d.origin_cover || "",
+                  duration: d.duration || 0,
+                  media: mediaItems,
+                  photos: photos
+                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+              }
+            }
+          } catch (tikErr) {
+            console.error("TikWM error:", tikErr);
+          }
+        }
+
+        // 2. UNIWERSALNY SILNIK KASKADOWY (Cobalt Instances + Fallbacks dla YouTube, Instagram, X itp.)
+        const cobaltInstances = [
+          "https://api.cobalt.tools",
+          "https://cobalt-api.kwiatekm.tokyo",
+          "https://co.wuk.sh/api/json",
+          "https://api.wuk.sh"
+        ];
+
+        let cobaltData = null;
+        let detectedPlatform = isYouTube ? "youtube" : isInstagram ? "instagram" : isTwitter ? "twitter" : isPinterest ? "pinterest" : isReddit ? "reddit" : "social";
+
+        for (const instance of cobaltInstances) {
+          try {
+            const cRes = await fetch(instance, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "Dropsite-Media-Grabber/1.0"
+              },
+              body: JSON.stringify({
+                url: targetUrl,
+                videoQuality: "1080",
+                filenamePattern: "classic",
+                downloadMode: "auto"
+              })
+            });
+
+            if (cRes.ok) {
+              const resJson = await cRes.json();
+              if (resJson && (resJson.url || resJson.picker || resJson.audio)) {
+                cobaltData = resJson;
+                break;
+              }
+            }
+          } catch (_) {
+            // Spróbuj następną instancję w kaskadzie
+          }
+        }
+
+        if (cobaltData) {
+          const mediaItems = [];
+          if (cobaltData.url) {
+            mediaItems.push({
+              type: "video",
+              label: "Wideo MP4 (Najwyższa jakość)",
+              quality: "HD / MP4",
+              format: "mp4",
+              url: cobaltData.url,
+              isPrimary: true
+            });
+          }
+          if (cobaltData.audio) {
+            mediaItems.push({
+              type: "audio",
+              label: "Ścieżka Dźwiękowa (Audio MP3)",
+              quality: "MP3 Audio",
+              format: "mp3",
+              url: cobaltData.audio,
+              isAudio: true
+            });
+          }
+
+          let photos = [];
+          if (Array.isArray(cobaltData.picker)) {
+            photos = cobaltData.picker.map((item, idx) => ({
+              type: item.type || "photo",
+              label: `Element #${idx + 1}`,
+              url: item.url,
+              format: item.type === "video" ? "mp4" : "jpg"
+            }));
+          }
+
+          // Wyciągnięcie miniatury i tytułu z platformy
+          let thumb = cobaltData.thumb || "";
+          let title = cobaltData.filename ? cobaltData.filename.replace(/\.[^/.]+$/, "") : `${detectedPlatform.toUpperCase()} Media`;
+
+          if (!thumb && isYouTube) {
+            const ytMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+              thumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+            }
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            platform: detectedPlatform,
+            title: title,
+            author: null,
+            thumbnail: thumb,
+            duration: 0,
+            media: mediaItems,
+            photos: photos
+          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        // 3. FALLBACK DLA YOUTUBE (Piped / Invidious API)
+        if (isYouTube) {
+          const ytMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+          if (ytMatch && ytMatch[1]) {
+            const videoId = ytMatch[1];
+            try {
+              const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
+              if (pipedRes.ok) {
+                const piped = await pipedRes.json();
+                const videoStreams = piped.videoStreams || [];
+                const audioStreams = piped.audioStreams || [];
+                
+                const bestVideo = videoStreams.find(v => v.format === "MPEG_4" || v.mimeType?.includes("mp4")) || videoStreams[0];
+                const bestAudio = audioStreams[0];
+
+                const mediaItems = [];
+                if (bestVideo && bestVideo.url) {
+                  mediaItems.push({
+                    type: "video",
+                    label: `Wideo (${bestVideo.quality || "HD"})`,
+                    quality: bestVideo.quality || "HD",
+                    format: "mp4",
+                    url: bestVideo.url,
+                    isPrimary: true
+                  });
+                }
+                if (bestAudio && bestAudio.url) {
+                  mediaItems.push({
+                    type: "audio",
+                    label: "Ścieżka Audio MP3/M4A",
+                    quality: bestAudio.quality || "Audio",
+                    format: "mp3",
+                    url: bestAudio.url,
+                    isAudio: true
+                  });
+                }
+
+                return new Response(JSON.stringify({
+                  success: true,
+                  platform: "youtube",
+                  title: piped.title || "YouTube Video",
+                  author: piped.uploader ? { name: piped.uploader, handle: piped.uploaderUrl || "", avatar: piped.uploaderAvatar || "" } : null,
+                  thumbnail: piped.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                  duration: piped.duration || 0,
+                  media: mediaItems,
+                  photos: []
+                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+              }
+            } catch (_) {}
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: false,
+          message: "Nie udało się pobrać strumienia multimediów dla tego adresu. Sprawdź czy post/wideo jest publiczne i spróbuj ponownie."
+        }), { status: 422, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message || "Błąd serwera podczas pobierania wideo." }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // =========================================================================
+    // ENDPOINT: STRUMIENIOWANIE I POBIERANIE BEZPOŚREDNIE (PROXIED STREAM WITH ATTACHMENT HEADER)
+    // =========================================================================
+    if (url.pathname === "/api/grab-media/stream" && request.method === "GET") {
+      try {
+        const targetUrl = url.searchParams.get("url");
+        const filename = url.searchParams.get("filename") || "media_file.mp4";
+        const customType = url.searchParams.get("type") || getMimeType(filename);
+
+        if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+          return new Response("Nieprawidłowy parametr URL", { status: 400, headers: corsHeaders });
+        }
+
+        const streamRes = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": new URL(targetUrl).origin
+          }
+        });
+
+        if (!streamRes.ok) {
+          return new Response(`Błąd pobierania ze źródła: ${streamRes.status}`, { status: streamRes.status, headers: corsHeaders });
+        }
+
+        const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+        const headers = new Headers(streamRes.headers);
+        headers.set("Access-Control-Allow-Origin", "*");
+        headers.set("Content-Type", customType || headers.get("Content-Type") || "application/octet-stream");
+        headers.set("Content-Disposition", `attachment; filename="${safeFilename}"; filename*=UTF-8''${safeFilename}`);
+        headers.set("Cache-Control", "public, max-age=3600");
+
+        return new Response(streamRes.body, {
+          status: 200,
+          headers: headers
+        });
+      } catch (err) {
+        return new Response(`Błąd strumienia: ${err.message}`, { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // =========================================================================
+    // ENDPOINT: BEZPOŚREDNI ZAPIS Z POBIERACZA DO CHMURY R2 (SAVE TO DROPSITE)
+    // =========================================================================
+    if (url.pathname === "/api/grab-media/save-to-dropsite" && request.method === "POST") {
+      try {
+        let reqData = {};
+        try {
+          reqData = await request.json();
+        } catch (_) {}
+
+        const targetUrl = (reqData.url || "").trim();
+        const originalName = (reqData.filename || `grabbed_media_${Date.now()}.mp4`).trim();
+        const contentType = reqData.contentType || getMimeType(originalName);
+        const uploaderEmail = (request.headers.get("X-User-Email") || reqData.userEmail || "").toLowerCase().trim();
+        const isPro = await isProAuthorized(request);
+
+        if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+          return new Response(JSON.stringify({ success: false, message: "Brak prawidłowego adresu URL multimediów." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        // Pobranie strumienia ze źródła bezpośrednio do RAMu workera
+        const fetchRes = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": new URL(targetUrl).origin
+          }
+        });
+
+        if (!fetchRes.ok) {
+          return new Response(JSON.stringify({ success: false, message: `Nie udało się pobrać pliku ze źródła (${fetchRes.status})` }), { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const buffer = await fetchRes.arrayBuffer();
+        const fileSize = buffer.byteLength;
+
+        // Walidacja limitu darmowego
+        const FREE_MAX_BYTES = 262144000; // 250 MB
+        if (!isPro && fileSize > FREE_MAX_BYTES) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            code: "PRO_REQUIRED",
+            message: "Plik przekracza limit 250 MB dla konta darmowego." 
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const fileExt = originalName.includes('.') ? originalName.substring(originalName.lastIndexOf('.')) : '.mp4';
+        const nanoId = generateNanoId(6);
+        const fileKey = `1d/grabbed_${nanoId}${fileExt}`;
+        const directUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`;
+        const pageUrl = `https://dropsite.pages.dev/?f=${encodeURIComponent(fileKey)}`;
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(fileKey, buffer, {
+            httpMetadata: {
+              contentType: contentType
+            },
+            customMetadata: {
+              originalName: originalName,
+              brand: "Dropsite Media Grabber",
+              isPro: isPro ? "true" : "false",
+              uploaderEmail: uploaderEmail || "anonymous",
+              views: "0",
+              downloads: "0"
+            }
+          });
+
+          if (uploaderEmail && uploaderEmail !== "anonymous") {
+            await recordFileToUserHistory(uploaderEmail, {
+              key: fileKey,
+              name: originalName,
+              size: fileSize,
+              uploaded: new Date().toISOString(),
+              duration: "1d",
+              directUrl: directUrl,
+              pageUrl: pageUrl
+            });
+          }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          key: fileKey,
+          filename: originalName,
+          size: fileSize,
+          directUrl: directUrl,
+          pageUrl: pageUrl,
+          message: "Plik został pomyślnie zapisany na Twoim koncie Dropsite w chmurze R2!"
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message || "Błąd zapisu do chmury Dropsite." }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // =========================================================================
     // ENDPOINT: OEMBED DLA DISCORDA / TELEGRAMA
     // =========================================================================
     if (url.pathname === "/oembed") {
@@ -3014,9 +3397,7 @@ export default {
           await env.BUCKET.delete(`_beam/${pin}.json`);
         } catch (_) {}
       }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json", ...corsHeaders }
-      });
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
     return new Response("Not found", { status: 404, headers: corsHeaders });

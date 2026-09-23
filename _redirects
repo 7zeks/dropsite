@@ -20,6 +20,11 @@
 /dead-drop              /index.html 200
 /skrzynka-wrzutowa      /index.html 200
 /drop-request           /index.html 200
+/pobierz-wideo          /index.html 200
+/tiktok-downloader      /index.html 200
+/pobierz-z-youtube      /index.html 200
+/instagram-downloader   /index.html 200
+/media-grabber          /index.html 200
 /narzedzia              /index.html 200
 /tools                  /index.html 200
 /beam                   /index.html 200
