@@ -1,22 +1,17 @@
 {
-  "name": "Dropsite",
+  "name": "Dropsite Studio",
   "short_name": "Dropsite",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#090A0F",
-  "theme_color": "#FFB800",
-  "description": "Błyskawiczne przesyłanie plików bez limitów oraz darmowy zestaw narzędzi PDF",
+  "background_color": "#080C16",
+  "theme_color": "#10B981",
+  "description": "Błyskawiczne szyfrowane przesyłanie plików AES-256, Zero-Knowledge PDF Studio, Dead Drop, QR Studio oraz narzędzia multimedialne 100% w RAM.",
   "icons": [
     {
       "src": "favicon.png",
       "sizes": "653x653",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
     }
   ]
 }

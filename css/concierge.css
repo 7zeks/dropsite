@@ -1,0 +1,433 @@
+/* ==========================================================================
+   DROPSITE CONCIERGE — ASYSTENT ALGORYTMICZNY UI & UX DESIGN SYSTEM
+   Zgodny z BRAND_GUIDELINES.md (Obsidian Glass + Cyber Mint + Tactile Motion)
+   ========================================================================== */
+
+/* 1. PRZYCISK W DOLNYM PASKU SYSTEMOWYM (#bottomActionDock) */
+.dock-concierge-btn,
+#conciergeLauncherBtn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    text-decoration: none;
+    margin: 0;
+    user-select: none;
+    position: static !important;
+    box-shadow: none !important;
+    outline: none;
+}
+
+.dock-concierge-btn:hover,
+#conciergeLauncherBtn:hover {
+    background: rgba(52, 211, 153, 0.14) !important;
+    border-color: rgba(52, 211, 153, 0.32) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.25) !important;
+}
+
+.dock-concierge-btn:active,
+#conciergeLauncherBtn:active {
+    transform: scale(0.97);
+}
+
+.concierge-dock-sparkle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    font-size: 13px;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.5));
+    animation: conciergeBreath 3.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.concierge-pulse-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #34D399;
+    box-shadow: 0 0 8px #34D399;
+    margin-left: 1px;
+    flex-shrink: 0;
+    animation: conciergePulseDot 2s ease-in-out infinite;
+}
+
+@keyframes conciergePulseDot {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.3);
+    }
+}
+
+@keyframes conciergeBreath {
+    0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.35));
+    }
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.75));
+    }
+}
+
+/* 2. OVERLAY I SZKLANY MODAL ASYSTENTA */
+.concierge-modal-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 9995;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 7, 13, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.concierge-modal-wrap.is-active {
+    display: flex;
+    opacity: 1;
+}
+
+.concierge-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 35px rgba(52, 211, 153, 0.12);
+    overflow: hidden;
+    transform: scale(0.96) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.concierge-modal-wrap.is-active .concierge-modal-card {
+    transform: scale(1) translateY(0);
+}
+
+/* Header */
+.concierge-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.concierge-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.concierge-header-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: -0.01em;
+}
+
+.concierge-badge-ram {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background: rgba(52, 211, 153, 0.12);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.concierge-close-btn {
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.concierge-close-btn:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Pole Wyszukiwania */
+.concierge-input-zone {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.concierge-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.concierge-input-icon {
+    position: absolute;
+    left: 14px;
+    color: #34D399;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.concierge-input-field {
+    width: 100%;
+    padding: 13px 40px 13px 44px;
+    background: rgba(2, 6, 23, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.concierge-input-field:focus {
+    border-color: rgba(52, 211, 153, 0.65);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+    background: rgba(2, 6, 23, 0.75);
+}
+
+.concierge-input-field::placeholder {
+    color: #64748B;
+    font-size: 0.9rem;
+}
+
+.concierge-clear-btn {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #64748B;
+    font-size: 1rem;
+    cursor: pointer;
+    display: none;
+    padding: 4px;
+    line-height: 1;
+}
+
+.concierge-clear-btn:hover {
+    color: #CBD5E1;
+}
+
+/* Szybkie Kafelki (Quick Pills) */
+.concierge-body {
+    padding: 16px 24px 24px;
+    max-height: 52vh;
+    overflow-y: auto;
+}
+
+.concierge-section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94A3B8;
+    margin-bottom: 12px;
+}
+
+.concierge-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.concierge-quick-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #E2E8F0;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.concierge-quick-card:hover {
+    background: rgba(52, 211, 153, 0.08);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+.concierge-quick-card:active {
+    transform: scale(0.985);
+}
+
+/* Wyniki Wyszukiwania / Karta Akcji */
+.concierge-result-card {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.8));
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    animation: conciergeResultSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes conciergeResultSlide {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.concierge-result-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.concierge-result-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.concierge-result-match-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.12);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.concierge-result-desc {
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: #94A3B8;
+    margin: 0;
+}
+
+.concierge-action-btn {
+    margin-top: 6px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #10B981, #34D399);
+    border: none;
+    border-radius: 10px;
+    color: #04070D;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.concierge-action-btn:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+    filter: brightness(1.05);
+}
+
+.concierge-action-btn:active {
+    transform: scale(0.985);
+}
+
+/* Brak dopasowania */
+.concierge-empty-state {
+    text-align: center;
+    padding: 24px 16px;
+    color: #94A3B8;
+    font-size: 0.88rem;
+}
+
+.concierge-empty-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* 3. RESPONSYWNOŚĆ MOBILE */
+@media (max-width: 640px) {
+    .concierge-launcher-btn {
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+        right: 16px;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+    }
+
+    .concierge-launcher-text {
+        display: inline;
+    }
+
+    .concierge-modal-card {
+        max-width: 100%;
+        border-radius: 18px 18px 0 0;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 80vh;
+    }
+
+    .concierge-modal-wrap {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .concierge-quick-grid {
+        grid-template-columns: 1fr;
+    }
+}

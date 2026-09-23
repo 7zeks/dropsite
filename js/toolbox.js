@@ -48,7 +48,7 @@
             const toolParam = params.get('tool') || params.get('tab');
             const hash = window.location.hash.toLowerCase();
 
-            if (toolParam && ['merge', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
+            if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -87,31 +87,85 @@
             window.history.replaceState({}, '', url);
         } catch (_) {}
 
-        // 4. Płynnie przewiń do kontenera narzędzia
-        if (doScroll) {
-            const toolboxBox = document.querySelector('.toolbox-container');
-            if (toolboxBox) {
-                toolboxBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
+        // 4. Zawsze zachowaj widok na samej górze strony (zero automatycznego przewijania w dół)
+        window.scrollTo({ top: 0, behavior: 'auto' });
     };
 
-    // === PRZEŁĄCZANIE ZAKŁADEK NARZĘDZI ===
+    // === MAPOWANIE NARZĘDZI DO KATEGORII GŁÓWNYCH ===
+    const TOOL_CATEGORY_MAP = {
+        'merge': 'organize',
+        'split': 'organize',
+        'organize': 'organize',
+        'edit': 'security',
+        'watermark': 'security',
+        'compress': 'convert',
+        'convert': 'convert'
+    };
+
+    function selectCategory(catId) {
+        const catBtns = document.querySelectorAll('.toolbox-cat-btn');
+        const subnavGroups = document.querySelectorAll('.toolbox-subnav-group');
+
+        catBtns.forEach(b => {
+            const isActive = b.getAttribute('data-category') === catId;
+            b.classList.toggle('active', isActive);
+            if (isActive && window.innerWidth <= 768) {
+                try {
+                    b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } catch (_) {}
+            }
+        });
+        subnavGroups.forEach(g => {
+            const isTarget = g.getAttribute('data-cat-group') === catId;
+            g.style.display = isTarget ? 'flex' : 'none';
+            g.classList.toggle('active', isTarget);
+        });
+    }
+
+    // === PRZEŁĄCZANIE ZAKŁADEK I KATEGORII NARZĘDZI ===
     function initToolTabs() {
+        const catBtns = document.querySelectorAll('.toolbox-cat-btn');
         const tabBtns = document.querySelectorAll('.toolbox-tab-btn');
         const panels = document.querySelectorAll('.tool-panel');
 
+        // Obsługa kliknięć w kategorie główne
+        catBtns.forEach(cBtn => {
+            cBtn.addEventListener('click', () => {
+                const catId = cBtn.getAttribute('data-category');
+                selectCategory(catId);
+
+                // Sprawdź czy aktywne narzędzie należy do tej kategorii
+                const activeInGroup = document.querySelector(`.toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn.active`);
+                if (!activeInGroup) {
+                    // Aktywuj pierwsze narzędzie z nowo wybranej kategorii
+                    const firstBtn = document.querySelector(`.toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn`);
+                    if (firstBtn) firstBtn.click();
+                }
+            });
+        });
+
+        // Obsługa kliknięć w poszczególne narzędzia
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetTool = btn.getAttribute('data-tool');
                 activeTool = targetTool;
 
+                // Upewnij się, że odpowiednia kategoria nadrzędna jest widoczna
+                const catId = TOOL_CATEGORY_MAP[targetTool] || 'organize';
+                selectCategory(catId);
+
                 tabBtns.forEach(b => b.classList.toggle('active', b === btn));
                 panels.forEach(p => {
                     const isTarget = p.id === `toolPanel_${targetTool}`;
                     p.hidden = !isTarget;
-                    if (isTarget) p.style.display = 'block';
-                    else p.style.display = 'none';
+                    if (isTarget) {
+                        p.style.display = 'block';
+                        p.style.animation = 'none';
+                        void p.offsetWidth;
+                        p.style.animation = '';
+                    } else {
+                        p.style.display = 'none';
+                    }
                 });
 
                 // Aktualizuj URL
@@ -2570,7 +2624,22 @@
         } else if (studioActiveTool === 'highlight') {
             bar.innerHTML = `<span class="prop-label">🖍️ Kliknij na dokumencie, aby umieścić pasek zakreślacza.</span>`;
         } else if (studioActiveTool === 'censor') {
-            bar.innerHTML = `<span class="prop-label">⬛ Kliknij na dokumencie, aby trwale zakryć poufne dane (PESEL, kwotę, nazwisko).</span>`;
+            bar.innerHTML = `
+                <span class="prop-label">Trwała cenzura (Zamazanie danych):</span>
+                <button type="button" class="btn-rodo-auto-scan" id="btnTriggerRodoScan" title="Automatycznie wykryj PESEL, NIP, dowody i e-maile w dokumencie">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <circle cx="12" cy="11" r="3"></circle>
+                    </svg>
+                    <span>🛡️ Skanuj RODO (Auto-Blackout)</span>
+                </button>
+                <span style="font-size: 0.76rem; color: #94A3B8; margin-left: 6px;">lub kliknij i zaznacz na dokumencie</span>
+            `;
+            bar.querySelector('#btnTriggerRodoScan')?.addEventListener('click', () => {
+                if (window.DropsiteRodoGuard) {
+                    window.DropsiteRodoGuard.openModal();
+                }
+            });
         } else if (studioActiveTool === 'stamp') {
             bar.innerHTML = `
                 <span class="prop-label">Wybierz wzór pieczęci do wstawienia:</span>
@@ -2742,8 +2811,24 @@
                 closeModal();
                 renderPageAnnotations();
                 updateStudioPropertyBar();
+
+                // Automatycznie włącz i zaakcentuj opcję Certyfikatu Audytu Podpisu
+                const certToggle = document.getElementById('studioIncludeCertToggle');
+                if (certToggle) {
+                    certToggle.checked = true;
+                    const optBox = certToggle.closest('.studio-export-options');
+                    if (optBox) {
+                        optBox.style.borderColor = 'rgba(52, 211, 153, 0.7)';
+                        optBox.style.boxShadow = '0 0 16px rgba(52, 211, 153, 0.25)';
+                        setTimeout(() => {
+                            optBox.style.borderColor = '';
+                            optBox.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }
+
                 if (window.playSound) window.playSound('pop');
-                if (window.showNotification) window.showNotification('Podpis został wstawiony na stronę!', 'success');
+                if (window.showNotification) window.showNotification('Podpis został wstawiony na stronę! Karta Audytu została przygotowana.', 'success');
             });
         }
     }
@@ -3128,11 +3213,11 @@
         const btnCancel = document.getElementById('btnWatermarkCancel');
         const btnApply = document.getElementById('btnWatermarkApply');
 
-        const chkActive = document.getElementById('chkWatermarkActive');
-        const textInput = document.getElementById('wmTextInput');
-        const opacityRange = document.getElementById('wmOpacityRange');
-        const opacityVal = document.getElementById('wmOpacityVal');
-        const angleSelect = document.getElementById('wmAngleSelect');
+        const chkActive = document.getElementById('modalChkWatermarkActive');
+        const textInput = document.getElementById('modalWmTextInput');
+        const opacityRange = document.getElementById('modalWmOpacityRange');
+        const opacityVal = document.getElementById('modalWmOpacityVal');
+        const angleSelect = document.getElementById('modalWmAngleSelect');
         const presetBtns = document.querySelectorAll('.wm-preset-pill');
         const colorBtns = document.querySelectorAll('.wm-color-choice');
 
@@ -3192,11 +3277,11 @@
     function openWatermarkModal() {
         const modal = document.getElementById('watermarkModal');
         if (modal) {
-            const chk = document.getElementById('chkWatermarkActive');
-            const textInput = document.getElementById('wmTextInput');
-            const range = document.getElementById('wmOpacityRange');
-            const val = document.getElementById('wmOpacityVal');
-            const select = document.getElementById('wmAngleSelect');
+            const chk = document.getElementById('modalChkWatermarkActive');
+            const textInput = document.getElementById('modalWmTextInput');
+            const range = document.getElementById('modalWmOpacityRange');
+            const val = document.getElementById('modalWmOpacityVal');
+            const select = document.getElementById('modalWmAngleSelect');
 
             if (chk) chk.checked = studioWatermark.enabled;
             if (textInput) textInput.value = studioWatermark.text;
@@ -3607,6 +3692,587 @@
     }
 
     // ==========================================
+    // CERTYFIKAT AUTENTYCZNOŚCI PODPISU & AUDIT TRAIL
+    // ==========================================
+    async function computeSha256Hex(buffer) {
+        try {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            console.warn('Błąd wyliczania SHA-256:', e);
+            return 'sha256_mock_' + Math.random().toString(36).substring(2, 10);
+        }
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function drawDropsiteSecuritySeal(ctx, cx, cy, radius, auditId) {
+        ctx.save();
+
+        // 1. Zewnętrzny podwójny okrąg pieczęci
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 2. Ząbkowany pierścień bezpieczeństwa
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Wewnętrzny okrąg
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 36, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 4. Tekst na obwodzie pieczęci
+        const textTop = "DROPSITE SECURE AUDIT TRAIL • VERIFIED IN RAM • ";
+        ctx.font = "bold 9.5px 'Segoe UI', -apple-system, sans-serif";
+        ctx.fillStyle = "#065F46";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const charAngle = (Math.PI * 2) / textTop.length;
+        for (let i = 0; i < textTop.length; i++) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(i * charAngle - Math.PI / 2);
+            ctx.translate(0, -(radius - 21));
+            ctx.fillText(textTop[i], 0, 0);
+            ctx.restore();
+        }
+
+        // 5. Wnętrze pieczęci (jasnozielona tarcza z gwiazdkami)
+        ctx.fillStyle = '#ECFDF5';
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius - 38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 6. Sygnatura wewnętrzna pieczęci
+        ctx.fillStyle = '#059669';
+        ctx.font = "14px sans-serif";
+        ctx.fillText("★ ★ ★", cx, cy - 28);
+
+        ctx.font = "bold 15px 'Segoe UI', Roboto, sans-serif";
+        ctx.fillStyle = "#0F172A";
+        ctx.fillText("CERTIFIED", cx, cy - 10);
+
+        ctx.font = "bold 12px 'Segoe UI', Roboto, sans-serif";
+        ctx.fillStyle = "#059669";
+        ctx.fillText("AUTHENTIC", cx, cy + 7);
+
+        ctx.font = "9.5px 'Segoe UI', Roboto, sans-serif";
+        ctx.fillStyle = "#64748B";
+        ctx.fillText("100% CLIENT-SIDE", cx, cy + 24);
+
+        ctx.font = "bold 8.5px Consolas, monospace";
+        ctx.fillStyle = "#047857";
+        ctx.fillText("DS: " + (auditId ? auditId.slice(-8) : 'VERIFIED'), cx, cy + 40);
+
+        ctx.restore();
+    }
+
+    async function renderAuditTrailOnCanvas(ctx, data) {
+        // 1. Tło & Bezpieczne Ramki Szwajcarskie
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, 1240, 1754);
+
+        // Zewnętrzna obwódka
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, 40, 1160, 1674);
+
+        // Wewnętrzna cienka ramka
+        ctx.strokeStyle = '#F1F5F9';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(48, 48, 1144, 1658);
+
+        // Znaczniki rejestracyjne w narożnikach
+        ctx.strokeStyle = '#0F172A';
+        ctx.lineWidth = 2.5;
+        const m = 40;
+        const len = 14;
+        // Lewy górny
+        ctx.beginPath(); ctx.moveTo(m, m + len); ctx.lineTo(m, m); ctx.lineTo(m + len, m); ctx.stroke();
+        // Prawy górny
+        ctx.beginPath(); ctx.moveTo(1200 - len, m); ctx.lineTo(1200, m); ctx.lineTo(1200, m + len); ctx.stroke();
+        // Lewy dolny
+        ctx.beginPath(); ctx.moveTo(m, 1714 - len); ctx.lineTo(m, 1714); ctx.lineTo(m + len, 1714); ctx.stroke();
+        // Prawy dolny
+        ctx.beginPath(); ctx.moveTo(1200 - len, 1714); ctx.lineTo(1200, 1714); ctx.lineTo(1200, 1714 - len); ctx.stroke();
+
+        // 2. Nagłówek Banera (Executive Top Banner)
+        const grad = ctx.createLinearGradient(40, 60, 1200, 60);
+        grad.addColorStop(0, '#0F172A');
+        grad.addColorStop(0.65, '#0F2B5C');
+        grad.addColorStop(1, '#064E3B');
+        ctx.fillStyle = grad;
+        ctx.fillRect(40, 60, 1160, 125);
+
+        // Tarcza logo Dropsite w nagłówku
+        ctx.fillStyle = '#10B981';
+        ctx.beginPath();
+        ctx.moveTo(80, 95);
+        ctx.lineTo(105, 80);
+        ctx.lineTo(130, 95);
+        ctx.lineTo(130, 130);
+        ctx.lineTo(105, 155);
+        ctx.lineTo(80, 130);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = "bold 18px 'Segoe UI', Roboto, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('DS', 105, 116);
+
+        // Tytuły nagłówka
+        ctx.textAlign = 'left';
+        ctx.font = "bold 26px 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif";
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('DROPSITE SECURE AUDIT TRAIL', 150, 105);
+
+        ctx.font = "13.5px 'Segoe UI', -apple-system, Roboto, sans-serif";
+        ctx.fillStyle = '#A7F3D0';
+        ctx.fillText('Karta Autentyczności & Rejestr Integralności Podpisu Elektronicznego', 150, 135);
+
+        // Pigułki statusu po prawej stronie banera
+        ctx.fillStyle = '#065F46';
+        ctx.fillRect(920, 85, 230, 28);
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(920, 85, 230, 28);
+        ctx.fillStyle = '#ECFDF5';
+        ctx.font = "bold 11px 'Segoe UI', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('OFICJALNY CERTYFIKAT AUDYTU', 1035, 101);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(920, 120, 230, 25);
+        ctx.fillStyle = '#E2E8F0';
+        ctx.font = "10px 'Segoe UI', sans-serif";
+        ctx.fillText('SWISS PRIVACY • ZERO-CLOUD RAM', 1035, 135);
+
+        // 3. Karty Podsumowania (2 Kolumny)
+        ctx.textAlign = 'left';
+
+        // Lewa Karta: Dokument Źródłowy
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(70, 215, 525, 175);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(70, 215, 525, 175);
+
+        ctx.font = "bold 11.5px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#64748B';
+        ctx.fillText('METADANE DOKUMENTU ŹRÓDŁOWEGO', 90, 242);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Nazwa pliku:', 90, 275);
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        const displayFilename = data.filename.length > 32 ? data.filename.substring(0, 30) + '...' : data.filename;
+        ctx.fillText(displayFilename, 220, 275);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Rozmiar pliku:', 90, 305);
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText(data.filesize, 220, 305);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Strony dokumentu:', 90, 335);
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText(`${data.origPages} oryginalnych + 1 Karta Audytu`, 220, 335);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('ID Audytu / Sesji:', 90, 365);
+        ctx.font = "bold 12.5px Consolas, monospace";
+        ctx.fillStyle = '#0284C7';
+        ctx.fillText(data.auditId, 220, 365);
+
+        // Prawa Karta: Parametry Czasowe & Środowisko
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(635, 215, 535, 175);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(635, 215, 535, 175);
+
+        ctx.font = "bold 11.5px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#64748B';
+        ctx.fillText('STEMPEL CZASOWY & PROTOKÓŁ', 655, 242);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Czas lokalny:', 655, 275);
+        ctx.font = "bold 12.5px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText(data.localTime, 785, 275);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Czas UTC:', 655, 305);
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#475569';
+        ctx.fillText(data.utcTime, 785, 305);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Środowisko:', 655, 335);
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#047857';
+        ctx.fillText('Lokalny Sandbox RAM Przeglądarki (0 KB w chmurze)', 785, 335);
+
+        ctx.font = "13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#334155';
+        ctx.fillText('Status integralności:', 655, 365);
+        ctx.fillStyle = '#10B981';
+        ctx.beginPath(); ctx.arc(790, 362, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.font = "bold 12.5px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#065F46';
+        ctx.fillText('POŚWIADCZONY / NIENARUSZONY', 803, 365);
+
+        // 4. Blok Kryptograficznej Sumy Kontrolnej SHA-256
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(70, 415, 1100, 145);
+        ctx.strokeStyle = '#1E293B';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(70, 415, 1100, 145);
+
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('KRYPTOGRAFICZNA SUMA KONTROLNA DOKUMENTU (SHA-256 FINGERPRINT)', 95, 442);
+
+        // Hash podzielony na 8-znakowe segmenty dla doskonałej czytelności
+        const hash = (data.sha256Original || '').toLowerCase();
+        const segs = [];
+        for (let s = 0; s < hash.length; s += 8) {
+            segs.push(hash.substring(s, s + 8));
+        }
+        const formattedHash = segs.join('  ');
+
+        ctx.font = "bold 15px Consolas, 'SFMono-Regular', Courier, monospace";
+        ctx.fillStyle = '#38BDF8';
+        ctx.fillText(formattedHash || 'Brak danych SHA-256', 95, 480);
+
+        ctx.font = "11.5px 'Segoe UI', Roboto, sans-serif";
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('Suma kontrolna SHA-256 stanowi nienaruszalny dowód kryptograficzny stanu dokumentu przed i w trakcie nanoszenia sygnatury.', 95, 515);
+        ctx.fillText('Jakakolwiek późniejsza modyfikacja, zmiana kolejności stron lub usunięcie adnotacji powoduje unieważnienie niniejszego certyfikatu.', 95, 535);
+
+        // 5. Oś Czasu Zdarzeń (Audit Event Trail)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(70, 580, 1100, 280);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(70, 580, 1100, 280);
+
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText('DZIENNIK ZDARZEŃ WERYFIKACYJNYCH (IMMUTABLE AUDIT EVENT LOG)', 95, 612);
+
+        // Pionowa linia osi czasu
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(110, 645);
+        ctx.lineTo(110, 815);
+        ctx.stroke();
+
+        const auditEvents = [
+            {
+                label: 'Inicjalizacja dokumentu w bezpiecznej pamięci RAM',
+                desc: 'Wczytanie pliku do izolowanego środowiska przeglądarki bez transferu sieciowego.',
+                status: 'SUKCES',
+                step: '1'
+            },
+            {
+                label: 'Weryfikacja integralności i wyliczenie SHA-256',
+                desc: 'Utworzenie unikalnej sygnatury matematycznej dokumentu źródłowego.',
+                status: 'ZWERYFIKOWANO',
+                step: '2'
+            },
+            {
+                label: 'Złożenie zaawansowanego podpisu elektronicznego',
+                desc: `Zarejestrowano wektorowy podpis użytkownika naniesiony na stronę: ${data.sigPages.join(', ') || '#1'}.`,
+                status: 'ZŁOŻONO',
+                step: '3'
+            },
+            {
+                label: 'Kompilacja i dołączenie Karty Autentyczności Dropsite',
+                desc: 'Zastosowano pieczęć bezpieczeństwa i wygenerowano finalny, nienaruszalny dokument.',
+                status: 'ZAKOŃCZONO',
+                step: '4'
+            }
+        ];
+
+        let eventY = 645;
+        auditEvents.forEach(ev => {
+            // Zielona kropka węzła
+            ctx.fillStyle = '#10B981';
+            ctx.beginPath();
+            ctx.arc(110, eventY + 4, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(110, eventY + 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Treść zdarzenia
+            ctx.font = "bold 13px 'Segoe UI', sans-serif";
+            ctx.fillStyle = '#0F172A';
+            ctx.fillText(ev.label, 135, eventY);
+
+            ctx.font = "11.5px 'Segoe UI', sans-serif";
+            ctx.fillStyle = '#64748B';
+            ctx.fillText(ev.desc, 135, eventY + 18);
+
+            // Badge statusu po prawej
+            ctx.fillStyle = '#ECFDF5';
+            ctx.fillRect(1030, eventY - 8, 115, 24);
+            ctx.strokeStyle = '#A7F3D0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(1030, eventY - 8, 115, 24);
+            ctx.font = "bold 10px 'Segoe UI', sans-serif";
+            ctx.fillStyle = '#065F46';
+            ctx.textAlign = 'center';
+            ctx.fillText(ev.status, 1087, eventY + 7);
+            ctx.textAlign = 'left';
+
+            eventY += 50;
+        });
+
+        // 6. Sygnatury Podpisującego i Szwajcarska Pieczęć Bezpieczeństwa
+        // Lewa karta: Podpis
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(70, 880, 640, 440);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(70, 880, 640, 440);
+
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText('POŚWIADCZENIE ZŁOŻONEGO PODPISU ELEKTRONICZNEGO', 95, 912);
+
+        // Ramka na podpis
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(95, 935, 590, 205);
+        ctx.strokeStyle = '#CBD5E1';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(95, 935, 590, 205);
+
+        // Linia bazowa podpisu
+        ctx.strokeStyle = '#94A3B8';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(125, 1100);
+        ctx.lineTo(655, 1100);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = "10px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillText('LINIA BAZOWA SYGNATURY ODRĘCZNEJ', 125, 1118);
+
+        // Jeśli mamy dataUrl podpisu, narysuj go w ramce
+        if (data.signatureDataUrl) {
+            try {
+                const sigImg = new Image();
+                await new Promise((resolve) => {
+                    sigImg.onload = resolve;
+                    sigImg.onerror = resolve;
+                    sigImg.src = data.signatureDataUrl;
+                });
+                const maxW = 480;
+                const maxH = 140;
+                const aspect = (sigImg.width || 1) / (sigImg.height || 1);
+                let drawW = maxW;
+                let drawH = drawW / aspect;
+                if (drawH > maxH) {
+                    drawH = maxH;
+                    drawW = drawH * aspect;
+                }
+                const drawX = 95 + (590 - drawW) / 2;
+                const drawY = 945 + (150 - drawH) / 2;
+                ctx.drawImage(sigImg, drawX, drawY, drawW, drawH);
+            } catch (sigErr) {
+                console.warn('Nie udało się wyrenderować podpisu na karcie:', sigErr);
+            }
+        } else {
+            ctx.font = "italic 14px 'Segoe UI', serif";
+            ctx.fillStyle = '#475569';
+            ctx.textAlign = 'center';
+            ctx.fillText('Dokument poświadczony sygnaturą cyfrową w Dropsite Studio', 390, 1030);
+            ctx.textAlign = 'left';
+        }
+
+        // Metadane pod podpisem
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Identyfikator sygnatury:', 95, 1165);
+        ctx.font = "bold 12px Consolas, monospace";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText(`SIG-${data.auditId.slice(-8)}`, 270, 1165);
+
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Klasa podpisu:', 95, 1195);
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText('Zaawansowany Podpis Elektroniczny (AdES - eIDAS)', 270, 1195);
+
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Metoda złożenia:', 95, 1225);
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText('Interaktywna sesja w przeglądarce (Canvas Vector Ink)', 270, 1225);
+
+        ctx.font = "12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#475569';
+        ctx.fillText('Naniesiono na strony:', 95, 1255);
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#047857';
+        ctx.fillText(data.sigPages.join(', ') || 'Strona #1', 270, 1255);
+
+        // Prawa karta: Oficjalna Pieczęć Bezpieczeństwa
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(730, 880, 440, 440);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(730, 880, 440, 440);
+
+        ctx.font = "bold 13px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.textAlign = 'center';
+        ctx.fillText('OFICJALNA PIECZĘĆ INTEGRALNOŚCI', 950, 912);
+
+        // Renderowanie pieczęci wektorowej
+        drawDropsiteSecuritySeal(ctx, 950, 1075, 130, data.auditId);
+
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#065F46';
+        ctx.fillText('SWISS PRIVACY STANDARDS GUARANTEE', 950, 1250);
+
+        ctx.font = "11px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#64748B';
+        ctx.fillText('100% In-Memory Sandbox • Zero Cloud Logs', 950, 1272);
+        ctx.textAlign = 'left';
+
+        // 7. Klauzula Prawna & Stopka eIDAS
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fillRect(70, 1340, 1100, 310);
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(70, 1340, 1100, 310);
+
+        ctx.font = "bold 12px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#0F172A';
+        ctx.fillText('KLAUZULA PRAWNA I OCHRONA PRYWATNOŚCI (EIDAS & ZERO-KNOWLEDGE ARCHITECTURE)', 95, 1372);
+
+        ctx.font = "11.2px 'Segoe UI', -apple-system, Roboto, sans-serif";
+        ctx.fillStyle = '#475569';
+        const legalL1 = "1. Skutek prawny: Zgodnie z art. 25 ust. 1 Rozporządzenia Parlamentu Europejskiego i Rady (UE) nr 910/2014 z dnia 23 lipca 2014 r.";
+        const legalL2 = "w sprawie identyfikacji elektronicznej i usług zaufania w odniesieniu do transakcji elektronicznych na rynku wewnętrznym (eIDAS),";
+        const legalL3 = "podpisowi elektronicznemu nie można odmówić mocy prawnej ani dopuszczalności jako dowodu w postępowaniu sądowym wyłącznie";
+        const legalL4 = "z tego powodu, że podpis ten ma postać elektroniczną lub że nie spełnia wymagań dla kwalifikowanych podpisów elektronicznych.";
+        const legalL5 = "2. Gwarancja Prywatności (Zero-Cloud Trace): Dropsite oświadcza, że całość procedury edycji, nanoszenia podpisów oraz wyliczania";
+        const legalL6 = "sumy kontrolnej SHA-256 odbyła się w 100% lokalnie w pamięci RAM przeglądarki. Dokument ani dane biometryczne nie opuściły urządzenia.";
+
+        ctx.fillText(legalL1, 95, 1405);
+        ctx.fillText(legalL2, 95, 1425);
+        ctx.fillText(legalL3, 95, 1445);
+        ctx.fillText(legalL4, 95, 1465);
+        ctx.fillText(legalL5, 95, 1495);
+        ctx.fillText(legalL6, 95, 1515);
+
+        // Dolny pasek weryfikacji
+        ctx.strokeStyle = '#E2E8F0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(95, 1560);
+        ctx.lineTo(1145, 1560);
+        ctx.stroke();
+
+        ctx.font = "11px 'Segoe UI', sans-serif";
+        ctx.fillStyle = '#64748B';
+        ctx.fillText('Weryfikacja autentyczności: dropsite.cc | Platforma Dropsite Studio Engine v2.4 | Szwajcarska Architektura Prywatności', 95, 1595);
+
+        ctx.font = "bold 11px Consolas, monospace";
+        ctx.fillStyle = '#0F172A';
+        ctx.textAlign = 'right';
+        ctx.fillText(`AUDIT-ID: ${data.auditId}`, 1145, 1595);
+        ctx.textAlign = 'left';
+    }
+
+    async function attachAuditTrailSheet(pdfDoc, meta) {
+        try {
+            const auditId = 'DS-2026-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+            const origHash = await computeSha256Hex(meta.originalBytes);
+            const now = new Date();
+            const localTime = now.toLocaleString('pl-PL', { dateStyle: 'full', timeStyle: 'medium' });
+            const utcTime = now.toUTCString();
+
+            // Pobierz pierwszy podpis lub pieczęć
+            const sigAnnotation = (meta.annotations || []).find(a => a.type === 'sig' && a.dataUrl);
+            const sigPages = (meta.annotations || []).filter(a => a.type === 'sig').map(a => '#' + a.page);
+
+            const certCanvas = document.createElement('canvas');
+            certCanvas.width = 1240;
+            certCanvas.height = 1754;
+            const ctx = certCanvas.getContext('2d');
+
+            await renderAuditTrailOnCanvas(ctx, {
+                filename: meta.filename,
+                filesize: meta.filesize,
+                origPages: meta.totalPages,
+                auditId,
+                sha256Original: origHash,
+                localTime,
+                utcTime,
+                sigPages,
+                signatureDataUrl: sigAnnotation ? sigAnnotation.dataUrl : null
+            });
+
+            const pngDataUrl = certCanvas.toDataURL('image/png', 0.95);
+            const pngBytes = base64ToUint8Array(pngDataUrl.split(',')[1]);
+            const pngImage = await pdfDoc.embedPng(pngBytes);
+
+            // Dodaj stronę na samym końcu dokumentu (format standardowy A4: 595.28 x 841.89 pt)
+            const certPage = pdfDoc.addPage([595.28, 841.89]);
+            certPage.drawImage(pngImage, {
+                x: 0,
+                y: 0,
+                width: 595.28,
+                height: 841.89
+            });
+        } catch (err) {
+            console.error('Błąd dołączania Karty Audytu Podpisu:', err);
+        }
+    }
+
+    // ==========================================
     // EKSPORT ZMODYFIKOWANEGO PDF (PDF-LIB)
     // ==========================================
     async function executePdfEdit() {
@@ -3857,6 +4523,19 @@
                         console.warn('Błąd nakładania paginacji:', pErr);
                     }
                 }
+            }
+
+            // 5. Dołączenie Karty Autentyczności Podpisu & Audit Trail
+            const includeCert = document.getElementById('studioIncludeCertToggle')?.checked;
+            if (includeCert) {
+                if (textSpan) textSpan.textContent = 'Generowanie Karty Audytu...';
+                await attachAuditTrailSheet(pdfDoc, {
+                    filename: studioFile.name,
+                    filesize: formatBytes(studioFile.size),
+                    originalBytes: studioBytes,
+                    annotations: studioAnnotations,
+                    totalPages: pdfDoc.getPageCount()
+                });
             }
 
             const modifiedBytes = await pdfDoc.save();

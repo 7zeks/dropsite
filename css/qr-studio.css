@@ -1,0 +1,280 @@
+/* ==========================================================================
+   DROPSITE QR STUDIO (VECTOR & 4K ULTRA HD QR CODE ENGINE)
+   Theme: Obsidian Glass + Cyber Mint + Electric Cyan
+   Zero emoji, pure inline SVG, 100% Client-Side Canvas & SVG
+   Zero horizontal scrollbar, 100% Responsive Grid
+   ========================================================================== */
+
+#qrStudioModal .dead-drop-modal-card {
+    max-width: 840px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#qrStudioModal .dead-drop-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 18px 22px 22px 22px;
+}
+
+.qr-studio-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.qr-studio-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 18px;
+    align-items: start;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Panel konfiguracji QR */
+.qr-config-card {
+    background: rgba(13, 18, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    backdrop-filter: blur(16px);
+    box-sizing: border-box;
+}
+
+.qr-type-tabs {
+    display: flex;
+    gap: 5px;
+    background: rgba(6, 9, 16, 0.8);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.qr-type-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.qr-type-tab {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.qr-type-tab:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.qr-type-tab.active {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: #34D399;
+}
+
+.qr-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.qr-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.qr-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #CBD5E1;
+}
+
+.qr-input,
+.qr-textarea,
+.qr-select {
+    width: 100%;
+    padding: 9px 12px;
+    background: rgba(6, 9, 16, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #F8FAFC;
+    font-family: inherit;
+    font-size: 0.82rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.qr-input:focus,
+.qr-textarea:focus,
+.qr-select:focus {
+    border-color: #34D399;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.qr-styling-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Panel podglądu na żywo i eksportu */
+.qr-preview-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.qr-stage-card {
+    background: radial-gradient(120% 120% at 50% 0%, rgba(20, 28, 48, 0.9) 0%, rgba(8, 12, 22, 0.96) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-top: 1px solid rgba(52, 211, 153, 0.55);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(16, 185, 129, 0.08);
+    box-sizing: border-box;
+}
+
+.qr-canvas-wrap {
+    position: relative;
+    padding: 10px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-canvas-preview {
+    display: block;
+    width: 170px;
+    height: 170px;
+}
+
+.qr-export-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.qr-btn-download-svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 14px;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    border: none;
+    border-radius: 8px;
+    color: #04140D;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.qr-btn-download-svg:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}
+
+.qr-btn-download-png {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.qr-btn-download-png:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+/* RWD DLA EKRANÓW MOBILNYCH I TABLETÓW */
+@media (max-width: 820px) {
+    .qr-studio-layout {
+        grid-template-columns: 1fr;
+    }
+    .qr-preview-panel {
+        position: static;
+        order: -1;
+    }
+    .qr-styling-grid {
+        grid-template-columns: 1fr;
+    }
+    .qr-canvas-preview {
+        width: 160px;
+        height: 160px;
+    }
+}
+
+@media (max-width: 640px) {
+    #qrStudioModal .dead-drop-body {
+        padding: 14px;
+    }
+    .qr-config-card {
+        padding: 14px 12px;
+        border-radius: 12px;
+    }
+    .qr-stage-card {
+        padding: 14px 12px;
+        border-radius: 12px;
+    }
+    .qr-canvas-preview {
+        width: 150px;
+        height: 150px;
+    }
+    .qr-type-tab {
+        padding: 6px 8px;
+        font-size: 0.72rem;
+    }
+    .qr-btn-download-svg,
+    .qr-btn-download-png {
+        width: 100%;
+        padding: 10px;
+    }
+}

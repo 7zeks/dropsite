@@ -1,0 +1,252 @@
+/* ==========================================================================
+   DROPSITE AUDIO WAVEFORM PLAYER (STUDIO HI-FI)
+   Theme: Obsidian Glass + Cyber Mint + Electric Cyan
+   Zero emoji, pure inline SVG, 100% Web Audio API in RAM
+   ========================================================================== */
+
+.audio-waveform-card {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 16px auto;
+    padding: 24px;
+    background: radial-gradient(120% 120% at 50% 0%, rgba(20, 28, 48, 0.92) 0%, rgba(8, 12, 22, 0.98) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-top: 1px solid rgba(52, 211, 153, 0.55);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(16, 185, 129, 0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-sizing: border-box;
+}
+
+.audio-waveform-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.audio-waveform-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.audio-waveform-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+    flex-shrink: 0;
+}
+
+.audio-waveform-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.audio-waveform-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.audio-waveform-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.audio-waveform-badge span {
+    color: #5EEAD4;
+}
+
+/* Płótno Canvas Wizualizatora Fali */
+.audio-waveform-stage {
+    position: relative;
+    width: 100%;
+    height: 96px;
+    background: rgba(6, 10, 18, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.audio-waveform-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.audio-waveform-hover-time {
+    position: absolute;
+    top: 6px;
+    padding: 2px 6px;
+    background: rgba(16, 185, 129, 0.9);
+    color: #04140D;
+    font-family: Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    border-radius: 4px;
+    pointer-events: none;
+    transform: translateX(-50%);
+    display: none;
+}
+
+/* Dolny pasek kontrolek audio */
+.audio-waveform-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.audio-waveform-left-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.audio-waveform-play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    border: none;
+    color: #061A12;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
+    flex-shrink: 0;
+}
+
+.audio-waveform-play-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
+}
+
+.audio-waveform-play-btn:active {
+    transform: scale(0.95);
+}
+
+.audio-waveform-time {
+    font-family: Consolas, monospace;
+    font-size: 0.82rem;
+    color: #CBD5E1;
+    font-weight: 600;
+}
+
+.audio-waveform-time .current {
+    color: #34D399;
+}
+
+.audio-waveform-right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.audio-waveform-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.audio-waveform-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+.audio-waveform-btn-icon.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(52, 211, 153, 0.5);
+    color: #34D399;
+}
+
+/* Wskaźnik ładowania fali dźwiękowej */
+.audio-waveform-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(6, 10, 18, 0.85);
+    color: #5EEAD4;
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.audio-waveform-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(52, 211, 153, 0.2);
+    border-top-color: #34D399;
+    border-radius: 50%;
+    animation: spinAudioWave 0.8s linear infinite;
+}
+
+@keyframes spinAudioWave {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+    .audio-waveform-card {
+        padding: 16px 14px;
+        gap: 14px;
+        border-radius: 16px;
+        margin: 10px 0;
+    }
+    .audio-waveform-stage {
+        height: 76px;
+        border-radius: 10px;
+    }
+    .audio-waveform-title {
+        font-size: 0.88rem;
+    }
+    .audio-waveform-play-btn {
+        width: 40px;
+        height: 40px;
+    }
+    .audio-waveform-icon-wrap {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+    }
+    .audio-waveform-time {
+        font-size: 0.76rem;
+    }
+}

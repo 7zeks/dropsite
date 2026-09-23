@@ -1,0 +1,578 @@
+/* ==========================================================================
+   DROPSITE PDF MATRIX — WIZUALNY ORGANIZATOR STRON, OBRÓT & SELEKCJA
+   Architektura 100% RAM, Obsidian Glass + Cyber Mint + Micro-Motion
+   Zgodny z BRAND_GUIDELINES.md
+   ========================================================================== */
+
+/* 1. KONTENER ROBOCZY MATRYCY */
+.matrix-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    padding-bottom: 90px;
+}
+
+/* 2. PASEK AKCJI NARZĘDZIOWYCH (TOP TOOLBAR) */
+.matrix-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+
+.matrix-file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.matrix-pdf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #F87171;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.matrix-filename {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.matrix-pages-count {
+    font-size: 0.8rem;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matrix-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.matrix-btn-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.matrix-btn-tool:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+.matrix-btn-tool:active {
+    transform: scale(0.98);
+}
+
+.matrix-btn-tool.btn-highlight {
+    background: rgba(52, 211, 153, 0.12);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+.matrix-btn-tool.btn-highlight:hover {
+    background: rgba(52, 211, 153, 0.22);
+    border-color: rgba(52, 211, 153, 0.6);
+    color: #FFFFFF;
+    box-shadow: 0 0 14px rgba(52, 211, 153, 0.25);
+}
+
+/* 3. SIATKA MINIATUR STRON (THE MATRIX GRID) */
+.matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 16px;
+    padding: 6px 2px;
+    min-height: 200px;
+}
+
+/* KAFELEK STRONY (PAGE CARD) */
+.matrix-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: grab;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.22s ease, 
+                border-color 0.22s ease,
+                opacity 0.22s ease;
+    user-select: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.matrix-card:hover {
+    border-color: rgba(52, 211, 153, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(52, 211, 153, 0.15);
+    transform: translateY(-3px);
+}
+
+.matrix-card.is-dragging {
+    opacity: 0.45;
+    transform: scale(0.96);
+    cursor: grabbing;
+    border: 1.5px dashed #34D399;
+}
+
+.matrix-card.drag-over {
+    border: 2px solid #34D399;
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+    transform: scale(1.03);
+}
+
+.matrix-card.is-deleted {
+    opacity: 0.35;
+    filter: grayscale(80%);
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(30, 15, 15, 0.6);
+}
+
+/* PASEK AKCJI NA KAFELKU (OVERLAY) */
+.matrix-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.matrix-page-pill {
+    font-size: 0.73rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.matrix-rot-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+
+.matrix-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.matrix-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.matrix-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #FFFFFF;
+    transform: scale(1.1);
+}
+
+.matrix-icon-btn.btn-rotate:hover {
+    color: #38BDF8;
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.matrix-icon-btn.btn-duplicate:hover {
+    color: #34D399;
+    border-color: rgba(52, 211, 153, 0.4);
+}
+
+.matrix-icon-btn.btn-delete:hover {
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* PODGLĄD STRONY (CANVAS THUMBNAIL) */
+.matrix-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1.414; /* Standard proporcji arkusza A4 */
+    background: #FFFFFF;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.matrix-canvas-wrap canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    object-fit: contain;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.matrix-deleted-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #F87171;
+    font-size: 0.78rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+}
+
+.matrix-btn-restore {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    background: rgba(52, 211, 153, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: #34D399;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.matrix-btn-restore:hover {
+    background: rgba(52, 211, 153, 0.25);
+}
+
+/* 4. DOLNA BELKA NAWIGACJI KAFELKA (SZYBKIE PRZESUWANIE NA MOBILE) */
+.matrix-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 4px;
+}
+
+.matrix-move-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.matrix-move-btn:hover:not(:disabled) {
+    background: rgba(52, 211, 153, 0.18);
+    border-color: rgba(52, 211, 153, 0.45);
+    color: #34D399;
+}
+
+.matrix-move-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.matrix-move-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.matrix-pos-indicator {
+    font-size: 0.68rem;
+    color: #64748B;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    user-select: none;
+}
+
+/* 5. DOLNY PASEK EKSPORTU (STICKY EXPORT BAR) */
+.matrix-export-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 20px;
+    background: linear-gradient(165deg, rgba(22, 33, 50, 0.94) 0%, rgba(10, 16, 26, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-top: 1px solid rgba(52, 211, 153, 0.5);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(52, 211, 153, 0.1);
+}
+
+.matrix-export-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.matrix-export-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.matrix-export-subtitle {
+    font-size: 0.77rem;
+    color: #94A3B8;
+}
+
+.matrix-export-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.matrix-btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    color: #061A12;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.matrix-btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55);
+}
+
+.matrix-btn-download:active {
+    transform: scale(0.98);
+}
+
+.matrix-btn-download.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* RWD DLA EKRANÓW MOBILNYCH (SMARTFONY & TABLETY) */
+@media (max-width: 640px) {
+    .matrix-workspace {
+        gap: 12px;
+        padding-bottom: 110px; /* Margines bezpieczeństwa przed dolnym dokiem asystenta */
+    }
+
+    .matrix-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
+    }
+
+    .matrix-file-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .matrix-filename {
+        flex: 1;
+        min-width: 0;
+        max-width: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.84rem;
+    }
+
+    .matrix-pages-count {
+        font-size: 0.74rem;
+        padding: 2px 6px;
+        flex-shrink: 0;
+    }
+
+    .matrix-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        width: 100%;
+    }
+
+    .matrix-btn-tool {
+        justify-content: center;
+        padding: 6px 4px;
+        font-size: 0.72rem;
+        height: 34px;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 7px;
+    }
+
+    .matrix-btn-tool span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .matrix-btn-tool svg {
+        flex-shrink: 0;
+    }
+
+    .matrix-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 9px;
+        padding: 2px 0;
+    }
+
+    .matrix-card {
+        padding: 7px;
+        border-radius: 10px;
+    }
+
+    .matrix-card-header {
+        margin-bottom: 5px;
+        gap: 2px;
+    }
+
+    .matrix-page-pill {
+        padding: 2px 4px;
+        font-size: 0.68rem;
+        border-radius: 4px;
+        gap: 2px;
+    }
+
+    .matrix-card-actions {
+        gap: 2px;
+    }
+
+    .matrix-icon-btn {
+        width: 21px;
+        height: 21px;
+        border-radius: 5px;
+    }
+
+    .matrix-icon-btn svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .matrix-card-footer {
+        margin-top: 6px;
+        padding-top: 5px;
+        gap: 3px;
+    }
+
+    .matrix-move-btn {
+        width: 24px;
+        height: 20px;
+    }
+
+    .matrix-move-btn svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .matrix-pos-indicator {
+        font-size: 0.63rem;
+    }
+
+    .matrix-export-bar {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        padding: 14px 16px;
+        gap: 12px;
+        position: sticky;
+        bottom: 15px;
+        z-index: 90;
+        border-radius: 14px;
+    }
+
+    .matrix-btn-download {
+        justify-content: center;
+        width: 100%;
+        padding: 12px 18px;
+        font-size: 0.92rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .matrix-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+    }
+
+    .matrix-quick-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .matrix-quick-actions button:last-child {
+        grid-column: span 2;
+    }
+}

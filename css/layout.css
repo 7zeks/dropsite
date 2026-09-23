@@ -1823,6 +1823,14 @@
         display: inline-flex !important;
         align-items: center !important;
         gap: 7px !important;
+        transform: none !important;
+        will-change: auto !important;
+    }
+
+    .nav-logo.nav-hidden {
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 
     .nav-logo-text {
@@ -1849,6 +1857,14 @@
         display: flex !important;
         align-items: center !important;
         gap: 5px !important;
+        transform: none !important;
+        will-change: auto !important;
+    }
+
+    .nav-right.nav-hidden {
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
     }
 
     .nav-action-group {
@@ -1929,15 +1945,37 @@
     .siri-glow-frame {
         max-width: 100% !important;
         width: 100% !important;
-        overflow: visible !important;   /* dymek musi wystawać poza kartę */
+        overflow: visible !important;
         border-radius: 24px !important;
         box-sizing: border-box !important;
     }
 
     .siri-fluid-plasma {
-        inset: -6px !important;
-        filter: blur(16px) !important;
-        opacity: 0.55 !important;
+        inset: -4px !important;
+        filter: blur(12px) !important;
+        opacity: 0.5 !important;
+    }
+
+    /* Na telefonie wyłączamy energochłonne ciągłe morphing-animacje border-radius i conic-gradient */
+    .siri-fluid-plasma .plasma-blob {
+        animation: none !important;
+    }
+
+    .siri-wave-stream .stream-cw,
+    .siri-wave-stream .stream-ccw {
+        animation: none !important;
+        filter: drop-shadow(0 0 8px #00F0FF) !important;
+    }
+
+    .siri-wave-ripple {
+        display: none !important;
+    }
+
+    .studio-split-hero::before {
+        width: 90% !important;
+        height: 220px !important;
+        filter: blur(28px) !important;
+        opacity: 0.35 !important;
     }
 
     .upload-container {
@@ -1946,7 +1984,9 @@
         max-width: 100% !important;
         width: 100% !important;
         box-sizing: border-box !important;
-        overflow: visible !important;   /* dymek musi wystawać poza kontener */
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        overflow: visible !important;
     }
 
     /* Pasek pliku na mobile: czysty stream, dwurzędowy */
@@ -2214,15 +2254,27 @@
 }
 
 .mobile-drawer-actions {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
     width: 100%;
     max-width: 320px;
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mobile-drawer-actions #mobileConciergeBtn {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(5, 150, 105, 0.22) 100%);
+    border-color: rgba(52, 211, 153, 0.38);
+    color: #34D399;
+    font-weight: 700;
+}
+
+.mobile-drawer-actions #mobileConciergeBtn:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
 }
 
 .mobile-drawer-action-btn {
@@ -2251,6 +2303,132 @@
 .mobile-drawer-action-btn svg {
     width: 18px;
     height: 18px;
+}
+
+/* --- Mobile Drawer Auth Card & Login Button --- */
+.mobile-drawer-auth {
+    width: 100%;
+    max-width: 320px;
+    margin-top: 10px;
+}
+
+.mobile-drawer-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 20px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(52, 211, 153, 0.15) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 14px;
+    color: #E2E8F0;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: inherit;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.mobile-drawer-login-btn svg {
+    color: #38BDF8;
+    transition: transform 0.2s ease;
+}
+
+.mobile-drawer-login-btn:hover,
+.mobile-drawer-login-btn:active {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(52, 211, 153, 0.26) 100%);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.mobile-drawer-login-btn:hover svg {
+    transform: translateX(3px);
+}
+
+.mobile-drawer-user-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px 8px 14px;
+    background: rgba(16, 23, 38, 0.88);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-radius: 14px;
+    box-sizing: border-box;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.mobile-drawer-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+}
+
+.mobile-drawer-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #34D399 0%, #38BDF8 100%);
+    color: #0B0F19;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.4);
+}
+
+.mobile-drawer-user-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.mobile-drawer-username {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #F8FAFC;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+.mobile-drawer-pro-tag {
+    font-size: 10px;
+    font-weight: 800;
+    color: #34D399;
+    letter-spacing: 0.4px;
+}
+
+.mobile-drawer-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.mobile-drawer-logout-btn:hover,
+.mobile-drawer-logout-btn:active {
+    background: rgba(255, 68, 57, 0.18);
+    border-color: rgba(255, 68, 57, 0.4);
+    color: #FF4439;
 }
 
 .mobile-drawer-close {
@@ -3293,16 +3471,16 @@
     inset: -2px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(56, 189, 248, 0.4) 0%, rgba(52, 211, 153, 0.25) 50%, transparent 70%);
-    opacity: 0.6;
-    filter: blur(8px);
+    opacity: 0.5;
+    filter: blur(5px);
     pointer-events: none;
     z-index: -1;
-    animation: fabNeonPulse 3s ease-in-out infinite alternate;
 }
 
-@keyframes fabNeonPulse {
-    0% { transform: scale(0.92); opacity: 0.4; }
-    100% { transform: scale(1.12); opacity: 0.8; }
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+    .mobile-home-fab .fab-neon-glow {
+        animation: fabNeonPulse 3s ease-in-out infinite alternate;
+    }
 }
 
 .mobile-home-fab .fab-home-icon {

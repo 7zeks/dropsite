@@ -739,7 +739,7 @@ export default {
                 uploaded: new Date().toISOString(),
                 duration: expiry,
                 directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
-                pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(fileKey)}`
+                pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(fileKey)}`
             });
         }
 
@@ -925,23 +925,26 @@ export default {
             const uploadId = url.searchParams.get("uploadId");
             const data = await request.json();
             const parts = data.parts; 
+            const headerEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
 
             const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
             await multipartUpload.complete(parts);
 
             try {
               const headObj = await env.BUCKET.head(key);
-              if (headObj && headObj.customMetadata?.uploaderEmail && headObj.customMetadata.uploaderEmail !== "anonymous") {
-                const uEmail = headObj.customMetadata.uploaderEmail;
+              const metaEmail = headObj?.customMetadata?.uploaderEmail;
+              const uEmail = (metaEmail && metaEmail !== "anonymous") ? metaEmail : headerEmail;
+
+              if (uEmail && uEmail !== "anonymous") {
                 const dur = key.startsWith('1d/') ? '1d' : (key.startsWith('30d/') ? '30d' : (key.startsWith('burn/') ? 'burn' : 'permanent'));
                 await recordFileToUserHistory(uEmail, {
                   key: key,
-                  name: headObj.customMetadata.originalName || key,
-                  size: headObj.size || 0,
-                  uploaded: (headObj.uploaded || new Date()).toISOString(),
+                  name: headObj?.customMetadata?.originalName || key.split('/').pop() || key,
+                  size: headObj?.size || 0,
+                  uploaded: (headObj?.uploaded || new Date()).toISOString(),
                   duration: dur,
                   directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
-                  pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(key)}`
+                  pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
                 });
               }
             } catch (histErr) {
@@ -1237,6 +1240,232 @@ export default {
             return new Response(object.body, { headers });
         } catch (err) {
             return new Response("Błąd strumieniowania: " + err.message, { status: 500, headers: corsHeaders });
+        }
+    }
+
+    // =========================================================================
+    // SMART ARCHIVE EXPLORER & ZIP STREAMING ENGINE
+    // Odczyt spisu zawartości archiwów ZIP (Central Directory) bez pobierania całego pliku (tylko 65 KB)
+    // Oraz streaming HTTP 206 w locie dla pojedynczych plików (np. wideo) wewnątrz ZIP
+    // =========================================================================
+    async function readZipCentralDirectory(bucket, key) {
+        const head = await bucket.head(key);
+        if (!head) return null;
+        const totalSize = head.size;
+        if (totalSize < 22) return null;
+
+        const tailLen = Math.min(65536, totalSize);
+        const tailObj = await bucket.get(key, { range: { offset: totalSize - tailLen, length: tailLen } });
+        if (!tailObj) return null;
+
+        const tailBuf = new Uint8Array(await tailObj.arrayBuffer());
+        const dataView = new DataView(tailBuf.buffer, tailBuf.byteOffset, tailBuf.byteLength);
+
+        // Znajdź sygnaturę EOCD 0x06054b50 (PK\x05\x06) od końca bufora
+        let eocdRelOffset = -1;
+        for (let i = tailBuf.length - 22; i >= 0; i--) {
+            if (dataView.getUint32(i, true) === 0x06054b50) {
+                eocdRelOffset = i;
+                break;
+            }
+        }
+        if (eocdRelOffset < 0) return null;
+
+        const cdSize = dataView.getUint32(eocdRelOffset + 12, true);
+        const cdOffset = dataView.getUint32(eocdRelOffset + 16, true);
+
+        // Pobierz bufor Central Directory
+        const cdObj = await bucket.get(key, { range: { offset: cdOffset, length: cdSize } });
+        if (!cdObj) return null;
+
+        const cdBuf = new Uint8Array(await cdObj.arrayBuffer());
+        const cdView = new DataView(cdBuf.buffer, cdBuf.byteOffset, cdBuf.byteLength);
+
+        const files = [];
+        let pos = 0;
+        const decoder = new TextDecoder('utf-8');
+
+        while (pos < cdBuf.length - 46) {
+            if (cdView.getUint32(pos, true) !== 0x02014b50) break;
+            const compMethod = cdView.getUint16(pos + 10, true);
+            const compSize = cdView.getUint32(pos + 20, true);
+            const uncompSize = cdView.getUint32(pos + 24, true);
+            const nameLen = cdView.getUint16(pos + 28, true);
+            const extraLen = cdView.getUint16(pos + 30, true);
+            const commentLen = cdView.getUint16(pos + 32, true);
+            const localHeaderOffset = cdView.getUint32(pos + 42, true);
+
+            const nameSlice = cdBuf.subarray(pos + 46, pos + 46 + nameLen);
+            const filename = decoder.decode(nameSlice);
+
+            if (!filename.endsWith('/')) {
+                files.push({
+                    name: filename,
+                    size: uncompSize,
+                    compSize: compSize,
+                    compMethod: compMethod,
+                    localHeaderOffset: localHeaderOffset
+                });
+            }
+
+            pos += 46 + nameLen + extraLen + commentLen;
+        }
+
+        return { totalSize, files };
+    }
+
+    // Endpoint A: Pobranie struktury i spisu plików w archiwum ZIP (błyskawiczny odczyt Central Directory)
+    if (url.pathname === "/archive-info" && request.method === "GET") {
+        const key = url.searchParams.get("key");
+        if (!key || !env.BUCKET) {
+            return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        try {
+            const cd = await readZipCentralDirectory(env.BUCKET, key);
+            if (!cd) {
+                return new Response(JSON.stringify({ success: false, message: "Nie udało się odczytać spisu archiwum" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
+            const origin = url.origin;
+            const filesList = cd.files.map(f => {
+                const ext = f.name.split('.').pop().toLowerCase();
+                const isVideo = ['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext);
+                const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
+                const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext);
+                return {
+                    name: f.name,
+                    size: f.size,
+                    compMethod: f.compMethod,
+                    streamable: (f.compMethod === 0),
+                    isVideo: isVideo,
+                    isAudio: isAudio,
+                    isImage: isImage,
+                    streamUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}`,
+                    downloadUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}&download=1`
+                };
+            });
+
+            return new Response(JSON.stringify({
+                success: true,
+                key: key,
+                totalSize: cd.totalSize,
+                filesCount: filesList.length,
+                hasVideo: filesList.some(f => f.isVideo),
+                hasAudio: filesList.some(f => f.isAudio),
+                hasImage: filesList.some(f => f.isImage),
+                files: filesList
+            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        } catch (err) {
+            return new Response(JSON.stringify({ success: false, message: "Błąd odczytu archiwum: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+    }
+
+    // Endpoint B: Streaming HTTP 206 w locie pojedynczego pliku z wnętrza archiwum ZIP
+    if (url.pathname === "/archive-stream" && (request.method === "GET" || request.method === "HEAD")) {
+        const key = url.searchParams.get("key");
+        const path = url.searchParams.get("path");
+        const forceDownload = url.searchParams.get("download") === "1";
+
+        if (!key || !path || !env.BUCKET) {
+            return new Response("Brak parametrów archiwum.", { status: 400, headers: corsHeaders });
+        }
+
+        try {
+            const cd = await readZipCentralDirectory(env.BUCKET, key);
+            if (!cd) {
+                return new Response("Nie udało się odczytać spisu archiwum.", { status: 404, headers: corsHeaders });
+            }
+
+            const fileEntry = cd.files.find(f => f.name === path);
+            if (!fileEntry) {
+                return new Response("Plik nie istnieje w archiwum.", { status: 404, headers: corsHeaders });
+            }
+
+            const locHeaderObj = await env.BUCKET.get(key, { range: { offset: fileEntry.localHeaderOffset, length: 30 } });
+            if (!locHeaderObj) return new Response("Błąd odczytu nagłówka pliku.", { status: 500, headers: corsHeaders });
+
+            const locBuf = new Uint8Array(await locHeaderObj.arrayBuffer());
+            const locView = new DataView(locBuf.buffer, locBuf.byteOffset, locBuf.byteLength);
+            const locNameLen = locView.getUint16(26, true);
+            const locExtraLen = locView.getUint16(28, true);
+
+            const fileDataStart = fileEntry.localHeaderOffset + 30 + locNameLen + locExtraLen;
+            const fileSize = fileEntry.size;
+            const mimeType = getMimeType(path);
+            const cleanFileName = path.split('/').pop() || path;
+
+            const dispHeader = forceDownload 
+                ? `attachment; filename="${encodeURIComponent(cleanFileName)}"` 
+                : `inline; filename="${encodeURIComponent(cleanFileName)}"`;
+
+            if (request.method === "HEAD") {
+                const headers = new Headers({
+                    "Content-Type": mimeType,
+                    "Content-Length": String(fileSize),
+                    "Accept-Ranges": "bytes",
+                    "Content-Disposition": dispHeader,
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Range",
+                    "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+                    "X-Content-Type-Options": "nosniff"
+                });
+                return new Response(null, { headers });
+            }
+
+            // Jeśli plik jest w Store mode (compMethod === 0), to są to surowe bajty gotowe do streamingu HTTP 206 Range!
+            if (fileEntry.compMethod === 0) {
+                const reqRange = request.headers.get("Range");
+
+                if (reqRange && reqRange.startsWith("bytes=")) {
+                    const parts = reqRange.replace("bytes=", "").split("-");
+                    let start = parseInt(parts[0], 10);
+                    let end = parts[1] ? parseInt(parts[1], 10) : (fileSize - 1);
+                    if (isNaN(start)) {
+                        start = Math.max(0, fileSize - end);
+                        end = fileSize - 1;
+                    }
+                    end = Math.min(end, fileSize - 1);
+                    const chunkLen = (end - start) + 1;
+
+                    const r2Offset = fileDataStart + start;
+                    const streamPart = await env.BUCKET.get(key, { range: { offset: r2Offset, length: chunkLen } });
+
+                    const headers = new Headers({
+                        "Content-Type": mimeType,
+                        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+                        "Content-Length": String(chunkLen),
+                        "Accept-Ranges": "bytes",
+                        "Content-Disposition": dispHeader,
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                        "Access-Control-Allow-Headers": "Content-Type, Range",
+                        "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+                        "X-Content-Type-Options": "nosniff"
+                    });
+
+                    return new Response(streamPart.body, { status: 206, headers });
+                }
+
+                // Pełne pobranie pliku ze Store mode
+                const fullStream = await env.BUCKET.get(key, { range: { offset: fileDataStart, length: fileSize } });
+                const headers = new Headers({
+                    "Content-Type": mimeType,
+                    "Content-Length": String(fileSize),
+                    "Accept-Ranges": "bytes",
+                    "Content-Disposition": dispHeader,
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Range",
+                    "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+                    "X-Content-Type-Options": "nosniff"
+                });
+
+                return new Response(fullStream.body, { status: 200, headers });
+            }
+
+            return new Response("Format kompresji pliku wymaga pobrania całego archiwum ZIP.", { status: 415, headers: corsHeaders });
+        } catch (err) {
+            return new Response("Błąd strumieniowania z archiwum: " + err.message, { status: 500, headers: corsHeaders });
         }
     }
 
@@ -1837,6 +2066,42 @@ export default {
       return new Response(JSON.stringify({ success: true, files: finalFiles }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
+    // Endpoint do bezpiecznego i redundantnego rejestrowania pliku na koncie użytkownika
+    if (url.pathname === "/my-files/record" && request.method === "POST") {
+      const userEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      try {
+        const body = await request.json();
+        const fileKey = body.key || body.fileKey;
+        if (!fileKey) {
+          return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku (key)." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        let headObj = null;
+        if (env.BUCKET) {
+          try {
+            headObj = await env.BUCKET.head(fileKey);
+          } catch (_) {}
+        }
+        const record = {
+          key: fileKey,
+          name: body.name || headObj?.customMetadata?.originalName || fileKey.split('/').pop() || fileKey,
+          size: body.size || headObj?.size || 0,
+          uploaded: body.uploaded || (headObj?.uploaded || new Date()).toISOString(),
+          duration: body.duration || (fileKey.startsWith('1d/') ? '1d' : (fileKey.startsWith('30d/') ? '30d' : (fileKey.startsWith('burn/') ? 'burn' : 'permanent'))),
+          directUrl: body.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
+          pageUrl: body.pageUrl || `https://dropsite.pages.dev/?f=${encodeURIComponent(fileKey)}`,
+          status: 'active',
+          existsOnDisk: true
+        };
+        await recordFileToUserHistory(userEmail, record);
+        return new Response(JSON.stringify({ success: true, file: record }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
     // =========================================================================
     // MODUŁ ALBUMÓW I KOLEKCJI (DROPSITE ALBUMS)
     // =========================================================================
@@ -1895,7 +2160,7 @@ export default {
         return new Response(JSON.stringify({
           success: true,
           albumId: albumId,
-          albumUrl: `https://dropsite.pl/?album=${albumId}`
+          albumUrl: `https://dropsite.pages.dev/?album=${albumId}`
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ success: false, message: "Błąd tworzenia albumu: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -1963,7 +2228,7 @@ export default {
               size: fHead.size,
               mime: mime,
               directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
-              pageUrl: `https://dropsite.pl/?f=${encodeURIComponent(key)}`
+              pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
             });
           }
         } catch (_) {}

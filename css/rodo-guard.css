@@ -1,0 +1,586 @@
+/* ==========================================================================
+   DROPSITE RODO GUARD — INTELIGENTNA DETEKCJA DANYCH WRAŻLIWYCH (AUTO-BLACKOUT)
+   Architektura 100% RAM, Obsidian Glass + Cyber Mint + Luxury Swiss
+   Zgodny z BRAND_GUIDELINES.md
+   ========================================================================== */
+
+/* 1. PRZYCISK URUCHOMIENIA W PASKU WŁAŚCIWOŚCI PDF STUDIO */
+.btn-rodo-auto-scan {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    height: 32px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(5, 150, 105, 0.24) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    border-radius: 8px;
+    color: #34D399;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.18);
+}
+
+.btn-rodo-auto-scan:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.28) 0%, rgba(5, 150, 105, 0.38) 100%);
+    border-color: #34D399;
+    color: #FFFFFF;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-rodo-auto-scan svg {
+    flex-shrink: 0;
+}
+
+/* 2. SZKLANY MODAL TARCZY RODO (OBSIDIAN GLASS) */
+.rodo-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(4, 8, 18, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+}
+
+.rodo-modal-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.rodo-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    max-height: 88vh;
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(16, 185, 129, 0.12);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.96);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rodo-modal-backdrop.active .rodo-modal-card {
+    transform: scale(1);
+}
+
+/* 3. NAGŁÓWEK MODALU */
+.rodo-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.rodo-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rodo-header-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    flex-shrink: 0;
+}
+
+.rodo-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rodo-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.rodo-modal-subtitle {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    margin: 0;
+}
+
+.rodo-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.rodo-close-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 4. STAN SKANOWANIA (SCANNING ANIMATION) */
+.rodo-scanning-state {
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.rodo-radar-pulse {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    border: 2px solid #34D399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    animation: rodoPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes rodoPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        transform: scale(0.96);
+    }
+    50% {
+        box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
+        transform: scale(1.04);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        transform: scale(0.96);
+    }
+}
+
+.rodo-scanning-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    margin: 0;
+}
+
+.rodo-scanning-sub {
+    font-size: 0.8rem;
+    color: #94A3B8;
+    margin: 0;
+}
+
+/* 5. GŁÓWNA ZAWARTOŚĆ WYNIKÓW */
+.rodo-results-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Pasek filtrów / kategorii */
+.rodo-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rodo-category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rodo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.rodo-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+.rodo-chip.active {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: #10B981;
+    color: #34D399;
+}
+
+.rodo-chip-count {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.rodo-bulk-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #94A3B8;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.rodo-bulk-select input {
+    accent-color: #10B981;
+}
+
+/* Lista wykrytych danych */
+.rodo-items-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rodo-item-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    transition: all 0.18s ease;
+}
+
+.rodo-item-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.rodo-item-card.selected {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.rodo-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.rodo-item-checkbox {
+    accent-color: #10B981;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.rodo-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.rodo-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.rodo-type-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.badge-pesel {
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #F87171;
+}
+
+.badge-nip {
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+}
+
+.badge-id {
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #FBBF24;
+}
+
+.badge-email {
+    background: rgba(168, 85, 247, 0.16);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    color: #C084FC;
+}
+
+.badge-iban {
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34D399;
+}
+
+.badge-amount {
+    background: rgba(236, 72, 153, 0.16);
+    border: 1px solid rgba(236, 72, 153, 0.35);
+    color: #F472B6;
+}
+
+.rodo-page-tag {
+    font-size: 0.72rem;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.rodo-status-pill {
+    font-size: 0.68rem;
+    color: #10B981;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rodo-item-value {
+    font-family: Consolas, monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    word-break: break-all;
+}
+
+.rodo-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.rodo-btn-inspect {
+    padding: 4px 9px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.rodo-btn-inspect:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+/* Brak wyników */
+.rodo-empty-state {
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.rodo-empty-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+}
+
+.rodo-empty-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin: 0;
+}
+
+.rodo-empty-sub {
+    font-size: 0.8rem;
+    color: #94A3B8;
+    margin: 0;
+    max-width: 420px;
+}
+
+/* 6. DOLNY PASEK AKCJI (FOOTER) */
+.rodo-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 24px;
+    background: rgba(15, 23, 42, 0.7);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rodo-footer-options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rodo-color-choice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    color: #CBD5E1;
+}
+
+.rodo-color-choice label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.rodo-color-choice input {
+    accent-color: #10B981;
+}
+
+.rodo-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rodo-btn-cancel {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.rodo-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+.rodo-btn-apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    border: 1px solid rgba(52, 211, 153, 0.5);
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.rodo-btn-apply:hover:not(:disabled) {
+    background: linear-gradient(135deg, #047857 0%, #059669 100%);
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1px);
+}
+
+.rodo-btn-apply:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 7. RESPANSYWNOŚĆ DLA URZĄDZEŃ MOBILNYCH */
+@media (max-width: 640px) {
+    .rodo-modal-card {
+        max-height: 92vh;
+        border-radius: 14px;
+    }
+    .rodo-modal-header {
+        padding: 14px 16px;
+    }
+    .rodo-filter-bar {
+        padding: 10px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .rodo-items-scroll {
+        padding: 12px 16px;
+    }
+    .rodo-modal-footer {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .rodo-footer-actions {
+        justify-content: flex-end;
+    }
+}

@@ -1,0 +1,171 @@
+/* ==========================================================================
+   DROPSITE CODE & TEXT VIEWER (STUDIO SYNTAX HIGHLIGHTER)
+   Theme: Obsidian Glass + Cyber Mint + Electric Cyan
+   Zero emoji, pure inline SVG, 100% XSS-Safe RAM rendering
+   ========================================================================== */
+
+.code-viewer-card {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    margin: 16px auto;
+    background: #080C16;
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    border-top: 1px solid rgba(52, 211, 153, 0.55);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(16, 185, 129, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.code-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(15, 23, 42, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.code-viewer-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.code-lang-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.16);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+    font-family: Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.code-file-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.code-stats-pill {
+    font-size: 0.74rem;
+    color: #64748B;
+    margin-left: 4px;
+}
+
+.code-viewer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.code-btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.code-btn-copy:hover {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #34D399;
+    transform: translateY(-1px);
+}
+
+.code-viewer-body {
+    position: relative;
+    max-height: 420px;
+    overflow: auto;
+    background: #060911;
+    display: flex;
+    font-family: Consolas, "JetBrains Mono", Menlo, monospace;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    tab-size: 4;
+}
+
+.code-line-numbers {
+    padding: 16px 10px 16px 14px;
+    background: rgba(4, 7, 14, 0.8);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    color: #475569;
+    text-align: right;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.code-content-block {
+    padding: 16px 18px;
+    margin: 0;
+    color: #E2E8F0;
+    white-space: pre;
+    overflow-x: auto;
+    flex: 1;
+}
+
+/* Kolorowanie składni */
+.token-keyword { color: #F43F5E; font-weight: 600; }
+.token-string { color: #34D399; }
+.token-number { color: #38BDF8; }
+.token-comment { color: #64748B; font-style: italic; }
+.token-function { color: #A78BFA; }
+.token-tag { color: #FB923C; }
+.token-attr { color: #38BDF8; }
+.token-boolean { color: #F59E0B; font-weight: 600; }
+
+@media (max-width: 640px) {
+    .code-viewer-card {
+        border-radius: 14px;
+        margin: 10px 0;
+    }
+    .code-viewer-header {
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .code-viewer-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .code-btn-copy {
+        padding: 5px 10px;
+        font-size: 0.72rem;
+    }
+    .code-viewer-body {
+        max-height: 300px;
+        font-size: 0.74rem;
+    }
+    .code-line-numbers {
+        padding: 12px 6px 12px 10px;
+    }
+    .code-content-block {
+        padding: 12px 14px;
+    }
+}

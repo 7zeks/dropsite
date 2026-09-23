@@ -494,13 +494,17 @@
     overflow: hidden;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 7px;
-    padding: 8px 16px;
+    padding: 0 16px;
+    height: 38px;
+    box-sizing: border-box;
     border-radius: 11px;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-top: 1px solid rgba(255, 255, 255, 0.28);
     background: rgba(255, 255, 255, 0.09);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     color: #F8FAFC;
     font-size: 13px;
     font-weight: 600;
@@ -510,53 +514,100 @@
     flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+/* Shimmer beam przechodzący przez przycisk Kopiuj */
+.clean-copy-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 25%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(52, 211, 153, 0.35) 75%,
+        transparent 100%
+    );
+    transform: skewX(-20deg);
+    animation: buttonSheenLoop 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes buttonSheenLoop {
+    0%, 35% {
+        left: -120%;
+    }
+    75%, 100% {
+        left: 220%;
+    }
+}
+
+.clean-copy-btn svg,
+.clean-copy-btn span {
+    position: relative;
+    z-index: 3;
+    pointer-events: none;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .clean-copy-btn:hover {
     background: rgba(255, 255, 255, 0.16);
     border-color: rgba(255, 255, 255, 0.28);
-    border-top-color: rgba(255, 255, 255, 0.4);
+    border-top-color: rgba(255, 255, 255, 0.45);
     color: #FFFFFF;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 16px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .clean-copy-btn:active {
-    transform: translateY(0) scale(0.98);
+    transform: scale(0.97);
 }
 
 .clean-copy-btn.copied {
-    background: rgba(16, 185, 129, 0.18) !important;
-    border-color: rgba(52, 211, 153, 0.45) !important;
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(52, 211, 153, 0.55) !important;
     color: #34D399 !important;
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* --- Aksamitny, gładki rozbryzg światła (Smooth Light Splash) --- */
+/* --- Dopracowany, aksamitny efekt Ripple Button --- */
 .btn-light-splash {
     position: absolute;
-    width: 180px;
-    height: 180px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(52, 211, 153, 0.55) 28%, rgba(56, 189, 248, 0.2) 55%, transparent 72%);
-    filter: blur(8px);
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(110, 231, 183, 0.75) 30%,
+        rgba(56, 189, 248, 0.4) 55%,
+        rgba(16, 185, 129, 0.15) 75%,
+        transparent 85%
+    );
+    filter: blur(4px);
     transform: translate(-50%, -50%) scale(0.05);
-    animation: smoothLightSplash 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: smoothRippleSplash 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     z-index: 2;
     mix-blend-mode: screen;
 }
 
-@keyframes smoothLightSplash {
+@keyframes smoothRippleSplash {
     0% {
-        transform: translate(-50%, -50%) scale(0.08);
-        opacity: 0.85;
+        transform: translate(-50%, -50%) scale(0.05);
+        opacity: 0.95;
     }
-    35% {
-        opacity: 0.65;
+    40% {
+        opacity: 0.75;
     }
     100% {
-        transform: translate(-50%, -50%) scale(1.6);
+        transform: translate(-50%, -50%) scale(2.2);
         opacity: 0;
     }
 }
@@ -570,6 +621,8 @@
 }
 
 .success-dock-primary-btn {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     box-sizing: border-box;
     display: inline-flex;

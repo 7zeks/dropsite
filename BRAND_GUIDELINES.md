@@ -120,8 +120,9 @@ Każdy nowy komponent (modal, przycisk, karta, formularz, powiadomienie) musi sp
 Zanim zatwierdzisz jakąkolwiek zmianę w kodzie, zweryfikuj:
 - [ ] **Czy interfejs nie jest przeładowany kapsułkami/pigułkami?** (Zastosuj czysty tekst, spacje i separatory `•`).
 - [ ] Czy strona zachowuje żywy, promienny i bezpieczny klimat (Cyber Mint + Neon Cyan + Obsidian Glass)?
-- [ ] Czy przycisk po kliknięciu wypełnia się miękkim światłem bez mechanicznego szarpania?
+- [ ] Czy przycisk po kliknięciu ma efekt ripple button?
 - [ ] Czy na telefonie elementy są łatwo dostępne pod kciukiem (Bottom-Sheet, Quick-Home FAB)?
-- [ ] Czy elementy na monitorze 2K / 27" nie rozjeżdżają się na boki i mieszczą się w jednym oknie (1 viewport)?
 - [ ] Czy żaden element pod kursorem myszy nie „ucieka”, nie trzęsie się i nie podąża w denerwujący sposób?
 - [ ] Czy komunikat dla klienta jest prosty, uspokajający i budzi bezwzględne zaufanie?
+- [ ] Czy użyłem ładne ikony svg zamiast brzydkich emotek?
+- [ ] Czy istnieje tłumaczenie w kilku językach?

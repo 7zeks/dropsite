@@ -69,6 +69,29 @@ window.smoothCloseModal = function(modalEl, callback) {
 
 // 2. Obsługa okienka logowania i rejestracji (Google + E-mail)
 const auth = firebase.auth();
+window.auth = auth;
+window.currentUserEmail = (localStorage.getItem('dropsite_user_email') || '').toLowerCase().trim();
+
+function getCurrentUserEmail() {
+    const user = (typeof auth !== 'undefined' && auth?.currentUser) || (window.auth && window.auth.currentUser);
+    const email = (user && user.email) || window.currentUserEmail || localStorage.getItem('dropsite_user_email') || '';
+    return email.toLowerCase().trim();
+}
+window.getCurrentUserEmail = getCurrentUserEmail;
+
+// Automatyczne przetwarzanie wyniku logowania Google Redirect na telefonach
+auth.getRedirectResult().then(result => {
+    if (result && result.user) {
+        if (typeof showNotification === 'function') {
+            showNotification(`Witaj, ${result.user.displayName || result.user.email || 'użytkowniku'}!`, 'success');
+        }
+    }
+}).catch(error => {
+    if (error && error.code && error.code !== 'auth/null-user') {
+        console.warn('Redirect auth notice:', error);
+    }
+});
+
 const loginBtn = document.getElementById('loginBtn');
 const loginModalWrap = document.getElementById('loginModalWrap');
 const closeLoginModal = document.getElementById('closeLoginModal');
@@ -80,6 +103,11 @@ const loginError = document.getElementById('loginError');
 
 let isRegisterMode = false;
 
+window.openLoginModal = function() {
+    if (loginError) loginError.textContent = '';
+    if (loginModalWrap) window.smoothOpenModal(loginModalWrap);
+};
+
 if (loginBtn) {
     loginBtn.addEventListener('click', () => {
         if (auth.currentUser) {
@@ -88,9 +116,59 @@ if (loginBtn) {
                 showNotification('Wylogowano pomyślnie', 'info');
             });
         } else {
-            loginError.textContent = '';
-            window.smoothOpenModal(loginModalWrap);
+            window.openLoginModal();
         }
+    });
+}
+
+const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+if (mobileLoginBtn) {
+    mobileLoginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const drawer = document.getElementById('mobileNavDrawer');
+        if (drawer) {
+            drawer.classList.remove('open');
+            drawer.style.display = 'none';
+        }
+        const hamburger = document.getElementById('mobileMenuBtn');
+        if (hamburger) hamburger.classList.remove('active');
+        document.body.style.overflow = '';
+        if (typeof window.closeMobileDrawer === 'function') {
+            window.closeMobileDrawer();
+        }
+        window.openLoginModal();
+    });
+}
+
+const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (auth.currentUser) {
+            auth.signOut().then(() => {
+                setProKey('');
+                showNotification('Wylogowano pomyślnie', 'info');
+                const drawer = document.getElementById('mobileNavDrawer');
+                if (drawer) drawer.classList.remove('open');
+                const hamburger = document.getElementById('mobileMenuBtn');
+                if (hamburger) hamburger.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+    });
+}
+
+const mobileUserInfo = document.getElementById('mobileUserInfo');
+if (mobileUserInfo) {
+    mobileUserInfo.addEventListener('click', () => {
+        const drawer = document.getElementById('mobileNavDrawer');
+        if (drawer) drawer.classList.remove('open');
+        const hamburger = document.getElementById('mobileMenuBtn');
+        if (hamburger) hamburger.classList.remove('active');
+        document.body.style.overflow = '';
+        const openUserPanelBtn = document.getElementById('openUserPanelBtn');
+        if (openUserPanelBtn) openUserPanelBtn.click();
     });
 }
 
@@ -118,7 +196,7 @@ if (dockUserInfo) {
 if (closeLoginModal) {
     closeLoginModal.addEventListener('click', () => {
         window.smoothCloseModal(loginModalWrap, () => {
-            loginError.textContent = '';
+            if (loginError) loginError.textContent = '';
         });
     });
 }
@@ -127,7 +205,7 @@ if (loginModalWrap) {
     loginModalWrap.addEventListener('click', (e) => {
         if (e.target === loginModalWrap) {
             window.smoothCloseModal(loginModalWrap, () => {
-                loginError.textContent = '';
+                if (loginError) loginError.textContent = '';
             });
         }
     });
@@ -137,14 +215,20 @@ if (loginModalWrap) {
 if (toggleAuthModeBtn) {
     toggleAuthModeBtn.addEventListener('click', () => {
         isRegisterMode = !isRegisterMode;
-        loginError.textContent = '';
+        if (loginError) loginError.textContent = '';
         if (isRegisterMode) {
-            if (authModalTitle) authModalTitle.textContent = 'Stwórz konto';
-            if (doLoginBtn) doLoginBtn.querySelector('.btn-text').textContent = 'Zarejestruj się';
+            if (authModalTitle) authModalTitle.textContent = 'Rejestracja';
+            if (doLoginBtn) {
+                const btnSpan = doLoginBtn.querySelector('.btn-text');
+                if (btnSpan) btnSpan.textContent = 'Zarejestruj się';
+            }
             toggleAuthModeBtn.innerHTML = 'Masz już konto? <span style="color: var(--accent-blue); font-weight: 600;">Zaloguj się</span>';
         } else {
             if (authModalTitle) authModalTitle.textContent = 'Zaloguj się';
-            if (doLoginBtn) doLoginBtn.querySelector('.btn-text').textContent = 'Zaloguj się';
+            if (doLoginBtn) {
+                const btnSpan = doLoginBtn.querySelector('.btn-text');
+                if (btnSpan) btnSpan.textContent = 'Zaloguj się';
+            }
             toggleAuthModeBtn.innerHTML = 'Nie masz konta? <span style="color: var(--accent-blue); font-weight: 600;">Zarejestruj się</span>';
         }
     });
@@ -152,25 +236,42 @@ if (toggleAuthModeBtn) {
 
 // Logowanie przez Google 1-kliknięciem
 if (googleLoginBtn) {
-    googleLoginBtn.addEventListener('click', async () => {
-        loginError.textContent = '';
+    googleLoginBtn.addEventListener('click', async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (loginError) loginError.textContent = '';
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
 
         try {
             googleLoginBtn.disabled = true;
             googleLoginBtn.style.opacity = '0.7';
+
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+            if (isMobile) {
+                // Na urządzeniach mobilnych używamy Redirect (nie jest blokowany przez mobile popup blockery)
+                await auth.signInWithRedirect(provider);
+                return;
+            }
+
             const result = await auth.signInWithPopup(provider);
-            loginModalWrap.setAttribute('hidden', '');
-            showNotification(`Witaj, ${result.user.displayName || 'użytkowniku'}!`, 'success');
+            if (loginModalWrap) window.smoothCloseModal(loginModalWrap);
+            showNotification(`Witaj, ${result.user.displayName || result.user.email || 'użytkowniku'}!`, 'success');
         } catch (error) {
             console.error("Błąd Google Auth:", error);
-            if (error.code === 'auth/popup-closed-by-user') {
-                loginError.textContent = 'Logowanie Google zostało przerwane.';
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                try {
+                    await auth.signInWithRedirect(provider);
+                    return;
+                } catch (redirectErr) {
+                    if (loginError) loginError.textContent = redirectErr.message;
+                }
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                if (loginError) loginError.textContent = 'Logowanie Google zostało anulowane.';
             } else if (error.code === 'auth/unauthorized-domain') {
-                loginError.textContent = 'Domena nie jest autoryzowana w Firebase Console (włącz 127.0.0.1 w Authentication -> Settings -> Authorized domains).';
+                if (loginError) loginError.textContent = 'Domena nie jest autoryzowana w Firebase Console (włącz domenę w Authentication -> Settings).';
             } else {
-                loginError.textContent = error.message || 'Wystąpił błąd podczas logowania przez Google.';
+                if (loginError) loginError.textContent = error.message || 'Wystąpił błąd podczas logowania przez Google.';
             }
         } finally {
             googleLoginBtn.disabled = false;
@@ -180,50 +281,59 @@ if (googleLoginBtn) {
 }
 
 // Logowanie / Rejestracja E-mail + Hasło
+const authEmailForm = document.getElementById('authEmailForm');
+const handleEmailAuthSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const emailInput = document.getElementById('adminEmail');
+    const passInput = document.getElementById('adminPass');
+    const email = emailInput ? emailInput.value.trim() : '';
+    const pass = passInput ? passInput.value : '';
+    if (loginError) loginError.textContent = '';
+
+    if (!email || !pass) {
+        if (loginError) loginError.textContent = 'Podaj adres e-mail i hasło.';
+        return;
+    }
+
+    if (pass.length < 6) {
+        if (loginError) loginError.textContent = 'Hasło musi mieć co najmniej 6 znaków.';
+        return;
+    }
+
+    try {
+        if (doLoginBtn) doLoginBtn.disabled = true;
+        if (isRegisterMode) {
+            await auth.createUserWithEmailAndPassword(email, pass);
+            showNotification('Konto zostało utworzone!', 'success');
+        } else {
+            await auth.signInWithEmailAndPassword(email, pass);
+            showNotification('Zalogowano pomyślnie!', 'success');
+        }
+        if (loginModalWrap) window.smoothCloseModal(loginModalWrap);
+        if (emailInput) emailInput.value = '';
+        if (passInput) passInput.value = '';
+    } catch (error) {
+        console.error("Błąd Auth:", error);
+        if (!loginError) return;
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            loginError.textContent = 'Nieprawidłowy adres e-mail lub hasło.';
+        } else if (error.code === 'auth/email-already-in-use') {
+            loginError.textContent = 'Konto z tym adresem e-mail już istnieje.';
+        } else if (error.code === 'auth/invalid-email') {
+            loginError.textContent = 'Wprowadzono niepoprawny adres e-mail.';
+        } else {
+            loginError.textContent = error.message;
+        }
+    } finally {
+        if (doLoginBtn) doLoginBtn.disabled = false;
+    }
+};
+
+if (authEmailForm) {
+    authEmailForm.addEventListener('submit', handleEmailAuthSubmit);
+}
 if (doLoginBtn) {
-    doLoginBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('adminEmail').value.trim();
-        const pass = document.getElementById('adminPass').value;
-        loginError.textContent = '';
-
-        if (!email || !pass) {
-            loginError.textContent = 'Podaj adres e-mail i hasło.';
-            return;
-        }
-
-        if (pass.length < 6) {
-            loginError.textContent = 'Hasło musi mieć co najmniej 6 znaków.';
-            return;
-        }
-
-        try {
-            doLoginBtn.disabled = true;
-            if (isRegisterMode) {
-                await auth.createUserWithEmailAndPassword(email, pass);
-                showNotification('Konto zostało utworzone!', 'success');
-            } else {
-                await auth.signInWithEmailAndPassword(email, pass);
-                showNotification('Zalogowano pomyślnie!', 'success');
-            }
-            loginModalWrap.setAttribute('hidden', '');
-            document.getElementById('adminEmail').value = '';
-            document.getElementById('adminPass').value = '';
-        } catch (error) {
-            console.error("Błąd Auth:", error);
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                loginError.textContent = 'Nieprawidłowy adres e-mail lub hasło.';
-            } else if (error.code === 'auth/email-already-in-use') {
-                loginError.textContent = 'Konto z tym adresem e-mail już istnieje.';
-            } else if (error.code === 'auth/invalid-email') {
-                loginError.textContent = 'Wprowadzono niepoprawny adres e-mail.';
-            } else {
-                loginError.textContent = error.message;
-            }
-        } finally {
-            doLoginBtn.disabled = false;
-        }
-    });
+    doLoginBtn.addEventListener('click', handleEmailAuthSubmit);
 }
 
 // === SYSTEM RÓL I UPRAWNIEŃ DLA ADMINA / PRO / FREE ===
@@ -346,6 +456,14 @@ auth.onAuthStateChanged(async user => {
     const dockLogoutBtn = document.getElementById('dockLogoutBtn');
 
     if (user) {
+        if (user.email) {
+            const cleanEmail = user.email.toLowerCase().trim();
+            window.currentUserEmail = cleanEmail;
+            localStorage.setItem('dropsite_user_email', cleanEmail);
+        }
+        if (user.uid) {
+            localStorage.setItem('dropsite_user_uid', user.uid);
+        }
         document.body.classList.add('is-user-logged');
         const displayName = user.displayName ? user.displayName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Konto');
         if (btnText) btnText.textContent = displayName;
@@ -360,6 +478,21 @@ auth.onAuthStateChanged(async user => {
 
         const isPro = typeof isProUser === 'function' && isProUser();
         if (dockProBadge) dockProBadge.style.display = isPro ? 'inline-flex' : 'none';
+
+        // Synchronizacja stanu w menu mobilnym
+        const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+        const mobileUserCard = document.getElementById('mobileUserCard');
+        const mobileAvatar = document.getElementById('mobileAvatar');
+        const mobileUsername = document.getElementById('mobileUsername');
+        const mobileProBadge = document.getElementById('mobileProBadge');
+        const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+
+        if (mobileLoginBtn) mobileLoginBtn.style.display = 'none';
+        if (mobileUserCard) mobileUserCard.style.display = 'flex';
+        if (mobileAvatar) mobileAvatar.textContent = (displayName[0] || 'U').toUpperCase();
+        if (mobileUsername) mobileUsername.textContent = displayName;
+        if (mobileProBadge) mobileProBadge.style.display = isPro ? 'inline-flex' : 'none';
+        if (mobileLogoutBtn) mobileLogoutBtn.title = `Wyloguj (${user.email || displayName})`;
 
         if (loginBtn) {
             loginBtn.title = `Zalogowano jako: ${user.email || displayName} (Kliknij, aby się wylogować)`;
@@ -474,6 +607,9 @@ auth.onAuthStateChanged(async user => {
             }
         }
     } else {
+        window.currentUserEmail = '';
+        localStorage.removeItem('dropsite_user_email');
+        localStorage.removeItem('dropsite_user_uid');
         document.body.classList.remove('is-user-logged');
         const dockUserSection = document.getElementById('dockUserSection');
         const dockDividerUser = document.getElementById('dockDividerUser');
@@ -482,6 +618,12 @@ auth.onAuthStateChanged(async user => {
         if (dockUserSection) dockUserSection.style.display = 'none';
         if (dockDividerUser) dockDividerUser.style.display = 'none';
         if (dockProBadge) dockProBadge.style.display = 'none';
+
+        // Synchronizacja stanu w menu mobilnym (niezalogowany)
+        const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+        const mobileUserCard = document.getElementById('mobileUserCard');
+        if (mobileLoginBtn) mobileLoginBtn.style.display = 'flex';
+        if (mobileUserCard) mobileUserCard.style.display = 'none';
 
         if (btnText) btnText.textContent = 'Login';
         if (loginBtn) {
@@ -524,6 +666,7 @@ document.addEventListener('click', (e) => {
 
 let currentFreeSpace = 10737418240; // Domyślnie 10 GB
 const WORKER_URL = 'https://uploud-api.dropsite33.workers.dev';
+const PUBLIC_APP_URL = 'https://dropsite.pages.dev';
 
 function updateProUI() {
     const isPro = isProUser();
@@ -556,13 +699,13 @@ function updateProUI() {
         const subtitleSpan = proActiveBox.querySelector('.pro-active-subtitle');
         if (titleSpan) {
             titleSpan.textContent = isAdmin 
-                ? 'Konto Administratora (Pełny dostęp PRO)' 
-                : 'Konto Dropsite PRO jest aktywne!';
+                ? (window.t ? window.t('pro_admin_active_title') : 'Konto Administratora (Pełny dostęp PRO)') 
+                : (window.t ? window.t('pro_active_text') : 'Konto Dropsite PRO jest aktywne!');
         }
         if (subtitleSpan) {
             subtitleSpan.textContent = isAdmin
-                ? 'Nielimitowany storage, brak reklam i priorytetowy transfer'
-                : 'Wszystkie limity odblokowane (10 GB, brak reklam, max prędkość)';
+                ? (window.t ? window.t('pro_admin_active_sub') : 'Nielimitowany storage, brak reklam i priorytetowy transfer')
+                : (window.t ? window.t('pro_active_sub') : 'Wszystkie limity odblokowane (10 GB, brak reklam, max prędkość)');
         }
         const manageSubBtn = document.getElementById('btnManageSubscription');
         if (manageSubBtn) {
@@ -585,9 +728,10 @@ function updateProUI() {
             const subtitle = document.getElementById('proRestoreSubtitle');
             if (subtitle) {
                 if (user && user.email) {
-                    subtitle.textContent = `Wykryto aktywną licencję PRO przypisaną do konta ${user.email}. Możesz ją włączyć jednym kliknięciem.`;
+                    const template = window.t ? window.t('pro_restore_user_sub') : 'Wykryto aktywną licencję PRO przypisaną do konta {email}. Możesz ją włączyć jednym klikniem.';
+                    subtitle.textContent = template.replace('{email}', user.email);
                 } else {
-                    subtitle.textContent = 'Klucz PRO został odpięty na tym urządzeniu. Możesz go włączyć z powrotem.';
+                    subtitle.textContent = window.t ? window.t('pro_restore_guest_sub') : 'Klucz PRO został odpięty na tym urządzeniu. Możesz go włączyć z powrotem.';
                 }
             }
         } else {
@@ -604,12 +748,14 @@ function updateProUI() {
     if (proPlanActionBtn) {
         const textSpan = proPlanActionBtn.querySelector('.btn-text');
         if (isPro) {
-            if (textSpan) textSpan.textContent = isAdmin ? 'Twój status: Administrator 👑' : 'Twoja obecna subskrypcja: PRO ⭐';
+            if (textSpan) textSpan.textContent = isAdmin 
+                ? (window.t ? window.t('pro_plan_status_admin') : 'Twój status: Administrator 👑') 
+                : (window.t ? window.t('pro_plan_status_pro') : 'Twoja obecna subskrypcja: PRO ⭐');
             proPlanActionBtn.style.background = 'rgba(89, 168, 41, 0.2)';
             proPlanActionBtn.style.borderColor = '#59A829';
             proPlanActionBtn.style.color = '#C4E7D4';
         } else {
-            if (textSpan) textSpan.textContent = 'Odblokuj PRO / Aktywuj klucz';
+            if (textSpan) textSpan.textContent = window.t ? window.t('pro_plan_status_free') : 'Odblokuj PRO / Aktywuj klucz';
             proPlanActionBtn.style.background = '';
             proPlanActionBtn.style.borderColor = '';
             proPlanActionBtn.style.color = '';
@@ -627,6 +773,10 @@ function updateProUI() {
     }
 }
 
+document.addEventListener('dropsite_language_changed', () => {
+    updateProUI();
+});
+
 window.openProModal = function(context = null) {
     const modal = document.getElementById('proModalWrap');
     if (modal) {
@@ -641,12 +791,13 @@ window.openProModal = function(context = null) {
         if (context && context.reason === 'file_limit') {
             if (convBanner) convBanner.hidden = false;
             if (convTitle) {
-                const name = context.fileName || 'Wybrany plik';
+                const name = context.fileName || (window.t ? window.t('pro_conv_default_file') : 'Wybrany plik');
                 const size = typeof formatBytes === 'function' ? formatBytes(context.fileSize || 0) : `${Math.round((context.fileSize || 0) / 1048576)} MB`;
-                convTitle.textContent = `Plik "${name}" (${size}) przekracza darmowy limit 250 MB`;
+                const titleTpl = window.t ? window.t('pro_conv_limit_file_title') : 'Plik "{name}" ({size}) przekracza darmowy limit 250 MB';
+                convTitle.textContent = titleTpl.replace('{name}', name).replace('{size}', size);
             }
             if (convDesc) {
-                convDesc.textContent = 'Odblokuj konto Dropsite PRO (14,99 zł), aby przesyłać potężne pliki do 10 GB bez ograniczeń prędkości.';
+                convDesc.textContent = window.t ? window.t('pro_conv_desc') : 'Odblokuj konto Dropsite PRO (14,99 zł), aby przesyłać potężne pliki do 10 GB z pełną prędkością.';
             }
         } else {
             if (convBanner) convBanner.hidden = true;
@@ -1778,12 +1929,15 @@ document.querySelectorAll('input[name="duration"]').forEach(radio => {
     });
 });
 
-// Inicjalizacja pozycji ślizgacza po załadowaniu oraz przy zmianie rozmiaru okna
+// Inicjalizacja pozycji ślizgacza po załadowaniu oraz przy rzeczywistej zmianie szerokości okna
+let _lastGliderWinWidth = window.innerWidth;
 window.addEventListener('resize', () => {
+    if (Math.abs(window.innerWidth - _lastGliderWinWidth) < 10) return;
+    _lastGliderWinWidth = window.innerWidth;
     if (typeof window.updateRetentionGlider === 'function') {
         window.updateRetentionGlider(true);
     }
-});
+}, { passive: true });
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
@@ -2037,6 +2191,10 @@ async function updateSelectedFile(filesList) {
         fsTelemetry.classList.add('is-hidden');
     }
 
+    if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.showForFiles === 'function') {
+        window.DropsiteOmniDropzone.showForFiles(filesList);
+    }
+
     // Opcja Cinematic Delivery (muzyka) dostępna WYŁĄCZNIE dla kolekcji / albumu wielu zdjęć
     const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name));
     const cinematicCard = document.getElementById('cinematicOptionCard');
@@ -2115,6 +2273,18 @@ async function updateSelectedFile(filesList) {
                     ${extraCount}
                 </div>
             `;
+
+            const hasVideoFiles = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi)$/i.test(f.name));
+            if (hasVideoFiles) {
+                previewBodyHtml += `
+                    <div class="mf-video-streaming-tip" style="margin-top: 10px; padding: 10px 12px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 9px; font-size: 11.5px; color: #BAE6FD; display: flex; align-items: flex-start; gap: 8px; text-align: left;">
+                        <span style="font-size: 15px; line-height: 1;">🎬</span>
+                        <div style="line-height: 1.45;">
+                            <strong style="color: #F0F9FF;">Nowość w Dropsite:</strong> Wykryto pliki wideo w paczce ZIP. Odbiorca będzie mógł odtwarzać je <strong>w locie w playerze wideo bez konieczności pobierania całego archiwum na dysk</strong> (Zero-RAM Streaming).
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         dropzone.innerHTML = `
@@ -2303,16 +2473,9 @@ function smoothScrollByStep(delta, duration = 160) {
 }
 
 function scrollByCapsuleDelta(initialHeight) {
-    const uploadBox = document.getElementById('uploadBox') || document.querySelector('.upload-container');
-    if (!uploadBox) return;
-
-    requestAnimationFrame(() => {
-        const currentHeight = uploadBox.offsetHeight;
-        const delta = currentHeight - initialHeight;
-        if (delta > 2) {
-            smoothScrollByStep(delta, 160);
-        }
-    });
+    // Celowo wyłączone wg BRAND_GUIDELINES.md i dyspozycji:
+    // Strona pozostaje stabilna na samej górze (top: 0), zero auto-scrolla w dół.
+    return;
 }
 
 // === DRAG & DROP (CINEMATIC) ===
@@ -2320,11 +2483,31 @@ function scrollByCapsuleDelta(initialHeight) {
 const globalDragOverlay = document.getElementById('globalDragOverlay');
 let dragCounter = 0;
 
+// Pomocnik sprawdzający, czy przeciągany obiekt to plik z systemu operacyjnego
+function isNativeFileDragEvent(e) {
+    if (window._isInternalDragging) return false;
+    if (e && e.target && typeof e.target.closest === 'function') {
+        if (e.target.closest('#organizeWorkspace, .matrix-grid, .matrix-card, .pdf-organize-modal')) {
+            return false;
+        }
+    }
+    if (!e || !e.dataTransfer) return false;
+    const types = e.dataTransfer.types;
+    if (!types) return false;
+    const typesArray = Array.from(types);
+    return typesArray.includes('Files') && !typesArray.includes('application/x-dropsite-page');
+}
+
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    window.addEventListener(eventName, (e) => e.preventDefault(), false);
+    window.addEventListener(eventName, (e) => {
+        if (isNativeFileDragEvent(e)) {
+            e.preventDefault();
+        }
+    }, false);
 });
 
 window.addEventListener('dragenter', (e) => {
+    if (!isNativeFileDragEvent(e)) return;
     dragCounter++;
     if (dragCounter === 1 && globalDragOverlay) {
         globalDragOverlay.classList.add('active');
@@ -2332,6 +2515,11 @@ window.addEventListener('dragenter', (e) => {
 });
 
 window.addEventListener('dragleave', (e) => {
+    if (window._isInternalDragging) {
+        if (globalDragOverlay) globalDragOverlay.classList.remove('active');
+        return;
+    }
+    if (!isNativeFileDragEvent(e)) return;
     dragCounter--;
     if (dragCounter <= 0 && globalDragOverlay) {
         dragCounter = 0;
@@ -2339,11 +2527,24 @@ window.addEventListener('dragleave', (e) => {
     }
 });
 
-window.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+// Zabezpieczenie na wypadek anulowania / zakończenia przeciągania wewnętrznych kafelków
+window.addEventListener('dragend', () => {
+    window._isInternalDragging = false;
     dragCounter = 0;
     if (globalDragOverlay) globalDragOverlay.classList.remove('active');
+});
+
+window.addEventListener('drop', async (e) => {
+    if (window._isInternalDragging) {
+        dragCounter = 0;
+        if (globalDragOverlay) globalDragOverlay.classList.remove('active');
+        return;
+    }
+    dragCounter = 0;
+    if (globalDragOverlay) globalDragOverlay.classList.remove('active');
+    if (!isNativeFileDragEvent(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
     
     if (e.dataTransfer) {
         const scannedFiles = await scanFilesAndFolders(e.dataTransfer);
@@ -2412,6 +2613,59 @@ document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'fileInput') {
         if (e.target.files && e.target.files.length > 0) {
             updateSelectedFile(e.target.files);
+        }
+    }
+});
+
+// === GLOBALNY SMART PASTE (CTRL + V) ===
+window.addEventListener('paste', (e) => {
+    // Nie przechwytuj, jeśli użytkownik pisze w polu formularza
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+    }
+
+    if (!e.clipboardData) return;
+
+    const items = e.clipboardData.items || [];
+    const pastedFiles = [];
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file) {
+                // Jeśli to zrzut ekranu ze schowka (np. Win+Shift+S domyślnie pod nazwą image.png)
+                let finalName = file.name;
+                if (!finalName || finalName === 'image.png' || finalName.startsWith('image.')) {
+                    const now = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                    finalName = `zrzut_ekranu_${ts}.png`;
+                }
+                const renamedFile = new File([file], finalName, { type: file.type || 'image/png' });
+                pastedFiles.push(renamedFile);
+            }
+        }
+    }
+
+    if (pastedFiles.length > 0) {
+        e.preventDefault();
+        // Automatyczne przełączenie na widok główny jeśli użytkownik jest w innej zakładce
+        const homeNav = document.querySelector('[data-target="view-glowna"]');
+        if (homeNav && !homeNav.classList.contains('active')) {
+            homeNav.click();
+        }
+
+        if (typeof updateSelectedFile === 'function') {
+            updateSelectedFile(pastedFiles);
+        }
+
+        if (typeof playSound === 'function') playSound('click');
+        if (window.showToast) {
+            window.showToast(`Wklejono ze schowka: ${pastedFiles.map(f => f.name).join(', ')}`, 'success');
+        } else if (typeof showNotification === 'function') {
+            showNotification(`Wklejono ze schowka: ${pastedFiles.map(f => f.name).join(', ')}`, 'success');
         }
     }
 });
@@ -2487,6 +2741,16 @@ async function decryptBufferAESGCM(combinedBuffer, key) {
         data
     );
 }
+
+// === OCHRONA PRZED PRZYPADKOWYM ZAMKNIĘCIEM KARTY W TRAKCIE TRANSFERU ===
+window._isUploadingActive = false;
+window.addEventListener('beforeunload', (e) => {
+    if (window._isUploadingActive) {
+        e.preventDefault();
+        e.returnValue = 'Trwa przesyłanie pliku. Czy na pewno chcesz opuścić stronę?';
+        return e.returnValue;
+    }
+});
 
 // === NOWY SYSTEM WGRYWANIA (Z OBSŁUGĄ PRO, MULTIPART I TELEMETRII) ===
 async function uploadFile() {
@@ -2691,6 +2955,7 @@ async function uploadFile() {
             timelockHint = document.getElementById('timeLockHintInput')?.value.trim() || '';
         }
 
+        window._isUploadingActive = true;
         if (file.size <= 10 * 1024 * 1024) { 
             await uploadFileStandard(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, timelockTimestamp, timelockHint, btnTextSpan, updateTelemetry);
         } else { 
@@ -2698,12 +2963,24 @@ async function uploadFile() {
         }
     } catch (error) {
         showError(error.message);
+    } finally {
+        window._isUploadingActive = false;
     }
 }
+
+// Blokada przypadkowego wyjścia / zamknięcia karty podczas wysyłania pliku
+window.addEventListener('beforeunload', (e) => {
+    if (window._isUploadingActive) {
+        e.preventDefault();
+        e.returnValue = 'Trwa przesyłanie pliku. Czy na pewno chcesz opuścić stronę i przerwać transfer?';
+        return e.returnValue;
+    }
+});
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
 async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
     const proKey = getProKey();
+    const currentEmail = getCurrentUserEmail();
     let urlReq = `${WORKER_URL}/upload-small?file=${encodeURIComponent(file.name)}&expiry=${duration}`;
     if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
     if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
@@ -2716,7 +2993,7 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
     if (timehint) urlReq += `&timehint=${encodeURIComponent(timehint)}`;
     if (window._isUploadingAlbum || (file && file.name && file.name.startsWith('Album_'))) urlReq += `&album=1`;
     if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
-    if (window.auth?.currentUser?.email) urlReq += `&userEmail=${encodeURIComponent(window.auth.currentUser.email)}`;
+    if (currentEmail) urlReq += `&userEmail=${encodeURIComponent(currentEmail)}`;
     
     if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie...';
 
@@ -2755,90 +3032,261 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
     xhr.open("PUT", urlReq, true);
     xhr.setRequestHeader("Content-Type", file.type || 'application/octet-stream');
     if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
-    if (window.auth?.currentUser?.email) xhr.setRequestHeader("X-User-Email", window.auth.currentUser.email);
+    if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
     xhr.send(file);
 }
 
-// === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Niezawodny) ===
+// === SYSTEM WZNAWIANIA TRANSFERÓW MULTIPART (RESUMABLE UPLOAD) ===
+function getMultipartSessionKey(file) {
+    if (!file) return null;
+    const namePart = (file.name || '').replace(/[^a-zA-Z0-9._-]/g, '_');
+    return `dropsite_resumable_${namePart}_${file.size}`;
+}
+
+function getSavedMultipartSession(file) {
+    const sKey = getMultipartSessionKey(file);
+    if (!sKey) return null;
+    try {
+        const raw = localStorage.getItem(sKey);
+        if (!raw) return null;
+        const session = JSON.parse(raw);
+        // Sesja ważna maksymalnie 24h
+        if (session && session.timestamp && (Date.now() - session.timestamp < 24 * 3600 * 1000)) {
+            return session;
+        }
+        localStorage.removeItem(sKey);
+    } catch (_) {}
+    return null;
+}
+
+function saveMultipartSession(file, data) {
+    const sKey = getMultipartSessionKey(file);
+    if (!sKey) return;
+    try {
+        localStorage.setItem(sKey, JSON.stringify({
+            ...data,
+            timestamp: Date.now()
+        }));
+    } catch (_) {}
+}
+
+function clearMultipartSession(file) {
+    const sKey = getMultipartSessionKey(file);
+    if (sKey) {
+        try { localStorage.removeItem(sKey); } catch (_) {}
+    }
+}
+
+// === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Concurrency = 3, Auto-Retry, Resumable Upload) ===
 async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
     const proKey = getProKey();
-    let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
-    if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
-    if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
-    if (note) urlReq += `&note=${encodeURIComponent(note)}`;
-    if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
-    if (creatorBrand) urlReq += `&brand=${encodeURIComponent(creatorBrand)}`;
-    if (isSpy) urlReq += `&spy=1`;
-    if (isCinematic) urlReq += `&cinematic=1&track=${encodeURIComponent(cinematicTrack || 'piano')}`;
-    if (timelock) urlReq += `&timelock=${encodeURIComponent(timelock)}`;
-    if (timehint) urlReq += `&timehint=${encodeURIComponent(timehint)}`;
-    if (window._isUploadingAlbum || (file && file.name && file.name.startsWith('Album_'))) urlReq += `&album=1`;
-    if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
-    if (window.auth?.currentUser?.email) urlReq += `&userEmail=${encodeURIComponent(window.auth.currentUser.email)}`;
-    
-    const headers = proKey ? { 'X-Pro-Key': proKey } : {};
-    if (window.auth?.currentUser?.email) headers['X-User-Email'] = window.auth.currentUser.email;
-    const response = await fetch(urlReq, { headers });
-    const data = await response.json();
+    const currentEmail = getCurrentUserEmail();
 
-    if (!data.success) {
-        if (data.code === 'PRO_REQUIRED') window.openProModal();
-        throw new Error(data.message || "Błąd generowania sesji uploadu");
-    }
-    if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie (0%)...';
-
-    const { uploadId, key } = data;
     const CHUNK_SIZE = 10 * 1024 * 1024; 
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const parts = [];
-    let uploadedBytes = 0;
 
+    let uploadId = null;
+    let key = null;
+    let finalUrl = null;
+    let parts = [];
+    const savedPartsMap = new Map();
+
+    // Sprawdź czy istnieje aktywna, niedokończona sesja dla tego pliku (Resumable Upload)
+    const savedSession = getSavedMultipartSession(file);
+    if (savedSession && savedSession.uploadId && savedSession.key && Array.isArray(savedSession.parts)) {
+        uploadId = savedSession.uploadId;
+        key = savedSession.key;
+        finalUrl = savedSession.finalUrl;
+        savedSession.parts.forEach(p => {
+            if (p && p.partNumber && p.etag) {
+                savedPartsMap.set(p.partNumber, p.etag);
+                parts.push({ partNumber: p.partNumber, etag: p.etag });
+            }
+        });
+        console.log(`[Dropsite Resumable] Wykryto istniejącą sesję dla ${file.name}. Wznowienie z ${savedPartsMap.size}/${totalChunks} przesłanymi chunkami!`);
+        if (typeof showNotification === 'function') {
+            showNotification(`Wznawianie transferu: ${savedPartsMap.size} z ${totalChunks} części już w chmurze!`, 'info');
+        }
+    }
+
+    // Jeśli brak aktywnej sesji, utwórz nową w Cloudflare R2
+    if (!uploadId || !key) {
+        let urlReq = `${WORKER_URL}/multipart/create?file=${encodeURIComponent(file.name)}&expiry=${duration}&size=${file.size}`;
+        if (customSlug) urlReq += `&slug=${encodeURIComponent(customSlug)}`;
+        if (pwd) urlReq += `&pwd=${encodeURIComponent(pwd)}`;
+        if (note) urlReq += `&note=${encodeURIComponent(note)}`;
+        if (maxdl) urlReq += `&maxdl=${encodeURIComponent(maxdl)}`;
+        if (creatorBrand) urlReq += `&brand=${encodeURIComponent(creatorBrand)}`;
+        if (isSpy) urlReq += `&spy=1`;
+        if (isCinematic) urlReq += `&cinematic=1&track=${encodeURIComponent(cinematicTrack || 'piano')}`;
+        if (timelock) urlReq += `&timelock=${encodeURIComponent(timelock)}`;
+        if (timehint) urlReq += `&timehint=${encodeURIComponent(timehint)}`;
+        if (window._isUploadingAlbum || (file && file.name && file.name.startsWith('Album_'))) urlReq += `&album=1`;
+        if (proKey) urlReq += `&proKey=${encodeURIComponent(proKey)}`;
+        if (currentEmail) urlReq += `&userEmail=${encodeURIComponent(currentEmail)}`;
+        
+        const headers = proKey ? { 'X-Pro-Key': proKey } : {};
+        if (currentEmail) headers['X-User-Email'] = currentEmail;
+        const response = await fetch(urlReq, { headers });
+        const data = await response.json();
+
+        if (!data.success) {
+            if (data.code === 'PRO_REQUIRED') window.openProModal();
+            throw new Error(data.message || "Błąd generowania sesji uploadu");
+        }
+
+        uploadId = data.uploadId;
+        key = data.key;
+        finalUrl = data.finalUrl;
+        parts = [];
+
+        // Zainicjuj stan sesji w pamięci trwałej przeglądarki
+        saveMultipartSession(file, { uploadId, key, finalUrl, parts: [] });
+    }
+
+    const chunkLoadedBytes = new Array(totalChunks).fill(0);
+    // Uzupełnij już wgrane wcześniej chunki
     for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-        const partNumber = i + 1;
+        const pNum = i + 1;
+        if (savedPartsMap.has(pNum)) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            chunkLoadedBytes[i] = end - start;
+        }
+    }
 
-        const chunkData = await new Promise((resolve, reject) => {
+    const updateAggregatedProgress = () => {
+        const currentTotalUploaded = chunkLoadedBytes.reduce((a, b) => a + b, 0);
+        const percentComplete = Math.min(99.9, (currentTotalUploaded / file.size) * 100);
+        if (fsProgressBar) fsProgressBar.style.width = percentComplete + '%';
+        if (fsSizeOrProgress) {
+            fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(currentTotalUploaded)} z ${formatBytes(file.size)}`;
+        }
+        if (typeof onProgressUpdate === 'function') onProgressUpdate(currentTotalUploaded);
+        if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie (${Math.round(percentComplete)}%)...`;
+    };
+
+    updateAggregatedProgress();
+
+    function uploadSingleChunkAttempt(partNumber, chunk, chunkIndex) {
+        return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.upload.addEventListener("progress", (event) => {
                 if (event.lengthComputable) {
-                    const currentTotalUploaded = uploadedBytes + event.loaded;
-                    const percentComplete = (currentTotalUploaded / file.size) * 100;
-                    fsProgressBar.style.width = percentComplete + '%';
-                    fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(currentTotalUploaded)} z ${formatBytes(file.size)}`;
-                    if (typeof onProgressUpdate === 'function') onProgressUpdate(currentTotalUploaded);
+                    chunkLoadedBytes[chunkIndex] = event.loaded;
+                    updateAggregatedProgress();
                 }
             });
 
             xhr.addEventListener("load", () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(JSON.parse(xhr.responseText));
+                    try {
+                        const parsed = JSON.parse(xhr.responseText);
+                        if (parsed.success) {
+                            chunkLoadedBytes[chunkIndex] = chunk.size;
+                            updateAggregatedProgress();
+                            resolve(parsed);
+                        } else {
+                            reject(new Error(parsed.message || `Serwer odrzucił chunk #${partNumber}`));
+                        }
+                    } catch (parseErr) {
+                        reject(new Error(`Niepoprawna odpowiedź serwera dla chunk #${partNumber}`));
+                    }
                 } else {
-                    reject(new Error(`Błąd wysyłania chunka #${partNumber}`));
+                    reject(new Error(`Błąd HTTP ${xhr.status} dla chunk #${partNumber}`));
                 }
             });
+
             xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
-            
+            xhr.addEventListener("timeout", () => reject(new Error(`Przekroczono limit czasu (timeout) chunk #${partNumber}`)));
+            xhr.timeout = 75000; // 75s na pojedynczy chunk
+
             xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
             if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
+            if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
             xhr.send(chunk);
         });
-
-        if (!chunkData.success) {
-            fetch(`${WORKER_URL}/multipart/abort?key=${encodeURIComponent(key)}&uploadId=${uploadId}`, { method: 'DELETE' }).catch(()=>{});
-            throw new Error("Błąd podczas wgrywania części pliku.");
-        }
-
-        parts.push({ partNumber: chunkData.partNumber, etag: chunkData.etag });
-        uploadedBytes += (end - start);
-        if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie (${Math.round((uploadedBytes / file.size) * 100)}%)...`;
     }
 
-    if (btnTextSpan) btnTextSpan.textContent = 'Składanie pliku...';
-    const completeRes = await fetch(`${WORKER_URL}/multipart/complete?key=${encodeURIComponent(key)}&uploadId=${uploadId}`, {
+    async function uploadChunkWithRetry(partNumber, chunk, chunkIndex) {
+        const MAX_RETRIES = 3;
+        let lastErr = null;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return await uploadSingleChunkAttempt(partNumber, chunk, chunkIndex);
+            } catch (err) {
+                lastErr = err;
+                console.warn(`[Dropsite Multipart] Chunk #${partNumber} niepowodzenie (próba ${attempt}/${MAX_RETRIES}):`, err.message);
+                if (attempt < MAX_RETRIES) {
+                    chunkLoadedBytes[chunkIndex] = 0; // resetuj postęp tego chunka przed ponowieniem
+                    updateAggregatedProgress();
+                    const delayMs = attempt * 1200; // 1.2s, 2.4s
+                    await new Promise(r => setTimeout(r, delayMs));
+                }
+            }
+        }
+        throw lastErr;
+    }
+
+    // Pula zadań – filtrujemy chunki, które zostały już wgrane we wcześniejszej sesji
+    const queue = [];
+    for (let i = 0; i < totalChunks; i++) {
+        const partNumber = i + 1;
+        if (savedPartsMap.has(partNumber)) {
+            continue; // Ten chunk już jest na serwerze!
+        }
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+        queue.push({ chunk, partNumber, chunkIndex: i });
+    }
+
+    let hasWorkerFailed = false;
+    let workerFailureError = null;
+
+    async function queueWorker() {
+        while (queue.length > 0) {
+            if (hasWorkerFailed) break;
+            const task = queue.shift();
+            if (!task) break;
+
+            try {
+                const chunkData = await uploadChunkWithRetry(task.partNumber, task.chunk, task.chunkIndex);
+                parts.push({ partNumber: chunkData.partNumber, etag: chunkData.etag });
+                // Zapisz stan po każdym pomyślnie wgranym chunku (dla niezawodnego wznawiania)
+                saveMultipartSession(file, { uploadId, key, finalUrl, parts });
+            } catch (err) {
+                hasWorkerFailed = true;
+                workerFailureError = err;
+                throw err;
+            }
+        }
+    }
+
+    const CONCURRENCY = Math.min(3, Math.max(1, queue.length));
+    const workerPromises = [];
+    for (let w = 0; w < CONCURRENCY; w++) {
+        workerPromises.push(queueWorker());
+    }
+
+    try {
+        await Promise.all(workerPromises);
+    } catch (poolErr) {
+        // Nie wywołujemy natychmiast abort(), aby umożliwić użytkownikowi wznowienie tego samego pliku!
+        throw new Error(`Wgrywanie przerwane: ${workerFailureError?.message || poolErr.message}. Możesz ponowić plik, aby dokończyć transfer.`);
+    }
+
+    // KRYTYCZNE DLA CLOUDFLARE R2 / S3: Posortowanie części rosnąco według partNumber
+    parts.sort((a, b) => a.partNumber - b.partNumber);
+
+    if (btnTextSpan) btnTextSpan.textContent = 'Składanie pliku w chmurze...';
+    const completeRes = await fetch(`${WORKER_URL}/multipart/complete?key=${encodeURIComponent(key)}&uploadId=${uploadId}${currentEmail ? `&userEmail=${encodeURIComponent(currentEmail)}` : ''}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(proKey ? { 'X-Pro-Key': proKey } : {}) },
+        headers: { 
+            'Content-Type': 'application/json', 
+            ...(proKey ? { 'X-Pro-Key': proKey } : {}),
+            ...(currentEmail ? { 'X-User-Email': currentEmail } : {})
+        },
         body: JSON.stringify({ parts })
     });
     const completeData = await completeRes.json();
@@ -2847,7 +3295,10 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
         throw new Error(completeData.message || "Błąd podczas łączenia pliku.");
     }
 
-    showSuccessScreen(data.finalUrl, key, duration);
+    // Po pomyślnym złożeniu usuń sesję z pamięci podręcznej
+    clearMultipartSession(file);
+
+    showSuccessScreen(finalUrl, key, duration);
 }
 
 // =========================================================================
@@ -2871,12 +3322,11 @@ window.debouncedUpdateTransferSettings = debouncedUpdateTransferSettings;
 
 function buildTransferUrls(fileKey) {
     if (!fileKey) return null;
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    let pageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
-    let smartShareUrl = isLocal 
-        ? pageUrl 
-        : `${WORKER_URL}/f/${cleanKeyPath}`;
+    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
+    let pageUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
+    let localPageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
+    let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
     
     const params = new URLSearchParams();
     
@@ -2933,16 +3383,18 @@ function buildTransferUrls(fileKey) {
     const pStr = params.toString();
     if (pStr) {
         pageUrl += '&' + pStr;
+        localPageUrl += '&' + pStr;
         smartShareUrl += '?' + pStr;
     }
     
     // Pancerne szyfrowanie AES-256 (Zero-Knowledge hash)
     if (window._activeEncryptionKeyB64) {
         pageUrl += `#enc=${window._activeEncryptionKeyB64}`;
+        localPageUrl += `#enc=${window._activeEncryptionKeyB64}`;
         smartShareUrl += `#enc=${window._activeEncryptionKeyB64}`;
     }
     
-    return { pageUrl, smartShareUrl };
+    return { pageUrl, smartShareUrl, localPageUrl };
 }
 window.buildTransferUrls = buildTransferUrls;
 
@@ -3033,6 +3485,10 @@ function syncTransferSettingsToActiveLink(showFeedback = false) {
             const finalLinkIcon = document.getElementById('finalLinkIcon');
             if (finalLinkIcon) {
                 finalLinkIcon.href = urls.pageUrl;
+            }
+            const btnOpenRecipientPreview = document.getElementById('btnOpenRecipientPreview');
+            if (btnOpenRecipientPreview) {
+                btnOpenRecipientPreview.href = urls.pageUrl;
             }
         }
     }
@@ -3265,13 +3721,11 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     // Odtwórz dźwięk sukcesu!
     playSound('success');
 
-    // Inteligentny link Smart Embed (z automatycznym podglądem na Discordzie, Telegramie, Messengerze)
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    // Generuj adresy transferu (domyślnie publiczne https://dropsite.pages.dev oraz Smart Share Worker URL)
     let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    let pageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
-    let smartShareUrl = isLocal 
-        ? pageUrl 
-        : `${WORKER_URL}/f/${cleanKeyPath}`;
+    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
+    let pageUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
+    let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
     
     // Branding twórcy i notatka są w metadanych serwera R2 (link pozostaje ultra-krótki)
 
@@ -3381,17 +3835,57 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
 
 
     // Zapisujemy w lokalnej historii użytkownika
-    if (selectedFile) {
-        saveToUserHistory({
-            name: selectedFile.name,
-            size: selectedFile.size,
-            url: shareableUrl,
-            pageUrl: pageUrl,
-            directUrl: finalUrlStr,
-            duration: duration || '1d',
-            date: new Date().toISOString()
-        });
+    saveToUserHistory({
+        key: fileKey,
+        name: selectedFile ? selectedFile.name : (fileKey.split('/').pop() || fileKey),
+        size: selectedFile ? selectedFile.size : 0,
+        url: shareableUrl,
+        pageUrl: pageUrl,
+        directUrl: finalUrlStr,
+        duration: duration || '1d',
+        date: new Date().toISOString()
+    });
+
+    // Redundantne, natychmiastowe przypisanie pliku do konta użytkownika w chmurze R2
+    const currentAuthEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : (localStorage.getItem('dropsite_user_email') || '').toLowerCase().trim();
+    if (currentAuthEmail) {
+        fetch(`${WORKER_URL}/my-files/record`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Email': currentAuthEmail
+            },
+            body: JSON.stringify({
+                key: fileKey,
+                name: selectedFile ? selectedFile.name : (fileKey.split('/').pop() || fileKey),
+                size: selectedFile ? selectedFile.size : 0,
+                duration: duration || '1d',
+                directUrl: finalUrlStr,
+                pageUrl: pageUrl
+            })
+        }).then(r => r.json()).then(res => {
+            if (res && res.success && typeof syncUserHistory === 'function') {
+                syncUserHistory();
+            }
+        }).catch(err => console.warn('Sync upload to R2 notice:', err));
     }
+
+    // Emisja zdarzenia sukcesu uploadu (dla Skrytek Drop Request i synchronizacji odebranych plików)
+    try {
+        window.dispatchEvent(new CustomEvent('dropsite:upload_success', {
+            detail: {
+                fileKey: fileKey,
+                fileName: selectedFile ? selectedFile.name : (fileKey.split('/').pop() || fileKey),
+                fileSize: selectedFile ? selectedFile.size : 0,
+                fileUrl: pageUrl,
+                directUrl: finalUrlStr,
+                dropId: window._activeDropPortal ? window._activeDropPortal.id : null,
+                dropTitle: window._activeDropPortal ? window._activeDropPortal.t : null,
+                duration: duration || '1d',
+                timestamp: Date.now()
+            }
+        }));
+    } catch (e) {}
 
     setTimeout(() => {
         dropzone.hidden = true;
@@ -3795,46 +4289,39 @@ document.addEventListener('click', (e) => {
 
 // Generator linku do strony Dropsite dla dowolnego pliku lub klucza
 function getDropsitePageUrl(fileOrKey) {
-    if (!fileOrKey) return window.location.href;
+    if (!fileOrKey) return (typeof PUBLIC_APP_URL !== 'undefined' ? PUBLIC_APP_URL : 'https://dropsite.pages.dev');
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const origin = isLocal ? (typeof PUBLIC_APP_URL !== 'undefined' ? PUBLIC_APP_URL : 'https://dropsite.pages.dev') : window.location.origin;
+    const pathname = isLocal ? '/' : window.location.pathname;
 
+    let targetUrl = '';
     if (typeof fileOrKey === 'string') {
         if (fileOrKey.includes('?f=') || fileOrKey.startsWith('http')) {
-            if (fileOrKey.includes('?f=')) return fileOrKey;
+            targetUrl = fileOrKey;
+        } else {
+            targetUrl = `${origin}${pathname}?f=${encodeURIComponent(fileOrKey)}`;
         }
-        const origin = window.location.origin;
-        const pathname = window.location.pathname;
-        return `${origin}${pathname}?f=${encodeURIComponent(fileOrKey)}`;
+    } else if (fileOrKey.pageUrl && fileOrKey.pageUrl.includes('?f=')) {
+        targetUrl = fileOrKey.pageUrl;
+    } else if (fileOrKey.url && fileOrKey.url.includes('?f=')) {
+        targetUrl = fileOrKey.url;
+    } else {
+        let rawKey = fileOrKey.key || fileOrKey.name || '';
+        targetUrl = `${origin}${pathname}?f=${encodeURIComponent(rawKey)}`;
+        if (fileOrKey.isAlbum) {
+            targetUrl += '&album=1';
+        }
     }
 
-    if (fileOrKey.pageUrl && fileOrKey.pageUrl.includes('?f=')) {
-        return fileOrKey.pageUrl;
+    // Zamień ewentualną obcą domenę dropsite.pl na aktualny adres hostingu (np. dropsite.pages.dev)
+    if (targetUrl && targetUrl.includes('dropsite.pl')) {
+        targetUrl = targetUrl.replace(/^https?:\/\/dropsite\.pl/i, origin);
     }
-    if (fileOrKey.url && fileOrKey.url.includes('?f=')) {
-        return fileOrKey.url;
+    // Jeśli wygenerowano na localhost, zamień na domenę publiczną dla bezpiecznego dzielenia się
+    if (targetUrl && (targetUrl.includes('localhost:') || targetUrl.includes('127.0.0.1:'))) {
+        targetUrl = targetUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, typeof PUBLIC_APP_URL !== 'undefined' ? PUBLIC_APP_URL : 'https://dropsite.pages.dev');
     }
-
-    let rawKey = fileOrKey.key || fileOrKey.name || '';
-    
-    // Sprawdź czy plik jest w lokalnej historii z zapisanym pageUrl
-    if (typeof getLocalHistory === 'function') {
-        try {
-            const history = getLocalHistory();
-            const found = history.find(h => 
-                (rawKey && (h.key === rawKey || h.name === rawKey)) ||
-                (fileOrKey.name && (h.name === fileOrKey.name || `${h.duration}/${h.name}` === fileOrKey.name))
-            );
-            if (found && found.pageUrl && found.pageUrl.includes('?f=')) return found.pageUrl;
-            if (found && found.url && found.url.includes('?f=')) return found.url;
-        } catch (_) {}
-    }
-
-    const origin = window.location.origin;
-    const pathname = window.location.pathname;
-    let url = `${origin}${pathname}?f=${encodeURIComponent(rawKey)}`;
-    if (fileOrKey.isAlbum) {
-        url += '&album=1';
-    }
-    return url;
+    return targetUrl;
 }
 window.getDropsitePageUrl = getDropsitePageUrl;
 
@@ -3932,8 +4419,8 @@ async function fetchModFiles() {
         const filesPane = document.getElementById('adminTabPane_files');
         if (filesPane) filesPane.style.display = 'block';
 
-        const user = auth.currentUser;
-        if (user && user.email && typeof syncUserHistory === 'function') {
+        const activeUserEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
+        if (activeUserEmail && typeof syncUserHistory === 'function') {
             await syncUserHistory();
         }
 
@@ -5756,9 +6243,17 @@ function applyModFiltersAndRender() {
 function renderModFilesList(files) {
     modFileList.innerHTML = ''; 
     if (files.length === 0) {
-        modFileList.innerHTML = '<p style="color: var(--text-muted); text-align: center; font-size: 13px; margin: 30px 0;">Brak plików spełniających kryteria.</p>';
+        const emptyMsg = typeof window.t === 'function' ? window.t('myfiles_empty_filter', 'Brak plików spełniających kryteria.') : 'Brak plików spełniających kryteria.';
+        modFileList.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 13px; margin: 30px 0;">${emptyMsg}</p>`;
         return;
     }
+
+    const t1d = typeof window.t === 'function' ? window.t('myfiles_badge_1d', '1 Dzień') : '1 Dzień';
+    const t30d = typeof window.t === 'function' ? window.t('myfiles_badge_30d', '30 Dni') : '30 Dni';
+    const tPerm = typeof window.t === 'function' ? window.t('myfiles_badge_perm', 'Bezterminowo') : 'Bezterminowo';
+    const tExpired = typeof window.t === 'function' ? window.t('myfiles_badge_expired', 'Wygasły') : 'Wygasły';
+    const tCopyLink = typeof window.t === 'function' ? window.t('myfiles_btn_copy_link', 'Kopiuj link') : 'Kopiuj link';
+    const tDelete = typeof window.t === 'function' ? window.t('myfiles_btn_delete', 'Usuń') : 'Usuń';
 
     files.forEach(file => {
         const li = document.createElement('li');
@@ -5817,38 +6312,38 @@ function renderModFilesList(files) {
         else if (file.name.startsWith('30d/')) currentExp = '30d';
 
         const expiryLabels = {
-            '1d': '1 Dzień',
-            '30d': '30 Dni',
-            'permanent': 'Bezterminowo'
+            '1d': t1d,
+            '30d': t30d,
+            'permanent': tPerm
         };
 
         const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
         const expSelectHtml = isEffectiveAdmin ? `
             <div class="custom-expiry-wrap exp-${currentExp}" data-current="${currentExp}" title="Zmień czas przechowywania pliku">
                 <button type="button" class="custom-expiry-trigger" onclick="toggleExpiryDropdown(this, event)">
-                    <span class="custom-expiry-label">${expiryLabels[currentExp] || 'Bezterminowo'}</span>
+                    <span class="custom-expiry-label">${expiryLabels[currentExp] || tPerm}</span>
                     <svg class="custom-select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="custom-select-menu expiry-menu" hidden>
                     <div class="custom-select-option ${currentExp === '1d' ? 'selected' : ''}" data-value="1d" onclick="selectExpiryOption('${file.name}', '1d', this)">
                         <span class="exp-dot exp-dot-1d"></span>
-                        <span>1 Dzień</span>
+                        <span>${t1d}</span>
                         <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </div>
                     <div class="custom-select-option ${currentExp === '30d' ? 'selected' : ''}" data-value="30d" onclick="selectExpiryOption('${file.name}', '30d', this)">
                         <span class="exp-dot exp-dot-30d"></span>
-                        <span>30 Dni</span>
+                        <span>${t30d}</span>
                         <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </div>
                     <div class="custom-select-option ${currentExp === 'permanent' ? 'selected' : ''}" data-value="permanent" onclick="selectExpiryOption('${file.name}', 'permanent', this)">
                         <span class="exp-dot exp-dot-perm"></span>
-                        <span>Bezterminowo</span>
+                        <span>${tPerm}</span>
                         <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </div>
                 </div>
             </div>
         ` : `
-            <span class="mod-badge-size" style="color: #5EEAD4; background: rgba(94, 234, 212, 0.12);">${expiryLabels[currentExp] || '1 Dzień'}</span>
+            <span class="mod-badge-size" style="color: #5EEAD4; background: rgba(94, 234, 212, 0.12);">${expiryLabels[currentExp] || t1d}</span>
         `;
 
         let uploaderBadgeHtml = '';
@@ -5881,7 +6376,7 @@ function renderModFilesList(files) {
 
         let finalExpHtml = expSelectHtml;
         if (isFileExpired) {
-            finalExpHtml = `<span class="mod-badge-size" style="color: #94A3B8; background: rgba(148, 163, 184, 0.14); border: 1px dashed rgba(148, 163, 184, 0.35);" title="Plik wygasł z serwera, ale pozostaje w Twojej trwałej historii konta">Wygasły</span>`;
+            finalExpHtml = `<span class="mod-badge-size" style="color: #94A3B8; background: rgba(148, 163, 184, 0.14); border: 1px dashed rgba(148, 163, 184, 0.35);" title="Plik wygasł z serwera, ale pozostaje w Twojej trwałej historii konta">${tExpired}</span>`;
         }
 
         const nameClickAction = isFileExpired ? `onclick="event.preventDefault(); showNotification('Ten plik wygasł z dysku serwera, ale zachowaliśmy go w Twojej historii.', 'info');"` : '';
@@ -5903,23 +6398,30 @@ function renderModFilesList(files) {
                 ${isFileExpired ? `
                     <button class="btn-copy-mod" style="opacity: 0.6;" onclick="showNotification('Plik wygasł z serwera po upływie terminu.', 'warning');" title="Plik wygasł">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        <span>Wygasł</span>
+                        <span>${tExpired}</span>
                     </button>
                 ` : `
                     <button class="btn-copy-mod" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku (Prawy przycisk myszy: bezpośredni link do pliku)">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span>Kopiuj link</span>
+                        <span>${tCopyLink}</span>
                     </button>
                 `}
                 <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń plik">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    <span>Usuń</span>
+                    <span>${tDelete}</span>
                 </button>
             </div>
         `;
         modFileList.appendChild(li);
     });
 }
+
+// Re-render when language changes
+document.addEventListener('dropsite_language_changed', () => {
+    if (typeof applyModFiltersAndRender === 'function' && typeof loadedModFiles !== 'undefined' && loadedModFiles.length > 0) {
+        applyModFiltersAndRender();
+    }
+});
 
 // Otwieranie / zamykanie własnego dropdowna w wierszu pliku
 window.toggleExpiryDropdown = function(triggerBtn, event) {
@@ -6136,7 +6638,7 @@ function triggerButtonLightSplash(btn, e) {
     let x = rect.width / 2;
     let y = rect.height / 2;
     const evt = e || (typeof window !== 'undefined' ? window.event : null);
-    if (evt && evt.clientX && evt.clientY) {
+    if (evt && typeof evt.clientX === 'number' && typeof evt.clientY === 'number' && (evt.clientX !== 0 || evt.clientY !== 0)) {
         x = evt.clientX - rect.left;
         y = evt.clientY - rect.top;
     }
@@ -6144,26 +6646,24 @@ function triggerButtonLightSplash(btn, e) {
     splash.style.top = `${y}px`;
     btn.appendChild(splash);
     setTimeout(() => {
-        splash.remove();
+        if (splash.parentNode) splash.remove();
     }, 750);
 }
+window.triggerButtonLightSplash = triggerButtonLightSplash;
+window.createButtonRipple = triggerButtonLightSplash;
 
 function onCopyLinkFeedback(e) {
     playSound('click');
     showNotification('Link skopiowany do schowka!', 'success');
 
-    // Animacja głównego przycisku CTA
+    // Animacja głównego przycisku CTA - tylko fala ripple i stan copied, tekst 'Kopiuj link' pozostaje bez zmian
     const mainBtn = document.getElementById('btnMainCopy');
-    const mainText = document.getElementById('mainCopyBtnText');
     if (mainBtn) {
         triggerButtonLightSplash(mainBtn, e);
         mainBtn.classList.add('copied');
-        const oldText = mainText ? mainText.textContent : '';
-        if (mainText) mainText.textContent = '✓ Skopiowano do schowka!';
         setTimeout(() => {
             mainBtn.classList.remove('copied');
-            if (mainText) mainText.textContent = oldText || (typeof t === 'function' ? t('btn_copy_link') : 'Kopiuj link do schowka');
-        }, 2400);
+        }, 2000);
     }
 
     // Animacja przycisku szybkiego kopiowania w pasku linku
@@ -6171,16 +6671,9 @@ function onCopyLinkFeedback(e) {
     if (quickBtn) {
         triggerButtonLightSplash(quickBtn, e);
         quickBtn.classList.add('copied');
-        const idleSpan = quickBtn.querySelector('.sl-copy-idle');
-        const copiedSpan = quickBtn.querySelector('.sl-copy-copied');
-        if (idleSpan) idleSpan.style.display = 'none';
-        if (copiedSpan) copiedSpan.style.display = 'inline-flex';
-
         setTimeout(() => {
             quickBtn.classList.remove('copied');
-            if (idleSpan) idleSpan.style.display = 'inline-flex';
-            if (copiedSpan) copiedSpan.style.display = 'none';
-        }, 2400);
+        }, 2000);
     }
 }
 
@@ -6238,6 +6731,10 @@ function resetUpload() {
         selectedFile = null;
         dropzone.innerHTML = originalDropzoneHtml;
         dropzone.style.padding = "";
+
+        if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
+            window.DropsiteOmniDropzone.hide();
+        }
         
         const cinematicCard = document.getElementById('cinematicOptionCard');
         if (cinematicCard) cinematicCard.style.display = 'none';
@@ -6403,25 +6900,12 @@ function showNotification(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', () => {
     // Wyłączono magnetyczne podążanie za myszką - przyciski stoją stabilnie i sztywno w miejscu
 
-    // Subtelny mikro-błysk świetlny (Micro-Sheen) na głównych przyciskach akcji
+    // Luksusowy efekt Ripple Button na przyciskach akcji
     document.addEventListener('click', (e) => {
-        const button = e.target.closest('.btn-primary, .btn-select');
+        const button = e.target.closest('.btn-copy-mod, .btn-primary, .btn-select, .btn-secondary, .proofing-link-btn, [data-ripple]');
         if (button) {
             if (button.disabled || button.getAttribute('disabled') !== null) return;
-            const ripple = document.createElement('div');
-            ripple.className = 'btn-ripple';
-            
-            const rect = button.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height) * 1.2;
-            const x = e.clientX - rect.left - size / 2;
-            const y = e.clientY - rect.top - size / 2;
-            
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            
-            button.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 350);
+            triggerButtonLightSplash(button, e);
         }
     });
     
@@ -8307,6 +8791,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hamburgerBtn) hamburgerBtn.classList.remove('active');
         document.body.style.overflow = '';
     }
+    window.openMobileDrawer = openMobileDrawer;
+    window.closeMobileDrawer = closeMobileDrawer;
 
     if (hamburgerBtn) {
         hamburgerBtn.addEventListener('click', () => {
@@ -8338,9 +8824,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle drawer link clicks → route SPA + close drawer
     drawerLinks.forEach(dLink => {
         dLink.addEventListener('click', (e) => {
-            e.preventDefault();
             const targetId = dLink.getAttribute('data-target');
+            if (!targetId) return; // Specjalne przyciski jak otwieranie koła radialnego
 
+            e.preventDefault();
             // Find corresponding .nav-btn and simulate its click
             const correspondingNav = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
             if (correspondingNav) {
@@ -8354,6 +8841,33 @@ document.addEventListener('DOMContentLoaded', () => {
             closeMobileDrawer();
         });
     });
+
+    // Mobile Drawer Quick Action Buttons
+    const mobileHistoryBtn = document.getElementById('mobileHistoryBtn');
+    if (mobileHistoryBtn) {
+        mobileHistoryBtn.addEventListener('click', () => {
+            closeMobileDrawer();
+            const deskHist = document.getElementById('openHistoryBtn');
+            if (deskHist) deskHist.click();
+        });
+    }
+
+    const mobileFilesBtn = document.getElementById('mobileFilesBtn');
+    if (mobileFilesBtn) {
+        mobileFilesBtn.addEventListener('click', () => {
+            closeMobileDrawer();
+            const deskFiles = document.getElementById('openUserPanelBtn');
+            if (deskFiles) deskFiles.click();
+        });
+    }
+
+    const mobileSoundBtn = document.getElementById('mobileSoundToggleBtn');
+    if (mobileSoundBtn) {
+        mobileSoundBtn.addEventListener('click', () => {
+            const deskSound = document.getElementById('soundToggleBtn');
+            if (deskSound) deskSound.click();
+        });
+    }
 
     // === SMART AUTO-HIDE NAVBAR & MOBILE QUICK-HOME THUMB FAB ===
     const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
@@ -8403,23 +8917,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 updateMobileHomeFabVisibility();
 
-                // Schowaj logo i menu gdy użytkownik wyraźnie scrolluje w dół (>8px) i znajduje się poniżej 70px
+                // Stabilne zachowanie nawigacji: na telefonach pasek jest stały i nie skacze przy scrollu
                 if (navFloatingElements.length) {
-                    if (currentScrollY > 70) {
-                        if (currentScrollY > lastScrollY && (currentScrollY - lastScrollY > 8)) {
-                            // Scroll w dół -> płynne ukrycie poza ekranem
-                            navFloatingElements.forEach(el => el.classList.add('nav-hidden'));
-                            const langMenu = document.getElementById('langMenu');
-                            if (langMenu && !langMenu.hidden) {
-                                langMenu.hidden = true;
+                    const isMobileScreen = window.innerWidth <= 768;
+                    if (isMobileScreen) {
+                        // Na mobile pasek jest zawsze stabilny bez animacji skakania
+                        navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                    } else {
+                        // Na desktopie: chowamy przy wyraźnym zjeździe w dół
+                        if (currentScrollY > 70) {
+                            if (currentScrollY > lastScrollY && (currentScrollY - lastScrollY > 12)) {
+                                navFloatingElements.forEach(el => el.classList.add('nav-hidden'));
+                                const langMenu = document.getElementById('langMenu');
+                                if (langMenu && !langMenu.hidden) {
+                                    langMenu.hidden = true;
+                                }
+                            } else if (lastScrollY - currentScrollY > 12) {
+                                navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
                             }
-                        } else if (lastScrollY - currentScrollY > 8) {
-                            // Scroll w górę -> natychmiastowe ujawnienie
+                        } else {
                             navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
                         }
-                    } else {
-                        // Na samej górze zawsze widoczne
-                        navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
                     }
                 }
 
@@ -8657,24 +9175,43 @@ document.addEventListener('DOMContentLoaded', () => {
 (function initAuroraCanvas() {
     const canvas = document.getElementById('bgCanvas');
     if (!canvas) return;
+
+    // Na urządzeniach mobilnych i małych ekranach dotykowych wyłączamy animację cząsteczek canvas:
+    // Dropsite ma w CSS bogate, żywe tło radial-gradient, a brak pętli 60 FPS w RAM/GPU eliminuje 100% lagów
+    const isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024);
+    if (isMobileDevice) {
+        canvas.style.display = 'none';
+        return;
+    }
+
     const ctx = canvas.getContext('2d', { alpha: true });
     
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
+    let lastCanvasWinWidth = window.innerWidth;
     
     let resizeTimer;
     window.addEventListener('resize', () => {
+        if (Math.abs(window.innerWidth - lastCanvasWinWidth) < 15) return;
+        lastCanvasWinWidth = window.innerWidth;
+
+        if (window.innerWidth <= 768) {
+            canvas.style.display = 'none';
+            if (animId) cancelAnimationFrame(animId);
+            return;
+        } else {
+            canvas.style.display = 'block';
+        }
+
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-        }, 150);
+        }, 200);
     }, { passive: true });
 
     const particles = [];
-    // Zoptymalizowana liczba cząsteczek - wysoki FPS bez narzutu na GPU
-    const isMobile = window.innerWidth < 768;
-    const count = isMobile ? 14 : Math.min(Math.floor(width / 55), 24);
+    const count = Math.min(Math.floor(width / 55), 24);
     
     const mouse = { x: width / 2, y: height / 2, active: false };
     let mouseTimer;
@@ -8717,13 +9254,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = mouse.x - p.x;
                 const dy = mouse.y - p.y;
                 const distSq = dx * dx + dy * dy;
-                if (distSq < 25600) { // 160^2
+                if (distSq < 25600) {
                     p.x += dx * 0.015;
                     p.y += dy * 0.015;
                 }
             }
 
-            // Rysowanie cząsteczki (bez kosztownego shadowBlur!)
+            // Rysowanie cząsteczki
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
@@ -8736,7 +9273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dy = p.y - p2.y;
                 const distSq = dx * dx + dy * dy;
 
-                if (distSq < 14400) { // 120^2
+                if (distSq < 14400) {
                     const dist = Math.sqrt(distSq);
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
@@ -8750,13 +9287,13 @@ document.addEventListener('DOMContentLoaded', () => {
         animId = requestAnimationFrame(animate);
     }
 
-    // Automatyczne pauzowanie pętli, gdy karta jest w tle (oszczędzanie baterii i CPU)
+    // Automatyczne pauzowanie pętli, gdy karta jest w tle
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             isRunning = false;
             if (animId) cancelAnimationFrame(animId);
         } else {
-            if (!isRunning) {
+            if (!isRunning && window.innerWidth > 768) {
                 isRunning = true;
                 animId = requestAnimationFrame(animate);
             }
@@ -8805,12 +9342,28 @@ const qrModalWrap = document.getElementById('qrModalWrap');
 const closeQrModal = document.getElementById('closeQrModal');
 const qrCanvas = document.getElementById('qrCanvas');
 
-window.copyToClipboard = function() {
+window.copyToClipboard = function(e) {
+    if (typeof copyToClipboard === 'function' && copyToClipboard !== window.copyToClipboard) {
+        copyToClipboard(e);
+        return;
+    }
+    const evt = e || (typeof window !== 'undefined' ? window.event : null);
     const finalLink = document.getElementById('finalLink');
     if (!finalLink) return;
     const url = finalLink.dataset.shareUrl || finalLink.href || finalLink.textContent;
     if (!url || url === '#') return;
-    window.copyDirectLink(url);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+            if (typeof onCopyLinkFeedback === 'function') onCopyLinkFeedback(evt);
+            else if (typeof window.copyDirectLink === 'function') window.copyDirectLink(url);
+        }).catch(() => {
+            if (typeof onCopyLinkFeedback === 'function') onCopyLinkFeedback(evt);
+            else if (typeof window.copyDirectLink === 'function') window.copyDirectLink(url);
+        });
+    } else {
+        if (typeof onCopyLinkFeedback === 'function') onCopyLinkFeedback(evt);
+        else if (typeof window.copyDirectLink === 'function') window.copyDirectLink(url);
+    }
 };
 
 window.shareLink = function() {
@@ -8981,10 +9534,12 @@ const userHistoryList = document.getElementById('userHistoryList');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
 function getHistoryStorageKey() {
-    const user = auth.currentUser;
+    const user = (typeof auth !== 'undefined' && auth?.currentUser) || (window.auth && window.auth.currentUser);
     if (user && user.uid) {
         return `dropsite_user_history_${user.uid}`;
     }
+    const savedUid = localStorage.getItem('dropsite_user_uid');
+    if (savedUid) return `dropsite_user_history_${savedUid}`;
     return 'dropsite_user_history_guest';
 }
 
@@ -8998,22 +9553,25 @@ function getLocalHistory() {
 }
 
 async function syncUserHistory() {
-    const user = auth.currentUser;
-    if (user && user.email) {
+    const userEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((typeof auth !== 'undefined' && auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
+    if (userEmail) {
         try {
             const response = await fetch(`${WORKER_URL}/my-files`, {
-                headers: { 'X-User-Email': user.email }
+                headers: { 'X-User-Email': userEmail }
             });
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && Array.isArray(data.files)) {
                     const key = getHistoryStorageKey();
                     const local = getLocalHistory();
-                    const serverKeys = new Set(data.files.map(f => f.key));
+                    const serverKeys = new Set(data.files.map(f => f.key).filter(Boolean));
+                    const serverUrls = new Set(data.files.map(f => f.url || f.directUrl || f.pageUrl).filter(Boolean));
                     const combined = [...data.files];
                     local.forEach(l => {
-                        const lKey = l.key || l.name;
-                        if (!serverKeys.has(lKey) && !serverKeys.has(l.name)) {
+                        const lKey = l.key || '';
+                        const lUrl = l.url || l.directUrl || l.pageUrl || '';
+                        const isDuplicate = (lKey && serverKeys.has(lKey)) || (lUrl && serverUrls.has(lUrl));
+                        if (!isDuplicate) {
                             combined.push(l);
                         }
                     });
@@ -9029,10 +9587,21 @@ async function syncUserHistory() {
 }
 
 function saveToUserHistory(item) {
+    if (!item) return;
     const key = getHistoryStorageKey();
     const history = getLocalHistory();
+    const targetKey = item.key || '';
+    const targetUrl = item.url || item.directUrl || item.pageUrl || '';
+    const targetName = item.name || '';
+
     // Unikamy duplikatów
-    const filtered = history.filter(h => (h.url && h.url !== item.url) && (h.name && h.name !== item.name) && (h.key && h.key !== item.key));
+    const filtered = history.filter(h => {
+        if (targetKey && h.key && h.key === targetKey) return false;
+        if (targetUrl && (h.url === targetUrl || h.directUrl === targetUrl || h.pageUrl === targetUrl)) return false;
+        if (!targetKey && !targetUrl && targetName && h.name === targetName && h.size === item.size) return false;
+        return true;
+    });
+
     filtered.unshift({
         ...item,
         status: item.status || 'active',
@@ -9237,10 +9806,30 @@ async function initDownloadRouter() {
         return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
     }
 
-    // Pobieranie pojedynczego pliku z rozpakowanego archiwum ZIP w locie
+    // Pobieranie pojedynczego pliku z rozpakowanego archiwum ZIP w locie (Worker Stream lub fflate RAM)
     window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
         const path = decodeURIComponent(encodedPath);
         const filename = decodeURIComponent(encodedFilename);
+
+        // 1. Sprawdź czy mamy plik z endpointu strumieniowania Cloudflare Worker (Zero-RAM)
+        if (window._activeArchiveInfo && Array.isArray(window._activeArchiveInfo.files)) {
+            const fileEntry = window._activeArchiveInfo.files.find(f => f.name === path || f.name.endsWith('/' + path));
+            if (fileEntry && fileEntry.downloadUrl) {
+                const a = document.createElement('a');
+                a.href = fileEntry.downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                if (typeof playSound === 'function') playSound('drop');
+                if (typeof showNotification === 'function') {
+                    showNotification(`Rozpoczęto pobieranie pliku: ${filename} (${formatBytes(fileEntry.size)})`, 'success');
+                }
+                return;
+            }
+        }
+
+        // 2. Fallback do rozpakowanego archiwum w RAM (fflate)
         const unzipped = window._activeUnzippedArchive;
         if (!unzipped || !unzipped[path]) {
             if (typeof showNotification === 'function') {
@@ -9267,14 +9856,10 @@ async function initDownloadRouter() {
         }
     };
 
-    // Podgląd pojedynczego pliku z archiwum w oknie modalnym (tekst, kod, grafika, audio)
+    // Podgląd pojedynczego pliku z archiwum w oknie modalnym (wideo, audio, grafika, kod/tekst)
     window.previewSingleFromArchive = function(encodedPath, encodedFilename) {
         const path = decodeURIComponent(encodedPath);
         const filename = decodeURIComponent(encodedFilename);
-        const unzipped = window._activeUnzippedArchive;
-        if (!unzipped || !unzipped[path]) return;
-
-        const uint8 = unzipped[path];
         const ext = filename.split('.').pop().toLowerCase();
         const mime = getMimeTypeForFilename(filename);
 
@@ -9290,11 +9875,83 @@ async function initDownloadRouter() {
 
         if (!modal || !content) return;
 
+        const closeModal = () => {
+            modal.hidden = true;
+            modal.style.display = 'none';
+            content.innerHTML = '';
+            if (modal._cleanupBlob) {
+                modal._cleanupBlob();
+                modal._cleanupBlob = null;
+            }
+            document.removeEventListener('keydown', handleEsc);
+        };
+
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') closeModal();
+        };
+
+        // 1. Sprawdź czy mamy plik z _activeArchiveInfo (Zero-RAM streaming z Cloudflare Worker)
+        let archiveItem = null;
+        if (window._activeArchiveInfo && Array.isArray(window._activeArchiveInfo.files)) {
+            archiveItem = window._activeArchiveInfo.files.find(f => f.name === path || f.name.endsWith('/' + path));
+        }
+
+        if (archiveItem && archiveItem.streamUrl) {
+            title.textContent = filename;
+            title.title = path;
+            sizeBadge.textContent = formatBytes(archiveItem.size);
+            iconSpan.innerHTML = getMiniFileSvg(filename);
+            dlBtn.onclick = () => window.downloadSingleFromArchive(encodedPath, encodedFilename);
+
+            if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) {
+                copyBtn.style.display = 'none';
+                content.innerHTML = `
+                    <div style="text-align: center; width: 100%;">
+                        <video controls autoplay playsinline src="${archiveItem.streamUrl}" style="max-width: 100%; max-height: 65vh; border-radius: 8px; background: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 100%; outline: none;"></video>
+                        <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">${escapeHtml(filename)} (${formatBytes(archiveItem.size)})</div>
+                    </div>
+                `;
+            } else if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'].includes(ext)) {
+                copyBtn.style.display = 'none';
+                content.innerHTML = `<img src="${archiveItem.streamUrl}" alt="${escapeHtml(filename)}" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">`;
+            } else if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext)) {
+                copyBtn.style.display = 'none';
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 24px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">🎵</div>
+                        <audio controls autoplay src="${archiveItem.streamUrl}" style="width: 100%; max-width: 400px;"></audio>
+                    </div>
+                `;
+            } else {
+                copyBtn.style.display = 'none';
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📦</div>
+                        <p style="font-size: 14px; margin-bottom: 16px;">Plik gotowy do bezpośredniego pobrania.</p>
+                        <button type="button" class="btn-primary" onclick="window.downloadSingleFromArchive('${encodedPath}', '${encodedFilename}')" style="margin: 0 auto;">
+                            Pobierz ten plik (${formatBytes(archiveItem.size)})
+                        </button>
+                    </div>
+                `;
+            }
+
+            modal.hidden = false;
+            modal.style.display = 'flex';
+            if (closeBtn) closeBtn.onclick = closeModal;
+            if (backdrop) backdrop.onclick = closeModal;
+            document.addEventListener('keydown', handleEsc);
+            return;
+        }
+
+        // 2. Fallback: Rozpakowane w pamięci RAM (fflate)
+        const unzipped = window._activeUnzippedArchive;
+        if (!unzipped || !unzipped[path]) return;
+
+        const uint8 = unzipped[path];
         title.textContent = filename;
         title.title = path;
         sizeBadge.textContent = formatBytes(uint8.length);
         iconSpan.innerHTML = getMiniFileSvg(filename);
-
         dlBtn.onclick = () => window.downloadSingleFromArchive(encodedPath, encodedFilename);
 
         // Obraz
@@ -9302,9 +9959,22 @@ async function initDownloadRouter() {
             copyBtn.style.display = 'none';
             const blob = new Blob([uint8], { type: mime });
             const blobUrl = URL.createObjectURL(blob);
-            content.innerHTML = `<img src="${blobUrl}" alt="${filename}" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">`;
+            content.innerHTML = `<img src="${blobUrl}" alt="${escapeHtml(filename)}" style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">`;
             modal._cleanupBlob = () => URL.revokeObjectURL(blobUrl);
-        } 
+        }
+        // Wideo
+        else if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) {
+            copyBtn.style.display = 'none';
+            const blob = new Blob([uint8], { type: mime || 'video/mp4' });
+            const blobUrl = URL.createObjectURL(blob);
+            content.innerHTML = `
+                <div style="text-align: center; width: 100%;">
+                    <video controls autoplay playsinline src="${blobUrl}" style="max-width: 100%; max-height: 65vh; border-radius: 8px; background: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 100%; outline: none;"></video>
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">${escapeHtml(filename)} (${formatBytes(uint8.length)})</div>
+                </div>
+            `;
+            modal._cleanupBlob = () => URL.revokeObjectURL(blobUrl);
+        }
         // Kod / Tekst
         else if (['txt', 'json', 'js', 'html', 'css', 'md', 'py', 'java', 'c', 'cpp', 'xml', 'yaml', 'yml'].includes(ext)) {
             copyBtn.style.display = 'inline-flex';
@@ -9346,7 +10016,7 @@ async function initDownloadRouter() {
             `;
         }
 
-        const closeModal = () => {
+        const closeModalDirect = () => {
             modal.hidden = true;
             modal.style.display = 'none';
             content.innerHTML = '';
@@ -9357,12 +10027,8 @@ async function initDownloadRouter() {
             document.removeEventListener('keydown', handleEsc);
         };
 
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') closeModal();
-        };
-
-        closeBtn.onclick = closeModal;
-        backdrop.onclick = closeModal;
+        closeBtn.onclick = closeModalDirect;
+        backdrop.onclick = closeModalDirect;
         document.addEventListener('keydown', handleEsc);
 
         modal.hidden = false;
@@ -9963,6 +10629,7 @@ async function initDownloadRouter() {
     }
 
     function openProofingModal(pendingData) {
+        initProofingModalListeners();
         currentPendingPin = pendingData;
         const modal = document.getElementById('proofingCommentModal');
         const timeBadge = document.getElementById('proofingModalTimeBadge');
@@ -9971,6 +10638,14 @@ async function initDownloadRouter() {
         const commentInput = document.getElementById('proofingCommentInput');
 
         if (!modal) return;
+
+        const lightboxModal = document.getElementById('dlLightboxModal');
+        const lightboxOpen = lightboxModal && !lightboxModal.hidden && lightboxModal.style.display !== 'none';
+        if (lightboxOpen) {
+            modal.style.setProperty('z-index', '100001', 'important');
+        } else {
+            modal.style.removeProperty('z-index');
+        }
 
         if (window._proofingPinsVisible === false && typeof window.toggleProofingPinsVisibility === 'function') {
             window.toggleProofingPinsVisibility(true);
@@ -10052,6 +10727,7 @@ async function initDownloadRouter() {
             modal.classList.add('is-hidden');
             modal.classList.remove('is-open');
             modal.style.setProperty('display', 'none', 'important');
+            modal.style.removeProperty('z-index');
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (modal.parentElement !== document.body) {
                     document.body.appendChild(modal);
@@ -10314,6 +10990,11 @@ async function initDownloadRouter() {
             showNotification(isVisible ? 'Widok uwag włączony' : 'Ukryto pinezki z uwagami', 'info');
         }
     };
+
+    window.openProofingModal = openProofingModal;
+    window.renderProofingPinsOnMedia = renderProofingPinsOnMedia;
+    window.updateProofingBadge = updateProofingBadge;
+    window.renderProofingTasksList = renderProofingTasksList;
 
     function initClientProofingController({ cleanName, directUrl, fileKey, isVideo, isImage }) {
         initProofingModalListeners();
@@ -11795,7 +12476,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
 
 
     // Funkcja do renderowania podglądów i odtwarzacza audio (z pełną obsługą pancernego odszyfrowywania AES-256 w RAM)
-    async function renderDownloadPreview(cleanName, directUrl, fileKey) {
+    async function renderDownloadPreview(cleanName, directUrl, fileKey, fileSize) {
         if (!dlPreviewContainer || !directUrl) return;
 
         const targetFileKey = fileKey || (new URLSearchParams(window.location.search)).get('f') || cleanName;
@@ -12296,73 +12977,395 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             `;
         } else if (isArchive) {
             dlPreviewContainer.classList.add('has-archive');
+            const archiveSize = (typeof fileSize === 'number' && fileSize > 0) 
+                ? fileSize 
+                : ((typeof data !== 'undefined' && data?.size) || (window._currentRecipientFileData?.size) || 0);
+
             const isCinematicVisible = document.getElementById('cinematicRecipientSection') && document.getElementById('cinematicRecipientSection').style.display !== 'none';
             const urlParams = new URLSearchParams(window.location.search);
-            const isAlbumMode = Boolean(
+            let isAlbumMode = Boolean(
                 urlParams.get('album') === '1' ||
                 (typeof data !== 'undefined' && data?.isAlbum) ||
                 cleanName.startsWith('Album_') ||
                 cleanName.includes('_zdjec')
             );
-            if (isAlbumMode) dlPreviewContainer.classList.add('has-album');
 
-            if (isAlbumMode) {
-                dlPreviewContainer.innerHTML = `
-                    <div class="photo-album-recipient-container" id="photoAlbumRecipientContainer">
-                        <div class="photo-album-recipient-header">
-                            <div class="photo-album-header-left">
-                                <div class="photo-album-icon-badge">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                </div>
-                                <div>
-                                    <strong class="photo-album-title" id="albumHeaderTitle">Album fotograficzny</strong>
-                                    <span class="photo-album-subtitle" id="archiveSubLabel">Wczytywanie fotografii w pamięci RAM...</span>
-                                </div>
-                            </div>
-                            <div class="photo-album-header-right" id="albumHeaderActions">
-                                <button type="button" class="btn-album-slideshow-quick" id="btnLaunchAlbumSlideshow">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                    <span>Pokaz slajdów</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="archive-file-list album-gallery-grid" id="archiveFileList" style="display: grid;">
-                            <div style="grid-column: 1 / -1; text-align: center; padding: 24px 12px; color: var(--text-muted); font-size: 12.5px;">
-                                <span class="loading-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #5EEAD4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 8px;"></span>
-                                Wczytywanie i przygotowywanie galerii zdjęć...
-                            </div>
-                        </div>
+            // Stan początkowy z eleganckim loaderem (0 MB RAM)
+            dlPreviewContainer.innerHTML = `
+                <div class="archive-explorer-box" id="archiveExplorerBox" style="padding: 24px 20px; text-align: center;">
+                    <div style="width: 44px; height: 44px; margin: 0 auto 12px; border-radius: 12px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center; color: #38BDF8;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
                     </div>
-                `;
-            } else if (isCinematicVisible) {
-                dlPreviewContainer.innerHTML = '<div class="archive-file-list album-gallery-grid" id="archiveFileList" style="display: none;"></div>';
-            } else {
+                    <h4 style="margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: #F8FAFC;">Paczka archiwalna: ${escapeHtml(cleanName)}</h4>
+                    <p style="margin: 0 auto; max-width: 420px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="loading-spinner" style="display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #38BDF8; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                        <span>Odczytywanie zawartości paczki w chmurze (0 MB RAM)...</span>
+                    </p>
+                </div>
+            `;
+
+            // KROK 1: Próba błyskawicznego odczytu spisu plików z Cloudflare Worker (Central Directory w <100ms)
+            let cdInfo = null;
+            const hashMatch = window.location.hash.match(/enc=([A-Za-z0-9_-]+)/);
+            const isZeroKnowledgeEnc = Boolean(hashMatch && hashMatch[1]);
+
+            if (!isZeroKnowledgeEnc) {
+                try {
+                    const infoRes = await fetch(`${WORKER_URL}/archive-info?key=${encodeURIComponent(targetFileKey || fileKey)}`);
+                    if (infoRes.ok) {
+                        const parsed = await infoRes.json();
+                        if (parsed && parsed.success && Array.isArray(parsed.files) && parsed.files.length > 0) {
+                            cdInfo = parsed;
+                        }
+                    }
+                } catch (cdErr) {
+                    console.warn('Nie udało się pobrać archive-info z Workera:', cdErr);
+                }
+            }
+
+            // KROK 2: Jeśli Worker zwrócił spis plików w archiwum (błyskawiczny tryb Zero-RAM)
+            if (cdInfo) {
+                window._activeArchiveInfo = cdInfo;
+                const files = cdInfo.files;
+                const videoFiles = files.filter(f => f.isVideo);
+                const imgFiles = files.filter(f => f.isImage);
+                const totalBytes = cdInfo.totalSize || files.reduce((acc, f) => acc + (f.size || 0), 0);
+
+                if (imgFiles.length > 1 && (imgFiles.length / files.length >= 0.7)) {
+                    isAlbumMode = true;
+                }
+                if (isAlbumMode) dlPreviewContainer.classList.add('has-album');
+
+                // A) TRYB WIDEO SHOWCASE: Jeśli w paczce są filmy (np. MP4, WEBM, MOV, MKV)
+                if (videoFiles.length > 0) {
+                    // Rozwiń szerokość karty do 1060px dla komfortowego seansu kinowego
+                    dlPreviewContainer.classList.add('has-proofing-video');
+                    const dlCard = document.querySelector('.download-card');
+                    if (dlCard) dlCard.classList.add('has-proofing-video');
+                    const mainWrap = dlPreviewContainer.closest('.main-wrapper');
+                    if (mainWrap) mainWrap.classList.add('has-proofing-video');
+
+                    window._activeArchiveVideoFiles = videoFiles;
+                    const firstVideo = videoFiles[0];
+
+                    dlPreviewContainer.innerHTML = `
+                        <div class="archive-video-showcase-card" style="width: 100%; border-radius: 14px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 12px 36px rgba(0,0,0,0.55); overflow: hidden; margin-bottom: 14px; backdrop-filter: blur(12px);">
+                            <div style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); flex-wrap: wrap; gap: 10px;">
+                                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                                    <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; color: #38BDF8; flex-shrink: 0;">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    </div>
+                                    <div style="overflow: hidden;">
+                                        <strong style="font-size: 14px; color: #F8FAFC; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="archiveActiveVideoTitle">${escapeHtml(firstVideo.name)}</strong>
+                                        <span style="font-size: 11.5px; color: var(--text-muted); display: block;" id="archiveActiveVideoSub">Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(firstVideo.size)}</span>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 11px; font-weight: 600; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; display: inline-block;"></span>
+                                        🎬 Wideo z paczki ZIP
+                                    </span>
+                                    <button type="button" class="btn-archive-dl-single" id="btnDownloadActiveVideo" onclick="window.downloadSingleFromArchive('${encodeURIComponent(firstVideo.name)}', '${encodeURIComponent(firstVideo.name)}')" title="Pobierz ten pojedynczy film na dysk" style="padding: 5px 12px; font-size: 11.5px;">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        <span>Pobierz ten film</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="position: relative; width: 100%; background: #000; display: flex; align-items: center; justify-content: center; max-height: 480px; min-height: 260px;">
+                                <video id="archiveVideoPlayer" src="${firstVideo.streamUrl}" controls playsinline preload="metadata" style="width: 100%; max-height: 480px; object-fit: contain; outline: none; background: #000;"></video>
+                            </div>
+
+                            ${videoFiles.length > 1 ? `
+                            <div style="padding: 10px 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; gap: 8px; overflow-x: auto;">
+                                <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; margin-right: 4px;">Wybierz wideo (${videoFiles.length}):</span>
+                                <div id="archivePlaylistPills" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    ${videoFiles.map((vf, idx) => `
+                                        <button type="button" class="btn-archive-playlist-pill ${idx === 0 ? 'active' : ''}" onclick="window.switchArchiveVideo(${idx})" data-idx="${idx}" style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; border-radius: 8px; border: 1px solid ${idx === 0 ? '#38BDF8' : 'rgba(255,255,255,0.1)'}; background: ${idx === 0 ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255,255,255,0.04)'}; color: ${idx === 0 ? '#38BDF8' : '#CBD5E1'}; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                            <span>${escapeHtml(vf.name)} (${formatBytes(vf.size)})</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="archive-explorer-box" id="archiveExplorerBox">
+                            <div class="archive-explorer-header">
+                                <div class="archive-icon-box" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.3); color: #38BDF8;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                                </div>
+                                <div class="archive-title-box">
+                                    <span class="archive-bundle-title">Zawartość paczki archiwalnej</span>
+                                    <span class="archive-bundle-sub" id="archiveSubLabel">${files.length} ${files.length === 1 ? 'plik' : 'plików'} • Razem: ${formatBytes(totalBytes)}</span>
+                                </div>
+                            </div>
+                            ${files.length > 3 ? `
+                            <div class="archive-search-wrap" id="archiveSearchWrap" style="display: flex;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                <input type="text" id="archiveSearchInput" placeholder="Szukaj pliku w archiwum..." class="archive-search-input">
+                                <span class="archive-count-badge" id="archiveFilterCount">${files.length} plików</span>
+                            </div>
+                            ` : ''}
+                            <div class="archive-file-list" id="archiveFileList"></div>
+                        </div>
+                    `;
+
+                    window.switchArchiveVideo = function(idx) {
+                        const vfiles = window._activeArchiveVideoFiles || [];
+                        const vf = vfiles[idx];
+                        if (!vf) return;
+                        const player = document.getElementById('archiveVideoPlayer');
+                        const titleEl = document.getElementById('archiveActiveVideoTitle');
+                        const subEl = document.getElementById('archiveActiveVideoSub');
+                        const dlBtn = document.getElementById('btnDownloadActiveVideo');
+                        if (player) {
+                            player.src = vf.streamUrl;
+                            player.play().catch(()=>{});
+                            player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                        if (titleEl) titleEl.textContent = vf.name;
+                        if (subEl) subEl.textContent = `Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(vf.size)}`;
+                        if (dlBtn) {
+                            dlBtn.onclick = () => window.downloadSingleFromArchive(encodeURIComponent(vf.name), encodeURIComponent(vf.name));
+                        }
+                        document.querySelectorAll('.btn-archive-playlist-pill').forEach(btn => {
+                            const bIdx = parseInt(btn.dataset.idx, 10);
+                            if (bIdx === idx) {
+                                btn.style.borderColor = '#38BDF8';
+                                btn.style.background = 'rgba(56, 189, 248, 0.22)';
+                                btn.style.color = '#38BDF8';
+                            } else {
+                                btn.style.borderColor = 'rgba(255,255,255,0.1)';
+                                btn.style.background = 'rgba(255,255,255,0.04)';
+                                btn.style.color = '#CBD5E1';
+                            }
+                        });
+                    };
+
+                    window.switchArchiveVideoByPath = function(encodedPath) {
+                        const path = decodeURIComponent(encodedPath);
+                        const vfiles = window._activeArchiveVideoFiles || [];
+                        const idx = vfiles.findIndex(f => f.name === path);
+                        if (idx !== -1) {
+                            window.switchArchiveVideo(idx);
+                        }
+                    };
+
+                    const renderFileListRows = (entriesToRender) => {
+                        const listEl = document.getElementById('archiveFileList');
+                        if (!listEl) return;
+                        if (entriesToRender.length === 0) {
+                            listEl.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Brak plików pasujących do zapytania</div>';
+                            return;
+                        }
+                        listEl.innerHTML = entriesToRender.map(f => {
+                            return `
+                                <div class="archive-file-row">
+                                    <div class="archive-file-left">
+                                        <span class="archive-file-icon">${getMiniFileSvg(f.name)}</span>
+                                        <span class="archive-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                                    </div>
+                                    <div class="archive-file-right">
+                                        <span class="archive-size-badge">${formatBytes(f.size)}</span>
+                                        ${f.isVideo ? `
+                                        <button type="button" class="btn-archive-preview-single" onclick="window.switchArchiveVideoByPath('${encodeURIComponent(f.name)}')" title="Odtwórz ten film w odtwarzaczu">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                            <span>Odtwórz</span>
+                                        </button>
+                                        ` : (f.isAudio || f.isImage) ? `
+                                        <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Podgląd pliku">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                            <span>Podgląd</span>
+                                        </button>
+                                        ` : ''}
+                                        <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Pobierz ten pojedynczy plik na dysk">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span>Pobierz</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    };
+                    renderFileListRows(files);
+
+                    const searchInput = document.getElementById('archiveSearchInput');
+                    const filterCount = document.getElementById('archiveFilterCount');
+                    if (searchInput) {
+                        searchInput.oninput = (e) => {
+                            const query = e.target.value.toLowerCase().trim();
+                            const filtered = files.filter(f => f.name.toLowerCase().includes(query));
+                            if (filterCount) filterCount.textContent = `${filtered.length} z ${files.length} plików`;
+                            renderFileListRows(filtered);
+                        };
+                    }
+                    return;
+                }
+
+                // B) TRYB ALBUMU ZDJĘĆ: Jeśli w archiwum przeważają zdjęcia
+                if (isAlbumMode && imgFiles.length > 0) {
+                    window._albumPhotosList = imgFiles.map((f, idx) => {
+                        return {
+                            index: idx,
+                            path: f.name,
+                            filename: f.name.split('/').pop() || f.name,
+                            size: f.size,
+                            blobUrl: f.streamUrl
+                        };
+                    });
+
+                    dlPreviewContainer.innerHTML = `
+                        <div class="photo-album-recipient-container" id="photoAlbumRecipientContainer">
+                            <div class="photo-album-recipient-header">
+                                <div class="photo-album-header-left">
+                                    <div class="photo-album-icon-badge">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                    </div>
+                                    <div>
+                                        <strong class="photo-album-title" id="albumHeaderTitle">Album fotograficzny (${imgFiles.length} zdjęć)</strong>
+                                        <span class="photo-album-subtitle" id="archiveSubLabel">${imgFiles.length} fotografii w pełnej jakości • ${formatBytes(totalBytes)}</span>
+                                    </div>
+                                </div>
+                                <div class="photo-album-header-right" id="albumHeaderActions">
+                                    <button type="button" class="btn-album-slideshow-quick" id="btnLaunchAlbumSlideshow">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                        <span>Pokaz slajdów</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="archive-file-list album-gallery-grid" id="archiveFileList" style="display: grid;">
+                                ${window._albumPhotosList.map((item, idx) => `
+                                    <div class="album-grid-card" onclick="window.openAlbumLightbox(${idx})">
+                                        <div class="album-grid-img-wrap">
+                                            <img src="${item.blobUrl}" class="album-grid-img" loading="lazy" alt="${escapeHtml(item.filename)}">
+                                            <div class="album-grid-hover-overlay">
+                                                <span class="album-grid-zoom-pill">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                                                    Powiększ
+                                                </span>
+                                                <button type="button" class="btn-album-grid-dl" onclick="event.stopPropagation(); window.downloadSingleFromArchive('${encodeURIComponent(item.path)}', '${encodeURIComponent(item.filename)}')" title="Pobierz zdjęcie">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="album-grid-meta">
+                                            <span class="album-grid-name" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</span>
+                                            <span class="album-grid-size">${formatBytes(item.size)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+
+                    const btnQuickSlideshow = document.getElementById('btnLaunchAlbumSlideshow');
+                    if (btnQuickSlideshow) {
+                        btnQuickSlideshow.onclick = () => {
+                            const urls = window._albumPhotosList.map(p => p.blobUrl);
+                            const cinematicTrack = (typeof data !== 'undefined' && data?.cinematicTrack) || 'piano';
+                            if (typeof launchCinematicSlideshow === 'function') {
+                                launchCinematicSlideshow(urls, cinematicTrack, cleanName, directUrl);
+                            }
+                        };
+                    }
+                    return;
+                }
+
+                // C) TRYB STANDARDOWY EKSPLORATORA PLIKÓW (dokumenty, kod, mieszane archiwa)
                 dlPreviewContainer.innerHTML = `
                     <div class="archive-explorer-box" id="archiveExplorerBox">
                         <div class="archive-explorer-header">
-                            <div class="archive-icon-box">
+                            <div class="archive-icon-box" style="background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.3); color: #38BDF8;">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
                             </div>
                             <div class="archive-title-box">
-                                <span class="archive-bundle-sub" id="archiveSubLabel">Odczytywanie zawartości archiwum...</span>
+                                <span class="archive-bundle-title">Zawartość paczki archiwalnej</span>
+                                <span class="archive-bundle-sub" id="archiveSubLabel">${files.length} ${files.length === 1 ? 'plik' : 'plików'} • Razem: ${formatBytes(totalBytes)}</span>
                             </div>
                         </div>
-                        <div class="archive-search-wrap" id="archiveSearchWrap" style="display: none;">
+                        ${files.length > 3 ? `
+                        <div class="archive-search-wrap" id="archiveSearchWrap" style="display: flex;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             <input type="text" id="archiveSearchInput" placeholder="Szukaj pliku w archiwum..." class="archive-search-input">
-                            <span class="archive-count-badge" id="archiveFilterCount">0 plików</span>
+                            <span class="archive-count-badge" id="archiveFilterCount">${files.length} plików</span>
                         </div>
-                        <div class="archive-file-list" id="archiveFileList">
-                            <div style="text-align: center; padding: 18px; color: var(--text-muted); font-size: 12px;">
-                                <span class="loading-spinner" style="display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #5EEAD4; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;"></span>
-                                Wczytywanie zawartości archiwum w pamięci RAM...
-                            </div>
-                        </div>
+                        ` : ''}
+                        <div class="archive-file-list" id="archiveFileList"></div>
                     </div>
                 `;
+
+                const renderFileListRows = (entriesToRender) => {
+                    const listEl = document.getElementById('archiveFileList');
+                    if (!listEl) return;
+                    if (entriesToRender.length === 0) {
+                        listEl.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Brak plików pasujących do filtra.</div>';
+                        return;
+                    }
+                    listEl.innerHTML = entriesToRender.map(f => {
+                        return `
+                            <div class="archive-file-row">
+                                <div class="archive-file-left">
+                                    <span class="archive-file-icon">${getMiniFileSvg(f.name)}</span>
+                                    <span class="archive-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                                </div>
+                                <div class="archive-file-right">
+                                    <span class="archive-size-badge">${formatBytes(f.size)}</span>
+                                    ${(f.isVideo || f.isAudio || f.isImage) ? `
+                                    <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Podgląd">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        <span>Podgląd</span>
+                                    </button>
+                                    ` : ''}
+                                    <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Pobierz ten plik">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                        <span>Pobierz</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                };
+                renderFileListRows(files);
+
+                const searchInput = document.getElementById('archiveSearchInput');
+                const filterCount = document.getElementById('archiveFilterCount');
+                if (searchInput) {
+                    searchInput.oninput = (e) => {
+                        const query = e.target.value.toLowerCase().trim();
+                        const filtered = files.filter(f => f.name.toLowerCase().includes(query));
+                        if (filterCount) filterCount.textContent = `${filtered.length} z ${files.length} plików`;
+                        renderFileListRows(filtered);
+                    };
+                }
+                return;
             }
 
-            // Jeśli biblioteka fflate jest dostępna, wczytaj zawartość ZIP w tle
+            // KROK 3: FALLBACK DLA ARCHIWÓW ZASZYFROWANYCH AES-256 LUB OFFLINE / LOCAL BLOB
+            // Jeśli paczka ma > 100 MB i nie dało się odczytać spisu przez Worker (np. zaszyfrowana end-to-end),
+            // chronimy kartę przeglądarki przed Out Of Memory.
+            if (archiveSize > 100 * 1024 * 1024) {
+                const targetDlUrl = directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${targetFileKey || fileKey}`;
+                dlPreviewContainer.innerHTML = `
+                    <div class="archive-explorer-box archive-large-direct-card" style="padding: 24px 20px; text-align: center; border-radius: 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(236, 72, 153, 0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.35);">
+                        <div style="width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 14px; background: rgba(236, 72, 153, 0.15); display: flex; align-items: center; justify-content: center; color: #F472B6;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                        </div>
+                        <h4 style="margin: 0 0 6px; font-size: 16px; font-weight: 700; color: #F8FAFC;">Paczka archiwalna ZIP (${formatBytes(archiveSize)})</h4>
+                        <p style="margin: 0 auto 18px; max-width: 480px; font-size: 13px; line-height: 1.55; color: var(--text-muted);">
+                            Archiwum ma rozmiar <strong>${formatBytes(archiveSize)}</strong>. W celu ochrony przeglądarki przed zamrożeniem karty i przeciążeniem pamięci RAM, pobierz paczkę bezpośrednio na swój dysk.
+                        </p>
+                        <a href="${targetDlUrl}" download="${cleanName}" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 11px 24px; font-weight: 600; border-radius: 10px; margin: 0 auto;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>Pobierz paczkę na dysk (${formatBytes(archiveSize)})</span>
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Fallback fflate dla małych archiwów (< 100 MB)
             if (typeof fflate !== 'undefined') {
                 const getArchiveBuffer = async () => {
                     if (window._activeDecryptedBlob && window._activeDecryptedBlob.blob) {
@@ -12429,65 +13432,16 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                 });
 
                                 if (isAlbumArchive) {
-                                    // Uaktualnij nagłówki i etykiety
                                     if (albumTitle) albumTitle.textContent = `Album fotograficzny (${imgEntries.length} zdjęć)`;
                                     if (subLabel) subLabel.textContent = `${imgEntries.length} fotografii w pełnej jakości • ${formatBytes(totalUncompressedSize)}`;
 
-                                    const dlFileNameEl = document.getElementById('dlFileName');
-                                    const dlFileSizeEl = document.getElementById('dlFileSize');
-                                    const dlBtnEl = document.getElementById('dlDownloadBtn');
-                                    if (dlFileNameEl && (cleanName.startsWith('Paczka_') || cleanName.startsWith('Album_') || cleanName.endsWith('.zip') || isAlbumArchive)) {
-                                        dlFileNameEl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 8px; color: #38BDF8; display: inline-block;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Album fotograficzny (${imgEntries.length} zdjęć)`;
-                                    }
-                                    if (dlFileSizeEl) {
-                                        dlFileSizeEl.textContent = `${imgEntries.length} fotografii • ${formatBytes(totalUncompressedSize)} (pełna jakość)`;
-                                    }
-                                    if (dlBtnEl) {
-                                        const btnTxt = dlBtnEl.querySelector('.btn-text');
-                                        if (btnTxt) btnTxt.textContent = `Pobierz cały album (${formatBytes(totalUncompressedSize)})`;
-                                    }
-
-                                    // Podepnij przycisk pokazu slajdów
-                                    const btnQuickSlideshow = document.getElementById('btnLaunchAlbumSlideshow');
-                                    if (btnQuickSlideshow) {
-                                        btnQuickSlideshow.onclick = () => {
-                                            const urls = window._albumPhotosList.map(p => p.blobUrl);
-                                            const cinematicTrack = (typeof data !== 'undefined' && data?.cinematicTrack) || 'piano';
-                                            if (typeof launchCinematicSlideshow === 'function') {
-                                                launchCinematicSlideshow(urls, cinematicTrack, cleanName, directUrl);
-                                            }
-                                        };
-                                    }
-
-                                    // Dodaj 3D Stack do bohatera prezentacji kinowej jeśli istnieje
-                                    const heroIconBox = document.querySelector('.cinematic-hero-icon-box');
-                                    if (heroIconBox && imgEntries.length >= 2) {
-                                        try {
-                                            const stackUrls = window._albumPhotosList.slice(0, 3).map(p => p.blobUrl);
-                                            if (stackUrls.length >= 2) {
-                                                heroIconBox.innerHTML = `
-                                                    <div class="album-hero-3d-stack">
-                                                        <div class="album-stack-card card-back" style="background-image: url('${stackUrls[2] || stackUrls[0]}');"></div>
-                                                        <div class="album-stack-card card-mid" style="background-image: url('${stackUrls[1]}');"></div>
-                                                        <div class="album-stack-card card-front" style="background-image: url('${stackUrls[0]}');"></div>
-                                                    </div>
-                                                `;
-                                                heroIconBox.style.background = 'transparent';
-                                                heroIconBox.style.border = 'none';
-                                                heroIconBox.style.width = '72px';
-                                                heroIconBox.style.height = '72px';
-                                            }
-                                        } catch (_) {}
-                                    }
-
-                                    // Wyrenderuj galerię zdjęć
                                     listEl.style.display = 'grid';
                                     listEl.className = 'archive-file-list album-gallery-grid';
                                     listEl.innerHTML = window._albumPhotosList.map((item, idx) => {
                                         return `
                                             <div class="album-grid-card" onclick="window.openAlbumLightbox(${idx})">
                                                 <div class="album-grid-img-wrap">
-                                                    <img src="${item.blobUrl}" class="album-grid-img" loading="lazy" alt="${item.filename}">
+                                                    <img src="${item.blobUrl}" class="album-grid-img" loading="lazy" alt="${escapeHtml(item.filename)}">
                                                     <div class="album-grid-hover-overlay">
                                                         <span class="album-grid-zoom-pill">
                                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
@@ -12499,7 +13453,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                                     </div>
                                                 </div>
                                                 <div class="album-grid-meta">
-                                                    <span class="album-grid-name" title="${item.filename}">${item.filename}</span>
+                                                    <span class="album-grid-name" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</span>
                                                     <span class="album-grid-size">${formatBytes(item.size)}</span>
                                                 </div>
                                             </div>
@@ -12512,7 +13466,6 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                 if (subLabel) {
                                     subLabel.textContent = `Zawiera ${fileEntries.length} ${fileEntries.length === 1 ? 'plik' : 'plików'} • ${formatBytes(totalUncompressedSize)} po rozpakowaniu`;
                                 }
-
                                 if (searchWrap && fileEntries.length > 3) {
                                     searchWrap.style.display = 'flex';
                                 }
@@ -12522,15 +13475,14 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
 
                                 const canPreview = (fname) => {
                                     const ext = fname.split('.').pop().toLowerCase();
-                                    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'txt', 'json', 'js', 'html', 'css', 'md', 'py', 'mp3', 'wav', 'ogg'].includes(ext);
+                                    return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'mp4', 'webm', 'mov', 'mkv', 'avi', 'mp3', 'wav', 'ogg', 'm4a', 'flac', 'txt', 'json', 'js', 'html', 'css', 'md', 'py'].includes(ext);
                                 };
 
-                                const renderFileList = (entriesToRender) => {
+                                const renderLegacyFileList = (entriesToRender) => {
                                     if (entriesToRender.length === 0) {
                                         listEl.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Nie znaleziono plików pasujących do zapytania</div>';
                                         return;
                                     }
-
                                     listEl.className = 'archive-file-list';
                                     listEl.innerHTML = entriesToRender.map(path => {
                                         const size = unzipped[path].length;
@@ -12540,7 +13492,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                             <div class="archive-file-row">
                                                 <div class="archive-file-left">
                                                     <span class="archive-file-icon">${getMiniFileSvg(filename)}</span>
-                                                    <span class="archive-file-name" title="${path}">${path}</span>
+                                                    <span class="archive-file-name" title="${escapeHtml(path)}">${escapeHtml(path)}</span>
                                                 </div>
                                                 <div class="archive-file-right">
                                                     <span class="archive-size-badge">${formatBytes(size)}</span>
@@ -12550,7 +13502,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                                         Podgląd
                                                     </button>
                                                     ` : ''}
-                                                    <button type="button" class="btn-archive-download-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')" title="Pobierz ten plik">
+                                                    <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')" title="Pobierz ten plik">
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                                     </button>
                                                 </div>
@@ -13417,7 +14369,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                 if (!data.isBurn) dlDownloadBtn.setAttribute('download', cleanName);
                                 else dlDownloadBtn.removeAttribute('download');
                             }
-                            renderDownloadPreview(cleanName, data.directUrl, data.key || fileKey);
+                            renderDownloadPreview(cleanName, data.directUrl, data.key || fileKey, data.size);
                             showNotification('Plik został pomyślnie odblokowany!', 'success');
                         } else {
                             if (dlPasswordError) dlPasswordError.textContent = vData.message || 'Nieprawidłowe hasło.';
@@ -13446,7 +14398,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 dlDownloadBtn.setAttribute('download', cleanName);
             }
 
-            renderDownloadPreview(cleanName, data.directUrl, data.key || fileKey);
+            renderDownloadPreview(cleanName, data.directUrl, data.key || fileKey, data.size);
             if (window.initDropsiteAds) window.initDropsiteAds();
         }
 
@@ -13578,56 +14530,36 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             if (window._activeDecryptedBlob && window._activeDecryptedBlob.blob && 
                 (window._activeDecryptedBlob.fileKey === fileKey || window._activeDecryptedBlob.fileKey === (data.key || ''))) {
                 saveBlobToDisk(window._activeDecryptedBlob.blob, cleanName);
+            } else if (!data.isBurn) {
+                // Bezpośrednie, natywne pobieranie strumieniowe przez przeglądarkę (Zero zużycia RAM w karcie - idealne dla 1GB+)
+                const directDlTarget = directFileUrl || workerDownloadUrl;
+                const tempLink = document.createElement('a');
+                tempLink.href = directDlTarget;
+                tempLink.download = cleanName;
+                tempLink.target = '_blank';
+                tempLink.rel = 'noopener noreferrer';
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                setTimeout(() => { if (tempLink.parentNode) tempLink.parentNode.removeChild(tempLink); }, 1000);
             } else {
                 if (textSpan) textSpan.textContent = 'Pobieranie...';
                 dlDownloadBtn.style.pointerEvents = 'none';
 
                 let downloaded = false;
 
-                // Krok 1: Próba pobrania przez endpoint /stream (zawierający pełne nagłówki CORS *)
+                // Krok 1: Próba pobrania przez endpoint /burn-download
                 try {
-                    const response = await fetch(data.isBurn ? workerDownloadUrl : streamFetchUrl);
+                    const response = await fetch(workerDownloadUrl);
                     if (response.ok) {
                         const blob = await response.blob();
                         saveBlobToDisk(blob, cleanName);
                         downloaded = true;
                     }
                 } catch (e1) {
-                    console.warn('Stream fetch download failed, trying direct CDN:', e1);
+                    console.warn('Burn fetch download failed:', e1);
                 }
 
-                // Krok 2: Bezpośrednie pobranie z CDN R2 jako Blob
-                if (!downloaded && !data.isBurn) {
-                    try {
-                        const response = await fetch(directFileUrl);
-                        if (response.ok) {
-                            const blob = await response.blob();
-                            saveBlobToDisk(blob, cleanName);
-                            downloaded = true;
-                        }
-                    } catch (e2) {
-                        console.warn('Direct CDN fetch failed:', e2);
-                    }
-                }
-
-                // Krok 3: Jeśli to grafika wyświetlona w podglądzie (np. GIF, JPG, PNG, WebP)
-                if (!downloaded && /\.(gif|jpg|jpeg|png|webp|svg)$/i.test(cleanName)) {
-                    const imgEl = document.getElementById('proofingImageEl') || document.querySelector('.dl-preview-media');
-                    if (imgEl && imgEl.src) {
-                        try {
-                            const imgRes = await fetch(imgEl.src);
-                            if (imgRes.ok) {
-                                const blob = await imgRes.blob();
-                                saveBlobToDisk(blob, cleanName);
-                                downloaded = true;
-                            }
-                        } catch (e3) {
-                            console.warn('Image element fetch failed:', e3);
-                        }
-                    }
-                }
-
-                // Krok 4: Niezawodny fallback przez ukryty iframe i nagłówek Content-Disposition: attachment
+                // Krok 2: Niezawodny fallback przez ukryty iframe
                 if (!downloaded) {
                     const iframe = document.createElement('iframe');
                     iframe.style.display = 'none';
@@ -13954,8 +14886,8 @@ function initDownloadLightboxSystem() {
     if (addPinBtn) {
         addPinBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (typeof openProofingModal === 'function') {
-                openProofingModal({
+            if (typeof window.openProofingModal === 'function') {
+                window.openProofingModal({
                     time: null,
                     formattedTime: null,
                     xPct: 50,
@@ -13972,8 +14904,8 @@ function initDownloadLightboxSystem() {
         lightboxDrawer.hidden = !shouldOpen;
         lightboxDrawer.style.display = shouldOpen ? 'block' : 'none';
         if (toggleDrawerBtn) toggleDrawerBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-        if (shouldOpen && typeof renderProofingTasksList === 'function') {
-            renderProofingTasksList();
+        if (shouldOpen && typeof window.renderProofingTasksList === 'function') {
+            window.renderProofingTasksList();
         }
     };
 
@@ -14004,8 +14936,8 @@ function initDownloadLightboxSystem() {
             const xPct = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
             const yPct = Math.max(1, Math.min(99, ((e.clientY - rect.top) / rect.height) * 100));
 
-            if (typeof openProofingModal === 'function') {
-                openProofingModal({
+            if (typeof window.openProofingModal === 'function') {
+                window.openProofingModal({
                     time: null,
                     formattedTime: null,
                     xPct: Math.round(xPct * 10) / 10,
@@ -14076,8 +15008,8 @@ function initDownloadLightboxSystem() {
         } else if (e.key === 'c' || e.key === 'C') {
             const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
             if (activeTag === 'input' || activeTag === 'textarea') return;
-            if (typeof openProofingModal === 'function') {
-                openProofingModal({ time: null, formattedTime: null, xPct: 50, yPct: 35 });
+            if (typeof window.openProofingModal === 'function') {
+                window.openProofingModal({ time: null, formattedTime: null, xPct: 50, yPct: 35 });
             }
         } else if (e.key === 'l' || e.key === 'L') {
             const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
@@ -14157,11 +15089,11 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
 
     // Odśwież i zsynchronizuj pinezki w Lightboxie
     setTimeout(() => {
-        if (typeof renderProofingPinsOnMedia === 'function') {
-            renderProofingPinsOnMedia();
+        if (typeof window.renderProofingPinsOnMedia === 'function') {
+            window.renderProofingPinsOnMedia();
         }
-        if (typeof updateProofingBadge === 'function') {
-            updateProofingBadge();
+        if (typeof window.updateProofingBadge === 'function') {
+            window.updateProofingBadge();
         }
     }, 50);
 };
@@ -14294,19 +15226,29 @@ window.selectedFilesForAlbum = new Set();
 window.switchMyFilesSubtab = function(tab) {
     const filesBtn = document.getElementById('subtabFilesBtn');
     const albumsBtn = document.getElementById('subtabAlbumsBtn');
+    const dropReqBtn = document.getElementById('subtabDropReqBtn');
     const paneFiles = document.getElementById('subpane_files');
     const paneAlbums = document.getElementById('subpane_albums');
+    const paneDropReq = document.getElementById('subpane_drop_req');
+
+    if (filesBtn) filesBtn.classList.remove('active');
+    if (albumsBtn) albumsBtn.classList.remove('active');
+    if (dropReqBtn) dropReqBtn.classList.remove('active');
+
+    if (paneFiles) paneFiles.style.display = 'none';
+    if (paneAlbums) paneAlbums.style.display = 'none';
+    if (paneDropReq) paneDropReq.style.display = 'none';
 
     if (tab === 'albums') {
-        if (filesBtn) filesBtn.classList.remove('active');
         if (albumsBtn) albumsBtn.classList.add('active');
-        if (paneFiles) paneFiles.style.display = 'none';
         if (paneAlbums) paneAlbums.style.display = 'block';
-        window.loadMyAlbums();
+        if (typeof window.loadMyAlbums === 'function') window.loadMyAlbums();
+    } else if (tab === 'drop_req') {
+        if (dropReqBtn) dropReqBtn.classList.add('active');
+        if (paneDropReq) paneDropReq.style.display = 'block';
+        if (typeof window.loadMyDropRequests === 'function') window.loadMyDropRequests();
     } else {
-        if (albumsBtn) albumsBtn.classList.remove('active');
         if (filesBtn) filesBtn.classList.add('active');
-        if (paneAlbums) paneAlbums.style.display = 'none';
         if (paneFiles) paneFiles.style.display = 'block';
     }
 };

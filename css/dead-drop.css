@@ -1,0 +1,499 @@
+/* ==========================================================================
+   DROPSITE DEAD DROP / BURN NOTE (AES-256-GCM EPHEMERAL SECRETS)
+   Theme: Obsidian Glass + Cyber Mint + Neon Amber Warning
+   Zero emoji, pure inline SVG, 100% Client-Side Zero-Knowledge RAM
+   ========================================================================== */
+
+/* 1. PRZYCISK WYWOŁUJĄCY W KOKPICIE */
+.btn-dead-drop-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.14) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 12px;
+    color: #FBBF24;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+    text-decoration: none;
+}
+
+.btn-dead-drop-trigger:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(239, 68, 68, 0.25) 100%);
+    border-color: #F59E0B;
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(245, 158, 11, 0.28);
+}
+
+.btn-dead-drop-trigger svg {
+    color: #F59E0B;
+    transition: transform 0.2s ease;
+}
+
+.btn-dead-drop-trigger:hover svg {
+    transform: scale(1.1);
+}
+
+/* 2. SZKLANY MODAL KREATORA NOTATKI */
+.dead-drop-modal-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 100060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(4, 7, 14, 0.52);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dead-drop-modal-wrap.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.dead-drop-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    background: linear-gradient(165deg, rgba(20, 24, 38, 0.95) 0%, rgba(10, 12, 22, 0.98) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    border-top: 1px solid rgba(245, 158, 11, 0.55);
+    border-radius: 20px;
+    box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.9), 0 0 45px rgba(245, 158, 11, 0.12);
+    overflow: hidden;
+    transform: translateY(18px) scale(0.98);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dead-drop-modal-wrap.open .dead-drop-modal-card {
+    transform: translateY(0) scale(1);
+}
+
+.dead-drop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.dead-drop-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.modal-back-btn svg {
+    color: #34D399;
+    transition: transform 0.2s ease;
+}
+
+.modal-back-btn:hover {
+    color: #F8FAFC;
+}
+
+.modal-back-btn:hover svg {
+    transform: translateX(-3px);
+}
+
+.modal-back-btn:active {
+    transform: scale(0.96);
+}
+
+.dead-drop-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dead-drop-icon-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #F59E0B;
+}
+
+.dead-drop-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin: 0;
+}
+
+.dead-drop-subtitle {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    margin: 2px 0 0 0;
+}
+
+.dead-drop-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #64748B;
+    cursor: pointer;
+    padding: 6px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dead-drop-close-btn:hover {
+    color: #F8FAFC;
+    transform: scale(1.12);
+}
+
+.dead-drop-close-btn:active {
+    transform: scale(0.94);
+}
+
+.dead-drop-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+}
+
+.dead-drop-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px 14px;
+    background: rgba(8, 11, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #F8FAFC;
+    font-family: Consolas, monospace;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.dead-drop-textarea:focus {
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    background: rgba(12, 16, 28, 0.95);
+}
+
+.dead-drop-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.dead-drop-select,
+.dead-drop-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(8, 11, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #F8FAFC;
+    font-family: inherit;
+    font-size: 0.86rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.dead-drop-select:focus,
+.dead-drop-input:focus {
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Sekcja wygenerowanego tajnego linku */
+.dead-drop-result-box {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: 12px;
+}
+
+.dead-drop-result-box.visible {
+    display: flex;
+}
+
+.dead-drop-result-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #F59E0B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dead-drop-url-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dead-drop-url-input {
+    flex: 1;
+    background: rgba(6, 9, 16, 0.92);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: Consolas, monospace;
+    font-size: 0.82rem;
+    color: #F8FAFC;
+    outline: none;
+}
+
+.dead-drop-btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    border: none;
+    border-radius: 8px;
+    color: #04140D;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.dead-drop-btn-copy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.dead-drop-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 11, 20, 0.6);
+}
+
+.dead-drop-btn-cancel {
+    padding: 9px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dead-drop-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+.dead-drop-btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    border: none;
+    border-radius: 8px;
+    color: #05140D;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
+}
+
+.dead-drop-btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55);
+}
+
+/* 3. WIDOK ODBIORCY NOTATKI (CZYTNIK Z OSTRZEŻENIEM) */
+.dead-drop-reader-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.dead-drop-fire-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #EF4444;
+}
+
+.dead-drop-warning-title {
+    font-size: 1.12rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0;
+}
+
+.dead-drop-warning-desc {
+    font-size: 0.86rem;
+    color: #94A3B8;
+    max-width: 420px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.dead-drop-btn-reveal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+    border: none;
+    border-radius: 10px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+
+.dead-drop-btn-reveal:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 26px rgba(239, 68, 68, 0.6);
+}
+
+/* Odsłonięta treść */
+.dead-drop-revealed-box {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.dead-drop-revealed-box.visible {
+    display: flex;
+}
+
+.dead-drop-secret-text {
+    padding: 16px;
+    background: #060911;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 12px;
+    font-family: Consolas, monospace;
+    font-size: 0.92rem;
+    color: #F8FAFC;
+    white-space: pre-wrap;
+    word-break: break-all;
+    user-select: all;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.dead-drop-destroyed-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #F87171;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+/* RWD DLA EKRANÓW MOBILNYCH */
+@media (max-width: 640px) {
+    .dead-drop-modal-card {
+        max-height: 94vh;
+        border-radius: 14px;
+    }
+    .dead-drop-header {
+        padding: 14px 16px;
+    }
+    .dead-drop-body {
+        padding: 16px;
+        gap: 14px;
+    }
+    .dead-drop-options-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .dead-drop-url-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dead-drop-btn-copy {
+        justify-content: center;
+        width: 100%;
+        padding: 11px;
+    }
+    .dead-drop-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        padding: 12px 16px;
+        gap: 8px;
+    }
+    .dead-drop-btn-create,
+    .dead-drop-btn-cancel {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+    }
+}

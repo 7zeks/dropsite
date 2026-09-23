@@ -1,0 +1,601 @@
+/* ==========================================================================
+   DROPSITE WATERMARK STUDIO — DEDYKOWANE STUDIO ZNAKÓW WODNYCH
+   Architektura 100% RAM, Obsidian Glass + Cyber Mint + Luxury Swiss
+   Zgodny z BRAND_GUIDELINES.md
+   ========================================================================== */
+
+.watermark-card-box {
+    padding: 0;
+}
+
+.watermark-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    padding-bottom: 90px;
+}
+
+/* 1. TOP TOOLBAR */
+.watermark-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+}
+
+.watermark-file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.watermark-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.14);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38BDF8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+
+.watermark-filename {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    max-width: 260px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.watermark-pages-count {
+    font-size: 0.8rem;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.watermark-btn-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.watermark-btn-sub:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+/* 2. GŁÓWNY UKŁAD 2-KOLUMNOWY */
+.watermark-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+/* 3. LEWY PANEL KONTROLEK */
+.watermark-controls-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.wm-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wm-control-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #CBD5E1;
+    letter-spacing: 0.01em;
+}
+
+.wm-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.wm-val-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.12);
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    font-family: Consolas, monospace;
+}
+
+/* PRESETY */
+.wm-presets-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.wm-preset-chip {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #CBD5E1;
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wm-preset-chip:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #FFFFFF;
+}
+
+.wm-preset-chip.active {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+/* INPUT TEKSTU */
+.wm-text-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.wm-text-input:focus {
+    border-color: #38BDF8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+/* PALETA KOLORÓW */
+.wm-color-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wm-color-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.wm-color-btn:hover {
+    transform: scale(1.15);
+}
+
+.wm-color-btn.active {
+    border-color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+    transform: scale(1.18);
+}
+
+/* SUWAKI */
+.wm-range-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.wm-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #38BDF8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.wm-range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.wm-angle-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.wm-angle-chip {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wm-angle-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+/* OPCJE WZORU & ZAKRESU */
+.wm-pattern-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.wm-radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.wm-radio-card:hover {
+    border-color: rgba(56, 189, 248, 0.3);
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.wm-radio-card input {
+    margin-top: 2px;
+    accent-color: #38BDF8;
+}
+
+.wm-radio-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wm-radio-content strong {
+    font-size: 0.78rem;
+    color: #F1F5F9;
+}
+
+.wm-radio-content small {
+    font-size: 0.68rem;
+    color: #94A3B8;
+}
+
+.wm-scope-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.wm-scope-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: #CBD5E1;
+    cursor: pointer;
+}
+
+.wm-scope-chip input {
+    accent-color: #38BDF8;
+}
+
+/* 4. PRAWY PANEL PODGLĄDU LIVE */
+.watermark-preview-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.wm-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.wm-preview-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #38BDF8;
+}
+
+.wm-preview-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wm-nav-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #E2E8F0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wm-nav-btn:hover:not(:disabled) {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+}
+
+.wm-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.wm-page-label {
+    font-size: 0.75rem;
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+.wm-stage-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 480px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+.wm-canvas-container {
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #FFFFFF;
+    line-height: 0;
+}
+
+.wm-canvas-container canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.wm-live-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wm-live-text-single {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.wm-live-text-grid {
+    width: 140%;
+    height: 140%;
+    position: absolute;
+    top: -20%;
+    left: -20%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    align-items: center;
+    justify-items: center;
+    user-select: none;
+}
+
+/* 5. DOLNY PASEK EKSPORTU */
+.watermark-export-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 20px;
+    background: linear-gradient(165deg, rgba(22, 33, 50, 0.94) 0%, rgba(10, 16, 26, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-top: 1px solid rgba(56, 189, 248, 0.5);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(56, 189, 248, 0.1);
+}
+
+.watermark-export-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.watermark-export-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.watermark-export-sub {
+    font-size: 0.77rem;
+    color: #94A3B8;
+}
+
+.watermark-btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.watermark-btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.55);
+}
+
+.watermark-btn-export:active {
+    transform: scale(0.98);
+}
+
+.watermark-btn-export.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* RWD DLA EKRANÓW MOBILNYCH */
+@media (max-width: 900px) {
+    .watermark-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .watermark-stage-wrap {
+        min-height: 360px;
+    }
+}
+
+@media (max-width: 640px) {
+    .watermark-workspace {
+        gap: 12px;
+        padding-bottom: 110px;
+    }
+
+    .watermark-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
+    }
+
+    .watermark-file-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .watermark-filename {
+        flex: 1;
+        min-width: 0;
+        max-width: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.84rem;
+    }
+
+    .watermark-export-bar {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        padding: 14px 16px;
+        gap: 12px;
+        position: sticky;
+        bottom: 15px;
+        z-index: 90;
+        border-radius: 14px;
+    }
+
+    .watermark-btn-export {
+        justify-content: center;
+        width: 100%;
+        padding: 12px 18px;
+        font-size: 0.92rem;
+    }
+}

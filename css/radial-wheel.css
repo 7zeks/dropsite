@@ -1,0 +1,746 @@
+/* ==========================================================================
+   DROPSITE RADIAL TRIANGLE WHEEL (OBSIDIAN GLASS & ANTI-PILL DESIGN)
+   Theme: Luminous Obsidian Glass + Cyber Mint + Electric Cyan + Amber
+   Strict adherence to BRAND_GUIDELINES.md:
+   - Anti-Pill Overload: Pure typography, whitespace, subtle laser glow, no nested rectangular boxes
+   - Tactile Micro-motion (scale 0.985, soft micro-glow)
+   - Zero-blur crispness (no dark backdrop haze)
+   - Mobile Ergonomics: Native Bottom-Sheet Drawer with Thumb-Zone & Safe Area
+   ========================================================================== */
+
+/* 1. PRZYCISK WYWOŁUJĄCY W HERO (PŁYNĄCA ZORZA TYPOGRAFICZNA + ZAKRZYWIONY ŁUK SOCZEWKI) */
+.btn-radial-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 4px 14px 4px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+/* PŁYNĄCA ZORZA POLARNA NA LITERACH */
+.radial-trigger-text {
+    background: linear-gradient(135deg, #FFFFFF 0%, #34D399 28%, #38BDF8 52%, #FFFFFF 75%, #34D399 100%);
+    background-size: 240% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.25px;
+    animation: auroraTextFlow 6s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.25));
+    transition: filter 0.3s ease;
+}
+
+@keyframes auroraTextFlow {
+    0% {
+        background-position: 0% center;
+    }
+    100% {
+        background-position: 240% center;
+    }
+}
+
+.radial-trigger-chevron {
+    color: #34D399;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+    animation: chevronFloating 2.8s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.6));
+}
+
+@keyframes chevronFloating {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(3px);
+    }
+}
+
+.btn-radial-trigger:hover .radial-trigger-chevron {
+    color: #5EEAD4;
+    animation-play-state: paused;
+    transform: translateY(3px) scale(1.1);
+}
+
+.btn-radial-trigger:hover .radial-trigger-text {
+    filter: drop-shadow(0 0 18px rgba(52, 211, 153, 0.7));
+}
+
+/* ZAKRZYWIONY ŁUK SOCZEWKI ŚWIATŁA */
+.radial-trigger-lens-arc {
+    position: absolute;
+    bottom: 3px;
+    left: 6%;
+    right: 6%;
+    height: 4px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #34D399 0%, #06B6D4 45%, rgba(6, 182, 212, 0) 75%);
+    filter: blur(0.6px);
+    box-shadow: 0 0 12px #34D399, 0 0 22px rgba(6, 182, 212, 0.65);
+    animation: lensArcPulse 3.5s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+/* MIĘKKA ROZMYTA MGŁAWICA POD ŁUKIEM */
+.radial-trigger-lens-glow {
+    position: absolute;
+    bottom: -4px;
+    left: 18%;
+    right: 18%;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.45) 0%, rgba(6, 182, 212, 0.25) 50%, transparent 80%);
+    filter: blur(6px);
+    animation: lensGlowBreath 3.5s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes lensArcPulse {
+    0% {
+        opacity: 0.7;
+        transform: scaleX(0.85);
+        box-shadow: 0 0 8px #34D399, 0 0 16px rgba(6, 182, 212, 0.4);
+    }
+    100% {
+        opacity: 1;
+        transform: scaleX(1.05);
+        box-shadow: 0 0 16px #34D399, 0 0 28px rgba(6, 182, 212, 0.85);
+    }
+}
+
+@keyframes lensGlowBreath {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 0.95;
+        transform: scale(1.15);
+    }
+}
+
+.btn-radial-trigger:hover .radial-trigger-lens-arc {
+    box-shadow: 0 0 20px #34D399, 0 0 35px rgba(6, 182, 212, 0.95);
+    opacity: 1;
+}
+
+.btn-radial-trigger:active {
+    transform: scale(0.985);
+}
+
+/* 2. LEKKI, PRZEJRZYSTY HUD (BEZ CIEMNEGO BLURU I BEZ CIĘŻKICH KAPSÓŁEK) */
+.radial-hud-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100090;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6, 10, 18, 0.55);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.radial-hud-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.radial-hud-container {
+    position: relative;
+    width: 780px;
+    height: 700px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.96);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radial-hud-backdrop.open .radial-hud-container {
+    transform: scale(1);
+}
+
+/* Mobile Handle i Header domyślnie ukryte na Desktopie */
+.radial-drawer-handle,
+.radial-sheet-header {
+    display: none;
+}
+
+/* Dekoracyjne pierścienie radaru HUD */
+.radial-hud-ring {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.radial-hud-ring.outer {
+    width: 670px;
+    height: 670px;
+    border: 1px dashed rgba(52, 211, 153, 0.2);
+    animation: rotateRadialRing 90s linear infinite;
+}
+
+.radial-hud-ring.inner {
+    width: 450px;
+    height: 450px;
+    border: 1px solid rgba(6, 182, 212, 0.15);
+}
+
+@keyframes rotateRadialRing {
+    to { transform: rotate(360deg); }
+}
+
+/* 3. CENTRALNE JĄDRO INFORMACYJNE (HOLOGRAPHIC OBSIDIAN GLASS) */
+.radial-center-hub {
+    position: absolute;
+    width: 224px;
+    height: 224px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(17, 26, 45, 0.96) 0%, rgba(8, 12, 22, 0.98) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 0 50px rgba(16, 185, 129, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px 18px;
+    box-sizing: border-box;
+    z-index: 10;
+    pointer-events: none;
+    transition: all 0.25s ease;
+}
+
+.radial-hub-text-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+
+/* Etykieta statusu w centrum (Anti-Pill: Czysty glowing mikro-napis bez ramki) */
+.radial-hub-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #34D399;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.5));
+}
+
+.radial-hub-badge::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #34D399;
+    box-shadow: 0 0 8px #34D399;
+    animation: hubDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes hubDotPulse {
+    0%, 100% { opacity: 0.6; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.3); }
+}
+
+.radial-hub-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.45));
+    transition: all 0.2s ease;
+}
+
+.radial-hub-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+}
+
+.radial-hub-desc {
+    font-size: 0.72rem;
+    color: #CBD5E1;
+    margin-top: 4px;
+    line-height: 1.35;
+    max-width: 180px;
+}
+
+/* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (ANTI-PILL OBSIDIAN GLASS) */
+.radial-sector-node {
+    position: absolute;
+    width: 255px;
+    padding: 16px 18px;
+    background: linear-gradient(155deg, rgba(16, 24, 42, 0.92) 0%, rgba(8, 12, 22, 0.96) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+    cursor: pointer;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 5;
+    box-sizing: border-box;
+}
+
+.radial-sector-node:hover,
+.radial-sector-node.active {
+    box-shadow: 0 24px 55px rgba(0, 0, 0, 0.78), 0 0 35px rgba(16, 185, 129, 0.22);
+    border-color: rgba(52, 211, 153, 0.4);
+}
+
+/* Pozycje wierzchołków trójkąta (Desktop) */
+.radial-sector-node.top {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-top: 2px solid #F59E0B;
+}
+.radial-sector-node.top:hover,
+.radial-sector-node.top.active {
+    transform: translateX(-50%) scale(1.025);
+    border-top-color: #FBBF24;
+}
+
+.radial-sector-node.left {
+    bottom: 20px;
+    left: 10px;
+    border-top: 2px solid #10B981;
+}
+.radial-sector-node.left:hover,
+.radial-sector-node.left.active {
+    transform: scale(1.025);
+    border-top-color: #34D399;
+}
+
+.radial-sector-node.right {
+    bottom: 20px;
+    right: 10px;
+    border-top: 2px solid #06B6D4;
+}
+.radial-sector-node.right:hover,
+.radial-sector-node.right.active {
+    transform: scale(1.025);
+    border-top-color: #38BDF8;
+}
+
+/* Nagłówek wierzchołka (Czysty, elegancki z dot-tagiem) */
+.radial-node-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.radial-node-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.radial-node-icon.icon-privacy {
+    color: #F59E0B;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+}
+.radial-node-icon.icon-pdf {
+    color: #34D399;
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.5));
+}
+.radial-node-icon.icon-media {
+    color: #06B6D4;
+    filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+}
+
+.radial-node-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    line-height: 1.2;
+}
+
+.radial-node-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #94A3B8;
+    margin-top: 1px;
+}
+
+/* 5. LISTA PODNARZĘDZI (CZYSTE GHOST ACTIONS, ZERO CAPSULEK / ANTI-PILL) */
+.radial-subtools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.radial-subtool-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 9px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.15s ease;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.radial-subtool-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.radial-subtool-item:active {
+    transform: scale(0.985);
+}
+
+.radial-subtool-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.18s ease;
+}
+
+.radial-subtool-icon.icon-privacy {
+    color: #F59E0B;
+}
+.radial-subtool-icon.icon-pdf {
+    color: #34D399;
+}
+.radial-subtool-icon.icon-media {
+    color: #06B6D4;
+}
+
+.radial-subtool-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.radial-subtool-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #F1F5F9;
+    line-height: 1.2;
+    transition: color 0.18s ease;
+}
+
+.radial-subtool-item:hover .radial-subtool-name {
+    color: #FFFFFF;
+}
+
+.radial-subtool-desc {
+    font-size: 0.7rem;
+    color: #94A3B8;
+    line-height: 1.32;
+    transition: color 0.18s ease;
+}
+
+.radial-subtool-item:hover .radial-subtool-desc {
+    color: #CBD5E1;
+}
+
+/* 6. PRZYCISK ZAMKNIĘCIA (CZYSTY GHOST ICON BEZ RAMKI) */
+.radial-hud-close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #94A3B8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 8px;
+    width: 44px;
+    height: 44px;
+    transition: color 0.2s ease, transform 0.15s ease;
+    z-index: 20;
+}
+
+.radial-hud-close-btn:hover {
+    color: #F8FAFC;
+    transform: scale(1.12);
+}
+
+.radial-hud-close-btn:active {
+    transform: scale(0.94);
+}
+
+/* ==========================================================================
+   7. RWD MOBILE & TABLETS (BRAND GUIDELINES SECTION 3.4 - NATIVE BOTTOM SHEET)
+   ========================================================================== */
+@media (max-width: 780px) {
+    .radial-hud-backdrop {
+        align-items: flex-end; /* Płynne wysuwanie od dołu ekranu (Thumb-Zone) */
+        padding: 0;
+    }
+    
+    .radial-hud-container {
+        width: 100%;
+        height: auto;
+        max-height: 88vh;
+        min-height: 440px;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        gap: 16px;
+        padding: 12px 18px calc(24px + env(safe-area-inset-bottom, 16px)) 18px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        background: linear-gradient(180deg, rgba(14, 22, 38, 0.98) 0%, rgba(6, 10, 18, 0.99) 100%);
+        border-top: 1px solid rgba(52, 211, 153, 0.35);
+        border-radius: 28px 28px 0 0;
+        box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.85);
+        transform: translateY(100%);
+        transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .radial-hud-backdrop.open .radial-hud-container {
+        transform: translateY(0);
+    }
+
+    /* Dotykowy uchwyt pull-bar dla Bottom Sheet */
+    .radial-drawer-handle {
+        display: block;
+        width: 44px;
+        height: 4.5px;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.22);
+        margin: 4px auto 8px auto;
+        flex-shrink: 0;
+    }
+
+    /* Nagłówek panelu na Mobile */
+    .radial-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 6px;
+        flex-shrink: 0;
+    }
+
+    .radial-sheet-title {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #F8FAFC;
+        letter-spacing: -0.2px;
+    }
+    
+    .radial-hud-ring {
+        display: none;
+    }
+    
+    /* Centralne jądro informacyjne na Mobile staje się kompaktowym, proporcjonalnym Live Inspector */
+    .radial-center-hub {
+        position: static;
+        width: 100%;
+        height: auto;
+        border-radius: 18px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        text-align: left;
+        background: linear-gradient(135deg, rgba(16, 26, 46, 0.85) 0%, rgba(9, 14, 26, 0.95) 100%);
+        border: 1px solid rgba(52, 211, 153, 0.24);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        flex-shrink: 0;
+        box-sizing: border-box;
+    }
+
+    .radial-hub-icon {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 13px;
+        background: rgba(52, 211, 153, 0.08);
+        border: 1px solid rgba(52, 211, 153, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        flex-shrink: 0;
+        box-shadow: 0 0 14px rgba(52, 211, 153, 0.12);
+    }
+
+    .radial-hub-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .radial-hub-text-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .radial-hub-badge {
+        font-size: 0.64rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+        letter-spacing: 0.6px;
+    }
+
+    .radial-hub-title {
+        font-size: 0.94rem;
+        font-weight: 800;
+        color: #FFFFFF;
+        line-height: 1.25;
+        letter-spacing: -0.2px;
+    }
+
+    .radial-hub-desc {
+        font-size: 0.74rem;
+        color: #94A3B8;
+        line-height: 1.35;
+        margin-top: 1px;
+        max-width: 100%;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    /* Wierzchołki na Mobile układają się w naturalną, przestronną listę */
+    .radial-sector-node {
+        position: static;
+        width: 100%;
+        padding: 14px 16px;
+        transform: none !important;
+        border-radius: 16px;
+        background: rgba(14, 21, 37, 0.6);
+        box-shadow: none;
+        flex-shrink: 0;
+    }
+
+    /* Ergonomia dotyku pod kciuk (Min 50px touch target) */
+    .radial-subtool-item {
+        padding: 10px 10px;
+        min-height: 50px;
+    }
+
+    .radial-subtool-name {
+        font-size: 0.86rem;
+    }
+
+    .radial-subtool-desc {
+        font-size: 0.74rem;
+    }
+
+    .radial-hud-close-btn {
+        top: 10px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* ==========================================================================
+   MOBILE & DRAWER RADIAL WHEEL TRIGGERS
+   ========================================================================== */
+.mobile-radial-trigger-wrap {
+    display: none;
+}
+
+@media (max-width: 780px) {
+    .mobile-radial-trigger-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin: 16px auto 6px auto;
+        text-align: center;
+    }
+
+    .mobile-radial-trigger-wrap .btn-radial-trigger {
+        padding: 10px 16px 14px 16px;
+        min-height: 44px;
+    }
+}
+
+/* Przycisk Koła Narzędzi w szufladzie menu mobilnego */
+.mobile-drawer-link.mobile-drawer-radial-btn {
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.12) 0%, rgba(56, 189, 248, 0.08) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.32);
+    color: #F8FAFC;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    width: 100%;
+    text-align: left;
+    position: relative;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    margin: 4px 0;
+}
+
+.mobile-drawer-link.mobile-drawer-radial-btn:hover,
+.mobile-drawer-link.mobile-drawer-radial-btn:active {
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.22) 0%, rgba(56, 189, 248, 0.16) 100%);
+    border-color: #34D399;
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.3);
+    color: #FFFFFF;
+}
+
+.mobile-drawer-link.mobile-drawer-radial-btn svg {
+    color: #34D399;
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.5));
+}
+
+.mobile-hud-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(52, 211, 153, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.45);
+    color: #34D399;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}

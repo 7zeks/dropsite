@@ -1,0 +1,221 @@
+/* ==========================================================================
+   DROPSITE OMNI-DROPZONE — DYMEK KONTEKSTOWY (FLYOUT BUBBLE)
+   Zero rozciągania głównej kapsuły — luksusowy dymek obok paska pliku
+   Zgodny z BRAND_GUIDELINES.md (Obsidian Glass + Cyber Mint + Micro-Motion)
+   ========================================================================== */
+
+/* 1. BOCZNY SZKLANY DYMEK (DESKTOP) — ZEWNĘTRZNY FLYOUT WZGLEDEM KAPSUŁY */
+.omni-context-card {
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 64px;
+    width: 330px;
+    z-index: 10000;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    background: linear-gradient(155deg, rgba(22, 33, 50, 0.96) 0%, rgba(10, 16, 26, 0.98) 100%);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    border-top: 1px solid rgba(52, 211, 153, 0.6);
+    border-radius: 16px;
+    box-shadow: 
+        0 16px 40px -8px rgba(0, 0, 0, 0.8),
+        0 6px 16px -4px rgba(0, 0, 0, 0.5),
+        0 0 25px rgba(52, 211, 153, 0.18),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    animation: omniBubbleSlide 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: auto;
+}
+
+/* Strzałka dymka wskazująca wprost na krawędź kapsułki uploadu */
+.omni-flyout-arrow {
+    position: absolute;
+    left: -6px;
+    top: 24px;
+    width: 11px;
+    height: 11px;
+    background: rgba(22, 33, 50, 0.97);
+    border-left: 1px solid rgba(52, 211, 153, 0.45);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.45);
+    transform: rotate(45deg);
+    border-radius: 0 0 0 2px;
+    z-index: 1;
+}
+
+@keyframes omniBubbleSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-10px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.omni-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.omni-card-title-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.omni-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: rgba(52, 211, 153, 0.14);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+.omni-card-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: -0.01em;
+}
+
+.omni-card-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(56, 189, 248, 0.14);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.omni-close-btn {
+    background: transparent;
+    border: none;
+    color: #64748B;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.omni-close-btn:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.omni-card-desc {
+    font-size: 0.79rem;
+    line-height: 1.4;
+    color: #94A3B8;
+    margin: 0;
+}
+
+.omni-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 3px;
+}
+
+.omni-action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #E2E8F0;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.omni-action-chip:hover {
+    background: rgba(52, 211, 153, 0.14);
+    border-color: rgba(52, 211, 153, 0.45);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 211, 153, 0.18);
+}
+
+.omni-action-chip:active {
+    transform: scale(0.98);
+}
+
+.omni-action-chip.is-highlight {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(52, 211, 153, 0.12));
+    border-color: rgba(52, 211, 153, 0.55);
+    color: #34D399;
+}
+
+.omni-action-chip.is-highlight:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(52, 211, 153, 0.22));
+    color: #FFFFFF;
+}
+
+/* 2. RESPONSYWNOŚĆ NA EKRANACH PONIŻEJ 1024px (PŁYWAJĄCY DYMEK-TOAST BEZ WPŁYWU NA KAPSUŁĘ) */
+@media (max-width: 1024px) {
+    .omni-context-card {
+        position: fixed !important;
+        left: 16px !important;
+        right: 16px !important;
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+        top: auto !important;
+        width: auto !important;
+        max-width: 460px !important;
+        margin: 0 auto !important;
+        border-radius: 16px !important;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 24px rgba(52, 211, 153, 0.25) !important;
+        animation: omniMobileToast 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        z-index: 99999 !important;
+    }
+
+    .omni-flyout-arrow {
+        display: none !important;
+    }
+
+    .omni-actions-row {
+        gap: 6px;
+    }
+
+    .omni-action-chip {
+        padding: 6px 10px;
+        font-size: 0.74rem;
+    }
+}
+
+@keyframes omniMobileToast {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
