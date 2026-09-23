@@ -269,7 +269,7 @@
             <li><a href="#" class="nav-btn active" data-target="view-glowna" data-i18n="nav_home">Home</a></li>
             <li><a href="#" class="nav-btn nav-btn-tools" data-target="view-narzedzia"><span
                         data-i18n="nav_tools">Tools</span> <span class="nav-tool-tag">PDF</span></a></li>
-            <li><a href="#" class="nav-btn nav-btn-grabber" onclick="if(window.switchToolTab){ window.switchToolTab('grabber'); return false; }"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" style="vertical-align:-2px; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span data-i18n="nav_grabber">Pobierz Wideo</span> <span class="nav-tool-tag" style="background:rgba(52,211,153,0.18); color:#34D399; border-color:rgba(52,211,153,0.35);">HD</span></a></li>
+            <li><a href="#" class="nav-btn nav-btn-grabber" data-target="view-pobieracz"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" style="vertical-align:-2px; margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span data-i18n="nav_grabber">Pobierz Wideo</span> <span class="nav-tool-tag" style="background:rgba(52,211,153,0.18); color:#34D399; border-color:rgba(52,211,153,0.35);">HD</span></a></li>
             <li><a href="#" class="nav-btn" data-target="view-funkcje" data-i18n="nav_features">Features</a></li>
             <li><a href="#" class="nav-btn" data-target="view-cennik" data-i18n="nav_pricing">Pricing</a></li>
             <li><a href="#" class="nav-btn" data-target="view-kontakt" data-i18n="nav_contact">Contact</a></li>
@@ -376,7 +376,7 @@
                 </svg>
                 <span data-i18n="nav_tools">Tools</span>
             </a>
-            <a href="#" class="mobile-drawer-link" onclick="if(window.switchToolTab){ window.switchToolTab('grabber'); const d = document.getElementById('mobileNavDrawer'); if(d) d.classList.remove('active'); return false; }">
+            <a href="#" class="mobile-drawer-link" data-target="view-pobieracz">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -571,7 +571,7 @@
 
                             <!-- Szybkie Skróty do Narzędzi (Hero Quick Action Pills) -->
                             <div class="hero-quick-tools-row">
-                                <button type="button" class="hero-quick-pill hero-grabber-pill" onclick="if(window.switchToolTab) window.switchToolTab('grabber');" title="Pobieraj wideo z TikToka bez znaku wodnego, YouTube, Instagrama">
+                                <button type="button" class="hero-quick-pill hero-grabber-pill" onclick="const b = document.querySelector('[data-target=\'view-pobieracz\']'); if(b) b.click();" title="Pobieraj wideo z TikToka bez znaku wodnego, YouTube, Instagrama">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="7 10 12 15 17 10"></polyline>
@@ -2019,7 +2019,7 @@
                                 </path>
                             </svg>
                             <span data-i18n="toolbox_cat_convert">Optymalizacja &amp; Konwersja</span>
-                            <span class="toolbox-cat-count">3</span>
+                            <span class="toolbox-cat-count">2</span>
                         </button>
                     </div>
 
@@ -2104,15 +2104,6 @@
                                     </path>
                                 </svg>
                                 <span data-i18n="tool_tab_convert">Konwerter Obrazów</span>
-                            </button>
-                            <button type="button" class="toolbox-tab-btn" data-tool="grabber">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                <span data-i18n="tool_tab_grabber">Pobieracz Wideo &amp; Foto</span>
                             </button>
                         </div>
                     </div>
@@ -3198,70 +3189,90 @@
                         </div>
                     </div>
 
-                    <!-- PANEL 5: POBIERACZ WIDEO & ZDJĘĆ Z SOCIAL MEDIA (TIKTOK, YT, INSTA, X, PINTEREST) -->
-                    <div id="toolPanel_grabber" class="tool-panel" style="display: none;">
-                        <div class="grabber-container" id="mediaGrabberContainer">
-                            <div class="grabber-input-card">
-                                <div class="grabber-input-header">
-                                    <div class="grabber-title-wrap">
-                                        <div class="grabber-icon-badge">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                <polyline points="7 10 12 15 17 10"></polyline>
-                                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                                            </svg>
-                                        </div>
-                                        <div class="grabber-title-text">
-                                            <h3>Inteligentny Pobieracz Multimediów</h3>
-                                            <p>Pobieraj wideo HD bez znaku wodnego, ścieżki MP3 i zdjęcia prosto na dysk lub do chmury R2</p>
-                                        </div>
-                                    </div>
-                                    <div class="grabber-platforms-row">
-                                        <span class="grabber-platform-pill" data-platform="tiktok">
-                                            <span>TikTok</span>
-                                        </span>
-                                        <span class="grabber-platform-pill" data-platform="youtube">
-                                            <span>YouTube</span>
-                                        </span>
-                                        <span class="grabber-platform-pill" data-platform="instagram">
-                                            <span>Instagram</span>
-                                        </span>
-                                        <span class="grabber-platform-pill" data-platform="twitter">
-                                            <span>X / Twitter</span>
-                                        </span>
-                                        <span class="grabber-platform-pill" data-platform="pinterest">
-                                            <span>Pinterest</span>
-                                        </span>
-                                    </div>
-                                </div>
+                </div>
+            </div>
+        </div>
 
-                                <div class="grabber-search-box">
-                                    <input type="url" class="grabber-url-input" id="grabberUrlInput" placeholder="Wklej link do wideo (np. https://vm.tiktok.com/... lub https://youtube.com/shorts/...)" autocomplete="off">
-                                    <button type="button" class="grabber-btn-paste" id="grabberPasteBtn" title="Wklej ze schowka">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                                        </svg>
-                                        <span>Wklej</span>
-                                    </button>
-                                    <button type="button" class="grabber-btn-submit" id="grabberSubmitBtn">
-                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- ======================================================== -->
+        <!-- WIDOK: POBIERACZ MULTIMEDIÓW (MEDIA & VIDEO GRABBER) -->
+        <!-- ======================================================== -->
+        <div id="view-pobieracz" class="view-section" hidden>
+            <div class="main-wrapper" style="max-width: 900px;">
+                <div class="upload-container info-panel" style="padding: 36px 32px;">
+                    <header class="upload-header">
+                        <div class="toolbox-header-badge" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.3); color: #34D399;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Dropsite Media Grabber &bull; Direct &amp; Cloud Stream</span>
+                        </div>
+                        <h1 data-i18n="nav_grabber">Pobieracz Wideo &amp; Multimediów</h1>
+                        <p class="upload-subtitle">Pobieraj czyste wideo HD bez znaków wodnych z TikToka, YouTube, Instagrama i zapisuj na dysku lub w chmurze R2.</p>
+                    </header>
+
+                    <div class="grabber-container" id="mediaGrabberContainer" style="margin-top: 10px;">
+                        <div class="grabber-input-card">
+                            <div class="grabber-input-header">
+                                <div class="grabber-title-wrap">
+                                    <div class="grabber-icon-badge">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                             <polyline points="7 10 12 15 17 10"></polyline>
                                             <line x1="12" y1="15" x2="12" y2="3"></line>
                                         </svg>
-                                        <span>Pobierz</span>
-                                    </button>
+                                    </div>
+                                    <div class="grabber-title-text">
+                                        <h3>Inteligentny Pobieracz Multimediów</h3>
+                                        <p>Wklej link z dowolnej platformy społecznościowej</p>
+                                    </div>
+                                </div>
+                                <div class="grabber-platforms-row">
+                                    <span class="grabber-platform-pill" data-platform="tiktok">
+                                        <span>TikTok</span>
+                                    </span>
+                                    <span class="grabber-platform-pill" data-platform="youtube">
+                                        <span>YouTube</span>
+                                    </span>
+                                    <span class="grabber-platform-pill" data-platform="instagram">
+                                        <span>Instagram</span>
+                                    </span>
+                                    <span class="grabber-platform-pill" data-platform="twitter">
+                                        <span>X / Twitter</span>
+                                    </span>
+                                    <span class="grabber-platform-pill" data-platform="pinterest">
+                                        <span>Pinterest</span>
+                                    </span>
                                 </div>
                             </div>
 
-                            <div class="grabber-loading-wrap" id="grabberLoadingWrap" style="display: none;">
-                                <div class="grabber-radar"></div>
-                                <div class="grabber-loading-text">Dekodowanie strumienia wideo HD bez znaku wodnego...</div>
+                            <div class="grabber-search-box">
+                                <input type="url" class="grabber-url-input" id="grabberUrlInput" placeholder="Wklej link do wideo (np. https://vm.tiktok.com/... lub https://youtube.com/shorts/...)" autocomplete="off">
+                                <button type="button" class="grabber-btn-paste" id="grabberPasteBtn" title="Wklej ze schowka">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                    </svg>
+                                    <span>Wklej</span>
+                                </button>
+                                <button type="button" class="grabber-btn-submit" id="grabberSubmitBtn">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    <span>Pobierz</span>
+                                </button>
                             </div>
-
-                            <div class="grabber-results-wrap" id="grabberResultsWrap"></div>
                         </div>
+
+                        <div class="grabber-loading-wrap" id="grabberLoadingWrap" style="display: none;">
+                            <div class="grabber-radar"></div>
+                            <div class="grabber-loading-text">Dekodowanie strumienia wideo HD bez znaku wodnego...</div>
+                        </div>
+
+                        <div class="grabber-results-wrap" id="grabberResultsWrap"></div>
                     </div>
                 </div>
             </div>
@@ -5916,18 +5927,6 @@
             <span class="dock-label">Admin</span>
         </button>
         <span class="dock-divider dock-admin-divider" style="display: none;"></span>
-
-        <!-- Przycisk Pobieracza Wideo (Media Grabber) -->
-        <button id="dockGrabberBtn" class="dock-item dock-grabber-btn" title="Pobieracz Wideo z Social Media (TikTok HD, YouTube, Instagram)" onclick="if(window.switchToolTab) window.switchToolTab('grabber');">
-            <svg class="dock-icon icon-emerald" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span class="dock-label">Pobierz Wideo</span>
-        </button>
-
-        <span class="dock-divider"></span>
 
         <!-- Przycisk Asystenta Dropsite Concierge -->
         <button type="button" id="conciergeLauncherBtn" class="dock-item dock-concierge-btn"

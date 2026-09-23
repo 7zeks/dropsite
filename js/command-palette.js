@@ -124,7 +124,11 @@
             desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka, YouTube, Instagrama lub zapisz w chmurze R2',
             tag: 'Pobieracz',
             keywords: ['tiktok', 'youtube', 'instagram', 'twitter', 'x', 'pinterest', 'pobierz', 'grabber', 'mp4', 'mp3', 'wideo', 'film', 'bez znaku'],
-            action: () => { if (window.switchToolTab) window.switchToolTab('grabber'); }
+            action: () => {
+                const nav = document.querySelector('[data-target="view-pobieracz"]');
+                if (nav) nav.click();
+                else if (window.switchView) window.switchView('view-pobieracz');
+            }
         },
 
         // 3. NAWIGACJA

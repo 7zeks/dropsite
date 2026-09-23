@@ -116,8 +116,11 @@
                 this.input.value = url;
                 this.updatePlatformHighlight(url);
             }
-            if (typeof window.switchToolTab === 'function') {
-                window.switchToolTab('grabber');
+            const navBtn = document.querySelector('[data-target="view-pobieracz"]');
+            if (navBtn) {
+                navBtn.click();
+            } else if (typeof window.switchView === 'function') {
+                window.switchView('view-pobieracz');
             }
             return this.handleGrab(url);
         },

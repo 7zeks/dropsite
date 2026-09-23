@@ -48,7 +48,10 @@
             const toolParam = params.get('tool') || params.get('tab');
             const hash = window.location.hash.toLowerCase();
 
-            if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress', 'grabber'].includes(toolParam.toLowerCase())) {
+            if (toolParam && toolParam.toLowerCase() === 'grabber') {
+                const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
+                if (grabberNav) grabberNav.click();
+            } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -67,6 +70,12 @@
     window.switchToolTab = function(toolName, doScroll = true) {
         if (!toolName) return;
         const normalized = toolName.toLowerCase().trim();
+
+        if (normalized === 'grabber') {
+            const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
+            if (grabberNav) grabberNav.click();
+            return;
+        }
 
         // 1. Aktywuj widok narzędzi w głównym routerze SPA
         const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -99,8 +108,7 @@
         'edit': 'security',
         'watermark': 'security',
         'compress': 'convert',
-        'convert': 'convert',
-        'grabber': 'convert'
+        'convert': 'convert'
     };
 
     function selectCategory(catId) {

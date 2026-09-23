@@ -286,7 +286,9 @@
                 break;
             case 'media-grabber':
             case 'grabber':
-                if (window.switchToolTab) window.switchToolTab('grabber');
+                const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
+                if (grabberNav) grabberNav.click();
+                else if (window.switchView) window.switchView('view-pobieracz');
                 break;
             default:
                 const toolsNav = document.querySelector('[data-target="view-narzedzia"]');
