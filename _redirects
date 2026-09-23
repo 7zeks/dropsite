@@ -1,12 +1,28 @@
 # Cloudflare Pages SPA Rewrites for Dropsite SEO & Tool Landing Pages
 /podpisz-pdf            /index.html 200
 /polacz-pdf             /index.html 200
+/podziel-pdf            /index.html 200
+/rozdziel-pdf           /index.html 200
 /kompresor-pdf          /index.html 200
 /kompresuj-pdf          /index.html 200
-/konwertuj-pdf          /index.html 200
+/uklad-pdf              /index.html 200
+/organizuj-pdf          /index.html 200
+/matryca-pdf            /index.html 200
+/znak-wodny-pdf         /index.html 200
 /cenzura-pdf            /index.html 200
+/rodo-pdf               /index.html 200
+/anonimizuj-pdf         /index.html 200
+/konwertuj-pdf          /index.html 200
+/kompresor-wideo        /index.html 200
+/generator-qr           /index.html 200
+/qr-studio              /index.html 200
+/samospalajaca-notatka  /index.html 200
+/dead-drop              /index.html 200
+/skrzynka-wrzutowa      /index.html 200
+/drop-request           /index.html 200
 /narzedzia              /index.html 200
 /tools                  /index.html 200
+/beam                   /index.html 200
 /cennik                 /index.html 200
 /kontakt                /index.html 200
 /funkcje                /index.html 200
@@ -14,4 +30,3 @@
 /polityka-prywatnosci   /index.html 200
 /faq                    /index.html 200
 /trust                  /index.html 200
-/beam                   /index.html 200

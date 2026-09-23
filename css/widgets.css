@@ -10018,18 +10018,25 @@ body.studio-fullscreen-active {
 }
 
 .footer-inner {
-    max-width: 1120px;
+    max-width: 1200px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1.2fr 1.2fr;
-    gap: 40px;
+    grid-template-columns: 1.5fr 1fr 1fr 1.1fr;
+    gap: 36px;
     text-align: left;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
+    .footer-inner {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+}
+
+@media (max-width: 576px) {
     .footer-inner {
         grid-template-columns: 1fr;
-        gap: 30px;
+        gap: 28px;
     }
 }
 

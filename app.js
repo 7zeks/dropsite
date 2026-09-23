@@ -9078,7 +9078,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 3. Kompresor PDF
+            // 3. Podziel / Rozdziel PDF
+            if (path === '/podziel-pdf' || path === '/rozdziel-pdf' || hash.includes('podziel-pdf') || hash.includes('rozdziel-pdf') || toolParam === 'split') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Podziel PDF Online za Darmo — Wyodrębnij Strony w RAM | Dropsite', 'Rozdzielaj dokumenty PDF na pojedyncze strony lub wyodrębniaj wybrany zakres stron w pamięci RAM. 100% bezpieczeństwa i zero wysyłania do chmury.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('split', false); }, 160);
+                return;
+            }
+
+            // 4. Kompresor PDF
             if (path === '/kompresor-pdf' || path === '/kompresuj-pdf' || hash.includes('kompresor-pdf') || hash.includes('kompresuj-pdf') || toolParam === 'compress') {
                 if (window.switchView) window.switchView('view-narzedzia');
                 setSeoMeta('Kompresor PDF Online — Zmniejsz Rozmiar PDF bez Utraty Jakości | Dropsite', 'Zmniejsz wagę i rozmiar dokumentu PDF bezpośrednio w pamięci RAM urządzenia. Bezpieczna kompresja zgodna z RODO bez utraty czytelności.');
@@ -9086,15 +9094,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 4. Cenzura / Anonimizacja RODO
-            if (path === '/cenzura-pdf' || path === '/anonimizuj-pdf' || hash.includes('cenzura-pdf') || hash.includes('anonimizuj-pdf')) {
+            // 5. Układ Stron / Matryca PDF (PDF Matrix)
+            if (path === '/uklad-pdf' || path === '/organizuj-pdf' || path === '/matryca-pdf' || hash.includes('uklad-pdf') || hash.includes('matrix') || toolParam === 'organize') {
                 if (window.switchView) window.switchView('view-narzedzia');
-                setSeoMeta('Cenzura RODO w PDF — Bezpieczna Anonimizacja Danych w RAM | Dropsite', 'Trwale zamaluj czarną belką PESEL, numery kont, adresy i dane wrażliwe w dokumentach PDF. Anonimizacja 100% w pamięci RAM.');
+                setSeoMeta('Wizualny Organizator Stron PDF & Obrót — PDF Matrix | Dropsite', 'Zmieniaj kolejność stron metodą przeciągnij i upuść, obracaj o 90 stopni i usuwaj niepotrzebne strony z PDF bezpośrednio w przeglądarce.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('organize', false); }, 160);
+                return;
+            }
+
+            // 6. Znak Wodny w PDF (Watermark Studio)
+            if (path === '/znak-wodny-pdf' || hash.includes('znak-wodny') || hash.includes('watermark') || toolParam === 'watermark') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Znak Wodny w PDF Online — POUFNE, DRAFT, Własne Logo w RAM | Dropsite', 'Dodaj profesjonalny znak wodny (tekstowy, poufne, szkic lub firmowy) do wielostronicowych dokumentów PDF z podglądem na żywo.');
+                setTimeout(() => { if (window.switchToolTab) window.switchToolTab('watermark', false); }, 160);
+                return;
+            }
+
+            // 7. Cenzura / Anonimizacja RODO
+            if (path === '/cenzura-pdf' || path === '/rodo-pdf' || path === '/anonimizuj-pdf' || hash.includes('cenzura-pdf') || hash.includes('rodo-pdf') || hash.includes('anonimizuj-pdf') || toolParam === 'rodo') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Cenzura RODO w PDF — Inteligentna Anonimizacja Danych w RAM | Dropsite', 'Trwale zamaluj czarną belką PESEL, numery kont, adresy, NIP i dane wrażliwe w dokumentach PDF. Anonimizacja 100% w pamięci RAM.');
                 setTimeout(() => { if (window.switchToolTab) window.switchToolTab('edit', false); }, 160);
                 return;
             }
 
-            // 5. Konwerter PDF & Obrazów
+            // 8. Konwerter PDF & Obrazów
             if (path === '/konwertuj-pdf' || hash.includes('konwertuj-pdf') || toolParam === 'convert') {
                 if (window.switchView) window.switchView('view-narzedzia');
                 setSeoMeta('Konwerter PDF i Obrazów Online — JPG/PNG do PDF w RAM | Dropsite', 'Konwertuj zdjęcia i obrazy do formatu PDF lub wyodrębniaj strony PDF w ułamku sekundy bez zewnętrznego oprogramowania.');
@@ -9102,49 +9126,109 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 6. Narzędzia ogólne
+            // 9. Kompresor Wideo (Client-Side 25MB)
+            if (path === '/kompresor-wideo' || hash.includes('kompresor-wideo') || hash.includes('video-compress')) {
+                if (window.switchView) window.switchView('view-glowna');
+                setSeoMeta('Lokalny Kompresor Wideo do 25 MB — Discord & E-mail w RAM | Dropsite', 'Zmniejsz rozmiar wideo MP4, WebM i MOV pod limit 25 MB bezpośrednio w przeglądarce bez wysyłania pliku na serwer.');
+                setTimeout(() => {
+                    if (window.openVideoCompressor) {
+                        window.openVideoCompressor();
+                    } else {
+                        const m = document.getElementById('videoCompressModal');
+                        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+                    }
+                }, 200);
+                return;
+            }
+
+            // 10. Studio Kodów QR (4K & Vector SVG)
+            if (path === '/generator-qr' || path === '/qr-studio' || hash.includes('generator-qr') || hash.includes('qr-studio')) {
+                if (window.switchView) window.switchView('view-glowna');
+                setSeoMeta('Generator Kodów QR 4K & Wektor SVG z Logo — Bezpłatnie | Dropsite', 'Generuj kody QR w jakości 4K Ultra HD oraz wektorowym formacie SVG dla stron WWW, sieci Wi-Fi, wizytówek vCard z własnym logo.');
+                setTimeout(() => {
+                    const modal = document.getElementById('qrStudioModal');
+                    if (modal) {
+                        modal.classList.add('open');
+                        document.body.style.overflow = 'hidden';
+                        if (window.initQRStudio) window.initQRStudio();
+                    }
+                }, 200);
+                return;
+            }
+
+            // 11. Samospalająca się notatka (Dead Drop)
+            if (path === '/samospalajaca-notatka' || path === '/dead-drop' || hash.includes('dead-drop') || hash.includes('samospalajaca')) {
+                if (window.switchView) window.switchView('view-glowna');
+                setSeoMeta('Samospalająca się Notatka (Dead Drop) — Szyfrowanie AES-256 | Dropsite', 'Przesyłaj poufne hasła, tokeny i klucze API z automatycznym samozniszczeniem po jednym odczytaniu. Zero-Knowledge w pamięci RAM.');
+                setTimeout(() => {
+                    if (window.openDeadDropCreator) {
+                        window.openDeadDropCreator();
+                    } else {
+                        const m = document.getElementById('deadDropModal');
+                        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+                    }
+                }, 200);
+                return;
+            }
+
+            // 12. Skrzynka Wrzutowa dla Klientów (Drop Request B2B)
+            if (path === '/skrzynka-wrzutowa' || path === '/drop-request' || hash.includes('drop-request') || hash.includes('skrzynka-wrzutowa')) {
+                if (window.switchView) window.switchView('view-glowna');
+                setSeoMeta('Skrzynka Wrzutowa dla Klientów (Drop Request B2B) | Dropsite', 'Utwórz bezpieczną skrzynkę do odbioru plików od klientów bez logowania i skomplikowanych transferów. Szyfrowanie w pamięci RAM.');
+                setTimeout(() => {
+                    if (window.openDropRequestCreator) {
+                        window.openDropRequestCreator();
+                    } else {
+                        const m = document.getElementById('dropRequestModal');
+                        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+                    }
+                }, 200);
+                return;
+            }
+
+            // 13. Narzędzia ogólne
             if (path === '/narzedzia' || path === '/tools' || hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 if (window.switchView) window.switchView('view-narzedzia');
                 setSeoMeta('Zestaw Narzędzi PDF Online (Toolbox) — 100% Local RAM | Dropsite', 'Edytuj, łącz, rozdzielaj, kompresuj i podpisuj pliki PDF lokalnie w przeglądarce. 0 zł, bez limitów i bez rejestracji.');
                 return;
             }
 
-            // 7. Cennik
+            // 14. Cennik
             if (path === '/cennik' || hash.includes('cennik') || hash.includes('pricing')) {
                 if (window.switchView) window.switchView('view-cennik');
                 setSeoMeta('Cennik Dropsite PRO — Duże Paczki do 10 GB i Polski BLIK | Dropsite', 'Wybierz pakiet Dropsite PRO. Wysyłaj pliki do 10 GB, wydłuż czas przechowywania i ciesz się transferem bez reklam z polskim BLIK.');
                 return;
             }
 
-            // 8. Funkcje
+            // 15. Funkcje
             if (path === '/funkcje' || hash.includes('funkcje') || hash.includes('features')) {
                 if (window.switchView) window.switchView('view-funkcje');
                 setSeoMeta('Możliwości Dropsite — Szyfrowanie Zero-Knowledge, Odtwarzacz & EXIF | Dropsite', 'Poznaj zaawansowane możliwości Dropsite: czyszczenie metadanych EXIF w RAM, odtwarzacz wideo, albumy i tryb samozniszczenia.');
                 return;
             }
 
-            // 9. Kontakt
+            // 16. Kontakt
             if (path === '/kontakt' || hash.includes('kontakt') || hash.includes('contact')) {
                 if (window.switchView) window.switchView('view-kontakt');
                 setSeoMeta('Kontakt & Pomoc Techniczna — Dropsite', 'Skontaktuj się z zespołem Dropsite w sprawie pytań technicznych, sugestii nowych funkcji lub wsparcia licencji PRO.');
                 return;
             }
 
-            // 10. Regulamin
+            // 17. Regulamin
             if (path === '/regulamin' || hash.includes('regulamin') || hash.includes('terms')) {
                 if (window.switchView) window.switchView('view-regulamin');
                 setSeoMeta('Regulamin Serwisu — Dropsite', 'Regulamin świadczenia usług drogą elektroniczną w serwisie Dropsite.');
                 return;
             }
 
-            // 11. Polityka Prywatności
+            // 18. Polityka Prywatności
             if (path === '/polityka-prywatnosci' || path === '/polityka' || hash.includes('polityka')) {
                 if (window.switchView) window.switchView('view-polityka');
                 setSeoMeta('Polityka Prywatności & Bezpieczeństwo Danych RODO — Dropsite', 'Zasady przetwarzania danych i architektury Zero-Knowledge w serwisie Dropsite.');
                 return;
             }
 
-            // 12. FAQ
+            // 19. FAQ
             if (path === '/faq' || hash.includes('faq')) {
                 if (window.switchView) window.switchView('view-glowna');
                 if (window.switchHomePianoTab) window.switchHomePianoTab('faq', true);
@@ -9152,7 +9236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 13. Trust / Bezpieczeństwo
+            // 20. Trust / Bezpieczeństwo
             if (path === '/trust' || hash.includes('trust') || hash.includes('bezpieczenstwo')) {
                 if (window.switchView) window.switchView('view-glowna');
                 if (window.switchHomePianoTab) window.switchHomePianoTab('trust', true);

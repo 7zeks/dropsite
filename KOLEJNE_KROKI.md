@@ -58,12 +58,16 @@ Zadania wdrożone i przetestowane produkcyjnie:
 
 ---
 
-## 📈 4. Monetyzacja & Ruch Organiczny (SEO & B2B)
-1. **Pozycjonowanie narzędzi PDF (SEO)**:
-   - Kampania organiczna na frazy: *scalanie pdf online*, *podpis pdf eidas*, *cenzura rodo pdf*, *kompresor wideo 25mb*, *generator kodów qr 4k*.
-2. **Promocja funkcji B2B**:
-   - Skrzynka wrzutowa Drop Request (`/drop/nazwa`) dla biur rachunkowych, fotografów i agencji marketingowych,
-   - Samospalające się notatki Dead Drop dla programistów i zespołów IT.
+## 📈 4. Monetyzacja & Ruch Organiczny (SEO & B2B) (UKOŃCZONE ✅)
+1. **Dedykowane Trasy SEO & SPA Rewrites (`_redirects` & `sitemap.xml`)** ✅:
+   - Pełna indeksacja podstron: `/podpisz-pdf`, `/polacz-pdf`, `/podziel-pdf`, `/kompresor-pdf`, `/uklad-pdf`, `/znak-wodny-pdf`, `/cenzura-pdf`, `/rodo-pdf`, `/konwertuj-pdf`, `/kompresor-wideo`, `/generator-qr`, `/samospalajaca-notatka`, `/skrzynka-wrzutowa`, `/beam`.
+   - Dynamiczne nagłówki `<title>` i `<meta name="description">` generowane w locie przy wejściu na dany adres.
+   - Błyskawiczny lazy-prefetch skryptów narzędziowych PDF & Canvas przy wejściu bezpośrednim.
+2. **Schema.org Rich Snippets (`WebApplication` & `FAQPage`)** ✅:
+   - Rozszerzona lista funkcjonalności `featureList` w JSON-LD o wszystkie studia multimedialne i narzędzia B2B.
+   - Pytania FAQ dla Google Rich Results (kompresor wideo 25 MB, cenzura RODO, Dead Drop, podział PDF).
+3. **Optymalizacja wewnętrznego linkowania (Footer & Deep-linking)** ✅:
+   - 4-kolumnowa responsywna stopka z linkami do wszystkich narzędzi i modułów B2B.
 
 ---
 
