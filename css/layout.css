@@ -798,6 +798,181 @@
     opacity: 1;
 }
 
+/* --- Menu Rozwijane Narzędzi (Dropdown na Hover) --- */
+.nav-dropdown-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.nav-dropdown-item > a {
+    cursor: pointer;
+    user-select: none;
+    gap: 4px;
+}
+
+.nav-dropdown-arrow {
+    opacity: 0.6;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.nav-dropdown-item:hover .nav-dropdown-arrow,
+.nav-dropdown-item.is-open .nav-dropdown-arrow {
+    transform: rotate(180deg);
+    opacity: 1;
+    color: #38BDF8;
+}
+
+.nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(8px) scale(0.96);
+    background: rgba(13, 17, 26, 0.95);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 7px;
+    min-width: 250px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7),
+                0 0 24px rgba(56, 189, 248, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.22s ease;
+}
+
+/* Niewidoczny bufor pod myszkę, aby dropdown nie znikał przy przesunięciu kursora */
+.nav-dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 0;
+    right: 0;
+    height: 14px;
+}
+
+.nav-dropdown-item:hover .nav-dropdown-menu,
+.nav-dropdown-item:focus-within .nav-dropdown-menu,
+.nav-dropdown-item.is-open .nav-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.nav-dropdown-link {
+    display: flex !important;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #CBD5E1 !important;
+    padding: 8.5px 12px !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    border-radius: 9px;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none !important;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.nav-dropdown-link::after {
+    display: none !important;
+}
+
+.nav-dropdown-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF !important;
+    transform: translateX(3px);
+}
+
+.nav-dropdown-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: scale(1.06);
+}
+
+.nav-dropdown-link.dropdown-grabber:hover .nav-dropdown-icon {
+    background: rgba(52, 211, 153, 0.16);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+.nav-dropdown-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.nav-dropdown-title {
+    color: #F1F5F9;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.nav-dropdown-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin-left: auto;
+    letter-spacing: 0.4px;
+}
+
+.badge-pdf {
+    background: rgba(56, 189, 248, 0.14);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.badge-hd {
+    background: rgba(52, 211, 153, 0.16);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.badge-sound-state {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+
+.nav-dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 4px 6px;
+}
+
 /* ==========================================================================
    DOLNY PASEK SYSTEMOWY (macOS-STYLE FROSTED ACTION DOCK - KONCEPCJA 3)
    Minimalistyczna, dyskretna listwa systemowa w lewym dolnym rogu

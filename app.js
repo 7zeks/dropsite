@@ -1480,6 +1480,9 @@ function playSound(type) {
 const soundToggleBtn = document.getElementById('soundToggleBtn');
 const soundIconOn = document.getElementById('soundIconOn');
 const soundIconOff = document.getElementById('soundIconOff');
+const navDropdownSoundBtn = document.getElementById('navDropdownSoundBtn');
+const dropdownSoundState = document.getElementById('dropdownSoundState');
+const navDropdownHistoryBtn = document.getElementById('navDropdownHistoryBtn');
 
 function updateSoundButtonUI() {
     if (soundToggleBtn) {
@@ -1487,15 +1490,44 @@ function updateSoundButtonUI() {
         soundToggleBtn.setAttribute('title', soundEnabled ? 'Dźwięki włączone (kliknij, aby wyciszyć)' : 'Dźwięki wyciszone (kliknij, aby włączyć)');
         soundToggleBtn.setAttribute('aria-label', soundEnabled ? 'Wycisz dźwięki interfejsu' : 'Włącz dźwięki interfejsu');
     }
+    if (navDropdownSoundBtn) {
+        const iconOn = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-on');
+        const iconOff = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-off');
+        if (iconOn) iconOn.style.display = soundEnabled ? 'inline-block' : 'none';
+        if (iconOff) iconOff.style.display = soundEnabled ? 'none' : 'inline-block';
+        if (dropdownSoundState) {
+            dropdownSoundState.textContent = soundEnabled ? 'ON' : 'OFF';
+            dropdownSoundState.style.color = soundEnabled ? '#34D399' : '#EF4444';
+            dropdownSoundState.style.background = soundEnabled ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)';
+        }
+    }
+}
+
+function toggleGlobalSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('dropsite_sound_enabled', soundEnabled);
+    updateSoundButtonUI();
+    if (soundEnabled) playSound('copy');
 }
 
 if (soundToggleBtn) {
     updateSoundButtonUI();
-    soundToggleBtn.addEventListener('click', () => {
-        soundEnabled = !soundEnabled;
-        localStorage.setItem('dropsite_sound_enabled', soundEnabled);
-        updateSoundButtonUI();
-        if (soundEnabled) playSound('copy');
+    soundToggleBtn.addEventListener('click', toggleGlobalSound);
+}
+
+if (navDropdownSoundBtn) {
+    navDropdownSoundBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleGlobalSound();
+    });
+}
+
+if (navDropdownHistoryBtn) {
+    navDropdownHistoryBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const deskHist = document.getElementById('openHistoryBtn');
+        if (deskHist) deskHist.click();
     });
 }
 
@@ -9230,11 +9262,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.switchView = switchView;
 
-    navLinks.forEach(link => {
+    const allNavClickables = document.querySelectorAll('.nav-btn, .nav-dropdown-link[data-target]');
+    allNavClickables.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
             const targetId = link.getAttribute('data-target');
-            switchView(targetId, true);
+            if (targetId) {
+                e.preventDefault();
+                switchView(targetId, true);
+                const dropdown = document.getElementById('navToolsDropdown');
+                if (dropdown) dropdown.classList.remove('is-open');
+            }
         });
     });
 
