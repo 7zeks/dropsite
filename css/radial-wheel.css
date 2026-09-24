@@ -1,10 +1,9 @@
 /* ==========================================================================
-   DROPSITE RADIAL TRIANGLE WHEEL (LUXURY OBSIDIAN GLASS & SMOOTH GRADIENTS)
+   DROPSITE RADIAL TRIANGLE WHEEL (LUXURY ORGANIC GLASS & KINETIC SATISFACTION)
    Theme: Aromatic Obsidian Glass + Multidimensional Smooth Gradients
-   - Anti-Pill & Ultra-Clean Glassmorphism
-   - Smooth Multi-stop Aurora Gradients (Amber Gold, Mint Emerald, Cyan Sapphire)
-   - Dynamic Laser Borders & Luminous Energy Beam Traces
-   - Tactile Spring Physics & Refined Micro-Tags
+   - Organic Pill/Squircle Shapes (No rigid rectangular boxes, no boxy borders)
+   - Calibrated Cinematic Motion & Kinetic Press Physics
+   - Deep Holographic Halo & Aromatic Glass Depth
    ========================================================================== */
 
 /* 1. PRZYCISK WYWOŁUJĄCY W HERO (PŁYNĄCA ZORZA TYPOGRAFICZNA + ZAKRZYWIONY ŁUK SOCZEWKI) */
@@ -12,7 +11,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 12px 16px 12px;
+    padding: 8px 14px 16px 14px;
     background: transparent;
     border: none;
     outline: none;
@@ -21,7 +20,7 @@
     font-weight: 700;
     cursor: pointer;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
     user-select: none;
 }
 
@@ -32,9 +31,9 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.25px;
-    animation: auroraTextFlow 7s linear infinite;
+    animation: auroraTextFlow 9s linear infinite;
     filter: drop-shadow(0 0 14px rgba(52, 211, 153, 0.3));
-    transition: filter 0.3s ease;
+    transition: filter 0.4s ease;
 }
 
 @keyframes auroraTextFlow {
@@ -49,8 +48,8 @@
 .radial-trigger-chevron {
     color: #34D399;
     flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
-    animation: chevronFloating 2.8s ease-in-out infinite;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+    animation: chevronFloating 3.6s ease-in-out infinite;
     filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6));
 }
 
@@ -70,7 +69,7 @@
 }
 
 .btn-radial-trigger:hover .radial-trigger-text {
-    filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.8));
+    filter: drop-shadow(0 0 22px rgba(52, 211, 153, 0.85));
 }
 
 /* ZAKRZYWIONY ŁUK SOCZEWKI ŚWIATŁA */
@@ -84,7 +83,7 @@
     background: radial-gradient(ellipse at center, #34D399 0%, #06B6D4 45%, #8B5CF6 75%, transparent 100%);
     filter: blur(0.6px);
     box-shadow: 0 0 14px #34D399, 0 0 26px rgba(6, 182, 212, 0.7);
-    animation: lensArcPulse 3.5s ease-in-out infinite alternate;
+    animation: lensArcPulse 4.5s ease-in-out infinite alternate;
     pointer-events: none;
 }
 
@@ -98,7 +97,7 @@
     border-radius: 50%;
     background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.5) 0%, rgba(6, 182, 212, 0.3) 50%, transparent 80%);
     filter: blur(8px);
-    animation: lensGlowBreath 3.5s ease-in-out infinite alternate;
+    animation: lensGlowBreath 4.5s ease-in-out infinite alternate;
     pointer-events: none;
 }
 
@@ -132,7 +131,7 @@
 }
 
 .btn-radial-trigger:active {
-    transform: scale(0.985);
+    transform: scale(0.96);
 }
 
 /* 2. LEKKI, PRZEJRZYSTY HUD (AKSAMITNY OBSIDIAN GLASS + ROZMYCIE GŁĘBI) */
@@ -143,13 +142,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at 50% 50%, rgba(10, 16, 28, 0.78) 0%, rgba(4, 7, 14, 0.92) 100%);
-    backdrop-filter: blur(28px) saturate(190%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    background: radial-gradient(circle at 50% 50%, rgba(10, 16, 28, 0.72) 0%, rgba(4, 7, 14, 0.94) 100%);
+    backdrop-filter: blur(32px) saturate(190%);
+    -webkit-backdrop-filter: blur(32px) saturate(190%);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hud-backdrop.open {
@@ -160,13 +159,13 @@
 
 .radial-hud-container {
     position: relative;
-    width: 890px;
-    height: 750px;
+    width: 980px;
+    height: 780px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: scale(0.95);
-    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(0.94);
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hud-backdrop.open .radial-hud-container {
@@ -187,43 +186,43 @@
 }
 
 .radial-hud-ring.outer {
-    width: 730px;
-    height: 730px;
-    border: 1px dashed rgba(52, 211, 153, 0.16);
-    background: radial-gradient(circle at center, transparent 65%, rgba(52, 211, 153, 0.03) 100%);
-    animation: rotateRadialRing 90s linear infinite;
+    width: 820px;
+    height: 820px;
+    border: 1px dashed rgba(52, 211, 153, 0.12);
+    background: radial-gradient(circle at center, transparent 60%, rgba(52, 211, 153, 0.03) 100%);
+    animation: rotateRadialRing 120s linear infinite;
 }
 
 .radial-hud-ring.inner {
-    width: 480px;
-    height: 480px;
-    border: 1px solid rgba(56, 189, 248, 0.12);
-    box-shadow: 0 0 40px rgba(56, 189, 248, 0.04);
+    width: 520px;
+    height: 520px;
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.03);
 }
 
 @keyframes rotateRadialRing {
     to { transform: rotate(360deg); }
 }
 
-/* 3. CENTRALNE JĄDRO INFORMACYJNE (HOLOGRAPHIC OBSIDIAN GLASS) */
+/* 3. CENTRALNE JĄDRO INFORMACYJNE (ORGANIC HOLOGRAPHIC DISC) */
 .radial-center-hub {
     position: absolute;
-    width: 236px;
-    height: 236px;
+    width: 246px;
+    height: 246px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 30%, rgba(20, 32, 56, 0.95) 0%, rgba(10, 16, 28, 0.98) 70%, rgba(5, 8, 16, 0.99) 100%);
-    border: 1px solid rgba(52, 211, 153, 0.38);
-    box-shadow: 0 0 60px rgba(16, 185, 129, 0.22), 0 0 20px rgba(6, 182, 212, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.85);
+    background: radial-gradient(circle at 40% 30%, rgba(22, 34, 58, 0.96) 0%, rgba(10, 16, 28, 0.98) 70%, rgba(5, 8, 16, 0.99) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 0 70px rgba(16, 185, 129, 0.2), 0 0 24px rgba(6, 182, 212, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 22px 20px;
+    padding: 24px 22px;
     box-sizing: border-box;
     z-index: 10;
     pointer-events: none;
-    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hub-text-wrap {
@@ -258,7 +257,7 @@
     border-radius: 50%;
     background: linear-gradient(135deg, #34D399, #38BDF8);
     box-shadow: 0 0 10px #34D399;
-    animation: hubDotPulse 2s infinite ease-in-out;
+    animation: hubDotPulse 2.8s infinite ease-in-out;
 }
 
 @keyframes hubDotPulse {
@@ -267,19 +266,19 @@
 }
 
 .radial-hub-icon {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #34D399;
     margin-bottom: 6px;
     filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.55));
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
 }
 
 .radial-hub-title {
-    font-size: 1.02rem;
+    font-size: 1.04rem;
     font-weight: 800;
     color: #FFFFFF;
     margin: 0;
@@ -291,25 +290,25 @@
 }
 
 .radial-hub-desc {
-    font-size: 0.73rem;
+    font-size: 0.74rem;
     color: #94A3B8;
     margin: 0;
-    margin-top: 5px;
-    line-height: 1.38;
-    max-width: 190px;
+    margin-top: 6px;
+    line-height: 1.4;
+    max-width: 195px;
 }
 
-/* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (LUXURY OBSIDIAN GLASS) */
+/* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (ORGANIC SQUIRCLE GLASS – BEZ PROSTOKĄTNYCH KRAWĘDZI) */
 .radial-sector-node {
     position: absolute;
-    width: 282px;
+    width: 295px;
     padding: 16px 18px;
-    background: linear-gradient(160deg, rgba(17, 26, 46, 0.92) 0%, rgba(9, 14, 26, 0.97) 100%);
+    background: linear-gradient(160deg, rgba(17, 26, 46, 0.88) 0%, rgba(9, 14, 26, 0.95) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 22px;
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    border-radius: 26px; /* Aksamitne, mocno zaokrąglone organiczne narożniki */
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.15);
     cursor: pointer;
-    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -317,53 +316,44 @@
     box-sizing: border-box;
 }
 
-/* SEKTOR GÓRNY: PRYWATNOŚĆ & B2B (SMOOTH AMBER-SUNSET GRADIENT) */
+/* SEKTOR GÓRNY: PRYWATNOŚĆ & B2B (ODSUNIĘTY NA PROPORCJONALNĄ ODLEGŁOŚĆ) */
 .radial-sector-node.top {
-    top: 5px;
+    top: -15px;
     left: 50%;
     transform: translateX(-50%);
-    border-top: 2px solid transparent;
-    border-image: linear-gradient(90deg, transparent, #F59E0B 40%, #EF4444 80%, transparent) 1;
-    border-image-slice: 1;
 }
 
 .radial-sector-node.top:hover,
 .radial-sector-node.top.active {
-    transform: translateX(-50%) translateY(-2px) scale(1.025);
-    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(245, 158, 11, 0.25);
-    border-color: rgba(245, 158, 11, 0.5);
+    transform: translateX(-50%) translateY(-6px) scale(1.02);
+    box-shadow: 0 32px 75px rgba(0, 0, 0, 0.85), 0 0 45px rgba(245, 158, 11, 0.22);
+    border-color: rgba(245, 158, 11, 0.45);
 }
 
-/* SEKTOR LEWY: PDF STUDIO (SMOOTH MINT-EMERALD GRADIENT) */
+/* SEKTOR LEWY: PDF STUDIO */
 .radial-sector-node.left {
-    bottom: 10px;
-    left: 8px;
-    border-top: 2px solid transparent;
-    border-image: linear-gradient(90deg, transparent, #10B981 30%, #34D399 70%, #06B6D4 100%) 1;
-    border-image-slice: 1;
+    bottom: -10px;
+    left: -20px;
 }
 
 .radial-sector-node.left:hover,
 .radial-sector-node.left.active {
-    transform: translateY(-2px) scale(1.025);
-    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(52, 211, 153, 0.25);
-    border-color: rgba(52, 211, 153, 0.5);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 32px 75px rgba(0, 0, 0, 0.85), 0 0 45px rgba(52, 211, 153, 0.22);
+    border-color: rgba(52, 211, 153, 0.45);
 }
 
-/* SEKTOR PRAWY: MEDIA & QR 4K (SMOOTH CYAN-SAPPHIRE GRADIENT) */
+/* SEKTOR PRAWY: MEDIA & QR 4K */
 .radial-sector-node.right {
-    bottom: 10px;
-    right: 8px;
-    border-top: 2px solid transparent;
-    border-image: linear-gradient(90deg, transparent, #06B6D4 30%, #38BDF8 70%, #818CF8 100%) 1;
-    border-image-slice: 1;
+    bottom: -10px;
+    right: -20px;
 }
 
 .radial-sector-node.right:hover,
 .radial-sector-node.right.active {
-    transform: translateY(-2px) scale(1.025);
-    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.25);
-    border-color: rgba(56, 189, 248, 0.5);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 32px 75px rgba(0, 0, 0, 0.85), 0 0 45px rgba(56, 189, 248, 0.22);
+    border-color: rgba(56, 189, 248, 0.45);
 }
 
 /* Nagłówek wierzchołka */
@@ -372,47 +362,47 @@
     align-items: center;
     gap: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .radial-node-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 11px;
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: transform 0.22s ease;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
 .radial-node-icon.icon-privacy {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(239, 68, 68, 0.14) 100%);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(239, 68, 68, 0.15) 100%);
     border: 1px solid rgba(245, 158, 11, 0.35);
     color: #FBBF24;
     box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
 }
 
 .radial-node-icon.icon-pdf {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(52, 211, 153, 0.14) 100%);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(52, 211, 153, 0.15) 100%);
     border: 1px solid rgba(52, 211, 153, 0.35);
     color: #34D399;
     box-shadow: 0 0 16px rgba(52, 211, 153, 0.25);
 }
 
 .radial-node-icon.icon-media {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(56, 189, 248, 0.14) 100%);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(56, 189, 248, 0.15) 100%);
     border: 1px solid rgba(56, 189, 248, 0.35);
     color: #38BDF8;
     box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
 }
 
 .radial-sector-node:hover .radial-node-icon {
-    transform: scale(1.08);
+    transform: scale(1.1);
 }
 
 .radial-node-title {
-    font-size: 0.94rem;
+    font-size: 0.95rem;
     font-weight: 800;
     color: #FFFFFF;
     line-height: 1.2;
@@ -445,49 +435,56 @@
     -webkit-text-fill-color: transparent;
 }
 
-/* 5. LISTA PODNARZĘDZI (SMOOTH INTERACTIVE TILES) */
+/* 5. LISTA PODNARZĘDZI (HAPTYCZNY SPRĘŻYSTY FEEDBACK & KINETIC SATISFACTION) */
 .radial-subtools-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .radial-subtool-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 12px;
+    gap: 11px;
+    padding: 9px 12px;
+    border-radius: 14px;
     background: transparent;
     border: 1px solid transparent;
     outline: none;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     text-align: left;
     width: 100%;
     box-sizing: border-box;
     position: relative;
+    user-select: none;
 }
 
 .radial-subtool-item:hover {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border-color: rgba(255, 255, 255, 0.08);
-    transform: translateX(3px);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
 }
 
+/* GŁĘBOKI, SATYSFAKCJONUJĄCY KLIK (KINETIC PRESS SPRING) */
 .radial-subtool-item:active {
-    transform: scale(0.985);
+    transform: scale(0.93) translateX(2px);
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.18) 0%, rgba(56, 189, 248, 0.12) 100%);
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.35);
+    transition: transform 0.08s ease-out;
 }
 
 .radial-subtool-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.2s ease;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
     background: rgba(255, 255, 255, 0.03);
 }
 
@@ -504,8 +501,12 @@
 }
 
 .radial-subtool-item:hover .radial-subtool-icon {
-    transform: scale(1.1);
+    transform: scale(1.12);
     background: rgba(255, 255, 255, 0.08);
+}
+
+.radial-subtool-item:active .radial-subtool-icon {
+    transform: scale(0.9);
 }
 
 .radial-subtool-content {
@@ -516,11 +517,11 @@
 }
 
 .radial-subtool-name {
-    font-size: 0.83rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: #F8FAFC;
     line-height: 1.2;
-    transition: color 0.18s ease;
+    transition: color 0.3s ease;
 }
 
 .radial-subtool-item:hover .radial-subtool-name {
@@ -533,14 +534,14 @@
     font-size: 0.71rem;
     color: #94A3B8;
     line-height: 1.32;
-    transition: color 0.18s ease;
+    transition: color 0.3s ease;
 }
 
 .radial-subtool-item:hover .radial-subtool-desc {
     color: #CBD5E1;
 }
 
-/* 6. PRZYCISK ZAMKNIĘCIA (CZYSTY GHOST ICON BEZ RAMKI) */
+/* 6. PRZYCISK ZAMKNIĘCIA */
 .radial-hud-close-btn {
     position: absolute;
     top: 24px;
@@ -554,21 +555,21 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
-    transition: all 0.2s ease;
+    width: 42px;
+    height: 42px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 20;
 }
 
 .radial-hud-close-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.4);
     color: #EF4444;
-    transform: scale(1.08);
+    transform: scale(1.1) rotate(90deg);
 }
 
 .radial-hud-close-btn:active {
-    transform: scale(0.94);
+    transform: scale(0.9);
 }
 
 /* ==========================================================================
@@ -598,7 +599,7 @@
         border-radius: 28px 28px 0 0;
         box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.85);
         transform: translateY(100%);
-        transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .radial-hud-backdrop.open .radial-hud-container {
@@ -640,7 +641,7 @@
         position: static;
         width: 100%;
         height: auto;
-        border-radius: 18px;
+        border-radius: 20px;
         padding: 14px 16px;
         display: flex;
         flex-direction: row;
@@ -716,7 +717,7 @@
         width: 100%;
         padding: 14px 16px;
         transform: none !important;
-        border-radius: 18px;
+        border-radius: 20px;
         background: linear-gradient(160deg, rgba(17, 26, 46, 0.85) 0%, rgba(9, 14, 26, 0.92) 100%);
         border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: none;
