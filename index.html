@@ -8635,10 +8635,31 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then((reg) => {
-                    console.log('[Dropsite PWA] Service Worker aktywny:', reg.scope);
+                    // Wymuś sprawdzenie aktualizacji w tle przy każdym załadowaniu strony
+                    reg.update();
+
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('[Dropsite PWA] Nowa wersja zainstalowana, odświeżam stronę...');
+                                    window.location.reload();
+                                }
+                            });
+                        }
+                    });
                 }).catch((err) => {
                     console.warn('[Dropsite PWA] Błąd rejestracji SW:', err);
                 });
+            });
+
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
             });
         }
     </script>

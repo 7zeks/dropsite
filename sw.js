@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate for zero-latency in-RAM tools.
  */
 
-const CACHE_NAME = 'dropsite-studio-v2.8.0';
+const CACHE_NAME = 'dropsite-studio-v3.0.0';
 
 const PRECACHE_ASSETS = [
     './',
@@ -31,6 +31,7 @@ const PRECACHE_ASSETS = [
     './css/dead-drop.css',
     './css/qr-studio.css',
     './css/video-compress.css',
+    './css/media-grabber.css',
     './css/command-palette.css',
     './css/radial-wheel.css',
     // JS Scripts & RAM Engines
@@ -55,6 +56,7 @@ const PRECACHE_ASSETS = [
     './js/dead-drop.js',
     './js/qr-studio.js',
     './js/video-compress.js',
+    './js/media-grabber.js',
     './js/command-palette.js',
     './js/radial-wheel.js'
 ];
@@ -97,32 +99,35 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // 1. DLA GŁÓWNYCH DOKUMENTÓW HTML: Network-First (zawsze bierz najnowszą wersję, z fallbackiem do cache offline)
+    if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('index.html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // 2. DLA ASSETÓW STATYCZNYCH: Stale-While-Revalidate
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                // Stale-While-Revalidate: zwróć z cache, ale odśwież w tle
-                fetch(event.request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, networkResponse.clone());
-                        });
-                    }
-                }).catch(() => {});
-                return cachedResponse;
-            }
-
-            return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, networkResponse.clone());
+                    });
                 }
-
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-
                 return networkResponse;
-            });
+            }).catch(() => null);
+
+            return cachedResponse || fetchPromise;
         })
     );
 });
