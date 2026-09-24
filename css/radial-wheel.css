@@ -1,24 +1,23 @@
 /* ==========================================================================
-   DROPSITE RADIAL TRIANGLE WHEEL (OBSIDIAN GLASS & ANTI-PILL DESIGN)
-   Theme: Luminous Obsidian Glass + Cyber Mint + Electric Cyan + Amber
-   Strict adherence to BRAND_GUIDELINES.md:
-   - Anti-Pill Overload: Pure typography, whitespace, subtle laser glow, no nested rectangular boxes
-   - Tactile Micro-motion (scale 0.985, soft micro-glow)
-   - Zero-blur crispness (no dark backdrop haze)
-   - Mobile Ergonomics: Native Bottom-Sheet Drawer with Thumb-Zone & Safe Area
+   DROPSITE RADIAL TRIANGLE WHEEL (LUXURY OBSIDIAN GLASS & SMOOTH GRADIENTS)
+   Theme: Aromatic Obsidian Glass + Multidimensional Smooth Gradients
+   - Anti-Pill & Ultra-Clean Glassmorphism
+   - Smooth Multi-stop Aurora Gradients (Amber Gold, Mint Emerald, Cyan Sapphire)
+   - Dynamic Laser Borders & Luminous Energy Beam Traces
+   - Tactile Spring Physics & Refined Micro-Tags
    ========================================================================== */
 
 /* 1. PRZYCISK WYWOŁUJĄCY W HERO (PŁYNĄCA ZORZA TYPOGRAFICZNA + ZAKRZYWIONY ŁUK SOCZEWKI) */
 .btn-radial-trigger {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 6px 4px 14px 4px;
+    gap: 10px;
+    padding: 8px 12px 16px 12px;
     background: transparent;
     border: none;
     outline: none;
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: 0.96rem;
     font-weight: 700;
     cursor: pointer;
     position: relative;
@@ -28,13 +27,13 @@
 
 /* PŁYNĄCA ZORZA POLARNA NA LITERACH */
 .radial-trigger-text {
-    background: linear-gradient(135deg, #FFFFFF 0%, #34D399 28%, #38BDF8 52%, #FFFFFF 75%, #34D399 100%);
-    background-size: 240% auto;
+    background: linear-gradient(135deg, #FFFFFF 0%, #6EE7B7 25%, #38BDF8 50%, #A78BFA 75%, #FFFFFF 100%);
+    background-size: 260% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.25px;
-    animation: auroraTextFlow 6s linear infinite;
-    filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.25));
+    animation: auroraTextFlow 7s linear infinite;
+    filter: drop-shadow(0 0 14px rgba(52, 211, 153, 0.3));
     transition: filter 0.3s ease;
 }
 
@@ -43,7 +42,7 @@
         background-position: 0% center;
     }
     100% {
-        background-position: 240% center;
+        background-position: 260% center;
     }
 }
 
@@ -52,7 +51,7 @@
     flex-shrink: 0;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
     animation: chevronFloating 2.8s ease-in-out infinite;
-    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.6));
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.6));
 }
 
 @keyframes chevronFloating {
@@ -67,24 +66,24 @@
 .btn-radial-trigger:hover .radial-trigger-chevron {
     color: #5EEAD4;
     animation-play-state: paused;
-    transform: translateY(3px) scale(1.1);
+    transform: translateY(3px) scale(1.15);
 }
 
 .btn-radial-trigger:hover .radial-trigger-text {
-    filter: drop-shadow(0 0 18px rgba(52, 211, 153, 0.7));
+    filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.8));
 }
 
 /* ZAKRZYWIONY ŁUK SOCZEWKI ŚWIATŁA */
 .radial-trigger-lens-arc {
     position: absolute;
     bottom: 3px;
-    left: 6%;
-    right: 6%;
+    left: 4%;
+    right: 4%;
     height: 4px;
     border-radius: 50%;
-    background: radial-gradient(ellipse at center, #34D399 0%, #06B6D4 45%, rgba(6, 182, 212, 0) 75%);
+    background: radial-gradient(ellipse at center, #34D399 0%, #06B6D4 45%, #8B5CF6 75%, transparent 100%);
     filter: blur(0.6px);
-    box-shadow: 0 0 12px #34D399, 0 0 22px rgba(6, 182, 212, 0.65);
+    box-shadow: 0 0 14px #34D399, 0 0 26px rgba(6, 182, 212, 0.7);
     animation: lensArcPulse 3.5s ease-in-out infinite alternate;
     pointer-events: none;
 }
@@ -92,13 +91,13 @@
 /* MIĘKKA ROZMYTA MGŁAWICA POD ŁUKIEM */
 .radial-trigger-lens-glow {
     position: absolute;
-    bottom: -4px;
-    left: 18%;
-    right: 18%;
-    height: 14px;
+    bottom: -6px;
+    left: 15%;
+    right: 15%;
+    height: 18px;
     border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.45) 0%, rgba(6, 182, 212, 0.25) 50%, transparent 80%);
-    filter: blur(6px);
+    background: radial-gradient(ellipse at center, rgba(52, 211, 153, 0.5) 0%, rgba(6, 182, 212, 0.3) 50%, transparent 80%);
+    filter: blur(8px);
     animation: lensGlowBreath 3.5s ease-in-out infinite alternate;
     pointer-events: none;
 }
@@ -107,18 +106,18 @@
     0% {
         opacity: 0.7;
         transform: scaleX(0.85);
-        box-shadow: 0 0 8px #34D399, 0 0 16px rgba(6, 182, 212, 0.4);
+        box-shadow: 0 0 8px #34D399, 0 0 18px rgba(6, 182, 212, 0.4);
     }
     100% {
         opacity: 1;
-        transform: scaleX(1.05);
-        box-shadow: 0 0 16px #34D399, 0 0 28px rgba(6, 182, 212, 0.85);
+        transform: scaleX(1.06);
+        box-shadow: 0 0 18px #34D399, 0 0 32px rgba(6, 182, 212, 0.9);
     }
 }
 
 @keyframes lensGlowBreath {
     0% {
-        opacity: 0.5;
+        opacity: 0.45;
         transform: scale(0.9);
     }
     100% {
@@ -128,7 +127,7 @@
 }
 
 .btn-radial-trigger:hover .radial-trigger-lens-arc {
-    box-shadow: 0 0 20px #34D399, 0 0 35px rgba(6, 182, 212, 0.95);
+    box-shadow: 0 0 24px #34D399, 0 0 40px rgba(6, 182, 212, 0.95);
     opacity: 1;
 }
 
@@ -136,7 +135,7 @@
     transform: scale(0.985);
 }
 
-/* 2. LEKKI, PRZEJRZYSTY HUD (BEZ CIEMNEGO BLURU I BEZ CIĘŻKICH KAPSÓŁEK) */
+/* 2. LEKKI, PRZEJRZYSTY HUD (AKSAMITNY OBSIDIAN GLASS + ROZMYCIE GŁĘBI) */
 .radial-hud-backdrop {
     position: fixed;
     inset: 0;
@@ -144,13 +143,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(6, 10, 18, 0.55);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background: radial-gradient(circle at 50% 50%, rgba(10, 16, 28, 0.78) 0%, rgba(4, 7, 14, 0.92) 100%);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.22s ease, visibility 0.22s ease;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hud-backdrop.open {
@@ -161,13 +160,13 @@
 
 .radial-hud-container {
     position: relative;
-    width: 860px;
-    height: 740px;
+    width: 890px;
+    height: 750px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: scale(0.96);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(0.95);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hud-backdrop.open .radial-hud-container {
@@ -188,16 +187,18 @@
 }
 
 .radial-hud-ring.outer {
-    width: 670px;
-    height: 670px;
-    border: 1px dashed rgba(52, 211, 153, 0.2);
+    width: 730px;
+    height: 730px;
+    border: 1px dashed rgba(52, 211, 153, 0.16);
+    background: radial-gradient(circle at center, transparent 65%, rgba(52, 211, 153, 0.03) 100%);
     animation: rotateRadialRing 90s linear infinite;
 }
 
 .radial-hud-ring.inner {
-    width: 450px;
-    height: 450px;
-    border: 1px solid rgba(6, 182, 212, 0.15);
+    width: 480px;
+    height: 480px;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.04);
 }
 
 @keyframes rotateRadialRing {
@@ -207,22 +208,22 @@
 /* 3. CENTRALNE JĄDRO INFORMACYJNE (HOLOGRAPHIC OBSIDIAN GLASS) */
 .radial-center-hub {
     position: absolute;
-    width: 224px;
-    height: 224px;
+    width: 236px;
+    height: 236px;
     border-radius: 50%;
-    background: radial-gradient(circle at center, rgba(17, 26, 45, 0.96) 0%, rgba(8, 12, 22, 0.98) 100%);
-    border: 1px solid rgba(52, 211, 153, 0.35);
-    box-shadow: 0 0 50px rgba(16, 185, 129, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.8);
+    background: radial-gradient(circle at 40% 30%, rgba(20, 32, 56, 0.95) 0%, rgba(10, 16, 28, 0.98) 70%, rgba(5, 8, 16, 0.99) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.38);
+    box-shadow: 0 0 60px rgba(16, 185, 129, 0.22), 0 0 20px rgba(6, 182, 212, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 20px 18px;
+    padding: 22px 20px;
     box-sizing: border-box;
     z-index: 10;
     pointer-events: none;
-    transition: all 0.25s ease;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hub-text-wrap {
@@ -234,27 +235,29 @@
     width: 100%;
 }
 
-/* Etykieta statusu w centrum (Anti-Pill: Czysty glowing mikro-napis bez ramki) */
+/* Etykieta statusu w centrum (Gradient Text Badge) */
 .radial-hub-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    color: #34D399;
-    font-size: 0.65rem;
-    font-weight: 700;
+    gap: 6px;
+    background: linear-gradient(135deg, #34D399 0%, #38BDF8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 0.68rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 4px;
-    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.5));
+    letter-spacing: 0.9px;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.5));
 }
 
 .radial-hub-badge::before {
     content: '';
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #34D399;
-    box-shadow: 0 0 8px #34D399;
+    background: linear-gradient(135deg, #34D399, #38BDF8);
+    box-shadow: 0 0 10px #34D399;
     animation: hubDotPulse 2s infinite ease-in-out;
 }
 
@@ -264,45 +267,49 @@
 }
 
 .radial-hub-icon {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #34D399;
     margin-bottom: 6px;
-    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.45));
-    transition: all 0.2s ease;
+    filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.55));
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .radial-hub-title {
-    font-size: 0.95rem;
+    font-size: 1.02rem;
     font-weight: 800;
     color: #FFFFFF;
     margin: 0;
     line-height: 1.2;
     letter-spacing: -0.2px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .radial-hub-desc {
-    font-size: 0.72rem;
-    color: #CBD5E1;
-    margin-top: 4px;
-    line-height: 1.35;
-    max-width: 180px;
+    font-size: 0.73rem;
+    color: #94A3B8;
+    margin: 0;
+    margin-top: 5px;
+    line-height: 1.38;
+    max-width: 190px;
 }
 
-/* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (ANTI-PILL OBSIDIAN GLASS) */
+/* 4. 3 GŁÓWNE WIERZCHOŁKI TRÓJKĄTA (LUXURY OBSIDIAN GLASS) */
 .radial-sector-node {
     position: absolute;
-    width: 275px;
-    padding: 14px 16px;
-    background: linear-gradient(155deg, rgba(16, 24, 42, 0.94) 0%, rgba(8, 12, 22, 0.97) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 20px;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+    width: 282px;
+    padding: 16px 18px;
+    background: linear-gradient(160deg, rgba(17, 26, 46, 0.92) 0%, rgba(9, 14, 26, 0.97) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
     cursor: pointer;
-    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.26s ease;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -310,92 +317,135 @@
     box-sizing: border-box;
 }
 
-.radial-sector-node:hover,
-.radial-sector-node.active {
-    box-shadow: 0 24px 55px rgba(0, 0, 0, 0.78), 0 0 35px rgba(16, 185, 129, 0.22);
-    border-color: rgba(52, 211, 153, 0.4);
-}
-
-/* Pozycje wierzchołków trójkąta (Desktop) */
+/* SEKTOR GÓRNY: PRYWATNOŚĆ & B2B (SMOOTH AMBER-SUNSET GRADIENT) */
 .radial-sector-node.top {
     top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    border-top: 2px solid #F59E0B;
-}
-.radial-sector-node.top:hover,
-.radial-sector-node.top.active {
-    transform: translateX(-50%) scale(1.025);
-    border-top-color: #FBBF24;
+    border-top: 2px solid transparent;
+    border-image: linear-gradient(90deg, transparent, #F59E0B 40%, #EF4444 80%, transparent) 1;
+    border-image-slice: 1;
 }
 
+.radial-sector-node.top:hover,
+.radial-sector-node.top.active {
+    transform: translateX(-50%) translateY(-2px) scale(1.025);
+    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* SEKTOR LEWY: PDF STUDIO (SMOOTH MINT-EMERALD GRADIENT) */
 .radial-sector-node.left {
     bottom: 10px;
     left: 8px;
-    border-top: 2px solid #10B981;
-}
-.radial-sector-node.left:hover,
-.radial-sector-node.left.active {
-    transform: scale(1.025);
-    border-top-color: #34D399;
+    border-top: 2px solid transparent;
+    border-image: linear-gradient(90deg, transparent, #10B981 30%, #34D399 70%, #06B6D4 100%) 1;
+    border-image-slice: 1;
 }
 
+.radial-sector-node.left:hover,
+.radial-sector-node.left.active {
+    transform: translateY(-2px) scale(1.025);
+    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(52, 211, 153, 0.25);
+    border-color: rgba(52, 211, 153, 0.5);
+}
+
+/* SEKTOR PRAWY: MEDIA & QR 4K (SMOOTH CYAN-SAPPHIRE GRADIENT) */
 .radial-sector-node.right {
     bottom: 10px;
     right: 8px;
-    border-top: 2px solid #06B6D4;
-}
-.radial-sector-node.right:hover,
-.radial-sector-node.right.active {
-    transform: scale(1.025);
-    border-top-color: #38BDF8;
+    border-top: 2px solid transparent;
+    border-image: linear-gradient(90deg, transparent, #06B6D4 30%, #38BDF8 70%, #818CF8 100%) 1;
+    border-image-slice: 1;
 }
 
-/* Nagłówek wierzchołka (Czysty, elegancki z dot-tagiem) */
+.radial-sector-node.right:hover,
+.radial-sector-node.right.active {
+    transform: translateY(-2px) scale(1.025);
+    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.25);
+    border-color: rgba(56, 189, 248, 0.5);
+}
+
+/* Nagłówek wierzchołka */
 .radial-node-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .radial-node-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: transform 0.22s ease;
 }
 
 .radial-node-icon.icon-privacy {
-    color: #F59E0B;
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(239, 68, 68, 0.14) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #FBBF24;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
 }
+
 .radial-node-icon.icon-pdf {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(52, 211, 153, 0.14) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.35);
     color: #34D399;
-    filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.5));
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.25);
 }
+
 .radial-node-icon.icon-media {
-    color: #06B6D4;
-    filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(56, 189, 248, 0.14) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
+}
+
+.radial-sector-node:hover .radial-node-icon {
+    transform: scale(1.08);
 }
 
 .radial-node-title {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #F8FAFC;
+    font-size: 0.94rem;
+    font-weight: 800;
+    color: #FFFFFF;
     line-height: 1.2;
+    letter-spacing: -0.2px;
 }
 
 .radial-node-tag {
     font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    color: #94A3B8;
-    margin-top: 1px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+    text-transform: uppercase;
 }
 
-/* 5. LISTA PODNARZĘDZI (CZYSTE GHOST ACTIONS, ZERO CAPSULEK / ANTI-PILL) */
+.radial-sector-node.top .radial-node-tag {
+    background: linear-gradient(90deg, #FBBF24, #F87171);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.radial-sector-node.left .radial-node-tag {
+    background: linear-gradient(90deg, #34D399, #38BDF8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.radial-sector-node.right .radial-node-tag {
+    background: linear-gradient(90deg, #38BDF8, #818CF8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 5. LISTA PODNARZĘDZI (SMOOTH INTERACTIVE TILES) */
 .radial-subtools-list {
     display: flex;
     flex-direction: column;
@@ -404,15 +454,15 @@
 
 .radial-subtool-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
-    padding: 8px 9px;
-    border-radius: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     outline: none;
     cursor: pointer;
-    transition: background 0.18s ease, transform 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     text-align: left;
     width: 100%;
     box-sizing: border-box;
@@ -420,7 +470,9 @@
 }
 
 .radial-subtool-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(255, 255, 255, 0.08);
+    transform: translateX(3px);
 }
 
 .radial-subtool-item:active {
@@ -428,22 +480,32 @@
 }
 
 .radial-subtool-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    margin-top: 2px;
-    transition: all 0.18s ease;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .radial-subtool-icon.icon-privacy {
-    color: #F59E0B;
+    color: #FBBF24;
 }
+
 .radial-subtool-icon.icon-pdf {
     color: #34D399;
 }
+
 .radial-subtool-icon.icon-media {
-    color: #06B6D4;
+    color: #38BDF8;
+}
+
+.radial-subtool-item:hover .radial-subtool-icon {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .radial-subtool-content {
@@ -454,19 +516,21 @@
 }
 
 .radial-subtool-name {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #F1F5F9;
+    font-size: 0.83rem;
+    font-weight: 700;
+    color: #F8FAFC;
     line-height: 1.2;
     transition: color 0.18s ease;
 }
 
 .radial-subtool-item:hover .radial-subtool-name {
-    color: #FFFFFF;
+    background: linear-gradient(90deg, #FFFFFF 0%, #E2E8F0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .radial-subtool-desc {
-    font-size: 0.7rem;
+    font-size: 0.71rem;
     color: #94A3B8;
     line-height: 1.32;
     transition: color 0.18s ease;
@@ -481,24 +545,26 @@
     position: absolute;
     top: 24px;
     right: 24px;
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
     outline: none;
     color: #94A3B8;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    padding: 8px;
-    width: 44px;
-    height: 44px;
-    transition: color 0.2s ease, transform 0.15s ease;
+    width: 40px;
+    height: 40px;
+    transition: all 0.2s ease;
     z-index: 20;
 }
 
 .radial-hud-close-btn:hover {
-    color: #F8FAFC;
-    transform: scale(1.12);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #EF4444;
+    transform: scale(1.08);
 }
 
 .radial-hud-close-btn:active {
@@ -506,11 +572,11 @@
 }
 
 /* ==========================================================================
-   7. RWD MOBILE & TABLETS (BRAND GUIDELINES SECTION 3.4 - NATIVE BOTTOM SHEET)
+   7. RWD MOBILE & TABLETS (NATIVE LUXURY BOTTOM SHEET)
    ========================================================================== */
 @media (max-width: 780px) {
     .radial-hud-backdrop {
-        align-items: flex-end; /* Płynne wysuwanie od dołu ekranu (Thumb-Zone) */
+        align-items: flex-end;
         padding: 0;
     }
     
@@ -539,7 +605,6 @@
         transform: translateY(0);
     }
 
-    /* Dotykowy uchwyt pull-bar dla Bottom Sheet */
     .radial-drawer-handle {
         display: block;
         width: 44px;
@@ -550,7 +615,6 @@
         flex-shrink: 0;
     }
 
-    /* Nagłówek panelu na Mobile */
     .radial-sheet-header {
         display: flex;
         align-items: center;
@@ -562,7 +626,9 @@
     .radial-sheet-title {
         font-size: 0.92rem;
         font-weight: 800;
-        color: #F8FAFC;
+        background: linear-gradient(90deg, #FFFFFF 0%, #34D399 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         letter-spacing: -0.2px;
     }
     
@@ -570,7 +636,6 @@
         display: none;
     }
     
-    /* Centralne jądro informacyjne na Mobile staje się kompaktowym, proporcjonalnym Live Inspector */
     .radial-center-hub {
         position: static;
         width: 100%;
@@ -582,9 +647,9 @@
         align-items: center;
         gap: 14px;
         text-align: left;
-        background: linear-gradient(135deg, rgba(16, 26, 46, 0.85) 0%, rgba(9, 14, 26, 0.95) 100%);
-        border: 1px solid rgba(52, 211, 153, 0.24);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        background: linear-gradient(135deg, rgba(16, 26, 46, 0.92) 0%, rgba(9, 14, 26, 0.97) 100%);
+        border: 1px solid rgba(52, 211, 153, 0.28);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         flex-shrink: 0;
         box-sizing: border-box;
     }
@@ -594,14 +659,14 @@
         height: 44px;
         min-width: 44px;
         border-radius: 13px;
-        background: rgba(52, 211, 153, 0.08);
-        border: 1px solid rgba(52, 211, 153, 0.22);
+        background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(56, 189, 248, 0.12) 100%);
+        border: 1px solid rgba(52, 211, 153, 0.3);
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0;
         flex-shrink: 0;
-        box-shadow: 0 0 14px rgba(52, 211, 153, 0.12);
+        box-shadow: 0 0 16px rgba(52, 211, 153, 0.2);
     }
 
     .radial-hub-icon svg {
@@ -646,19 +711,18 @@
         overflow: hidden;
     }
     
-    /* Wierzchołki na Mobile układają się w naturalną, przestronną listę */
     .radial-sector-node {
         position: static;
         width: 100%;
         padding: 14px 16px;
         transform: none !important;
-        border-radius: 16px;
-        background: rgba(14, 21, 37, 0.6);
+        border-radius: 18px;
+        background: linear-gradient(160deg, rgba(17, 26, 46, 0.85) 0%, rgba(9, 14, 26, 0.92) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: none;
         flex-shrink: 0;
     }
 
-    /* Ergonomia dotyku pod kciuk (Min 50px touch target) */
     .radial-subtool-item {
         padding: 10px 10px;
         min-height: 50px;
@@ -705,8 +769,8 @@
 
 /* Przycisk Koła Narzędzi w szufladzie menu mobilnego */
 .mobile-drawer-link.mobile-drawer-radial-btn {
-    background: linear-gradient(90deg, rgba(52, 211, 153, 0.12) 0%, rgba(56, 189, 248, 0.08) 100%);
-    border: 1px solid rgba(52, 211, 153, 0.32);
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.16) 0%, rgba(56, 189, 248, 0.12) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.36);
     color: #F8FAFC;
     cursor: pointer;
     font-family: inherit;
@@ -721,9 +785,9 @@
 
 .mobile-drawer-link.mobile-drawer-radial-btn:hover,
 .mobile-drawer-link.mobile-drawer-radial-btn:active {
-    background: linear-gradient(90deg, rgba(52, 211, 153, 0.22) 0%, rgba(56, 189, 248, 0.16) 100%);
+    background: linear-gradient(90deg, rgba(52, 211, 153, 0.26) 0%, rgba(56, 189, 248, 0.2) 100%);
     border-color: #34D399;
-    box-shadow: 0 0 18px rgba(52, 211, 153, 0.3);
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.35);
     color: #FFFFFF;
 }
 
@@ -736,10 +800,10 @@
     margin-left: auto;
     font-size: 10px;
     font-weight: 800;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 999px;
-    background: rgba(52, 211, 153, 0.2);
-    border: 1px solid rgba(52, 211, 153, 0.45);
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.25) 0%, rgba(56, 189, 248, 0.2) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.5);
     color: #34D399;
     letter-spacing: 0.6px;
     text-transform: uppercase;
