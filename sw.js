@@ -3,23 +3,25 @@
  * Cache-First / Stale-While-Revalidate for zero-latency in-RAM tools.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.0.0';
+const CACHE_NAME = 'dropsite-studio-v3.2.0';
 
 const PRECACHE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './favicon.png?v=2',
+    './favicon.png?v=4',
+    './dropsite-logo.png?v=4',
     './dropsite-logo-8k.png',
     './blik.svg',
-    // CSS Stylesheets
+    // CSS Stylesheets (Wszystkie istniejące arkusze produkcyjne)
+    './css/vars.css',
     './css/layout.css',
-    './css/components.css',
+    './css/upload.css',
+    './css/success.css',
     './css/widgets.css',
-    './css/hero.css',
-    './css/modals.css',
-    './css/views.css',
-    './css/custom.css',
+    './css/my-files.css',
+    './css/telemetry.css',
+    './css/bento-showcase.css',
     './css/concierge.css',
     './css/omni-dropzone.css',
     './css/pdf-matrix.css',
@@ -34,6 +36,7 @@ const PRECACHE_ASSETS = [
     './css/media-grabber.css',
     './css/command-palette.css',
     './css/radial-wheel.css',
+    './css/pdf-studio-luxury.css',
     // JS Scripts & RAM Engines
     './app.js',
     './js/i18n.js',
@@ -45,6 +48,8 @@ const PRECACHE_ASSETS = [
     './js/toolbox.js',
     './js/ram-engine.js',
     './js/beam.js',
+    './js/ads-engine.js',
+    './js/telemetry.js',
     './js/concierge.js',
     './js/omni-dropzone.js',
     './js/pdf-matrix.js',

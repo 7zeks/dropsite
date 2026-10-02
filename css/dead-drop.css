@@ -1,7 +1,7 @@
 /* ==========================================================================
-   DROPSITE DEAD DROP / BURN NOTE (AES-256-GCM EPHEMERAL SECRETS)
-   Theme: Obsidian Glass + Cyber Mint + Neon Amber Warning
-   Zero emoji, pure inline SVG, 100% Client-Side Zero-Knowledge RAM
+   DROPSITE DEAD DROP / CONFIDENTIAL NOTE (EPHEMERAL SECRETS)
+   Artistic Luminous Canvas + Amber Pigment Glow + Sharp Corner Brackets
+   Zero heavy dark boxes, pure ethereal glassmorphism, 100% Client-Side RAM
    ========================================================================== */
 
 /* 1. PRZYCISK WYWOŁUJĄCY W KOKPICIE */
@@ -10,25 +10,26 @@
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.14) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 0;
     color: #FBBF24;
     font-family: inherit;
     font-size: 12.5px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);
     text-decoration: none;
+    backdrop-filter: blur(10px);
 }
 
 .btn-dead-drop-trigger:hover {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(239, 68, 68, 0.25) 100%);
-    border-color: #F59E0B;
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.5);
     color: #FFFFFF;
     transform: translateY(-1px);
-    box-shadow: 0 6px 22px rgba(245, 158, 11, 0.28);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.2);
 }
 
 .btn-dead-drop-trigger svg {
@@ -49,13 +50,21 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(4, 7, 14, 0.52);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background: rgba(4, 7, 14, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dead-drop-modal-wrap:not(.open) {
+    content-visibility: hidden;
+}
+
+.dead-drop-modal-wrap:not(.open) * {
+    animation-play-state: paused !important;
 }
 
 .dead-drop-modal-wrap.open {
@@ -67,28 +76,70 @@
 .dead-drop-modal-card {
     position: relative;
     width: 100%;
-    max-width: 560px;
-    background: linear-gradient(165deg, rgba(20, 24, 38, 0.95) 0%, rgba(10, 12, 22, 0.98) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.28);
-    border-top: 1px solid rgba(245, 158, 11, 0.55);
-    border-radius: 20px;
-    box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.9), 0 0 45px rgba(245, 158, 11, 0.12);
-    overflow: hidden;
+    max-width: 580px;
+    background: rgba(13, 17, 28, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 0;
+    box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(245, 158, 11, 0.08);
+    overflow: visible;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     transform: translateY(18px) scale(0.98);
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dead-drop-modal-wrap.open .dead-drop-modal-card {
     transform: translateY(0) scale(1);
 }
 
+/* Living Ambient Pigment Bloom behind Modal */
+.dead-drop-glow {
+    position: absolute;
+    inset: -8% -8%;
+    border-radius: 46% 54% 60% 40% / 48% 48% 52% 52%;
+    filter: blur(52px);
+    pointer-events: none;
+    opacity: 0.85;
+    z-index: -1;
+    background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.16) 0%, rgba(239, 68, 68, 0.05) 50%, transparent 72%);
+    animation: organicPigmentFlow 16s ease-in-out infinite alternate;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.dead-drop-glow.is-reader {
+    background: radial-gradient(ellipse at center, rgba(239, 68, 68, 0.2) 0%, rgba(168, 85, 247, 0.06) 50%, transparent 72%);
+}
+
+/* Sharp Framing Brackets (Klamry kadru) */
+.dead-drop-modal-card .bento-corner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    z-index: 5;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.85;
+}
+.dead-drop-modal-card .bento-corner-tl { top: 0; left: 0; border-top: 1.5px solid; border-left: 1.5px solid; border-radius: 0; }
+.dead-drop-modal-card .bento-corner-tr { top: 0; right: 0; border-top: 1.5px solid; border-right: 1.5px solid; border-radius: 0; }
+.dead-drop-modal-card .bento-corner-bl { bottom: 0; left: 0; border-bottom: 1.5px solid; border-left: 1.5px solid; border-radius: 0; }
+.dead-drop-modal-card .bento-corner-br { bottom: 0; right: 0; border-bottom: 1.5px solid; border-right: 1.5px solid; border-radius: 0; }
+
+.dead-drop-modal-card:hover .bento-corner-tl { transform: translate(-3px, -3px); }
+.dead-drop-modal-card:hover .bento-corner-tr { transform: translate(3px, -3px); }
+.dead-drop-modal-card:hover .bento-corner-bl { transform: translate(-3px, 3px); }
+.dead-drop-modal-card:hover .bento-corner-br { transform: translate(3px, 3px); }
+
 .dead-drop-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
+    padding: 20px 26px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
+    border-radius: 0;
 }
 
 .dead-drop-header-right {
@@ -106,7 +157,7 @@
     outline: none;
     color: #94A3B8;
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     padding: 6px 4px;
@@ -134,32 +185,34 @@
 .dead-drop-title-wrap {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .dead-drop-icon-badge {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    color: #F59E0B;
+    width: 40px;
+    height: 40px;
+    border-radius: 0;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #FBBF24;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
 }
 
 .dead-drop-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #F8FAFC;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #FFFFFF;
     margin: 0;
+    letter-spacing: -0.2px;
 }
 
 .dead-drop-subtitle {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: #94A3B8;
-    margin: 2px 0 0 0;
+    margin: 3px 0 0 0;
 }
 
 .dead-drop-close-btn {
@@ -185,7 +238,7 @@
 }
 
 .dead-drop-body {
-    padding: 24px;
+    padding: 24px 26px;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -193,65 +246,100 @@
     overflow-y: auto;
 }
 
+.drop-req-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.drop-req-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #CBD5E1;
+}
+
+.drop-req-label-hint {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 0;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #FBBF24;
+    letter-spacing: 0.2px;
+}
+
 .dead-drop-textarea {
     width: 100%;
-    min-height: 120px;
-    padding: 12px 14px;
-    background: rgba(8, 11, 20, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+    min-height: 130px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
     color: #F8FAFC;
-    font-family: Consolas, monospace;
-    font-size: 0.88rem;
-    line-height: 1.5;
+    font-family: inherit;
+    font-size: 0.92rem;
+    line-height: 1.6;
     resize: vertical;
     outline: none;
     box-sizing: border-box;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
 }
 
 .dead-drop-textarea:focus {
-    border-color: #F59E0B;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
-    background: rgba(12, 16, 28, 0.95);
+    border-color: rgba(245, 158, 11, 0.55);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .dead-drop-options-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 14px;
 }
 
 .dead-drop-select,
 .dead-drop-input {
     width: 100%;
-    padding: 10px 12px;
-    background: rgba(8, 11, 20, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
+    padding: 11px 14px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
     color: #F8FAFC;
     font-family: inherit;
-    font-size: 0.86rem;
+    font-size: 0.88rem;
     outline: none;
     box-sizing: border-box;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
+    cursor: pointer;
 }
 
 .dead-drop-select:focus,
 .dead-drop-input:focus {
-    border-color: #F59E0B;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.55);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.dead-drop-select option {
+    background: #0F172A;
+    color: #F8FAFC;
 }
 
 /* Sekcja wygenerowanego tajnego linku */
 .dead-drop-result-box {
     display: none;
     flex-direction: column;
-    gap: 10px;
-    padding: 16px;
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    border-radius: 12px;
+    gap: 12px;
+    padding: 18px 20px;
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 0;
+    backdrop-filter: blur(10px);
 }
 
 .dead-drop-result-box.visible {
@@ -262,27 +350,26 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 700;
-    color: #F59E0B;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: #FBBF24;
+    letter-spacing: 0.3px;
 }
 
 .dead-drop-url-row {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
 }
 
 .dead-drop-url-input {
     flex: 1;
-    background: rgba(6, 9, 16, 0.92);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    border-radius: 8px;
-    padding: 9px 12px;
-    font-family: Consolas, monospace;
-    font-size: 0.82rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 0;
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 0.85rem;
     color: #F8FAFC;
     outline: none;
 }
@@ -291,13 +378,13 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 9px 14px;
-    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
     border: none;
-    border-radius: 8px;
-    color: #04140D;
+    border-radius: 0;
+    color: #0F172A;
     font-family: inherit;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -307,33 +394,35 @@
 .dead-drop-btn-copy:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    color: #000000;
 }
 
 .dead-drop-footer {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
-    padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(8, 11, 20, 0.6);
+    gap: 12px;
+    padding: 18px 26px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
+    border-radius: 0;
 }
 
 .dead-drop-btn-cancel {
-    padding: 9px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    padding: 10px 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
     color: #94A3B8;
     font-family: inherit;
-    font-size: 0.84rem;
+    font-size: 0.86rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .dead-drop-btn-cancel:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: #FFFFFF;
 }
 
@@ -341,22 +430,23 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 20px;
-    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
     border: none;
-    border-radius: 8px;
-    color: #05140D;
+    border-radius: 0;
+    color: #0F172A;
     font-family: inherit;
-    font-size: 0.86rem;
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
 }
 
 .dead-drop-btn-create:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55);
+    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.5);
+    color: #000000;
 }
 
 /* 3. WIDOK ODBIORCY NOTATKI (CZYTNIK Z OSTRZEŻENIEM) */
@@ -372,27 +462,28 @@
 .dead-drop-fire-icon {
     width: 52px;
     height: 52px;
-    border-radius: 50%;
-    background: rgba(239, 68, 68, 0.14);
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 0;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #EF4444;
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.2);
 }
 
 .dead-drop-warning-title {
-    font-size: 1.12rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #FFFFFF;
     margin: 0;
 }
 
 .dead-drop-warning-desc {
-    font-size: 0.86rem;
+    font-size: 0.88rem;
     color: #94A3B8;
-    max-width: 420px;
-    line-height: 1.5;
+    max-width: 440px;
+    line-height: 1.55;
     margin: 0;
 }
 
@@ -403,7 +494,7 @@
     padding: 11px 24px;
     background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
     border: none;
-    border-radius: 10px;
+    border-radius: 0;
     color: #FFFFFF;
     font-family: inherit;
     font-size: 0.9rem;
@@ -430,18 +521,20 @@
 }
 
 .dead-drop-secret-text {
-    padding: 16px;
-    background: #060911;
-    border: 1px solid rgba(52, 211, 153, 0.3);
-    border-radius: 12px;
-    font-family: Consolas, monospace;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    border-radius: 0;
+    font-family: inherit;
     font-size: 0.92rem;
+    line-height: 1.6;
     color: #F8FAFC;
     white-space: pre-wrap;
     word-break: break-all;
     user-select: all;
     max-height: 280px;
     overflow-y: auto;
+    backdrop-filter: blur(10px);
 }
 
 .dead-drop-destroyed-badge {
@@ -449,26 +542,26 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 8px 14px;
+    border-radius: 0;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
     color: #F87171;
     font-size: 0.78rem;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 /* RWD DLA EKRANÓW MOBILNYCH */
 @media (max-width: 640px) {
     .dead-drop-modal-card {
         max-height: 94vh;
-        border-radius: 14px;
+        border-radius: 0;
     }
     .dead-drop-header {
-        padding: 14px 16px;
+        padding: 16px;
     }
     .dead-drop-body {
-        padding: 16px;
+        padding: 18px 16px;
         gap: 14px;
     }
     .dead-drop-options-grid {
@@ -487,7 +580,7 @@
     .dead-drop-footer {
         flex-direction: column-reverse;
         align-items: stretch;
-        padding: 12px 16px;
+        padding: 14px 16px;
         gap: 8px;
     }
     .dead-drop-btn-create,

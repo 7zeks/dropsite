@@ -360,6 +360,56 @@
         badge.textContent = `${list.length}`;
     }
 
+    function getDropFileTypeBadge(fileName) {
+        const ext = (fileName || '').split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'heic', 'avif'].includes(ext)) {
+            return {
+                color: '#5EEAD4',
+                bg: 'rgba(94, 234, 212, 0.12)',
+                border: 'rgba(94, 234, 212, 0.3)',
+                icon: '<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>'
+            };
+        }
+        if (['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v'].includes(ext)) {
+            return {
+                color: '#38BDF8',
+                bg: 'rgba(56, 189, 248, 0.12)',
+                border: 'rgba(56, 189, 248, 0.3)',
+                icon: '<polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>'
+            };
+        }
+        if (['pdf'].includes(ext)) {
+            return {
+                color: '#F87171',
+                bg: 'rgba(248, 113, 113, 0.12)',
+                border: 'rgba(248, 113, 113, 0.3)',
+                icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>'
+            };
+        }
+        if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+            return {
+                color: '#FBBF24',
+                bg: 'rgba(251, 191, 36, 0.12)',
+                border: 'rgba(251, 191, 36, 0.3)',
+                icon: '<polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line>'
+            };
+        }
+        if (['mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac'].includes(ext)) {
+            return {
+                color: '#C084FC',
+                bg: 'rgba(192, 132, 252, 0.12)',
+                border: 'rgba(192, 132, 252, 0.3)',
+                icon: '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>'
+            };
+        }
+        return {
+            color: '#94A3B8',
+            bg: 'rgba(148, 163, 184, 0.1)',
+            border: 'rgba(148, 163, 184, 0.25)',
+            icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'
+        };
+    }
+
     // RENDEROWANIE ZAKŁADKI SKRYTEK W "MOJE PLIKI"
     window.loadMyDropRequests = function () {
         const container = document.getElementById('modDropReqList');
@@ -384,8 +434,8 @@
         container.innerHTML = requests.map(req => {
             const isExpired = req.expiresAt && Date.now() > req.expiresAt;
             const statusBadge = isExpired
-                ? `<span class="drop-req-status-badge expired">Wygasła</span>`
-                : `<span class="drop-req-status-badge active">Aktywna</span>`;
+                ? `<span class="drop-req-status-badge expired"><span class="drop-pulse-beacon expired"></span> Wygasła</span>`
+                : `<span class="drop-req-status-badge active"><span class="drop-pulse-beacon active"></span> Aktywna</span>`;
 
             let expiryLabel = 'Bezterminowo';
             if (req.expiresAt) {
@@ -405,8 +455,13 @@
                 <div class="drop-req-inbox-card" id="dropReqCard_${req.id}">
                     <div class="drop-req-inbox-head">
                         <div class="drop-req-inbox-title-group">
-                            <h4 class="drop-req-inbox-title">${escapeHtml(req.title)}</h4>
-                            ${req.note ? `<p class="drop-req-inbox-note">${escapeHtml(req.note)}</p>` : ''}
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="drop-req-card-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </div>
+                                <h4 class="drop-req-inbox-title" title="${escapeHtml(req.title)}">${escapeHtml(req.title)}</h4>
+                            </div>
+                            ${req.note ? `<p class="drop-req-inbox-note" title="${escapeHtml(req.note)}">${escapeHtml(req.note)}</p>` : ''}
                         </div>
                         <div class="drop-req-badge-row">
                             ${statusBadge}
@@ -414,51 +469,73 @@
                     </div>
 
                     <div class="drop-req-inbox-meta">
-                        <span>Utworzono: ${new Date(req.createdAt).toLocaleDateString('pl-PL')}</span>
+                        <span class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <span>${new Date(req.createdAt).toLocaleDateString('pl-PL')}</span>
+                        </span>
                         <span>•</span>
-                        <span>${expiryLabel}</span>
+                        <span class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <span>${expiryLabel}</span>
+                        </span>
                         <span>•</span>
-                        <span style="color: #38BDF8; font-weight: 600;">📥 Odebrano: ${matchingFiles.length} ${matchingFiles.length === 1 ? 'plik' : (matchingFiles.length < 5 && matchingFiles.length > 1 ? 'pliki' : 'plików')} (${formatFileSize(totalReceivedSize)})</span>
+                        <span class="drop-req-received-pill ${matchingFiles.length > 0 ? 'has-files' : ''}">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>Odebrano: <strong>${matchingFiles.length}</strong> ${matchingFiles.length === 1 ? 'plik' : (matchingFiles.length < 5 && matchingFiles.length > 1 ? 'pliki' : 'plików')} (${formatFileSize(totalReceivedSize)})</span>
+                        </span>
                     </div>
 
                     ${matchingFiles.length > 0 ? `
                         <div class="drop-req-files-box">
                             <div class="drop-req-files-header">
-                                <span>Odebrane materiały od klienta (${matchingFiles.length})</span>
-                                <span>${formatFileSize(totalReceivedSize)}</span>
+                                <div style="display: flex; align-items: center; gap: 7px;">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                    <span>Odebrane materiały od klienta (${matchingFiles.length})</span>
+                                </div>
+                                <span class="drop-req-files-total-badge">${formatFileSize(totalReceivedSize)}</span>
                             </div>
                             <div class="drop-req-files-list">
-                                ${matchingFiles.map(file => `
+                                ${matchingFiles.map(file => {
+                                    const typeInfo = getDropFileTypeBadge(file.fileName);
+                                    return `
                                     <div class="drop-req-file-row">
                                         <div class="drop-req-file-info">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                                <polyline points="14 2 14 8 20 8"></polyline>
-                                            </svg>
-                                            <span class="drop-req-file-name" title="${escapeHtml(file.fileName)}">${escapeHtml(file.fileName)}</span>
-                                            <span class="drop-req-file-size">${formatFileSize(file.fileSize)}</span>
+                                            <div class="drop-file-type-icon" style="color: ${typeInfo.color}; background: ${typeInfo.bg}; border-color: ${typeInfo.border};">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    ${typeInfo.icon}
+                                                </svg>
+                                            </div>
+                                            <div class="drop-req-file-meta-wrap">
+                                                <span class="drop-req-file-name" title="${escapeHtml(file.fileName)}">${escapeHtml(file.fileName)}</span>
+                                                <span class="drop-req-file-size">${formatFileSize(file.fileSize)}</span>
+                                            </div>
                                         </div>
                                         <div class="drop-req-file-actions">
                                             ${file.directUrl || file.fileUrl ? `
-                                                <a href="${file.directUrl || file.fileUrl}" target="_blank" rel="noopener noreferrer" class="drop-req-btn-mini" title="Pobierz lub wyświetl plik">
+                                                <a href="${file.directUrl || file.fileUrl}" target="_blank" rel="noopener noreferrer" class="drop-req-btn-mini btn-download" title="Pobierz plik na dysk">
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                                     <span>Pobierz</span>
                                                 </a>
                                             ` : ''}
                                             ${file.fileUrl ? `
-                                                <a href="${file.fileUrl}" target="_blank" rel="noopener noreferrer" class="drop-req-btn-mini" title="Otwórz podgląd z pinezkami">
+                                                <a href="${file.fileUrl}" target="_blank" rel="noopener noreferrer" class="drop-req-btn-mini btn-preview" title="Otwórz podgląd z pinezkami i playerem">
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
                                                     <span>Podgląd</span>
                                                 </a>
                                             ` : ''}
                                         </div>
                                     </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     ` : `
-                        <div style="padding: 10px 14px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.08); border-radius: 10px; font-size: 0.78rem; color: #64748B; margin-bottom: 12px;">
-                            ⏳ Oczekiwanie na przesłanie plików przez klienta. Udostępnij poniższy link, aby klient mógł wrzucić materiały.
+                        <div class="drop-req-waiting-box">
+                            <div class="waiting-indicator-dot"></div>
+                            <div class="waiting-text-group">
+                                <strong>Oczekiwanie na przesłanie plików przez klienta</strong>
+                                <span>Udostępnij poniższy link lub kod QR, aby klient mógł bezpiecznie wrzucić materiały.</span>
+                            </div>
                         </div>
                     `}
 
@@ -466,12 +543,16 @@
                         ${matchingFiles.length > 0 ? `
                             <button type="button" class="drop-req-btn-action btn-make-album" onclick="window.createAlbumFromDropRequest('${req.id}')" title="Utwórz gotowy Album/Kolekcję ze wszystkich plików w tej skrzynce">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                                <span>Utwórz Album z tych plików</span>
+                                <span>Utwórz Album ze skrytki</span>
                             </button>
                         ` : ''}
                         <button type="button" class="drop-req-btn-action" onclick="window.copyDropReqLink('${req.id}')" title="Kopiuj link do wysłania klientowi">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             <span>Kopiuj link</span>
+                        </button>
+                        <button type="button" class="drop-req-btn-action" onclick="if(window.openQrModal) window.openQrModal('${req.fullUrl}');" title="Pokaż kod QR do zeskanowania na telefonie klienta">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            <span>Kod QR</span>
                         </button>
                         <button type="button" class="drop-req-btn-action" onclick="window.open('${req.fullUrl}', '_blank')" title="Otwórz widok skrzynki">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>

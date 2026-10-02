@@ -666,6 +666,7 @@ document.addEventListener('click', (e) => {
 
 let currentFreeSpace = 10737418240; // Domyślnie 10 GB
 const WORKER_URL = 'https://uploud-api.dropsite33.workers.dev';
+window.WORKER_URL = WORKER_URL;
 const PUBLIC_APP_URL = 'https://dropsite.pages.dev';
 
 function updateProUI() {
@@ -1246,11 +1247,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-            // Na środowisku lokalnym (localhost) zawsze używamy natywnego modala BLIK,
-            // aby zewnętrzny link Stripe nie przekierowywał testera na domenę produkcyjną dropsite.pages.dev!
-            if (!isLocal && STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
+            // Zawsze bezpośrednie przekierowanie do oficjalnej bramki płatności Stripe (BLIK 30 Dni)
+            if (STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
                 const btnText = btnBuyProBlik.querySelector('.btn-text');
                 if (btnText) btnText.textContent = 'Przekierowanie do Stripe...';
                 btnBuyProBlik.style.pointerEvents = 'none';
@@ -1262,9 +1260,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 window.location.href = targetUrl;
             } else {
-                // Tryb lokalny lub natywny modal BLIK w aplikacji
+                // Awaryjny fallback w przypadku braku skonfigurowanego URL Stripe
                 window.openBlikModal(14.99, 'pro');
             }
+        });
+    }
+
+    // Bezpośrednia globalna funkcja przekierowania do Stripe dla wygody
+    window.redirectToStripePro = function() {
+        if (isProUser()) {
+            if (typeof showNotification === 'function') {
+                showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan Dropsite PRO!', 'info');
+            }
+            return;
+        }
+        if (STRIPE_PRO_BLIK_URL && STRIPE_PRO_BLIK_URL.trim().startsWith('http')) {
+            let targetUrl = STRIPE_PRO_BLIK_URL.trim();
+            const userEmail = window.auth?.currentUser?.email;
+            if (userEmail) {
+                targetUrl += (targetUrl.includes('?') ? '&' : '?') + `prefilled_email=${encodeURIComponent(userEmail)}`;
+            }
+            window.location.href = targetUrl;
+        }
+    };
+
+    // Obsługa kliknięcia w cały kafel Dostęp na 30 Dni
+    const cardBuyBlik = document.getElementById('cardBuyBlik');
+    if (cardBuyBlik) {
+        cardBuyBlik.addEventListener('click', (e) => {
+            if (e.target.closest('#btnBuyProBlik')) return; // Obsługiwane bezpośrednio przez przycisk
+            btnBuyProBlik?.click();
         });
     }
 
@@ -1493,8 +1518,12 @@ function updateSoundButtonUI() {
     if (navDropdownSoundBtn) {
         const iconOn = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-on');
         const iconOff = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-off');
+        const soundSwitch = document.getElementById('dropdownSoundSwitch');
         if (iconOn) iconOn.style.display = soundEnabled ? 'inline-block' : 'none';
         if (iconOff) iconOff.style.display = soundEnabled ? 'none' : 'inline-block';
+        if (soundSwitch) {
+            soundSwitch.classList.toggle('is-active', soundEnabled);
+        }
         if (dropdownSoundState) {
             dropdownSoundState.textContent = soundEnabled ? 'ON' : 'OFF';
             dropdownSoundState.style.color = soundEnabled ? '#34D399' : '#EF4444';
@@ -1535,7 +1564,30 @@ if (navDropdownHistoryBtn) {
     });
 }
 
-// === KOMPRESJA ZDJĘĆ PRZEZ CANVAS ===
+// MAGNETYCZNY GLIDER MENU NARZĘDZI (STRIPE / LINEAR STYLE)
+const navToolsMenuEl = document.getElementById('navToolsMenu');
+const navDropdownGliderEl = document.getElementById('navDropdownGlider');
+if (navToolsMenuEl && navDropdownGliderEl) {
+    const dropdownLinks = navToolsMenuEl.querySelectorAll('.nav-dropdown-link');
+    dropdownLinks.forEach((link) => {
+        link.addEventListener('mouseenter', () => {
+            const menuRect = navToolsMenuEl.getBoundingClientRect();
+            const linkRect = link.getBoundingClientRect();
+            navDropdownGliderEl.style.top = (linkRect.top - menuRect.top) + 'px';
+            navDropdownGliderEl.style.height = linkRect.height + 'px';
+            navDropdownGliderEl.style.opacity = '1';
+        });
+    });
+    navToolsMenuEl.addEventListener('mouseleave', () => {
+        navDropdownGliderEl.style.opacity = '0';
+    });
+}
+
+
+// === KOMPRESJA ZDJĘĆ PRZEZ CANVAS (ZAPAMIĘTYWANIE W LOCALSTORAGE) ===
+const COMPRESS_STORAGE_KEY = 'dropsite_image_compress_enabled';
+const COMPRESS_QUALITY_STORAGE_KEY = 'dropsite_image_compress_quality';
+
 let originalImageFile = null;
 let currentCompressionQuality = 0.8;
 
@@ -1549,6 +1601,78 @@ const imageCompressFlyout = document.getElementById('imageCompressFlyout');
 const btnCompressFlyoutClose = document.getElementById('btnCompressFlyoutClose');
 const compressMiniSavingsBadge = document.getElementById('compressMiniSavingsBadge');
 const compressFlyoutQualityVal = document.getElementById('compressFlyoutQualityVal');
+const compressSliderWrap = document.querySelector('.compress-slider-wrap');
+
+function isPhotoCompressionEnabled() {
+    try {
+        const stored = localStorage.getItem(COMPRESS_STORAGE_KEY);
+        if (stored !== null) {
+            return stored === 'true';
+        }
+    } catch (e) {
+        console.warn('localStorage read error:', e);
+    }
+    return compressToggleCheckbox ? compressToggleCheckbox.checked : true;
+}
+
+function setPhotoCompressionEnabled(enabled) {
+    try {
+        localStorage.setItem(COMPRESS_STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch (e) {
+        console.warn('localStorage write error:', e);
+    }
+}
+
+function updateCompressionUiState() {
+    const isEnabled = compressToggleCheckbox ? compressToggleCheckbox.checked : isPhotoCompressionEnabled();
+    const wrap = compressSliderWrap || document.querySelector('.compress-slider-wrap');
+    
+    if (wrap) {
+        wrap.classList.toggle('is-disabled', !isEnabled);
+    }
+    if (compressQualitySlider) {
+        compressQualitySlider.disabled = !isEnabled;
+    }
+    document.querySelectorAll('.btn-preset').forEach(btn => {
+        btn.disabled = !isEnabled;
+    });
+
+    if (btnCompressFlyoutToggle) {
+        btnCompressFlyoutToggle.classList.toggle('compress-inactive', !isEnabled);
+        btnCompressFlyoutToggle.title = isEnabled 
+            ? 'Ustawienia optymalizacji obrazu' 
+            : 'Optymalizacja wyłączona (kliknij, aby dostosować)';
+    }
+}
+
+// Inicjalizacja stanu z pamięci lokalnej (localStorage)
+if (compressToggleCheckbox) {
+    compressToggleCheckbox.checked = isPhotoCompressionEnabled();
+    
+    // Wczytanie zapamiętanej jakości
+    try {
+        const savedQ = localStorage.getItem(COMPRESS_QUALITY_STORAGE_KEY);
+        if (savedQ && compressQualitySlider) {
+            const qNum = parseInt(savedQ, 10);
+            if (!isNaN(qNum) && qNum >= 30 && qNum <= 95) {
+                compressQualitySlider.value = qNum;
+                currentCompressionQuality = qNum / 100;
+                document.querySelectorAll('.btn-preset').forEach(b => {
+                    b.classList.toggle('active', parseInt(b.getAttribute('data-q'), 10) === qNum);
+                });
+            }
+        }
+    } catch (e) {}
+
+    updateCompressionUiState();
+
+    compressToggleCheckbox.addEventListener('change', () => {
+        const isEnabled = compressToggleCheckbox.checked;
+        setPhotoCompressionEnabled(isEnabled);
+        updateCompressionUiState();
+        updateCompressionEstimate();
+    });
+}
 
 function toggleCompressFlyout(forceOpen) {
     if (!imageCompressFlyout) return;
@@ -1607,13 +1731,27 @@ document.addEventListener('keydown', (e) => {
 function setupImageCompression(file) {
     if (file && file.type && file.type.startsWith('image/') && !file.type.includes('svg') && !file.type.includes('gif')) {
         originalImageFile = file;
+        
+        // Zawsze synchronizujemy stan checkboxa z localStorage (pamięcią użytkownika)
+        if (compressToggleCheckbox) {
+            compressToggleCheckbox.checked = isPhotoCompressionEnabled();
+        }
+
         if (btnCompressFlyoutToggle) {
             btnCompressFlyoutToggle.hidden = false;
             btnCompressFlyoutToggle.style.display = 'inline-flex';
         }
+
+        updateCompressionUiState();
         updateCompressionEstimate();
-        // Od razu wysuwamy boczny dymek kompresji
-        toggleCompressFlyout(true);
+
+        // Jeśli użytkownik wyłączył kompresję, NIE wyskakujemy mu z dymkiem w twarz!
+        // Dymek otwiera się automatycznie tylko wtedy, gdy optymalizacja jest aktywna.
+        if (isPhotoCompressionEnabled()) {
+            toggleCompressFlyout(true);
+        } else {
+            toggleCompressFlyout(false);
+        }
     } else {
         originalImageFile = null;
         if (btnCompressFlyoutToggle) {
@@ -1628,6 +1766,29 @@ function setupImageCompression(file) {
 
 function updateCompressionEstimate() {
     if (!originalImageFile) return;
+
+    const isEnabled = compressToggleCheckbox ? compressToggleCheckbox.checked : isPhotoCompressionEnabled();
+    const targetWrap = document.getElementById('fsTargetSizeWrap');
+    const targetSizeEl = document.getElementById('fsTargetSize');
+
+    if (!isEnabled) {
+        // Kompresja wyłączona przez użytkownika
+        if (compressMiniSavingsBadge) {
+            compressMiniSavingsBadge.style.display = 'none';
+        }
+        if (targetWrap) {
+            targetWrap.style.display = 'none';
+        }
+        if (estCompressedSize) {
+            estCompressedSize.textContent = `${formatBytes(originalImageFile.size)} (100% oryginał)`;
+        }
+        return;
+    }
+
+    if (compressMiniSavingsBadge) {
+        compressMiniSavingsBadge.style.display = '';
+    }
+
     const q = parseInt(compressQualitySlider?.value || '80', 10);
     currentCompressionQuality = q / 100;
     
@@ -1644,8 +1805,6 @@ function updateCompressionEstimate() {
         compressMiniSavingsBadge.textContent = savingsStr;
     }
 
-    const targetWrap = document.getElementById('fsTargetSizeWrap');
-    const targetSizeEl = document.getElementById('fsTargetSize');
     if (targetWrap && targetSizeEl) {
         if (savedPercent > 0) {
             targetSizeEl.textContent = formatBytes(estSize);
@@ -1663,16 +1822,26 @@ function updateCompressionEstimate() {
 if (compressQualitySlider) {
     compressQualitySlider.addEventListener('input', () => {
         document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+        const qVal = compressQualitySlider.value;
+        try {
+            localStorage.setItem(COMPRESS_QUALITY_STORAGE_KEY, qVal);
+        } catch (e) {}
         updateCompressionEstimate();
     });
 }
 
 document.querySelectorAll('.btn-preset').forEach(btn => {
     btn.addEventListener('click', () => {
+        if (compressToggleCheckbox && !compressToggleCheckbox.checked) return;
         document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const q = parseInt(btn.getAttribute('data-q'), 10);
-        if (compressQualitySlider) compressQualitySlider.value = q;
+        if (compressQualitySlider) {
+            compressQualitySlider.value = q;
+            try {
+                localStorage.setItem(COMPRESS_QUALITY_STORAGE_KEY, q.toString());
+            } catch (e) {}
+        }
         updateCompressionEstimate();
     });
 });
@@ -3811,10 +3980,12 @@ window.debouncedUpdateTransferSettings = debouncedUpdateTransferSettings;
 function buildTransferUrls(fileKey) {
     if (!fileKey) return null;
     let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseOrigin = isLocal ? window.location.origin : (PUBLIC_APP_URL || 'https://dropsite.pages.dev');
     let pageUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
     let localPageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
-    let smartShareUrl = `${WORKER_URL}/f/${cleanKeyPath}`;
+    // Główny link do udostępniania prowadzi bezpośrednio do estetycznej strony odbioru Dropsite
+    let smartShareUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
     
     const params = new URLSearchParams();
     
@@ -4209,12 +4380,12 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     // Odtwórz dźwięk sukcesu!
     playSound('success');
 
-    // Generuj adresy transferu (domyślnie publiczne https://dropsite.pages.dev oraz Smart Share Worker URL)
+    // Generuj adresy transferu (domyślnie publiczne https://dropsite.pages.dev lub lokalne przy testach)
     const isAlbumTransfer = typeof fileKey === 'string' && fileKey.startsWith('alb_');
-    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
-    let cleanKeyPath = isAlbumTransfer ? fileKey : fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseOrigin = isLocal ? window.location.origin : (PUBLIC_APP_URL || 'https://dropsite.pages.dev');
     let pageUrl = isAlbumTransfer ? `${baseOrigin}/?album=${encodeURIComponent(fileKey)}` : `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
-    let smartShareUrl = isAlbumTransfer ? `${baseOrigin}/?album=${encodeURIComponent(fileKey)}` : `${WORKER_URL}/f/${cleanKeyPath}`;
+    let smartShareUrl = pageUrl;
     
     // Branding twórcy i notatka są w metadanych serwera R2 (link pozostaje ultra-krótki)
 
@@ -4649,10 +4820,249 @@ if (refreshModBtn) {
     refreshModBtn.addEventListener('click', fetchModFiles);
 }
 
+// Inicjalizacja przycisków widoku (Kafelki vs Lista)
+const viewToggleGridBtn = document.getElementById('viewToggleGridBtn');
+const viewToggleListBtn = document.getElementById('viewToggleListBtn');
+if (viewToggleGridBtn) {
+    viewToggleGridBtn.addEventListener('click', () => window.setMyFilesViewMode('grid'));
+}
+if (viewToggleListBtn) {
+    viewToggleListBtn.addEventListener('click', () => window.setMyFilesViewMode('list'));
+}
+
+// Funkcja pomocnicza weryfikująca wygaśnięcie pliku
+function checkIfFileIsExpired(file) {
+    if (!file) return false;
+    if (file.status === 'expired' || file.existsOnDisk === false) return true;
+    const uploadedTime = file.uploaded || file.date || file.createdAt;
+    if (uploadedTime) {
+        const uploadDate = new Date(uploadedTime).getTime();
+        if (!isNaN(uploadDate)) {
+            const now = Date.now();
+            const ageMs = now - uploadDate;
+            const dur = file.duration || '';
+            const fName = file.name || file.key || '';
+            if (dur === '1d' || fName.startsWith('1d/')) {
+                if (ageMs > 24 * 60 * 60 * 1000) return true;
+            }
+            if (dur === '30d' || fName.startsWith('30d/')) {
+                if (ageMs > 30 * 24 * 60 * 60 * 1000) return true;
+            }
+            if (dur === 'burn' || fName.startsWith('burn/')) {
+                if (ageMs > 24 * 60 * 60 * 1000) return true;
+            }
+        }
+    }
+    return false;
+}
+window.checkIfFileIsExpired = checkIfFileIsExpired;
+
+let cachedExpiredCount = -1;
+function updateExpiredFilesBadges(forceRecalc = false) {
+    let expiredCount = 0;
+    if (Array.isArray(loadedModFiles) && loadedModFiles.length > 0 && (!currentAdminPanelScope || currentAdminPanelScope === 'mine')) {
+        expiredCount = loadedModFiles.filter(checkIfFileIsExpired).length;
+    } else {
+        const history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
+        expiredCount = history.filter(checkIfFileIsExpired).length;
+    }
+
+    cachedExpiredCount = expiredCount;
+
+    const badge1 = document.getElementById('expiredCountBadge');
+    if (badge1) {
+        badge1.textContent = expiredCount;
+        badge1.style.display = expiredCount > 0 ? 'inline-flex' : 'none';
+    }
+    const badge2 = document.getElementById('historyExpiredCountBadge');
+    if (badge2) {
+        badge2.textContent = expiredCount;
+        badge2.style.display = expiredCount > 0 ? 'inline-flex' : 'none';
+    }
+}
+window.updateExpiredFilesBadges = updateExpiredFilesBadges;
+
+function isAutoCleanExpiredEnabled() {
+    return localStorage.getItem('dropsite_auto_clean_expired') === 'true';
+}
+window.isAutoCleanExpiredEnabled = isAutoCleanExpiredEnabled;
+
+async function cleanExpiredFiles(options = {}) {
+    const silent = options.silent || false;
+    const key = (typeof getHistoryStorageKey === 'function') ? getHistoryStorageKey() : 'dropsite_user_history_guest';
+    const history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
+
+    // Wykryj wszystkie wygasłe pliki
+    const expiredInHistory = history.filter(checkIfFileIsExpired);
+    const expiredInLoaded = (Array.isArray(loadedModFiles) ? loadedModFiles : []).filter(checkIfFileIsExpired);
+
+    const newlyDeletedKeys = new Set();
+    expiredInHistory.forEach(item => {
+        if (item.key) newlyDeletedKeys.add(item.key);
+        if (item.name) newlyDeletedKeys.add(item.name);
+    });
+    expiredInLoaded.forEach(item => {
+        if (item.key) newlyDeletedKeys.add(item.key);
+        if (item.name) newlyDeletedKeys.add(item.name);
+    });
+
+    const removedCount = Math.max(expiredInHistory.length, newlyDeletedKeys.size);
+
+    if (removedCount > 0) {
+        // Trwale zapisz listę wyczyszczonych kluczy, aby żaden sync ich nie przywrócił
+        const prunedList = JSON.parse(localStorage.getItem('dropsite_pruned_expired_keys') || '[]');
+        const updatedPruned = Array.from(new Set([...prunedList, ...newlyDeletedKeys]));
+        localStorage.setItem('dropsite_pruned_expired_keys', JSON.stringify(updatedPruned));
+
+        // Usuń z lokalnej historii użytkownika
+        const validHistory = history.filter(item => !checkIfFileIsExpired(item) && !newlyDeletedKeys.has(item.key) && !newlyDeletedKeys.has(item.name));
+        localStorage.setItem(key, JSON.stringify(validHistory));
+
+        if (key !== 'dropsite_user_history_guest') {
+            try {
+                const guestHist = JSON.parse(localStorage.getItem('dropsite_user_history_guest') || '[]');
+                const validGuestHist = guestHist.filter(item => !checkIfFileIsExpired(item) && !newlyDeletedKeys.has(item.key) && !newlyDeletedKeys.has(item.name));
+                localStorage.setItem('dropsite_user_history_guest', JSON.stringify(validGuestHist));
+            } catch (_) {}
+        }
+
+        if (Array.isArray(loadedModFiles)) {
+            loadedModFiles = loadedModFiles.filter(item => !checkIfFileIsExpired(item) && !newlyDeletedKeys.has(item.key) && !newlyDeletedKeys.has(item.name));
+        }
+        if (typeof updateModStats === 'function') updateModStats(loadedModFiles);
+        if (typeof applyModFiltersAndRender === 'function') applyModFiltersAndRender();
+        if (typeof renderUserHistory === 'function') renderUserHistory();
+        updateExpiredFilesBadges();
+
+        // Oczyść również w chmurze R2 dla konta użytkownika
+        const activeUserEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((typeof auth !== 'undefined' && auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
+        if (activeUserEmail) {
+            try {
+                await fetch(`${WORKER_URL}/my-files/clean-expired`, {
+                    method: 'POST',
+                    headers: { 'X-User-Email': activeUserEmail, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deletedKeys: Array.from(newlyDeletedKeys) })
+                }).catch(() => {});
+            } catch (_) {}
+        }
+
+        if (!silent) {
+            const msgTemplate = typeof window.t === 'function' ? window.t('myfiles_toast_cleaned_expired', 'Usunięto {count} wygasłych plików.') : 'Usunięto {count} wygasłych plików.';
+            const msg = msgTemplate.replace('{count}', removedCount);
+            if (typeof showNotification === 'function') {
+                showNotification(msg, 'success');
+            }
+            if (typeof playSound === 'function') playSound('trash');
+        }
+        return removedCount;
+    } else {
+        updateExpiredFilesBadges();
+        if (!silent) {
+            const noExpiredMsg = typeof window.t === 'function' ? window.t('myfiles_no_expired_to_clean', 'Brak wygasłych plików do usunięcia.') : 'Brak wygasłych plików do usunięcia.';
+            if (typeof showNotification === 'function') {
+                showNotification(noExpiredMsg, 'info');
+            }
+        }
+        return 0;
+    }
+}
+window.cleanExpiredFiles = cleanExpiredFiles;
+
+let autoCleanExpiredInitialized = false;
+function initAutoCleanExpired() {
+    if (autoCleanExpiredInitialized) return;
+    autoCleanExpiredInitialized = true;
+    const toggle = document.getElementById('autoCleanExpiredToggle');
+    if (toggle) {
+        toggle.checked = isAutoCleanExpiredEnabled();
+        toggle.addEventListener('change', async (e) => {
+            const isEnabled = e.target.checked;
+            localStorage.setItem('dropsite_auto_clean_expired', isEnabled ? 'true' : 'false');
+            if (isEnabled) {
+                const toastMsg = typeof window.t === 'function' ? window.t('myfiles_autoclean_enabled', 'Włączono automatyczne usuwanie wygasłych plików.') : 'Włączono automatyczne usuwanie wygasłych plików.';
+                if (typeof showNotification === 'function') showNotification(toastMsg, 'success');
+                await cleanExpiredFiles({ silent: true });
+            } else {
+                const toastMsg = typeof window.t === 'function' ? window.t('myfiles_autoclean_disabled', 'Wyłączono automatyczne usuwanie wygasłych plików.') : 'Wyłączono automatyczne usuwanie wygasłych plików.';
+                if (typeof showNotification === 'function') showNotification(toastMsg, 'info');
+            }
+        });
+    }
+
+    const cleanBtn1 = document.getElementById('cleanExpiredMyFilesBtn');
+    if (cleanBtn1) {
+        cleanBtn1.addEventListener('click', () => cleanExpiredFiles({ silent: false }));
+    }
+
+    const cleanBtn2 = document.getElementById('cleanExpiredHistoryBtn');
+    if (cleanBtn2) {
+        cleanBtn2.addEventListener('click', () => cleanExpiredFiles({ silent: false }));
+    }
+
+    updateExpiredFilesBadges();
+}
+window.initAutoCleanExpired = initAutoCleanExpired;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAutoCleanExpired);
+} else {
+    initAutoCleanExpired();
+}
+
+// Interaktywny Drag & Drop wprost do modala Moje Pliki
+const myfilesDropOverlay = document.getElementById('myfilesDropOverlay');
+if (modModal && myfilesDropOverlay) {
+    let modalDragCounter = 0;
+    modModal.addEventListener('dragenter', (e) => {
+        if (!isNativeFileDragEvent(e)) return;
+        modalDragCounter++;
+        myfilesDropOverlay.style.display = 'flex';
+    });
+    modModal.addEventListener('dragover', (e) => {
+        if (!isNativeFileDragEvent(e)) return;
+        e.preventDefault();
+    });
+    modModal.addEventListener('dragleave', (e) => {
+        if (!isNativeFileDragEvent(e)) return;
+        modalDragCounter--;
+        if (modalDragCounter <= 0) {
+            modalDragCounter = 0;
+            myfilesDropOverlay.style.display = 'none';
+        }
+    });
+    modModal.addEventListener('drop', async (e) => {
+        modalDragCounter = 0;
+        myfilesDropOverlay.style.display = 'none';
+        if (!isNativeFileDragEvent(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer) {
+            const scannedFiles = await scanFilesAndFolders(e.dataTransfer);
+            if (scannedFiles && scannedFiles.length > 0) {
+                window.smoothCloseModal(modModal);
+                if (window.navigateToHome) window.navigateToHome();
+                updateSelectedFile(scannedFiles);
+                showNotification('Dodano pliki do wysyłki! 🚀', 'success');
+            }
+        }
+    });
+}
+
+let modSearchDebounceTimer = null;
+let lastProcessedSearchQuery = '';
 if (modSearchInput) {
     modSearchInput.addEventListener('input', (e) => {
-        activeSearchQuery = e.target.value.toLowerCase().trim();
-        applyModFiltersAndRender();
+        const val = e.target.value.toLowerCase().trim();
+        if (val === lastProcessedSearchQuery && activeSearchQuery === val) return;
+        activeSearchQuery = val;
+        clearTimeout(modSearchDebounceTimer);
+        const delay = val === '' ? 0 : 80;
+        modSearchDebounceTimer = setTimeout(() => {
+            lastProcessedSearchQuery = val;
+            if (typeof applyModFiltersAndRender === 'function') {
+                applyModFiltersAndRender();
+            }
+        }, delay);
     });
 }
 
@@ -4820,8 +5230,62 @@ function getDropsitePageUrl(fileOrKey) {
 }
 window.getDropsitePageUrl = getDropsitePageUrl;
 
+// Błyskawiczne ładowanie plików z pamięci lokalnej (0ms lag!) ze wstępnie obliczonymi polami do szybkiego filtrowania i sortowania
+function populateUserModFilesFromLocal() {
+    let history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
+    const isAutoClean = typeof isAutoCleanExpiredEnabled === 'function' ? isAutoCleanExpiredEnabled() : false;
+    const prunedKeys = new Set(JSON.parse(localStorage.getItem('dropsite_pruned_expired_keys') || '[]'));
+
+    // Jeśli włączone jest automatyczne usuwanie lub użytkownik usunął wygasłe pliki, odfiltruj je natychmiast
+    if (isAutoClean || prunedKeys.size > 0) {
+        history = history.filter(item => {
+            const k = item.key || item.name || '';
+            if (prunedKeys.has(k) || prunedKeys.has(item.name)) return false;
+            if (isAutoClean && checkIfFileIsExpired(item)) return false;
+            return true;
+        });
+    }
+
+    loadedModFiles = history.map(item => {
+        let fileName = item.name || 'plik';
+        if (item.duration && !fileName.includes('/')) {
+            fileName = `${item.duration}/${fileName}`;
+        }
+        const rawKey = item.key || fileName;
+        const pageUrl = getDropsitePageUrl(item);
+        const uploadTime = item.date || item.uploaded || 0;
+        const parsedTime = uploadTime ? new Date(uploadTime).getTime() : 0;
+        const cleanName = cleanFileName(fileName);
+        const isExpired = typeof checkIfFileIsExpired === 'function' ? checkIfFileIsExpired(item) : (item.status === 'expired' || item.existsOnDisk === false);
+        return {
+            name: fileName,
+            size: item.size || 0,
+            uploaded: uploadTime || new Date().toISOString(),
+            duration: item.duration || '1d',
+            pageUrl: pageUrl,
+            url: pageUrl,
+            directUrl: item.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`,
+            key: rawKey,
+            isUserLocalFile: true,
+            status: isExpired ? 'expired' : (item.status || 'active'),
+            existsOnDisk: !isExpired && item.existsOnDisk !== false,
+            _time: isNaN(parsedTime) ? 0 : parsedTime,
+            _cleanName: cleanName,
+            _cleanNameLower: cleanName.toLowerCase(),
+            _rawLower: fileName.toLowerCase(),
+            _uEmailLower: (item.uploaderEmail || '').toLowerCase(),
+            _category: getFileCategory(fileName),
+            _isExpired: isExpired
+        };
+    });
+
+    if (typeof updateModStats === 'function') updateModStats(loadedModFiles);
+    if (typeof applyModFiltersAndRender === 'function') applyModFiltersAndRender();
+}
+window.populateUserModFilesFromLocal = populateUserModFilesFromLocal;
+
 async function fetchModFiles() {
-    refreshModBtn.innerText = 'Ładowanie...';
+    if (refreshModBtn) refreshModBtn.classList.add('is-loading');
     
     const titleEl = document.getElementById('modPanelTitle');
     const subtitleEl = document.getElementById('modPanelSubtitle');
@@ -4843,11 +5307,15 @@ async function fetchModFiles() {
         
         modModal.classList.add('is-admin-dashboard');
         if (adminNavTabs) adminNavTabs.style.display = 'flex';
+        const adminStorageWrap = document.getElementById('myfilesStorageWrap');
+        const adminStatsGrid = document.getElementById('modStatsGrid');
+        if (adminStorageWrap) adminStorageWrap.style.display = 'none';
+        if (adminStatsGrid) adminStatsGrid.style.display = 'grid';
 
         let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
         if (!apiSecret) {
             if (authBox) authBox.style.display = 'flex';
-            refreshModBtn.innerText = 'Odśwież';
+            if (refreshModBtn) refreshModBtn.classList.remove('is-loading');
             return;
         } else {
             if (authBox) authBox.style.display = 'none';
@@ -4872,12 +5340,23 @@ async function fetchModFiles() {
             loadedModFiles = (data.files || []).map(f => {
                 const rawKey = f.key || f.name;
                 const pageUrl = getDropsitePageUrl(rawKey);
+                const uploadTime = f.uploaded || f.date || 0;
+                const parsedTime = uploadTime ? new Date(uploadTime).getTime() : 0;
+                const cleanName = cleanFileName(rawKey);
+                const isExpired = typeof checkIfFileIsExpired === 'function' ? checkIfFileIsExpired(f) : false;
                 return {
                     ...f,
                     pageUrl: pageUrl,
                     url: pageUrl,
                     directUrl: f.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`,
-                    isGlobalServerFile: true
+                    isGlobalServerFile: true,
+                    _time: isNaN(parsedTime) ? 0 : parsedTime,
+                    _cleanName: cleanName,
+                    _cleanNameLower: cleanName.toLowerCase(),
+                    _rawLower: (f.name || rawKey).toLowerCase(),
+                    _uEmailLower: (f.uploaderEmail || '').toLowerCase(),
+                    _category: getFileCategory(f.name || rawKey),
+                    _isExpired: isExpired
                 };
             });
             updateModStats(loadedModFiles);
@@ -4896,12 +5375,19 @@ async function fetchModFiles() {
                 showNotification(e.message, "error");
             }
         } finally {
-            refreshModBtn.innerText = 'Odśwież';
+            if (refreshModBtn) refreshModBtn.classList.remove('is-loading');
         }
     } else {
         // Tryb Użytkownika (Free / PRO) lub Administrator w trybie 'mine' -> Ładujemy TYLKO JEGO WŁASNE PLIKI!
-        if (titleEl) titleEl.textContent = isProUser() ? '⭐ Panel Twoich Plików (PRO)' : '📁 Panel Twoich Plików';
-        if (subtitleEl) subtitleEl.textContent = 'Zarządzaj plikami wgranymi z Twojego urządzenia';
+        const storageWrap = document.getElementById('myfilesStorageWrap');
+        const statsGrid = document.getElementById('modStatsGrid');
+        if (storageWrap) storageWrap.style.display = 'block';
+        if (statsGrid) statsGrid.style.display = 'none';
+
+        const tHeroTitle = typeof window.t === 'function' ? window.t('myfiles_hero_title', 'Twoja Prywatna Chmura') : 'Twoja Prywatna Chmura';
+        const tHeroSub = typeof window.t === 'function' ? window.t('myfiles_hero_subtitle', 'Wszystkie Twoje transfery, bezpieczne i pod ręką ✨') : 'Wszystkie Twoje transfery, bezpieczne i pod ręką ✨';
+        if (titleEl) titleEl.innerHTML = `${isProUser() ? '⭐ ' : ''}${tHeroTitle} <span class="myfiles-title-sparkle">✦</span>`;
+        if (subtitleEl) subtitleEl.textContent = tHeroSub;
         
         modModal.classList.remove('is-admin-dashboard');
         if (adminNavTabs) adminNavTabs.style.display = 'none';
@@ -4914,37 +5400,29 @@ async function fetchModFiles() {
         const filesPane = document.getElementById('adminTabPane_files');
         if (filesPane) filesPane.style.display = 'block';
 
+        // 1. NATYCHMIASTOWE RENDEROWANIE Z LOKALNEJ PAMIĘCI (0ms lag, brak blokowania na sieci!)
+        populateUserModFilesFromLocal();
+
+        // 2. W tle: synchronizacja z chmurą i ciche zaktualizowanie jeśli pojawiły się nowe pliki
         const activeUserEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
         if (activeUserEmail && typeof syncUserHistory === 'function') {
-            await syncUserHistory();
+            syncUserHistory().then(hasChanges => {
+                if (hasChanges) {
+                    populateUserModFilesFromLocal();
+                }
+            }).catch(e => console.warn('Background sync failed:', e)).finally(() => {
+                if (refreshModBtn) refreshModBtn.classList.remove('is-loading');
+            });
+        } else {
+            if (refreshModBtn) refreshModBtn.classList.remove('is-loading');
         }
 
-        const history = getLocalHistory();
-        loadedModFiles = history.map(item => {
-            let fileName = item.name || 'plik';
-            if (item.duration && !fileName.includes('/')) {
-                fileName = `${item.duration}/${fileName}`;
+        // 3. W tle: auto-czyszczenie wygasłych plików
+        if (typeof isAutoCleanExpiredEnabled === 'function' && isAutoCleanExpiredEnabled()) {
+            if (typeof cleanExpiredFiles === 'function') {
+                cleanExpiredFiles({ silent: true }).catch(() => {});
             }
-            const rawKey = item.key || fileName;
-            const pageUrl = getDropsitePageUrl(item);
-            return {
-                name: fileName,
-                size: item.size || 0,
-                uploaded: item.date || item.uploaded || new Date().toISOString(),
-                duration: item.duration || '1d',
-                pageUrl: pageUrl,
-                url: pageUrl,
-                directUrl: item.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`,
-                key: rawKey,
-                isUserLocalFile: true,
-                status: item.status || 'active',
-                existsOnDisk: item.existsOnDisk !== false
-            };
-        });
-
-        updateModStats(loadedModFiles);
-        applyModFiltersAndRender();
-        refreshModBtn.innerText = 'Odśwież';
+        }
     }
 }
 
@@ -6658,6 +7136,56 @@ function getFileCategory(filename) {
     return 'other';
 }
 
+function updateMyFilesStorageBar(files) {
+    let totalSize = 0;
+    let sizes = { image: 0, video: 0, doc: 0, archive: 0, other: 0 };
+    
+    files.forEach(f => {
+        const s = f.size || 0;
+        totalSize += s;
+        const cat = getFileCategory(f.name);
+        if (sizes[cat] !== undefined) sizes[cat] += s;
+        else sizes.other += s;
+    });
+
+    const badge = document.getElementById('storageSummaryBadge');
+    if (badge) {
+        badge.innerText = `${files.length} plików • ${formatBytes(totalSize)}`;
+    }
+
+    const segImg = document.getElementById('segImages');
+    const segVid = document.getElementById('segVideos');
+    const segDoc = document.getElementById('segDocs');
+    const segArc = document.getElementById('segArchives');
+    const segOth = document.getElementById('segOther');
+
+    if (totalSize > 0) {
+        if (segImg) segImg.style.width = `${Math.round((sizes.image / totalSize) * 100)}%`;
+        if (segVid) segVid.style.width = `${Math.round((sizes.video / totalSize) * 100)}%`;
+        if (segDoc) segDoc.style.width = `${Math.round((sizes.doc / totalSize) * 100)}%`;
+        if (segArc) segArc.style.width = `${Math.round((sizes.archive / totalSize) * 100)}%`;
+        if (segOth) segOth.style.width = `${Math.round((sizes.other / totalSize) * 100)}%`;
+    } else {
+        if (segImg) segImg.style.width = '0%';
+        if (segVid) segVid.style.width = '0%';
+        if (segDoc) segDoc.style.width = '0%';
+        if (segArc) segArc.style.width = '0%';
+        if (segOth) segOth.style.width = '0%';
+    }
+
+    const valImg = document.getElementById('legendValImages');
+    const valVid = document.getElementById('legendValVideos');
+    const valDoc = document.getElementById('legendValDocs');
+    const valArc = document.getElementById('legendValArchives');
+    const valOth = document.getElementById('legendValOther');
+
+    if (valImg) valImg.innerText = formatBytes(sizes.image);
+    if (valVid) valVid.innerText = formatBytes(sizes.video);
+    if (valDoc) valDoc.innerText = formatBytes(sizes.doc);
+    if (valArc) valArc.innerText = formatBytes(sizes.archive);
+    if (valOth) valOth.innerText = formatBytes(sizes.other);
+}
+
 function updateModStats(files) {
     let totalSize = 0;
     let counts = { all: files.length, video: 0, image: 0, doc: 0, archive: 0, other: 0 };
@@ -6690,58 +7218,452 @@ function updateModStats(files) {
     if (cImg) cImg.innerText = counts.image;
     if (cDoc) cDoc.innerText = counts.doc;
     if (cArc) cArc.innerText = counts.archive;
+
+    // Aktualizacja paska pojemności w stylu Apple iCloud
+    updateMyFilesStorageBar(files);
+    if (typeof updateExpiredFilesBadges === 'function') updateExpiredFilesBadges();
 }
 
 function applyModFiltersAndRender() {
-    let filtered = [...loadedModFiles];
+    let filtered = loadedModFiles;
 
     // 1. Filtr kategorii
     if (activeCategoryFilter !== 'all') {
-        filtered = filtered.filter(f => getFileCategory(f.name) === activeCategoryFilter);
+        filtered = filtered.filter(f => (f._category || getFileCategory(f.name)) === activeCategoryFilter);
     }
 
     // 2. Szukanie (po nazwie oraz e-mailu autora)
     if (activeSearchQuery) {
         filtered = filtered.filter(f => {
-            const clean = cleanFileName(f.name).toLowerCase();
-            const raw = f.name.toLowerCase();
-            const uEmail = (f.uploaderEmail || '').toLowerCase();
-            return clean.includes(activeSearchQuery) || raw.includes(activeSearchQuery) || uEmail.includes(activeSearchQuery);
+            const cleanLower = f._cleanNameLower || cleanFileName(f.name).toLowerCase();
+            const rawLower = f._rawLower || f.name.toLowerCase();
+            const uEmail = f._uEmailLower || (f.uploaderEmail || '').toLowerCase();
+            return cleanLower.includes(activeSearchQuery) || rawLower.includes(activeSearchQuery) || uEmail.includes(activeSearchQuery);
         });
     }
 
-    // 3. Rzetelne sortowanie (po timestampie, rozmiarze i nazwie)
-    const getFileTime = (item) => {
-        const val = item.uploaded || item.date || item.createdAt;
-        if (!val) return 0;
-        const t = new Date(val).getTime();
-        return isNaN(t) ? 0 : t;
-    };
-
+    // 3. Błyskawiczne sortowanie przy użyciu pre-kalkulowanych wartości (100x szybsze, brak tworzenia nowych obiektów Date)
     if (activeSort === 'newest') {
-        filtered.sort((a, b) => getFileTime(b) - getFileTime(a));
+        filtered.sort((a, b) => (b._time || 0) - (a._time || 0));
     } else if (activeSort === 'oldest') {
-        filtered.sort((a, b) => getFileTime(a) - getFileTime(b));
+        filtered.sort((a, b) => (a._time || 0) - (b._time || 0));
     } else if (activeSort === 'size-desc') {
         filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
     } else if (activeSort === 'size-asc') {
         filtered.sort((a, b) => (a.size || 0) - (b.size || 0));
     } else if (activeSort === 'name-asc') {
-        filtered.sort((a, b) => cleanFileName(a.name).localeCompare(cleanFileName(b.name), 'pl', { sensitivity: 'base' }));
+        filtered.sort((a, b) => (a._cleanName || a.name).localeCompare(b._cleanName || b.name, 'pl', { sensitivity: 'base' }));
     } else if (activeSort === 'name-desc') {
-        filtered.sort((a, b) => cleanFileName(b.name).localeCompare(cleanFileName(a.name), 'pl', { sensitivity: 'base' }));
+        filtered.sort((a, b) => (b._cleanName || b.name).localeCompare(a._cleanName || a.name, 'pl', { sensitivity: 'base' }));
     }
 
     renderModFilesList(filtered);
 }
 
+// Tryb widoku: 'grid' (kafelki) vs 'list' (lista)
+let currentMyFilesViewMode = localStorage.getItem('dropsite_myfiles_view') || 'grid';
+
+window.setMyFilesViewMode = function(mode) {
+    currentMyFilesViewMode = mode;
+    try { localStorage.setItem('dropsite_myfiles_view', mode); } catch (e) {}
+
+    const gridBtn = document.getElementById('viewToggleGridBtn');
+    const listBtn = document.getElementById('viewToggleListBtn');
+    if (gridBtn) {
+        gridBtn.classList.toggle('active', mode === 'grid');
+        gridBtn.setAttribute('aria-pressed', mode === 'grid' ? 'true' : 'false');
+    }
+    if (listBtn) {
+        listBtn.classList.toggle('active', mode === 'list');
+        listBtn.setAttribute('aria-pressed', mode === 'list' ? 'true' : 'false');
+    }
+
+    if (modFileList) {
+        modFileList.classList.toggle('is-grid', mode === 'grid');
+    }
+
+    if (typeof applyModFiltersAndRender === 'function') {
+        applyModFiltersAndRender();
+    }
+};
+
+window.downloadDirectFile = function(url, filename) {
+    if (!url) return;
+    showNotification(typeof window.t === 'function' ? window.t('myfiles_toast_downloading', 'Rozpoczęto pobieranie pliku...') : 'Rozpoczęto pobieranie pliku...', 'info');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'plik';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+window.triggerMyFilesUpload = function() {
+    if (modModal && typeof window.smoothCloseModal === 'function') {
+        window.smoothCloseModal(modModal);
+    }
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.click();
+    }
+};
+
+let currentFilteredFiles = [];
+let currentRenderedCount = 0;
+const MOD_FILES_PAGE_CHUNK = 36;
+let modFilesScrollObserver = null;
+
+function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
+    let directMediaUrl = file.directUrl;
+    if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
+        const rawKey = file.key || file.name;
+        directMediaUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`;
+    }
+    const dropsitePageUrl = getDropsitePageUrl(file);
+
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(file.name);
+    const isVideo = /\.(mp4|webm|ogg|mov|mkv|m4v|avi)$/i.test(file.name);
+    const isPdf = /\.pdf$/i.test(file.name);
+    const isArchive = /\.(zip|rar|7z|tar|gz|bz2)$/i.test(file.name);
+    const isAudio = /\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(file.name);
+    const isCode = /\.(json|js|html|css|py|cpp|c|ts|jsx|tsx|php|sh|md)$/i.test(file.name);
+
+    const displayName = file._cleanName || cleanFileName(file.name);
+    const ext = file.name.includes('.') ? file.name.split('.').pop().toUpperCase() : 'PLIK';
+
+    let currentExp = 'permanent';
+    if (file.name.startsWith('1d/')) currentExp = '1d';
+    else if (file.name.startsWith('30d/')) currentExp = '30d';
+
+    const isFileExpired = file._isExpired !== undefined ? file._isExpired : (typeof checkIfFileIsExpired === 'function' ? checkIfFileIsExpired(file) : (file.status === 'expired' || file.existsOnDisk === false));
+    const fileKey = file.key || file.name;
+    const isSelected = selectedSet.has(fileKey);
+
+    const checkboxHtml = isFileExpired ? '' : `
+        <input type="checkbox" class="file-select-checkbox" data-key="${escapeHtml(fileKey)}" ${isSelected ? 'checked' : ''} onchange="if(window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum('${escapeHtml(fileKey)}', this.checked)" title="Zaznacz plik do albumu">
+    `;
+
+    const expSelectHtml = isEffectiveAdmin ? `
+        <div class="custom-expiry-wrap exp-${currentExp}" data-current="${currentExp}" title="Zmień czas przechowywania pliku">
+            <button type="button" class="custom-expiry-trigger" onclick="toggleExpiryDropdown(this, event)">
+                <span class="custom-expiry-label">${expiryLabels[currentExp] || i18nTexts.tPerm}</span>
+                <svg class="custom-select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="custom-select-menu expiry-menu" hidden>
+                <div class="custom-select-option ${currentExp === '1d' ? 'selected' : ''}" data-value="1d" onclick="selectExpiryOption('${file.name}', '1d', this)">
+                    <span class="exp-dot exp-dot-1d"></span>
+                    <span>${i18nTexts.t1d}</span>
+                    <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="custom-select-option ${currentExp === '30d' ? 'selected' : ''}" data-value="30d" onclick="selectExpiryOption('${file.name}', '30d', this)">
+                    <span class="exp-dot exp-dot-30d"></span>
+                    <span>${i18nTexts.t30d}</span>
+                    <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <div class="custom-select-option ${currentExp === 'permanent' ? 'selected' : ''}" data-value="permanent" onclick="selectExpiryOption('${file.name}', 'permanent', this)">
+                    <span class="exp-dot exp-dot-perm"></span>
+                    <span>${i18nTexts.tPerm}</span>
+                    <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+        </div>
+    ` : `
+        <span class="mod-badge-size" style="color: #5EEAD4; background: rgba(94, 234, 212, 0.12);">${expiryLabels[currentExp] || i18nTexts.t1d}</span>
+    `;
+
+    let finalExpHtml = expSelectHtml;
+    if (isFileExpired) {
+        finalExpHtml = `<span class="mod-badge-size" style="color: #94A3B8; background: rgba(148, 163, 184, 0.14); border: 1px dashed rgba(148, 163, 184, 0.35);">${i18nTexts.tExpired}</span>`;
+    }
+
+    const floatingBadgeClass = isFileExpired ? 'badge-expired' : `badge-${currentExp}`;
+    const floatingBadgeLabel = isFileExpired ? i18nTexts.tExpired : (expiryLabels[currentExp] || i18nTexts.t1d);
+
+    let previewAction = '';
+    if (isImage) previewAction = isFileExpired ? `showNotification('Plik wygasł z serwera po upływie terminu.', 'info')` : `openImagePreview('${directMediaUrl}')`;
+    else if (isVideo) previewAction = isFileExpired ? `showNotification('Plik wygasł z serwera po upływie terminu.', 'info')` : `openVideoPreview('${directMediaUrl}')`;
+    else previewAction = `window.open('${dropsitePageUrl}', '_blank')`;
+
+    if (isGridView) {
+        // WIDOK KAFELKOWY (GRID)
+        let cardMediaHtml = '';
+        if (isImage) {
+            if (isFileExpired) {
+                cardMediaHtml = `
+                    <div class="card-icon-art">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <span class="card-type-tag" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8;">${ext}</span>
+                    </div>
+                `;
+            } else {
+                cardMediaHtml = `
+                    <div class="card-icon-art card-preview-placeholder">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        <span class="card-type-tag">${ext}</span>
+                    </div>
+                    <img src="${directMediaUrl}" class="card-preview-img" alt="" loading="lazy" decoding="async" onload="this.classList.add('is-loaded')" onerror="this.remove()">
+                `;
+            }
+        } else if (isVideo) {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
+                </div>
+                ${isFileExpired ? '' : `
+                    <div class="card-video-play-btn">
+                        <span class="card-video-play-pill">▶</span>
+                    </div>
+                `}
+            `;
+        } else if (isPdf) {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    <span class="card-type-tag" style="background: rgba(255, 68, 57, 0.2); color: #FFA39E;">PDF</span>
+                </div>
+            `;
+        } else if (isArchive) {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                    <span class="card-type-tag" style="background: rgba(255, 188, 57, 0.2); color: #FCD34D;">ZIP</span>
+                </div>
+            `;
+        } else if (isAudio) {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <span class="card-type-tag" style="background: rgba(94, 234, 212, 0.2); color: #5EEAD4;">AUDIO</span>
+                </div>
+            `;
+        } else if (isCode) {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.8"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    <span class="card-type-tag" style="background: rgba(167, 139, 250, 0.2); color: #C4B5FD;">${ext}</span>
+                </div>
+            `;
+        } else {
+            cardMediaHtml = `
+                <div class="card-icon-art">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <span class="card-type-tag">${ext}</span>
+                </div>
+            `;
+        }
+
+        return `
+            <li class="mod-file-card">
+                <div class="card-preview-area" onclick="${previewAction}" title="Kliknij, aby otworzyć podgląd">
+                    <div class="card-select-checkbox-wrap" onclick="event.stopPropagation()">
+                        ${checkboxHtml}
+                    </div>
+                    <span class="card-floating-badge ${floatingBadgeClass}">
+                        ${floatingBadgeLabel}
+                    </span>
+                    ${cardMediaHtml}
+                </div>
+                <div class="card-info-area">
+                    <a href="${dropsitePageUrl}" target="_blank" class="card-file-name" title="${file.name}">${displayName}</a>
+                    <div class="card-meta-row">
+                        <span class="card-size-text">${formatBytes(file.size)}</span>
+                        <span class="card-type-tag">${ext}</span>
+                    </div>
+                </div>
+                <div class="card-action-dock">
+                    <button type="button" class="card-action-btn btn-act-preview" onclick="${previewAction}" title="${i18nTexts.tPreview}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                    <button type="button" class="card-action-btn btn-act-copy" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="${i18nTexts.tCopyLink}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                    <button type="button" class="card-action-btn btn-act-download" onclick="downloadDirectFile('${directMediaUrl}', '${file.name}')" title="${i18nTexts.tDownload}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <button type="button" class="card-action-btn btn-act-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="${i18nTexts.tDelete}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            </li>
+        `;
+    } else {
+        // WIDOK LISTY (LIST)
+        let listPreviewHtml = '';
+        if (isImage) {
+            if (isFileExpired) {
+                listPreviewHtml = `
+                    <div class="mod-preview-icon" style="background: rgba(148, 163, 184, 0.12);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    </div>
+                `;
+            } else {
+                listPreviewHtml = `
+                    <div class="mod-preview-thumb-wrap">
+                        <img src="${directMediaUrl}" class="mod-preview-img" alt="" loading="lazy" decoding="async" onload="this.classList.add('is-loaded')" onerror="this.remove()" onclick="${previewAction}" title="Powiększ zdjęcie">
+                        <div class="mod-preview-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (isVideo) {
+            listPreviewHtml = `
+                <div class="mod-preview-icon video-icon" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                </div>
+            `;
+        } else {
+            let iconSvg = '';
+            if (isPdf) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>`;
+            } else if (isArchive) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
+            } else if (isAudio) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
+            } else if (isCode) {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+            } else {
+                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+            }
+            listPreviewHtml = `<div class="mod-preview-icon">${iconSvg}</div>`;
+        }
+
+        const nameClickAction = isFileExpired ? `onclick="event.preventDefault(); showNotification('Ten plik wygasł z dysku serwera, ale zachowaliśmy go w Twojej historii.', 'info');"` : '';
+        const listCheckCol = isFileExpired ? `<div class="file-select-checkbox-spacer"></div>` : checkboxHtml;
+
+        return `
+            <li class="mod-file-item ${isFileExpired ? 'is-expired-item' : ''}">
+                <div class="mod-file-main">
+                    <div class="mod-file-check-col">
+                        ${listCheckCol}
+                    </div>
+                    ${listPreviewHtml}
+                    <div class="mod-file-info">
+                        <a href="${dropsitePageUrl}" target="_blank" class="mod-file-name" ${nameClickAction} title="${file.name} • Otwórz stronę pliku">${displayName}</a>
+                        <div class="mod-meta-row">
+                            <span class="mod-badge-size">${formatBytes(file.size)}</span>
+                            ${finalExpHtml}
+                        </div>
+                    </div>
+                </div>
+                <div class="mod-actions">
+                    <button type="button" class="btn-copy-mod btn-mod-action" onclick="${previewAction}" title="${i18nTexts.tPreview}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <span>${i18nTexts.tPreview}</span>
+                    </button>
+                    ${isFileExpired ? `
+                        <button type="button" class="btn-copy-mod btn-mod-action is-expired-act" onclick="showNotification('Plik wygasł z serwera po upływie terminu.', 'warning');" title="Plik wygasł">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <span>${i18nTexts.tExpired}</span>
+                        </button>
+                    ` : `
+                        <button type="button" class="btn-copy-mod btn-mod-action" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            <span>${i18nTexts.tCopyLink}</span>
+                        </button>
+                    `}
+                    ${isFileExpired ? '' : `
+                        <button type="button" class="btn-copy-mod btn-mod-action" onclick="downloadDirectFile('${directMediaUrl}', '${file.name}')" title="${i18nTexts.tDownload}">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span>${i18nTexts.tDownload}</span>
+                        </button>
+                    `}
+                    <button type="button" class="btn-delete btn-mod-action" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="${i18nTexts.tDelete}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <span>${i18nTexts.tDelete}</span>
+                    </button>
+                </div>
+            </li>
+        `;
+    }
+}
+
+function setupModFilesScrollObserver(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
+    const sentinel = document.getElementById('modFilesScrollSentinel');
+    if (!sentinel) return;
+
+    const scrollContainer = modFileList.closest('.mod-container') || null;
+
+    modFilesScrollObserver = new IntersectionObserver((entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting) {
+            renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+        }
+    }, {
+        root: scrollContainer,
+        rootMargin: '250px',
+        threshold: 0.01
+    });
+
+    modFilesScrollObserver.observe(sentinel);
+}
+
+function renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
+    if (!modFileList || currentRenderedCount >= currentFilteredFiles.length) return;
+
+    const nextChunk = currentFilteredFiles.slice(currentRenderedCount, currentRenderedCount + MOD_FILES_PAGE_CHUNK);
+    currentRenderedCount += nextChunk.length;
+
+    const sentinel = document.getElementById('modFilesScrollSentinel');
+    const newHtml = nextChunk.map(file => renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin)).join('');
+
+    if (sentinel) {
+        sentinel.insertAdjacentHTML('beforebegin', newHtml);
+        if (currentRenderedCount >= currentFilteredFiles.length) {
+            if (modFilesScrollObserver) {
+                modFilesScrollObserver.disconnect();
+                modFilesScrollObserver = null;
+            }
+            sentinel.remove();
+        }
+    }
+}
+
 function renderModFilesList(files) {
-    modFileList.innerHTML = ''; 
+    if (!modFileList) return;
+    
+    // Rozłącz poprzedniego obserwatora przewijania
+    if (modFilesScrollObserver) {
+        modFilesScrollObserver.disconnect();
+        modFilesScrollObserver = null;
+    }
+    
     if (files.length === 0) {
-        const emptyMsg = typeof window.t === 'function' ? window.t('myfiles_empty_filter', 'Brak plików spełniających kryteria.') : 'Brak plików spełniających kryteria.';
-        modFileList.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 13px; margin: 30px 0;">${emptyMsg}</p>`;
+        currentFilteredFiles = [];
+        currentRenderedCount = 0;
+        const tEmptyTitle = typeof window.t === 'function' ? window.t('myfiles_empty_title', 'Twój sejf czeka na pierwsze pliki! ✨') : 'Twój sejf czeka na pierwsze pliki! ✨';
+        const tEmptyDesc = typeof window.t === 'function' ? window.t('myfiles_empty_desc', 'Przeciągnij i upuść pliki w to okno lub kliknij przycisk poniżej, aby rozpocząć bezpieczne udostępnianie.') : 'Przeciągnij i upuść pliki w to okno lub kliknij przycisk poniżej, aby rozpocząć bezpieczne udostępnianie.';
+        const tEmptyCta = typeof window.t === 'function' ? window.t('myfiles_empty_cta', 'Prześlij pierwszy plik') : 'Prześlij pierwszy plik';
+
+        modFileList.classList.remove('is-grid');
+        modFileList.innerHTML = `
+            <div class="myfiles-empty-state">
+                <div class="empty-cloud-badge">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+                    </svg>
+                    <span class="empty-sparkle sparkle-1">✦</span>
+                    <span class="empty-sparkle sparkle-2">✨</span>
+                </div>
+                <h3 class="empty-title">${tEmptyTitle}</h3>
+                <p class="empty-desc">${tEmptyDesc}</p>
+                <button type="button" class="empty-upload-btn" onclick="triggerMyFilesUpload()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>${tEmptyCta}</span>
+                </button>
+            </div>
+        `;
         return;
     }
+
+    const isGridView = currentMyFilesViewMode === 'grid';
+    modFileList.classList.toggle('is-grid', isGridView);
 
     const t1d = typeof window.t === 'function' ? window.t('myfiles_badge_1d', '1 Dzień') : '1 Dzień';
     const t30d = typeof window.t === 'function' ? window.t('myfiles_badge_30d', '30 Dni') : '30 Dni';
@@ -6749,166 +7671,31 @@ function renderModFilesList(files) {
     const tExpired = typeof window.t === 'function' ? window.t('myfiles_badge_expired', 'Wygasły') : 'Wygasły';
     const tCopyLink = typeof window.t === 'function' ? window.t('myfiles_btn_copy_link', 'Kopiuj link') : 'Kopiuj link';
     const tDelete = typeof window.t === 'function' ? window.t('myfiles_btn_delete', 'Usuń') : 'Usuń';
+    const tPreview = typeof window.t === 'function' ? window.t('myfiles_btn_preview', 'Podgląd') : 'Podgląd';
+    const tDownload = typeof window.t === 'function' ? window.t('myfiles_btn_download', 'Pobierz') : 'Pobierz';
 
-    files.forEach(file => {
-        const li = document.createElement('li');
-        li.className = 'mod-file-item';
-        
-        // Prawdziwy bezpośredni adres pliku do miniatury i odtwarzacza
-        let directMediaUrl = file.directUrl;
-        if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
-            const rawKey = file.key || file.name;
-            directMediaUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${rawKey}`;
-        }
-        
-        // Link do strony pobierania Dropsite (umożliwia skopiowanie i przejście do strony pliku)
-        const dropsitePageUrl = getDropsitePageUrl(file);
+    const expiryLabels = { '1d': t1d, '30d': t30d, 'permanent': tPerm };
+    const i18nTexts = { t1d, t30d, tPerm, tExpired, tCopyLink, tDelete, tPreview, tDownload };
+    const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
+    const selectedSet = window.selectedFilesForAlbum || new Set();
 
-        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-        const isVideo = /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
-        
-        let previewHtml = '';
-        if (isImage) {
-            previewHtml = `
-                <img src="${directMediaUrl}" class="mod-preview-img" alt="" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" onclick="openImagePreview('${directMediaUrl}')" title="Powiększ zdjęcie">
-                <div class="mod-preview-icon" style="display: none;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                </div>
-            `;
-        } else if (isVideo) {
-            previewHtml = `<div style="position: relative; cursor: pointer; width: 46px; height: 46px; flex-shrink: 0;" onclick="openVideoPreview('${directMediaUrl}')" title="Odtwórz wideo">
-                              <video src="${directMediaUrl}#t=0.1" class="mod-preview-img" style="width: 100%; height: 100%; object-fit: cover; background: #000; border-radius: 6px;" muted preload="metadata"></video>
-                              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); border-radius: 6px;">
-                                  <span style="font-size: 14px; color: white;">▶</span>
-                              </div>
-                           </div>`;
-        } else {
-            let iconSvg = '';
-            const lowerName = file.name.toLowerCase();
-            if (lowerName.endsWith('.pdf')) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>`;
-            } else if (/\.(zip|rar|7z|tar|gz)$/i.test(lowerName)) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>`;
-            } else if (/\.(mp3|wav|ogg|flac|m4a)$/i.test(lowerName)) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
-            } else if (/\.(json|js|html|css|py|cpp|c|ts|jsx|tsx)$/i.test(lowerName)) {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
-            } else {
-                iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
-            }
-            previewHtml = `<div class="mod-preview-icon">${iconSvg}</div>`;
-        }
+    currentFilteredFiles = files;
+    currentRenderedCount = Math.min(files.length, MOD_FILES_PAGE_CHUNK);
 
-        const displayName = cleanFileName(file.name);
+    const initialChunk = files.slice(0, currentRenderedCount);
+    const initialHtml = initialChunk.map(file => renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin)).join('');
 
-        // Określenie bieżącego terminu wygasania
-        let currentExp = 'permanent';
-        if (file.name.startsWith('1d/')) currentExp = '1d';
-        else if (file.name.startsWith('30d/')) currentExp = '30d';
-
-        const expiryLabels = {
-            '1d': t1d,
-            '30d': t30d,
-            'permanent': tPerm
-        };
-
-        const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
-        const expSelectHtml = isEffectiveAdmin ? `
-            <div class="custom-expiry-wrap exp-${currentExp}" data-current="${currentExp}" title="Zmień czas przechowywania pliku">
-                <button type="button" class="custom-expiry-trigger" onclick="toggleExpiryDropdown(this, event)">
-                    <span class="custom-expiry-label">${expiryLabels[currentExp] || tPerm}</span>
-                    <svg class="custom-select-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-                <div class="custom-select-menu expiry-menu" hidden>
-                    <div class="custom-select-option ${currentExp === '1d' ? 'selected' : ''}" data-value="1d" onclick="selectExpiryOption('${file.name}', '1d', this)">
-                        <span class="exp-dot exp-dot-1d"></span>
-                        <span>${t1d}</span>
-                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="custom-select-option ${currentExp === '30d' ? 'selected' : ''}" data-value="30d" onclick="selectExpiryOption('${file.name}', '30d', this)">
-                        <span class="exp-dot exp-dot-30d"></span>
-                        <span>${t30d}</span>
-                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="custom-select-option ${currentExp === 'permanent' ? 'selected' : ''}" data-value="permanent" onclick="selectExpiryOption('${file.name}', 'permanent', this)">
-                        <span class="exp-dot exp-dot-perm"></span>
-                        <span>${tPerm}</span>
-                        <svg class="opt-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                </div>
-            </div>
-        ` : `
-            <span class="mod-badge-size" style="color: #5EEAD4; background: rgba(94, 234, 212, 0.12);">${expiryLabels[currentExp] || t1d}</span>
+    if (files.length > currentRenderedCount) {
+        modFileList.innerHTML = initialHtml + `
+            <li id="modFilesScrollSentinel" class="mod-files-sentinel">
+                <span class="mod-files-sentinel-spinner"></span>
+                <span>Wczytywanie kolejnych plików...</span>
+            </li>
         `;
-
-        let uploaderBadgeHtml = '';
-        if (isEffectiveAdmin) {
-            if (file.uploaderEmail) {
-                const isPro = !!file.isPro || file.uploaderRole === 'pro';
-                uploaderBadgeHtml = `
-                    <button type="button" class="mod-uploader-badge ${isPro ? 'is-pro' : 'is-user'}" onclick="event.stopPropagation(); if(window.openAdminUserDossier) window.openAdminUserDossier('${escapeHtml(file.uploaderEmail)}')" title="Autor: ${escapeHtml(file.uploaderEmail)} • Kliknij, aby otworzyć Dossier 360°">
-                        ${isPro ? '<span class="badge-pro-pill" style="font-size: 8px; padding: 1px 4px; margin-right: 2px;">PRO</span>' : '<span style="font-size: 10px; margin-right: 2px;">👤</span>'}
-                        <span class="uploader-email-text">${escapeHtml(file.uploaderEmail)}</span>
-                    </button>
-                `;
-            } else {
-                uploaderBadgeHtml = `
-                    <span class="mod-uploader-badge is-guest" title="Wgrano anonimowo (Gość)">
-                        <span style="font-size: 10px; margin-right: 2px;">👻</span>
-                        <span class="uploader-email-text">Gość</span>
-                    </span>
-                `;
-            }
-        }
-
-        const isFileExpired = file.status === 'expired' || file.existsOnDisk === false;
-        const fileKey = file.key || file.name;
-        const isSelected = window.selectedFilesForAlbum && window.selectedFilesForAlbum.has(fileKey);
-
-        const checkboxHtml = isFileExpired ? '' : `
-            <input type="checkbox" class="file-select-checkbox" data-key="${escapeHtml(fileKey)}" ${isSelected ? 'checked' : ''} onchange="if(window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum('${escapeHtml(fileKey)}', this.checked)" title="Zaznacz plik do albumu">
-        `;
-
-        let finalExpHtml = expSelectHtml;
-        if (isFileExpired) {
-            finalExpHtml = `<span class="mod-badge-size" style="color: #94A3B8; background: rgba(148, 163, 184, 0.14); border: 1px dashed rgba(148, 163, 184, 0.35);" title="Plik wygasł z serwera, ale pozostaje w Twojej trwałej historii konta">${tExpired}</span>`;
-        }
-
-        const nameClickAction = isFileExpired ? `onclick="event.preventDefault(); showNotification('Ten plik wygasł z dysku serwera, ale zachowaliśmy go w Twojej historii.', 'info');"` : '';
-
-        li.innerHTML = `
-            <div class="mod-file-main">
-                ${checkboxHtml}
-                ${previewHtml}
-                <div class="mod-file-info">
-                    <a href="${dropsitePageUrl}" target="_blank" class="mod-file-name" ${nameClickAction} title="${file.name} • Otwórz stronę pliku">${displayName}</a>
-                    <div class="mod-meta-row">
-                        <span class="mod-badge-size">${formatBytes(file.size)}</span>
-                        ${finalExpHtml}
-                        ${uploaderBadgeHtml}
-                    </div>
-                </div>
-            </div>
-            <div class="mod-actions">
-                ${isFileExpired ? `
-                    <button class="btn-copy-mod" style="opacity: 0.6;" onclick="showNotification('Plik wygasł z serwera po upływie terminu.', 'warning');" title="Plik wygasł">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                        <span>${tExpired}</span>
-                    </button>
-                ` : `
-                    <button class="btn-copy-mod" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="Kopiuj link do strony pliku (Prawy przycisk myszy: bezpośredni link do pliku)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        <span>${tCopyLink}</span>
-                    </button>
-                `}
-                <button class="btn-delete" data-filename="${file.name}" onclick="handleSafeDelete(this, '${file.name}')" title="Usuń plik">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    <span>${tDelete}</span>
-                </button>
-            </div>
-        `;
-        modFileList.appendChild(li);
-    });
+        setupModFilesScrollObserver(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+    } else {
+        modFileList.innerHTML = initialHtml;
+    }
 }
 
 // Re-render when language changes
@@ -7151,14 +7938,13 @@ function onCopyLinkFeedback(e) {
     playSound('click');
     showNotification('Link skopiowany do schowka!', 'success');
 
-    // Animacja głównego przycisku CTA - tylko fala ripple i stan copied, tekst 'Kopiuj link' pozostaje bez zmian
+    // Stan skopiowania głównego przycisku CTA - czysta zmiana koloru na miętowy bez żadnego rozpychania
     const mainBtn = document.getElementById('btnMainCopy');
     if (mainBtn) {
-        triggerButtonLightSplash(mainBtn, e);
         mainBtn.classList.add('copied');
         setTimeout(() => {
             mainBtn.classList.remove('copied');
-        }, 2000);
+        }, 1800);
     }
 
     // Animacja przycisku szybkiego kopiowania w pasku linku
@@ -9227,6 +10013,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchView(targetId, updateHistory = false) {
         stopAllMediaPlayback();
 
+        if (targetId === 'view-pobieracz') {
+            if (typeof window.showToast === 'function') {
+                window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+            }
+            return;
+        }
+
         if (targetId === 'view-glowna') {
             navigateToHome(false);
             return;
@@ -9266,9 +10059,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.switchView = switchView;
 
-    const allNavClickables = document.querySelectorAll('.nav-btn, .nav-dropdown-link[data-target]');
+    const allNavClickables = document.querySelectorAll('.nav-btn, .nav-dropdown-link, .mobile-drawer-link');
     allNavClickables.forEach(link => {
         link.addEventListener('click', (e) => {
+            if (link.getAttribute('data-status') === 'soon' || link.getAttribute('data-target') === 'view-pobieracz') {
+                e.preventDefault();
+                if (typeof window.showToast === 'function') {
+                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                }
+                const dropdown = document.getElementById('navToolsDropdown');
+                if (dropdown) dropdown.classList.remove('is-open');
+                const mobileDrawer = document.getElementById('mobileNavDrawer');
+                if (mobileDrawer) mobileDrawer.classList.remove('open');
+                return;
+            }
             const targetId = link.getAttribute('data-target');
             if (targetId) {
                 e.preventDefault();
@@ -9776,7 +10580,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return;
 
     // Na urządzeniach mobilnych i małych ekranach dotykowych wyłączamy animację cząsteczek canvas:
-    // Dropsite ma w CSS bogate, żywe tło radial-gradient, a brak pętli 60 FPS w RAM/GPU eliminuje 100% lagów
     const isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024);
     if (isMobileDevice) {
         canvas.style.display = 'none';
@@ -9796,7 +10599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (window.innerWidth <= 768) {
             canvas.style.display = 'none';
-            if (animId) cancelAnimationFrame(animId);
+            if (animId) { cancelAnimationFrame(animId); animId = null; }
             return;
         } else {
             canvas.style.display = 'block';
@@ -9806,11 +10609,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeTimer = setTimeout(() => {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-        }, 200);
+            if (isRunning && !animId) animId = requestAnimationFrame(animate);
+        }, 150);
     }, { passive: true });
 
     const particles = [];
-    const count = Math.min(Math.floor(width / 55), 24);
+    const count = Math.min(Math.floor(width / 60), 22);
     
     const mouse = { x: width / 2, y: height / 2, active: false };
     let mouseTimer;
@@ -9819,27 +10623,76 @@ document.addEventListener('DOMContentLoaded', () => {
         mouse.y = e.clientY;
         mouse.active = true;
         clearTimeout(mouseTimer);
-        mouseTimer = setTimeout(() => { mouse.active = false; }, 1500);
+        mouseTimer = setTimeout(() => { mouse.active = false; }, 2000);
+        if (isRunning && !animId && !isScrolling) {
+            animId = requestAnimationFrame(animate);
+        }
     }, { passive: true });
 
     for (let i = 0; i < count; i++) {
         particles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            radius: Math.random() * 2 + 1,
+            vx: (Math.random() - 0.5) * 0.45,
+            vy: (Math.random() - 0.5) * 0.45,
+            radius: Math.random() * 1.8 + 1,
             color: i % 3 === 0 ? 'rgba(52, 211, 153, 0.65)' : (i % 3 === 1 ? 'rgba(56, 189, 248, 0.65)' : 'rgba(167, 139, 250, 0.55)')
         });
     }
 
     let isRunning = true;
+    let isScrolling = false;
+    let isHeroVisible = true;
     let animId = null;
+    let scrollEndTimer = null;
+
+    // SCROLL PACING (Pauza canvas podczas scrollowania – 100% płynności dla kompozytora)
+    function onScrollActive() {
+        if (!isScrolling) isScrolling = true;
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = setTimeout(() => {
+            isScrolling = false;
+            if (isRunning && isHeroVisible && !animId) {
+                animId = requestAnimationFrame(animate);
+            }
+        }, 80);
+    }
+    window.addEventListener('scroll', onScrollActive, { passive: true });
+    if ('onscrollend' in window) {
+        window.addEventListener('scrollend', () => {
+            clearTimeout(scrollEndTimer);
+            isScrolling = false;
+            if (isRunning && isHeroVisible && !animId) {
+                animId = requestAnimationFrame(animate);
+            }
+        }, { passive: true });
+    }
+
+    // INTERSECTION OBSERVER: wyłącz animację canvas, gdy użytkownik przewinie stronę poniżej hero
+    if ('IntersectionObserver' in window) {
+        const heroEl = document.getElementById('view-glowna') || document.getElementById('uploadBox');
+        if (heroEl) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    isHeroVisible = entry.isIntersecting;
+                    if (isHeroVisible && isRunning && !animId && !isScrolling) {
+                        animId = requestAnimationFrame(animate);
+                    }
+                });
+            }, { rootMargin: '100px 0px 100px 0px' });
+            observer.observe(heroEl);
+        }
+    }
 
     function animate() {
-        if (!isRunning) return;
+        if (!isRunning || isScrolling || !isHeroVisible) {
+            animId = null;
+            return;
+        }
+
         ctx.clearRect(0, 0, width, height);
 
+        // 1. Rysuj cząsteczki
         for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
             p.x += p.vx;
@@ -9848,41 +10701,40 @@ document.addEventListener('DOMContentLoaded', () => {
             if (p.x < 0 || p.x > width) p.vx *= -1;
             if (p.y < 0 || p.y > height) p.vy *= -1;
 
-            // Przyciąganie myszą (tylko gdy kursor jest aktywny)
             if (mouse.active) {
                 const dx = mouse.x - p.x;
                 const dy = mouse.y - p.y;
                 const distSq = dx * dx + dy * dy;
                 if (distSq < 25600) {
-                    p.x += dx * 0.015;
-                    p.y += dy * 0.015;
+                    p.x += dx * 0.012;
+                    p.y += dy * 0.012;
                 }
             }
 
-            // Rysowanie cząsteczki
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = p.color;
             ctx.fill();
+        }
 
-            // Łączenie linii między cząsteczkami
+        // 2. Batchowane rysowanie linii (1 wywołanie stroke zamiast 50!)
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.lineWidth = 0.55;
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
             for (let j = i + 1; j < particles.length; j++) {
                 const p2 = particles[j];
                 const dx = p.x - p2.x;
                 const dy = p.y - p2.y;
-                const distSq = dx * dx + dy * dy;
-
-                if (distSq < 14400) {
-                    const dist = Math.sqrt(distSq);
-                    ctx.beginPath();
+                if (dx * dx + dy * dy < 14400) {
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = `rgba(56, 189, 248, ${0.14 * (1 - dist / 120)})`;
-                    ctx.lineWidth = 0.6;
-                    ctx.stroke();
                 }
             }
         }
+        ctx.stroke();
+
         animId = requestAnimationFrame(animate);
     }
 
@@ -9890,11 +10742,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             isRunning = false;
-            if (animId) cancelAnimationFrame(animId);
+            if (animId) { cancelAnimationFrame(animId); animId = null; }
         } else {
             if (!isRunning && window.innerWidth > 768) {
                 isRunning = true;
-                animId = requestAnimationFrame(animate);
+                if (isHeroVisible && !animId) animId = requestAnimationFrame(animate);
             }
         }
     });
@@ -10155,7 +11007,9 @@ async function syncUserHistory() {
     const userEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((typeof auth !== 'undefined' && auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
     if (userEmail) {
         try {
-            const response = await fetch(`${WORKER_URL}/my-files`, {
+            const isAutoClean = typeof isAutoCleanExpiredEnabled === 'function' ? isAutoCleanExpiredEnabled() : false;
+            const queryParam = isAutoClean ? '?excludeExpired=true' : '';
+            const response = await fetch(`${WORKER_URL}/my-files${queryParam}`, {
                 headers: { 'X-User-Email': userEmail }
             });
             if (response.ok) {
@@ -10163,18 +11017,34 @@ async function syncUserHistory() {
                 if (data.success && Array.isArray(data.files)) {
                     const key = getHistoryStorageKey();
                     const local = getLocalHistory();
-                    const serverKeys = new Set(data.files.map(f => f.key).filter(Boolean));
-                    const serverUrls = new Set(data.files.map(f => f.url || f.directUrl || f.pageUrl).filter(Boolean));
-                    const combined = [...data.files];
+                    const prunedKeys = new Set(JSON.parse(localStorage.getItem('dropsite_pruned_expired_keys') || '[]'));
+
+                    // Filtruj pliki z serwera, które użytkownik usunął lub które wygasły przy włączonym auto-clean
+                    let serverFiles = data.files.filter(f => {
+                        if (!f) return false;
+                        const fKey = f.key || f.name || '';
+                        if (prunedKeys.has(fKey) || prunedKeys.has(f.name)) return false;
+                        if (isAutoClean && checkIfFileIsExpired(f)) return false;
+                        return true;
+                    });
+
+                    const serverKeys = new Set(serverFiles.map(f => f.key).filter(Boolean));
+                    const serverUrls = new Set(serverFiles.map(f => f.url || f.directUrl || f.pageUrl).filter(Boolean));
+                    const combined = [...serverFiles];
+
                     local.forEach(l => {
                         const lKey = l.key || '';
                         const lUrl = l.url || l.directUrl || l.pageUrl || '';
+                        if (prunedKeys.has(lKey) || prunedKeys.has(l.name)) return;
+                        if (isAutoClean && checkIfFileIsExpired(l)) return;
                         const isDuplicate = (lKey && serverKeys.has(lKey)) || (lUrl && serverUrls.has(lUrl));
                         if (!isDuplicate) {
                             combined.push(l);
                         }
                     });
-                    localStorage.setItem(key, JSON.stringify(combined.slice(0, 500)));
+
+                    const finalCombined = isAutoClean ? combined.filter(item => !checkIfFileIsExpired(item)) : combined;
+                    localStorage.setItem(key, JSON.stringify(finalCombined.slice(0, 500)));
                     return true;
                 }
             }
@@ -10239,8 +11109,11 @@ function renderUserHistory() {
             iconSvg = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
         }
 
+        const isItemExpired = typeof checkIfFileIsExpired === 'function' ? checkIfFileIsExpired(item) : (item.status === 'expired' || item.existsOnDisk === false);
         let badge = '<span class="mod-badge-exp exp-30d">30 Dni</span>';
-        if (item.duration === '1d') badge = '<span class="mod-badge-exp exp-1d">1 Dzień</span>';
+        if (isItemExpired) {
+            badge = '<span class="mod-badge-exp" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5; border: 1px dashed rgba(239, 68, 68, 0.4);">Wygasły</span>';
+        } else if (item.duration === '1d') badge = '<span class="mod-badge-exp exp-1d">1 Dzień</span>';
         else if (item.duration === 'permanent') badge = '<span class="mod-badge-exp exp-perm">Bezterminowo</span>';
         else if (item.duration === 'burn') badge = '<span class="mod-badge-exp exp-burn">1x Pobranie</span>';
 
@@ -10268,6 +11141,7 @@ function renderUserHistory() {
         `;
         userHistoryList.appendChild(li);
     });
+    if (typeof updateExpiredFilesBadges === 'function') updateExpiredFilesBadges();
 }
 
 window.openUserHistoryModal = async function() {
@@ -10747,9 +11621,13 @@ async function initDownloadRouter() {
             { layer: document.getElementById('dlLightboxPinsLayer'), overlay: document.getElementById('dlLightboxProofingOverlay') }
         ];
 
+        const isVisible = window._proofingPinsVisible !== false;
+
         layers.forEach(({ layer, overlay }) => {
             if (!layer) return;
             layer.innerHTML = '';
+            layer.classList.toggle('is-hidden-pins', !isVisible);
+            if (overlay) overlay.classList.toggle('is-hidden-pins', !isVisible);
 
             // Jeśli to wideo - nie renderujemy wiszących w powietrzu pinesek na kadrze (uwagi są na osi czasu)
             const videoEl = document.getElementById('proofingVideoEl');
@@ -10759,9 +11637,12 @@ async function initDownloadRouter() {
 
             proofingPins.forEach((pin, idx) => {
                 const pinEl = document.createElement('div');
-                pinEl.className = `proofing-pin ${pin.resolved ? 'resolved' : ''}`;
+                pinEl.className = `proofing-pin ${pin.resolved ? 'resolved' : ''} ${!isVisible ? 'is-hidden-pins' : ''}`;
                 pinEl.style.left = `${pin.xPct}%`;
                 pinEl.style.top = `${pin.yPct}%`;
+                if (!isVisible) {
+                    pinEl.style.display = 'none';
+                }
                 pinEl.setAttribute('data-pin-id', pin.id);
 
                 const pinNum = idx + 1;
@@ -11557,7 +12438,20 @@ async function initDownloadRouter() {
         targets.forEach(el => {
             if (el) {
                 el.classList.toggle('is-hidden-pins', !isVisible);
+                if (el.classList.contains('proofing-pins-layer')) {
+                    el.style.display = isVisible ? '' : 'none';
+                }
             }
+        });
+
+        // Wymuś natychmiastowe ukrycie wszystkich obecnych w DOM pinezek
+        document.querySelectorAll('.proofing-pin').forEach(pinEl => {
+            pinEl.classList.toggle('is-hidden-pins', !isVisible);
+            pinEl.style.display = isVisible ? '' : 'none';
+        });
+        document.querySelectorAll('.proofing-pins-layer').forEach(layerEl => {
+            layerEl.classList.toggle('is-hidden-pins', !isVisible);
+            layerEl.style.display = isVisible ? '' : 'none';
         });
 
         // Aktualizacja przycisku w toolbarze podglądu
@@ -15501,28 +16395,44 @@ function initDownloadLightboxSystem() {
 
     // Szuflada uwag w Lightboxie
     const toggleLightboxDrawer = (force) => {
-        if (!lightboxDrawer) return;
-        const shouldOpen = typeof force === 'boolean' ? force : (lightboxDrawer.style.display === 'none' || lightboxDrawer.hidden);
-        lightboxDrawer.hidden = !shouldOpen;
-        lightboxDrawer.style.display = shouldOpen ? 'block' : 'none';
-        if (toggleDrawerBtn) toggleDrawerBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        const drawer = lightboxDrawer || document.getElementById('dlLightboxDrawer');
+        const btn = toggleDrawerBtn || document.getElementById('dlLightboxToggleDrawerBtn');
+        if (!drawer) return;
+        const isHidden = drawer.hasAttribute('hidden') || drawer.hidden || drawer.style.display === 'none' || getComputedStyle(drawer).display === 'none';
+        const shouldOpen = typeof force === 'boolean' ? force : isHidden;
+        if (shouldOpen) {
+            drawer.removeAttribute('hidden');
+            drawer.hidden = false;
+            drawer.style.display = 'block';
+        } else {
+            drawer.setAttribute('hidden', '');
+            drawer.hidden = true;
+            drawer.style.display = 'none';
+        }
+        if (btn) {
+            btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            btn.classList.toggle('active', shouldOpen);
+        }
         if (shouldOpen && typeof window.renderProofingTasksList === 'function') {
             window.renderProofingTasksList();
         }
     };
+    window.toggleLightboxDrawer = toggleLightboxDrawer;
 
-    if (toggleDrawerBtn) {
-        toggleDrawerBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+    const attachDrawerBtn = toggleDrawerBtn || document.getElementById('dlLightboxToggleDrawerBtn');
+    if (attachDrawerBtn) {
+        attachDrawerBtn.onclick = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             toggleLightboxDrawer();
-        });
+        };
     }
 
-    if (drawerCloseBtn) {
-        drawerCloseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+    const attachDrawerCloseBtn = drawerCloseBtn || document.getElementById('btnDlLightboxDrawerClose');
+    if (attachDrawerCloseBtn) {
+        attachDrawerCloseBtn.onclick = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             toggleLightboxDrawer(false);
-        });
+        };
     }
 
     // Kliknięcie na nakładkę zdjęcia w Lightboxie – jeśli nie przeciągano, pozwala postawić uwagę
@@ -15697,6 +16607,9 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
         if (typeof window.updateProofingBadge === 'function') {
             window.updateProofingBadge();
         }
+        if (typeof window.renderProofingTasksList === 'function') {
+            window.renderProofingTasksList();
+        }
     }, 50);
 };
 
@@ -15760,6 +16673,18 @@ window.openAlbumLightbox = function(index) {
         modal.classList.remove('is-hidden');
         modal.style.display = 'flex';
     }
+
+    setTimeout(() => {
+        if (typeof window.renderProofingPinsOnMedia === 'function') {
+            window.renderProofingPinsOnMedia();
+        }
+        if (typeof window.updateProofingBadge === 'function') {
+            window.updateProofingBadge();
+        }
+        if (typeof window.renderProofingTasksList === 'function') {
+            window.renderProofingTasksList();
+        }
+    }, 50);
 };
 
 window.previewSingleFromArchive = function(encodedPath, encodedFilename) {
@@ -15809,14 +16734,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof initDownloadLightboxSystem === 'function') initDownloadLightboxSystem();
     if (typeof checkAndHandlePublicAlbum === 'function') checkAndHandlePublicAlbum();
     
-    // Dynamiczny efekt spotlight glow (Awwwards cursor tracking) dla kart Belki Zaufania
-    const trustCards = document.querySelectorAll('.trust-card');
-    trustCards.forEach(card => {
+    // Dynamiczny efekt spotlight glow (Awwwards cursor tracking) dla kart Bento i Belki Zaufania
+    const interactiveGlowCards = document.querySelectorAll('.trust-card, .bento-card, .bento-pro-bottom-banner');
+    interactiveGlowCards.forEach(card => {
+        let rect = null;
+        let glowRaf = null;
+        card.addEventListener('mouseenter', () => {
+            rect = card.getBoundingClientRect();
+        }, { passive: true });
         card.addEventListener('mousemove', e => {
-            const rect = card.getBoundingClientRect();
-            card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-            card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-        });
+            if (!rect) rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            if (!glowRaf) {
+                glowRaf = requestAnimationFrame(() => {
+                    card.style.setProperty('--mouse-x', `${x}px`);
+                    card.style.setProperty('--mouse-y', `${y}px`);
+                    glowRaf = null;
+                });
+            }
+        }, { passive: true });
+        card.addEventListener('mouseleave', () => {
+            rect = null;
+            if (glowRaf) {
+                cancelAnimationFrame(glowRaf);
+                glowRaf = null;
+            }
+        }, { passive: true });
     });
 });
 
@@ -15829,17 +16773,21 @@ window.switchMyFilesSubtab = function(tab) {
     const filesBtn = document.getElementById('subtabFilesBtn');
     const albumsBtn = document.getElementById('subtabAlbumsBtn');
     const dropReqBtn = document.getElementById('subtabDropReqBtn');
+    const notesBtn = document.getElementById('subtabNotesBtn');
     const paneFiles = document.getElementById('subpane_files');
     const paneAlbums = document.getElementById('subpane_albums');
     const paneDropReq = document.getElementById('subpane_drop_req');
+    const paneNotes = document.getElementById('subpane_notes');
 
     if (filesBtn) filesBtn.classList.remove('active');
     if (albumsBtn) albumsBtn.classList.remove('active');
     if (dropReqBtn) dropReqBtn.classList.remove('active');
+    if (notesBtn) notesBtn.classList.remove('active');
 
     if (paneFiles) paneFiles.style.display = 'none';
     if (paneAlbums) paneAlbums.style.display = 'none';
     if (paneDropReq) paneDropReq.style.display = 'none';
+    if (paneNotes) paneNotes.style.display = 'none';
 
     if (tab === 'albums') {
         if (albumsBtn) albumsBtn.classList.add('active');
@@ -15849,6 +16797,10 @@ window.switchMyFilesSubtab = function(tab) {
         if (dropReqBtn) dropReqBtn.classList.add('active');
         if (paneDropReq) paneDropReq.style.display = 'block';
         if (typeof window.loadMyDropRequests === 'function') window.loadMyDropRequests();
+    } else if (tab === 'notes') {
+        if (notesBtn) notesBtn.classList.add('active');
+        if (paneNotes) paneNotes.style.display = 'block';
+        if (typeof window.renderAccountVaultInline === 'function') window.renderAccountVaultInline();
     } else {
         if (filesBtn) filesBtn.classList.add('active');
         if (paneFiles) paneFiles.style.display = 'block';
@@ -15881,7 +16833,12 @@ window.clearFileSelection = function() {
 
 window.openCreateAlbumModal = function() {
     if (window.selectedFilesForAlbum.size === 0) {
-        showNotification('Zaznacz co najmniej jeden plik na liście, aby utworzyć album.', 'warning');
+        if (typeof window.switchMyFilesSubtab === 'function') {
+            window.switchMyFilesSubtab('files');
+        }
+        if (typeof showNotification === 'function') {
+            showNotification('Wybierz pliki z listy, które chcesz dodać do albumu (zaznacz checkboxy).', 'info');
+        }
         return;
     }
     const titleInput = document.getElementById('albumTitleInput');
@@ -16006,7 +16963,8 @@ window.loadMyAlbums = async function() {
         grid.style.display = 'none';
         if (empty) {
             empty.style.display = 'block';
-            empty.querySelector('p').textContent = 'Zaloguj się, aby tworzyć i zarządzać albumami.';
+            const titleEl = empty.querySelector('.empty-title') || empty.querySelector('h4') || empty.querySelector('p');
+            if (titleEl) titleEl.textContent = 'Zaloguj się, aby tworzyć i zarządzać albumami.';
         }
         if (countBadge) countBadge.textContent = '0';
         return;
@@ -16025,8 +16983,8 @@ window.loadMyAlbums = async function() {
             grid.style.display = 'none';
             if (empty) {
                 empty.style.display = 'block';
-                const p = empty.querySelector('p');
-                if (p) p.textContent = 'Nie utworzyłeś jeszcze żadnego albumu';
+                const titleEl = empty.querySelector('.empty-title') || empty.querySelector('h4');
+                if (titleEl) titleEl.textContent = 'Nie utworzyłeś jeszcze żadnego albumu';
             }
             return;
         }
@@ -16034,43 +16992,72 @@ window.loadMyAlbums = async function() {
         if (empty) empty.style.display = 'none';
         grid.style.display = 'grid';
 
-        const themeLabels = {
-            'gallery': '🖼️ Galeria',
-            'cinematic': '🎬 Kinowy',
-            'list': '📄 Lista'
+        const themeConfig = {
+            'gallery': { icon: '🖼️', name: 'Galeria Mediów', cls: 'theme-gallery' },
+            'cinematic': { icon: '🎬', name: 'Pokaz Kinowy', cls: 'theme-cinematic' },
+            'list': { icon: '📁', name: 'Lista & Archiwum', cls: 'theme-list' }
         };
 
-        grid.innerHTML = albums.map(alb => `
-            <div class="album-card">
-                <div class="album-card-header">
-                    <div>
-                        <h4 class="album-card-title">${escapeHtml(alb.title)}</h4>
-                        ${alb.description ? `<p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">${escapeHtml(alb.description)}</p>` : ''}
+        grid.innerHTML = albums.map(alb => {
+            const theme = themeConfig[alb.theme] || themeConfig['gallery'];
+            const publicUrl = `${window.location.origin}${window.location.pathname}?album=${alb.id}`;
+            const createdDate = alb.created ? new Date(alb.created).toLocaleDateString('pl-PL') : '';
+            const itemsCount = alb.itemCount || 0;
+            const itemsWord = itemsCount === 1 ? 'plik' : (itemsCount > 1 && itemsCount < 5 ? 'pliki' : 'plików');
+
+            return `
+            <div class="album-card ${theme.cls}" id="albumCard_${alb.id}">
+                <div class="album-card-banner">
+                    <div class="album-card-banner-badges">
+                        <span class="album-banner-theme-tag">${theme.icon} ${theme.name}</span>
+                        ${alb.hasPassword ? `
+                            <span class="album-banner-lock-tag" title="Album chroniony hasłem dostępu">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <span>Hasło</span>
+                            </span>
+                        ` : ''}
                     </div>
-                    <div style="display: flex; gap: 4px; align-items: center;">
-                        ${alb.hasPassword ? '<span title="Chroniony hasłem" style="font-size: 13px;">🔒</span>' : ''}
-                        <span class="album-badge-theme">${themeLabels[alb.theme] || 'Kolekcja'}</span>
+                    <div class="album-banner-count">
+                        <span>${itemsCount} ${itemsWord}</span>
                     </div>
                 </div>
-                <div class="album-card-meta">
-                    <span>📁 ${alb.itemCount || 0} plików</span>
-                    <span>•</span>
-                    <span>${new Date(alb.created).toLocaleDateString('pl-PL')}</span>
+
+                <div class="album-card-body">
+                    <div class="album-card-title-group">
+                        <h4 class="album-card-title" title="${escapeHtml(alb.title)}">${escapeHtml(alb.title)}</h4>
+                        ${alb.description ? `<p class="album-card-desc" title="${escapeHtml(alb.description)}">${escapeHtml(alb.description)}</p>` : ''}
+                    </div>
+
+                    <div class="album-card-meta-row">
+                        <span class="album-meta-pill" title="Data utworzenia albumu">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <span>${createdDate}</span>
+                        </span>
+                        <span class="album-meta-link" title="${publicUrl}">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <span>?album=${alb.id}</span>
+                        </span>
+                    </div>
                 </div>
-                <div class="album-card-actions">
-                    <button type="button" class="btn-copy-mod" onclick="window.copyAlbumLink('${alb.id}')" title="Kopiuj link do udostępnienia">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+
+                <div class="album-card-dock">
+                    <button type="button" class="btn-dock-copy" onclick="window.copyAlbumLink('${alb.id}')" title="Kopiuj publiczny link do schowka">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         <span>Kopiuj link</span>
                     </button>
-                    <button type="button" class="btn-copy-mod" style="flex: 0 0 auto; padding: 6px 10px;" onclick="window.open('?album=${alb.id}', '_blank')" title="Otwórz widok albumu">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    <button type="button" class="btn-dock-icon" onclick="if(window.openQrModal) window.openQrModal('${publicUrl}');" title="Pokaż kod QR do zeskanowania na telefonie">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     </button>
-                    <button type="button" class="btn-delete" style="flex: 0 0 auto; padding: 6px 10px;" onclick="window.handleDeleteAlbum('${alb.id}')" title="Usuń album">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <button type="button" class="btn-dock-icon" onclick="window.open('${publicUrl}', '_blank')" title="Otwórz podgląd albumu w nowej karcie">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </button>
+                    <button type="button" class="btn-dock-icon btn-dock-delete" onclick="window.handleDeleteAlbum('${alb.id}')" title="Usuń ten album">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (e) {
         console.warn('Błąd pobierania albumów:', e);
     }
@@ -16337,11 +17324,10 @@ window.downloadCurrentAlbumAsZip = async function() {
 function transitionBetweenCloudAndBeam(targetId) {
     if (typeof playSound === 'function') playSound('pop');
 
-    const siriGlowFrame = document.getElementById('siriGlowFrame');
     const uploadBox = document.getElementById('uploadBox');
     const beamContainer = document.querySelector('.beam-container');
 
-    const cloudCard = siriGlowFrame || uploadBox;
+    const cloudCard = uploadBox;
 
     const applySwitch = (isViewTransition = false) => {
         if (targetId === 'view-beam') {

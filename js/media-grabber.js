@@ -31,35 +31,20 @@
             this.submitBtn = document.getElementById('grabberSubmitBtn');
             this.loadingWrap = document.getElementById('grabberLoadingWrap');
             this.resultsWrap = document.getElementById('grabberResultsWrap');
-            this.pills = document.querySelectorAll('.grabber-platform-pill');
+            this.pills = document.querySelectorAll('.grabber-platform-pill, .grabber-platform-chip');
         },
 
         bindEvents() {
             if (this.submitBtn) {
-                this.submitBtn.addEventListener('click', () => this.handleGrab());
-            }
-
-            if (this.input) {
-                this.input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.handleGrab();
-                    }
-                });
-
-                this.input.addEventListener('input', (e) => {
-                    this.updatePlatformHighlight(e.target.value.trim());
-                });
-
-                this.input.addEventListener('paste', () => {
-                    setTimeout(() => {
-                        this.updatePlatformHighlight(this.input.value.trim());
-                    }, 50);
+                this.submitBtn.addEventListener('click', (e) => {
+                    this.createRipple(e, this.submitBtn);
+                    this.handleGrab();
                 });
             }
 
             if (this.pasteBtn) {
-                this.pasteBtn.addEventListener('click', async () => {
+                this.pasteBtn.addEventListener('click', async (e) => {
+                    this.createRipple(e, this.pasteBtn);
                     try {
                         const text = await navigator.clipboard.readText();
                         if (text && /^https?:\/\//i.test(text.trim())) {
@@ -76,6 +61,41 @@
                     }
                 });
             }
+
+            // Delegacja Ripple Effect dla wszystkich dynamicznych przycisków akcji
+            document.addEventListener('click', (e) => {
+                const targetBtn = e.target.closest('.grabber-action-btn, .grabber-btn-submit, .grabber-btn-paste, .grabber-platform-chip');
+                if (targetBtn && targetBtn !== this.submitBtn && targetBtn !== this.pasteBtn) {
+                    this.createRipple(e, targetBtn);
+                }
+            });
+        },
+
+        createRipple(e, el) {
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            const circle = document.createElement('span');
+            const diameter = Math.max(rect.width, rect.height);
+            const radius = diameter / 2;
+
+            const clientX = e.clientX || (rect.left + rect.width / 2);
+            const clientY = e.clientY || (rect.top + rect.height / 2);
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${clientX - rect.left - radius}px`;
+            circle.style.top = `${clientY - rect.top - radius}px`;
+            circle.classList.add('grabber-ripple');
+
+            const existingRipple = el.querySelector('.grabber-ripple');
+            if (existingRipple) {
+                existingRipple.remove();
+            }
+
+            el.appendChild(circle);
+
+            setTimeout(() => {
+                circle.remove();
+            }, 600);
         },
 
         checkUrlParams() {
@@ -101,6 +121,15 @@
             else if (/instagram\.com/i.test(url)) active = 'instagram';
             else if (/twitter\.com|x\.com/i.test(url)) active = 'twitter';
             else if (/pinterest\.com|pin\.it/i.test(url)) active = 'pinterest';
+
+            const cockpit = document.querySelector('.grabber-cockpit-frame, .grabber-input-card');
+            if (cockpit) {
+                if (active) {
+                    cockpit.setAttribute('data-active-platform', active);
+                } else {
+                    cockpit.removeAttribute('data-active-platform');
+                }
+            }
 
             this.pills.forEach(pill => {
                 if (active && pill.getAttribute('data-platform') === active) {
@@ -212,7 +241,18 @@
                 `;
             }
 
-            const platformBadge = `<span class="grabber-platform-pill active" data-platform="${data.platform || 'social'}" style="text-transform:uppercase;font-size:0.68rem;padding:2px 6px;">${data.platform || 'WIDEO'}</span>`;
+            const platformKey = (data.platform || 'social').toLowerCase();
+            const PLATFORM_ICONS = {
+                tiktok: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298 0 .592.046.87.14V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.3 6.3 0 0 0 1.87-4.47V8.71a8.28 8.28 0 0 0 4.9 1.58V6.85a4.85 4.85 0 0 1-1-.16Z"/></svg>`,
+                youtube: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+                instagram: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>`,
+                twitter: `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+                pinterest: `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.334 1.357-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>`
+            };
+
+            const brandIcon = PLATFORM_ICONS[platformKey] || `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="3" ry="3"/></svg>`;
+
+            const platformBadge = `<span class="grabber-platform-pill active" data-platform="${platformKey}" style="text-transform:uppercase;font-size:0.7rem;padding:3px 8px;display:inline-flex;align-items:center;">${brandIcon}${data.platform || 'WIDEO'}</span>`;
 
             let actionsHtml = '';
 

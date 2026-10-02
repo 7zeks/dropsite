@@ -1,0 +1,729 @@
+/* ==========================================================================
+   DROPSITE ACCOUNT VAULT & SCRATCHPAD (SEJF NOTATEK & KODÓW)
+   Design System: Obsidian Glass, Cyber Mint (#34D399) & Neon Cyan (#38BDF8)
+   ========================================================================== */
+
+/* Kontener główny Sejfu Notatek */
+.account-vault-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    background: radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.05) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(52, 211, 153, 0.04) 0%, transparent 45%),
+                linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(10, 15, 26, 0.92) 100%);
+    border-radius: 16px;
+    overflow: hidden;
+    color: #F8FAFC;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    position: relative;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+/* Górny pasek narzędziowy (Top Header Bar) */
+.vault-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+    flex-wrap: wrap;
+    z-index: 5;
+}
+
+.vault-brand-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vault-badge-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(52, 211, 153, 0.2) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #38BDF8;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+    flex-shrink: 0;
+}
+
+.vault-title-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.vault-main-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    letter-spacing: -0.01em;
+}
+
+.vault-sparkle {
+    color: #38BDF8;
+    font-size: 11px;
+}
+
+.vault-user-chip {
+    font-size: 11.5px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vault-user-email {
+    color: #CBD5E1;
+    font-weight: 600;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Wskaźnik synchronizacji w czasie rzeczywistym */
+.vault-sync-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.25s ease;
+}
+
+.vault-sync-indicator.synced {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #6EE7B7;
+}
+
+.vault-sync-indicator.saving {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #FCD34D;
+}
+
+.vault-sync-indicator.guest {
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #CBD5E1;
+}
+
+.vault-sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+}
+
+.vault-sync-indicator.synced .vault-sync-dot {
+    box-shadow: 0 0 8px #10B981;
+}
+
+.vault-sync-indicator.saving .vault-sync-dot {
+    animation: vaultPulse 1s infinite alternate;
+}
+
+@keyframes vaultPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Pasek akcji nagłówka */
+.vault-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vault-btn-ghost {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.vault-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+}
+
+.vault-btn-ghost:active {
+    transform: scale(0.98);
+}
+
+.vault-btn-primary {
+    background: linear-gradient(135deg, #0284C7 0%, #0D9488 100%);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #FFFFFF;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 10px rgba(14, 165, 233, 0.25);
+}
+
+.vault-btn-primary:hover {
+    background: linear-gradient(135deg, #0369A1 0%, #0F766E 100%);
+    border-color: rgba(56, 189, 248, 0.6);
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+}
+
+.vault-btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Główna sekcja dwukolumnowa (Split Studio Layout) */
+.vault-split-body {
+    display: flex;
+    flex: 1;
+    min-height: 480px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Lewa kolumna: Lista notatek (Sidebar) */
+.vault-sidebar {
+    width: 280px;
+    min-width: 250px;
+    background: rgba(11, 17, 32, 0.6);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.vault-sidebar-search {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vault-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: #94A3B8;
+    transition: border-color 0.15s ease;
+}
+
+.vault-search-box:focus-within {
+    border-color: #38BDF8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+.vault-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #FFFFFF;
+    font-size: 12px;
+    width: 100%;
+}
+
+.vault-search-input::placeholder {
+    color: #64748B;
+}
+
+/* Filtry kategorii w lewej kolumnie */
+.vault-category-chips {
+    display: flex;
+    padding: 8px 12px;
+    gap: 6px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    scrollbar-width: none;
+}
+
+.vault-category-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.vault-cat-chip {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.vault-cat-chip:hover {
+    color: #E2E8F0;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.vault-cat-chip.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+}
+
+/* Lista kafelków notatek */
+.vault-notes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vault-notes-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.vault-notes-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Pojedynczy kafelek notatki na liście */
+.vault-note-item {
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    user-select: none;
+}
+
+.vault-note-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+.vault-note-item.active {
+    background: rgba(14, 165, 233, 0.12);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.vault-note-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.vault-note-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #E2E8F0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.vault-note-item.active .vault-note-item-title {
+    color: #38BDF8;
+}
+
+.vault-pin-badge {
+    color: #FBBF24;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.vault-note-snippet {
+    font-size: 11px;
+    color: #64748B;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.vault-note-item.active .vault-note-snippet {
+    color: #94A3B8;
+}
+
+.vault-note-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+    font-size: 10px;
+    color: #475569;
+}
+
+.vault-note-category-tag {
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.vault-note-category-tag.cat-passwords {
+    color: #FBBF24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.vault-note-category-tag.cat-codes {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.1);
+}
+
+.vault-note-category-tag.cat-notes {
+    color: #34D399;
+    background: rgba(52, 211, 153, 0.1);
+}
+
+/* Pusta lista */
+.vault-empty-list {
+    text-align: center;
+    padding: 30px 16px;
+    color: #64748B;
+    font-size: 12px;
+}
+
+/* Prawa kolumna: Główny edytor notatki */
+.vault-editor-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.35);
+    position: relative;
+}
+
+/* Pasek edytora (Editor Title & Controls) */
+.vault-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: rgba(15, 23, 42, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vault-title-input-wrap {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vault-title-input {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 700;
+    width: 100%;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.vault-title-input:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.vault-title-input:focus {
+    border-color: #38BDF8;
+    background: rgba(15, 23, 42, 0.7);
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+/* Pasek narzędzi formatowania i ochrony */
+.vault-editor-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vault-tool-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94A3B8;
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.vault-tool-btn:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.vault-tool-btn.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+}
+
+.vault-tool-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #F87171;
+}
+
+/* Menu generatora haseł (Popover) */
+.vault-generator-popover {
+    position: absolute;
+    top: 52px;
+    right: 18px;
+    background: #0B1322;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    width: 290px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vault-gen-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: #94A3B8;
+}
+
+.vault-gen-preview {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 13px;
+    color: #38BDF8;
+    word-break: break-all;
+    user-select: all;
+}
+
+.vault-gen-chips {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.vault-gen-chip {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #CBD5E1;
+    cursor: pointer;
+}
+
+.vault-gen-chip:hover, .vault-gen-chip.active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38BDF8;
+}
+
+/* Główny obszar wprowadzania tekstu */
+.vault-textarea-wrap {
+    flex: 1;
+    display: flex;
+    position: relative;
+    padding: 14px 18px;
+    overflow: hidden;
+}
+
+.vault-textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: #F1F5F9;
+    font-size: 13.5px;
+    line-height: 1.65;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.01em;
+    overflow-y: auto;
+    transition: filter 0.2s ease;
+}
+
+.vault-textarea::placeholder {
+    color: #475569;
+}
+
+/* Tryb czcionki programistycznej (Monospace dla kodów / haseł / kluczy) */
+.vault-textarea.is-monospace {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    letter-spacing: 0;
+}
+
+/* Privacy Shield: Rozmycie zawartości dla ochrony przed podglądaniem */
+.vault-textarea.is-masked {
+    filter: blur(6px);
+    user-select: none;
+}
+
+.vault-textarea.is-masked:hover {
+    filter: blur(2px);
+}
+
+.vault-mask-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(11, 17, 32, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 12px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #94A3B8;
+    font-size: 12px;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Dolny pasek stanu (Status & Metrics Bar) */
+.vault-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 18px;
+    background: rgba(15, 23, 42, 0.7);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 11px;
+    color: #64748B;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vault-stats-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vault-stat-item strong {
+    color: #CBD5E1;
+}
+
+.vault-sync-time {
+    color: #94A3B8;
+}
+
+/* Przycisk mobilny do przełączania listy notatek */
+.vault-mobile-nav-toggle {
+    display: none;
+}
+
+/* ==========================================================================
+   DEDYKOWANY MODAL SEJFU NOTATEK (MODAL CONTAINER)
+   ========================================================================== */
+.account-vault-modal-container {
+    width: 95%;
+    max-width: 980px;
+    height: 82vh;
+    max-height: 720px;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.account-vault-modal-container .account-vault-wrap {
+    height: 100%;
+}
+
+/* Responsywność dla telefonów i tabletów */
+@media (max-width: 768px) {
+    .vault-split-body {
+        flex-direction: column;
+    }
+
+    .vault-sidebar {
+        width: 100%;
+        max-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .vault-topbar {
+        padding: 10px 14px;
+    }
+
+    .vault-statusbar {
+        padding: 6px 12px;
+        font-size: 10.5px;
+    }
+
+    .account-vault-modal-container {
+        width: 96%;
+        height: 90vh;
+        max-height: none;
+    }
+}

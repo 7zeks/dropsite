@@ -60,7 +60,7 @@
 }
 
 .cmd-palette-search-icon {
-    color: #34D399;
+    color: #C4E7D4;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -158,9 +158,9 @@
 
 .cmd-item:hover .cmd-item-icon,
 .cmd-item.selected .cmd-item-icon {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(52, 211, 153, 0.5);
-    color: #34D399;
+    background: rgba(196, 231, 212, 0.15);
+    border-color: rgba(196, 231, 212, 0.45);
+    color: #C4E7D4;
 }
 
 .cmd-item-text {

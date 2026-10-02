@@ -93,6 +93,15 @@
             action: () => { if (window.openDeadDropCreator) window.openDeadDropCreator(); }
         },
         {
+            id: 'account-vault',
+            category: 'Konto & Bezpieczeństwo',
+            title: 'Sejf Notatek & Kodów',
+            desc: 'Podręczny notatnik z autozapisem w chmurze konta na hasła, kody, PIN-y i notatki',
+            tag: 'Konto',
+            keywords: ['notatnik', 'notatki', 'kody', 'hasla', 'haslo', 'sejf', 'vault', 'notes', 'scratchpad', 'api key', 'pin', 'token'],
+            action: () => { if (window.openAccountVault) window.openAccountVault(); }
+        },
+        {
             id: 'qr-studio',
             category: 'Transfer & B2B',
             title: 'Studio Kodów QR 4K & Wektor SVG',
@@ -121,13 +130,13 @@
             id: 'media-grabber',
             category: 'Transfer & B2B',
             title: 'Pobieracz Wideo & Audio (TikTok, YT, Insta)',
-            desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka, YouTube, Instagrama lub zapisz w chmurze R2',
-            tag: 'Pobieracz',
+            desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka, YouTube, Instagrama (w przygotowaniu)',
+            tag: 'Wkrótce',
             keywords: ['tiktok', 'youtube', 'instagram', 'twitter', 'x', 'pinterest', 'pobierz', 'grabber', 'mp4', 'mp3', 'wideo', 'film', 'bez znaku'],
             action: () => {
-                const nav = document.querySelector('[data-target="view-pobieracz"]');
-                if (nav) nav.click();
-                else if (window.switchView) window.switchView('view-pobieracz');
+                if (window.showToast) {
+                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                }
             }
         },
 

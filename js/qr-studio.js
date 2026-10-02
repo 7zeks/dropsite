@@ -11,10 +11,38 @@
     let centerLogoImg = null;
 
     function initQRStudio() {
+        setupModalEvents();
         setupTabs();
         setupInputs();
         setupExportButtons();
         updateQR();
+    }
+
+    function setupModalEvents() {
+        const modal = document.getElementById('qrStudioModal');
+        const closeBtn = document.getElementById('btnQrStudioClose');
+        if (!modal) return;
+
+        function closeModal() {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('open')) {
+                closeModal();
+            }
+        });
     }
 
     function setupTabs() {
@@ -228,7 +256,10 @@
                 link.href = exportCanvas.toDataURL('image/png');
                 link.click();
 
-                if (window.showToast) window.showToast('Pobrano kod QR w jakości Ultra HD 4K (2048x2048)', 'success');
+                if (window.showToast) {
+                    const msg = typeof window.t === 'function' ? window.t('qr_toast_download_png') : 'Pobrano kod QR w jakości Ultra HD 4K (2048x2048)';
+                    window.showToast(msg, 'success');
+                }
             });
         }
 
@@ -263,7 +294,10 @@
                 link.click();
                 setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-                if (window.showToast) window.showToast('Pobrano wektorowy kod QR (SVG)', 'success');
+                if (window.showToast) {
+                    const msg = typeof window.t === 'function' ? window.t('qr_toast_download_svg') : 'Pobrano wektorowy kod QR (SVG)';
+                    window.showToast(msg, 'success');
+                }
             });
         }
     }

@@ -49,8 +49,7 @@
             const hash = window.location.hash.toLowerCase();
 
             if (toolParam && toolParam.toLowerCase() === 'grabber') {
-                const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
-                if (grabberNav) grabberNav.click();
+                if (window.showToast) window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
             } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
@@ -72,8 +71,7 @@
         const normalized = toolName.toLowerCase().trim();
 
         if (normalized === 'grabber') {
-            const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
-            if (grabberNav) grabberNav.click();
+            if (window.showToast) window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
             return;
         }
 
@@ -84,7 +82,7 @@
         }
 
         // 2. Kliknij odpowiednią zakładkę narzędzia
-        const targetBtn = document.querySelector(`.toolbox-tab-btn[data-tool="${normalized}"]`);
+        const targetBtn = document.querySelector(`.tb-tool-card[data-tool="${normalized}"], .toolbox-tab-btn[data-tool="${normalized}"]`);
         if (targetBtn) {
             targetBtn.click();
         }
@@ -100,7 +98,7 @@
         window.scrollTo({ top: 0, behavior: 'auto' });
     };
 
-    // === MAPOWANIE NARZĘDZI DO KATEGORII GŁÓWNYCH ===
+    // === MAPOWANIE NARZĘDZI DO KATEGORII GŁÓWNYCH & DECK HEADER INFO ===
     const TOOL_CATEGORY_MAP = {
         'merge': 'organize',
         'split': 'organize',
@@ -111,9 +109,45 @@
         'convert': 'convert'
     };
 
+    const TOOL_DECK_INFO = {
+        'merge': { title: 'Łączenie dokumentów PDF', badge: 'Multi-PDF • Silnik RAM' },
+        'split': { title: 'Rozdzielanie stron PDF', badge: 'Ekstrakcja & ZIP • Silnik RAM' },
+        'organize': { title: 'Układ stron & Obrót (Matrix)', badge: 'Wizualna Siatka 360° • RAM' },
+        'edit': { title: 'Podpis eIDAS & Edytor Dokumentów', badge: 'Podpis Cyfrowy & RODO • RAM' },
+        'watermark': { title: 'Znak Wodny & Oznaczenia POUFNE', badge: 'Wektorowe Oznaczenia • RAM' },
+        'compress': { title: 'Kompresor PDF w RAM', badge: 'Redukcja wagi bezstratna • RAM' },
+        'convert': { title: 'Konwerter Obrazów & PDF', badge: 'PNG / JPG / WebP / PDF • RAM' }
+    };
+
+    let currentActiveCategory = 'all';
+
+    function updateDeckHeader(targetTool) {
+        const info = TOOL_DECK_INFO[targetTool];
+        const titleEl = document.getElementById('deckActiveToolTitle');
+        const badgeEl = document.getElementById('deckActiveToolBadge');
+        if (info) {
+            if (titleEl) titleEl.textContent = info.title;
+            if (badgeEl) badgeEl.textContent = info.badge;
+        }
+
+        // Aktualizacja statusu na kartach Bento (np. badge "Aktywne" vs "Wybierz")
+        document.querySelectorAll('.tb-bento-card, .tb-tool-card').forEach(card => {
+            const isCardActive = card.getAttribute('data-tool') === targetTool;
+            card.classList.toggle('active', isCardActive);
+            const statusTag = card.querySelector('.bento-status-tag');
+            if (statusTag) {
+                statusTag.innerHTML = isCardActive 
+                    ? '<span class="bento-dot"></span>Aktywne'
+                    : '<span class="bento-dot"></span>Wybierz';
+            }
+        });
+    }
+
     function selectCategory(catId) {
-        const catBtns = document.querySelectorAll('.toolbox-cat-btn');
-        const subnavGroups = document.querySelectorAll('.toolbox-subnav-group');
+        currentActiveCategory = catId;
+        const catBtns = document.querySelectorAll('.tb-cat-pill, .toolbox-cat-btn');
+        const bentoCards = document.querySelectorAll('.tb-bento-card, .tb-tool-card');
+        const subnavGroups = document.querySelectorAll('.tb-tools-group, .toolbox-subnav-group');
 
         catBtns.forEach(b => {
             const isActive = b.getAttribute('data-category') === catId;
@@ -124,17 +158,32 @@
                 } catch (_) {}
             }
         });
+
+        // Obsługa legacy subnav groups
         subnavGroups.forEach(g => {
-            const isTarget = g.getAttribute('data-cat-group') === catId;
-            g.style.display = isTarget ? 'flex' : 'none';
+            const isTarget = catId === 'all' || g.getAttribute('data-cat-group') === catId;
+            g.style.display = isTarget ? '' : 'none';
             g.classList.toggle('active', isTarget);
+        });
+
+        // Obsługa kart Bento Grid
+        bentoCards.forEach(c => {
+            const tool = c.getAttribute('data-tool');
+            const cardCat = c.getAttribute('data-category') || (tool ? TOOL_CATEGORY_MAP[tool] : null);
+            if (catId === 'all' || cardCat === catId) {
+                c.style.display = '';
+                c.classList.remove('bento-filtered-out');
+            } else {
+                c.style.display = 'none';
+                c.classList.add('bento-filtered-out');
+            }
         });
     }
 
     // === PRZEŁĄCZANIE ZAKŁADEK I KATEGORII NARZĘDZI ===
     function initToolTabs() {
-        const catBtns = document.querySelectorAll('.toolbox-cat-btn');
-        const tabBtns = document.querySelectorAll('.toolbox-tab-btn');
+        const catBtns = document.querySelectorAll('.tb-cat-pill, .toolbox-cat-btn');
+        const tabBtns = document.querySelectorAll('.tb-bento-card, .tb-tool-card, .toolbox-tab-btn');
         const panels = document.querySelectorAll('.tool-panel');
 
         // Obsługa kliknięć w kategorie główne
@@ -143,12 +192,14 @@
                 const catId = cBtn.getAttribute('data-category');
                 selectCategory(catId);
 
-                // Sprawdź czy aktywne narzędzie należy do tej kategorii
-                const activeInGroup = document.querySelector(`.toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn.active`);
-                if (!activeInGroup) {
-                    // Aktywuj pierwsze narzędzie z nowo wybranej kategorii
-                    const firstBtn = document.querySelector(`.toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn`);
-                    if (firstBtn) firstBtn.click();
+                if (catId !== 'all') {
+                    // Sprawdź czy aktywne narzędzie należy do tej kategorii
+                    const activeInGroup = document.querySelector(`.tb-tool-card.active[data-category="${catId}"], .tb-tools-group[data-cat-group="${catId}"] .tb-tool-card.active, .toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn.active`);
+                    if (!activeInGroup) {
+                        // Aktywuj pierwsze narzędzie z nowo wybranej kategorii
+                        const firstBtn = document.querySelector(`.tb-tool-card[data-category="${catId}"], .tb-tools-group[data-cat-group="${catId}"] .tb-tool-card, .toolbox-subnav-group[data-cat-group="${catId}"] .toolbox-tab-btn`);
+                        if (firstBtn) firstBtn.click();
+                    }
                 }
             });
         });
@@ -157,13 +208,19 @@
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetTool = btn.getAttribute('data-tool');
+                if (!targetTool) return;
+                if (targetTool === 'video-compress' || targetTool === 'qr-studio') {
+                    return; // Narzędzia otwierane modalnie
+                }
                 activeTool = targetTool;
 
-                // Upewnij się, że odpowiednia kategoria nadrzędna jest widoczna
+                // Jeśli użytkownik wybrał konkretną kategorię, w której narzędzia nie ma, przełącz:
                 const catId = TOOL_CATEGORY_MAP[targetTool] || 'organize';
-                selectCategory(catId);
+                if (currentActiveCategory !== 'all' && currentActiveCategory !== catId) {
+                    selectCategory(catId);
+                }
 
-                tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+                tabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tool') === targetTool));
                 panels.forEach(p => {
                     const isTarget = p.id === `toolPanel_${targetTool}`;
                     p.hidden = !isTarget;
@@ -176,6 +233,29 @@
                         p.style.display = 'none';
                     }
                 });
+
+                updateDeckHeader(targetTool);
+
+                // Zmień kolor aury kinowej (Cinema Bias Lighting) zależnie od narzędzia
+                const biasCore = document.querySelector('.bias-glow-core');
+                const biasOrbit = document.querySelector('.bias-glow-orbit');
+                const plasmaGlow1 = document.querySelector('.tb-plasma-glow.glow-1');
+                const plasmaGlow2 = document.querySelector('.tb-plasma-glow.glow-2');
+                const targetCore = biasCore || plasmaGlow1;
+                const targetOrbit = biasOrbit || plasmaGlow2;
+
+                if (targetCore && targetOrbit) {
+                    if (catId === 'security') {
+                        targetCore.style.background = 'radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, transparent 70%)';
+                        targetOrbit.style.background = 'radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%)';
+                    } else if (catId === 'convert') {
+                        targetCore.style.background = 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, transparent 70%)';
+                        targetOrbit.style.background = 'radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%)';
+                    } else {
+                        targetCore.style.background = 'radial-gradient(circle, rgba(52, 211, 153, 0.28) 0%, transparent 70%)';
+                        targetOrbit.style.background = 'radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, transparent 70%)';
+                    }
+                }
 
                 // Aktualizuj URL
                 try {
@@ -5486,6 +5566,57 @@
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
+    // === GLOBAL TACTILE RIPPLE EFFECT DLA WSZYSTKICH PRZYCISKÓW TOOLBOX ===
+    function attachToolboxRipple(e, targetBtn) {
+        if (!targetBtn) return;
+        const rect = targetBtn.getBoundingClientRect();
+        const circle = document.createElement('span');
+        const diameter = Math.max(rect.width, rect.height);
+        const radius = diameter / 2;
+
+        const clientX = e.clientX || (rect.left + rect.width / 2);
+        const clientY = e.clientY || (rect.top + rect.height / 2);
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${clientX - rect.left - radius}px`;
+        circle.style.top = `${clientY - rect.top - radius}px`;
+        circle.className = 'tb-ripple-effect';
+
+        const existing = targetBtn.querySelector('.tb-ripple-effect');
+        if (existing) existing.remove();
+
+        targetBtn.appendChild(circle);
+        setTimeout(() => circle.remove(), 600);
+    }
+
+    // Delegacja zdarzeń kliknięcia dla przycisków w Zestawie Narzędzi
+    document.addEventListener('pointerdown', (e) => {
+        const viewNarzedzia = document.getElementById('view-narzedzia');
+        if (!viewNarzedzia || viewNarzedzia.hidden) return;
+
+        const btn = e.target.closest(
+            '.tool-action-btn, .tb-cat-pill, .tb-tool-card, .toolbox-cat-btn, .toolbox-tab-btn, .studio-ribbon-btn, ' +
+            '.matrix-btn-download, .matrix-btn-tool, .btn-studio-op, .btn-studio-file, ' +
+            '.btn-studio-nav, .btn-split-quick, .btn-sm-ghost, .btn-primary, .btn-choose-file, ' +
+            '.format-chip, .compress-profile-card, .prop-btn-stamp, .wm-preset-chip, .wm-color-btn, .wm-angle-chip'
+        );
+        if (btn && !btn.disabled) {
+            attachToolboxRipple(e, btn);
+        }
+    });
+
+    // Śledzenie pozycji kursora dla efektu ambientowego światła w dropzone
+    document.addEventListener('mousemove', (e) => {
+        const activeDropzone = document.querySelector('.tool-panel:not([style*="display: none"]) .tool-dropzone');
+        if (activeDropzone) {
+            const rect = activeDropzone.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            activeDropzone.style.setProperty('--mouse-x', `${x}px`);
+            activeDropzone.style.setProperty('--mouse-y', `${y}px`);
+        }
+    });
+
     // Globalny odbiornik upuszczonych plików dla Zestawu Narzędzi (Toolbox)
     window.handleToolboxDrop = function (files) {
         if (!files || files.length === 0) return;
@@ -5501,3 +5632,4 @@
         }
     };
 })();
+

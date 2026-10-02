@@ -191,7 +191,7 @@
                     createBtn.style.display = 'none';
 
                     if (window.showToast) {
-                        window.showToast('Notatka zaszyfrowana w RAM (AES-256)!', 'success');
+                        window.showToast('Bezpieczny link do notatki został wygenerowany!', 'success');
                     }
                 } catch (err) {
                     console.error('Błąd szyfrowania notatki:', err);
@@ -268,7 +268,7 @@
                     if (revealedBox) revealedBox.classList.add('visible');
 
                     if (window.showToast) {
-                        window.showToast('Treść odszyfrowana w RAM. Szyfrogram został bezpowrotnie zniszczony.', 'info');
+                        window.showToast('Treść wyświetlona. Notatka została trwale usunięta.', 'info');
                     }
                 } catch (e) {
                     console.error('Błąd deszyfrowania:', e);
@@ -370,7 +370,7 @@
                     </svg>
                 </div>
                 <h3 class="dead-drop-warning-title">Notatka nie istnieje</h3>
-                <p class="dead-drop-warning-desc">${customMsg || 'Ta wiadomość została już odsłonięta i bezpowrotnie zniszczona z pamięci (Zero-Knowledge).'}</p>
+                <p class="dead-drop-warning-desc">${customMsg || 'Ta wiadomość została już odczytana i trwale usunięta.'}</p>
                 <button type="button" class="dead-drop-btn-cancel" onclick="document.getElementById('deadDropReaderModal').classList.remove('open'); document.body.style.overflow=''; window.history.replaceState({}, document.title, window.location.pathname);">
                     Wróć do Dropsite
                 </button>

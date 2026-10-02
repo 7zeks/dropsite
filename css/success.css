@@ -419,7 +419,7 @@
     box-shadow: 
         0 8px 24px -4px rgba(0, 0, 0, 0.45), 
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    cursor: pointer;
+    cursor: default;
     transition: all 0.25s ease;
 }
 
@@ -436,21 +436,22 @@
 .clean-link-left {
     display: flex;
     align-items: center;
-    gap: 9px;
-    flex: 1;
+    gap: 10px;
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: visible;
 }
 
 .clean-link-icon-wrap {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: rgba(56, 189, 248, 0.08);
-    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(196, 231, 212, 0.1);
+    border: 1px solid rgba(196, 231, 212, 0.28);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #38BDF8;
+    color: #C4E7D4;
     flex-shrink: 0;
     text-decoration: none;
     cursor: pointer;
@@ -458,15 +459,17 @@
 }
 
 .clean-link-icon-wrap:hover {
-    background: rgba(56, 189, 248, 0.25);
-    border-color: rgba(56, 189, 248, 0.5);
+    background: rgba(196, 231, 212, 0.25);
+    border-color: rgba(196, 231, 212, 0.6);
     color: #FFFFFF;
+    box-shadow: 0 0 12px rgba(196, 231, 212, 0.35);
     transform: scale(1.06);
 }
 
 .clean-hero-link-bar:hover .clean-link-icon-wrap {
-    background: rgba(56, 189, 248, 0.15);
-    color: #FFFFFF;
+    background: rgba(196, 231, 212, 0.16);
+    border-color: rgba(196, 231, 212, 0.4);
+    color: #E2F5EC;
 }
 
 .clean-link-text {
@@ -477,16 +480,20 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    user-select: all;
+    user-select: text;
     text-align: left;
     cursor: pointer;
-    transition: color 0.2s ease, text-decoration 0.2s ease;
+    outline: none;
+    transition: color 0.18s ease;
+}
+
+.clean-link-text::selection {
+    background: rgba(196, 231, 212, 0.25);
+    color: #FFFFFF;
 }
 
 .clean-link-text:hover {
-    color: #38BDF8;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    color: #C4E7D4;
 }
 
 .clean-copy-btn {
@@ -511,9 +518,12 @@
     letter-spacing: 0.1px;
     font-family: inherit;
     cursor: pointer;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    contain: paint;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
     user-select: none;
 }
 
@@ -553,7 +563,7 @@
     position: relative;
     z-index: 3;
     pointer-events: none;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 0.18s ease;
 }
 
 .clean-copy-btn:hover {
@@ -561,26 +571,36 @@
     border-color: rgba(255, 255, 255, 0.28);
     border-top-color: rgba(255, 255, 255, 0.45);
     color: #FFFFFF;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 16px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .clean-copy-btn:active {
-    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .clean-copy-btn.copied {
-    background: rgba(16, 185, 129, 0.2) !important;
-    border-color: rgba(52, 211, 153, 0.55) !important;
-    color: #34D399 !important;
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    background: rgba(196, 231, 212, 0.16) !important;
+    border-color: rgba(196, 231, 212, 0.6) !important;
+    color: #C4E7D4 !important;
+    box-shadow: 0 0 14px rgba(196, 231, 212, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
 
-/* --- Dopracowany, aksamitny efekt Ripple Button --- */
+/* --- Dopracowany, aksamitny efekt Ripple Button o zerowym wpływie na wymiary przycisku --- */
 .btn-light-splash {
     position: absolute;
-    width: 160px;
-    height: 160px;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.btn-light-splash::after {
+    content: '';
+    position: absolute;
+    top: -55px;
+    left: -55px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     pointer-events: none;
     background: radial-gradient(
@@ -591,23 +611,21 @@
         rgba(16, 185, 129, 0.15) 75%,
         transparent 85%
     );
-    filter: blur(4px);
-    transform: translate(-50%, -50%) scale(0.05);
-    animation: smoothRippleSplash 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    z-index: 2;
+    filter: blur(3px);
+    animation: smoothRippleSplash 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     mix-blend-mode: screen;
 }
 
 @keyframes smoothRippleSplash {
     0% {
-        transform: translate(-50%, -50%) scale(0.05);
+        transform: scale(0.15);
         opacity: 0.95;
     }
     40% {
         opacity: 0.75;
     }
     100% {
-        transform: translate(-50%, -50%) scale(2.2);
+        transform: scale(2.2);
         opacity: 0;
     }
 }
@@ -697,12 +715,12 @@
 }
 
 .clean-strip-item:hover {
-    color: #F8FAFC;
-    background: rgba(255, 255, 255, 0.06);
+    color: #FFFFFF;
+    background: rgba(196, 231, 212, 0.08);
 }
 
 .clean-strip-item:hover svg {
-    color: #38BDF8;
+    color: #C4E7D4;
     transform: scale(1.08);
 }
 
@@ -773,6 +791,8 @@
     .clean-copy-btn {
         padding: 8px 14px !important;
         font-size: 12px !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
     }
 
     .clean-actions-row {
@@ -873,4 +893,262 @@
     background: rgba(255, 255, 255, 0.1) !important;
     border-color: rgba(255, 255, 255, 0.28) !important;
     color: #FFFFFF !important;
+}
+/* ==========================================================================
+   SUCCESS SCREEN REDESIGN – OPCJE A + B + C + D
+   ========================================================================== */
+
+/* ===== OPCJA D – GLASSMORPHISM HERO CARD ===== */
+
+.upload-container:has(#successFlow:not([hidden])),
+.studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
+    background: rgba(16, 17, 20, 0.92) !important;
+    backdrop-filter: blur(32px) !important;
+    -webkit-backdrop-filter: blur(32px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-top: 1px solid rgba(196, 231, 212, 0.22) !important;
+    box-shadow:
+        0 32px 80px -16px rgba(0, 0, 0, 0.75),
+        0 0 60px rgba(52, 211, 153, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* ===== OPCJA A – WZMOCNIONY MOMENT TRIUMFU ===== */
+
+.success-vault-badge {
+    width: 80px !important;
+    height: 80px !important;
+    margin-bottom: 0px !important;
+}
+
+/* Pierścień orbit */
+.success-vault-badge::before {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(196, 231, 212, 0.18);
+    animation: orbitRingPulse 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.success-vault-badge::after {
+    content: '';
+    position: absolute;
+    inset: -26px;
+    border-radius: 50%;
+    border: 1px solid rgba(196, 231, 212, 0.07);
+    animation: orbitRingPulse 3s 0.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes orbitRingPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* Halo brand mint */
+.vault-badge-halo {
+    background: radial-gradient(circle,
+        rgba(196, 231, 212, 0.32) 0%,
+        rgba(52, 211, 153, 0.14) 45%,
+        transparent 70%) !important;
+    filter: blur(14px) !important;
+}
+
+/* Checkmark brand mint */
+.vault-check-svg {
+    color: #C4E7D4 !important;
+    filter: drop-shadow(0 0 10px rgba(196, 231, 212, 0.9)) drop-shadow(0 0 3px #C4E7D4) !important;
+    animation: drawCheckmark 0.45s 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               checkGlowBreathMint 3.2s 0.55s ease-in-out infinite !important;
+}
+
+.vault-badge-circle {
+    color: #C4E7D4 !important;
+}
+
+@keyframes checkGlowBreathMint {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(196, 231, 212, 0.75)) drop-shadow(0 0 2px #C4E7D4); }
+    50% { filter: drop-shadow(0 0 18px rgba(196, 231, 212, 0.95)) drop-shadow(0 0 6px #A8DABF); }
+}
+
+.vault-sparkle.sparkle-1 { color: #C4E7D4 !important; filter: drop-shadow(0 0 7px rgba(196, 231, 212, 0.85)) !important; }
+.vault-sparkle.sparkle-2 { color: #A8DABF !important; filter: drop-shadow(0 0 7px rgba(168, 218, 191, 0.85)) !important; }
+.vault-sparkle.sparkle-3 { color: #D4F0E2 !important; filter: drop-shadow(0 0 5px rgba(212, 240, 226, 0.85)) !important; }
+
+/* Tytuł z gradientem */
+.success-title {
+    font-size: 23px !important;
+    font-weight: 900 !important;
+    background: linear-gradient(135deg, #FFFFFF 0%, #C4E7D4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.4px !important;
+}
+
+/* ===== OPCJA C – COUNTDOWN TIMER ===== */
+
+.success-countdown-bar {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(52, 211, 153, 0.05);
+    border: 1px solid rgba(52, 211, 153, 0.15);
+    box-sizing: border-box;
+    animation: fadeSlideIn 0.4s 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.countdown-icon {
+    color: #34D399;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.countdown-label {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #64748B;
+    white-space: nowrap;
+}
+
+.countdown-value {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #34D399;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+}
+
+.countdown-expire-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    overflow: hidden;
+    min-width: 40px;
+}
+
+.countdown-expire-fill {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #34D399, #C4E7D4);
+    transition: width 1s linear;
+}
+
+.countdown-value.expiring-soon {
+    color: #FBBF24 !important;
+    text-shadow: 0 0 12px rgba(251, 191, 36, 0.5) !important;
+}
+
+.countdown-expire-fill.expiring-soon {
+    background: linear-gradient(90deg, #FBBF24, #FDE68A) !important;
+}
+
+/* ===== OPCJA B – KARTY AKCJI 2×2 ===== */
+
+.success-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.sag-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    animation: fadeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sag-card:nth-child(1) { animation-delay: 0.55s; }
+.sag-card:nth-child(2) { animation-delay: 0.65s; }
+.sag-card:nth-child(3) { animation-delay: 0.75s; }
+.sag-card:nth-child(4) { animation-delay: 0.85s; }
+
+.sag-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    color: #64748B;
+}
+
+.sag-card-label {
+    flex: 1;
+    text-align: left;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sag-card:hover {
+    background: rgba(196, 231, 212, 0.08);
+    border-color: rgba(196, 231, 212, 0.2);
+    border-top-color: rgba(196, 231, 212, 0.35);
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 12px rgba(196, 231, 212, 0.06);
+}
+
+.sag-card:hover .sag-card-icon {
+    background: rgba(196, 231, 212, 0.12);
+    border-color: rgba(196, 231, 212, 0.3);
+    color: #C4E7D4;
+}
+
+.sag-card:active { transform: translateY(0); }
+
+/* ===== RESPONSYWNOŚĆ ===== */
+
+@media (max-width: 480px) {
+    .success-action-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+    .sag-card { padding: 8px 10px; font-size: 11.5px; gap: 7px; }
+    .sag-card-icon { width: 24px; height: 24px; }
+    .success-countdown-bar { flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .countdown-expire-bar { width: 100%; flex: none; }
 }

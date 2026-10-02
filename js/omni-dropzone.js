@@ -431,12 +431,8 @@
                 highlight: true,
                 onClick: () => {
                     hide();
-                    if (window.DropsiteMediaGrabber && typeof window.DropsiteMediaGrabber.grabFromUrl === 'function') {
-                        window.DropsiteMediaGrabber.grabFromUrl(url);
-                    } else {
-                        const nav = document.querySelector('[data-target="view-pobieracz"]');
-                        if (nav) nav.click();
-                        else if (window.switchView) window.switchView('view-pobieracz');
+                    if (window.showToast) {
+                        window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                     }
                 }
             },

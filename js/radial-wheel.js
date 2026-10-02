@@ -119,12 +119,12 @@
         },
         'media-grabber': {
             badgeKey: 'radial_tool_grabber_badge',
-            badge: 'HD NO WATERMARK',
-            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+            badge: 'WKRÓTCE',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
             titleKey: 'radial_tool_grabber_name',
             title: 'Pobieracz Wideo & Foto',
             descKey: 'radial_tool_grabber_detail',
-            desc: 'Pobieraj czyste filmy bez znaku wodnego z TikToka, YouTube i Instagrama oraz zapisuj prosto na dysk lub R2.'
+            desc: 'Moduł pobierania wideo bez znaku wodnego z TikToka, YT i Instagrama jest w trakcie tworzenia.'
         },
         'beam-p2p': {
             badgeKey: 'radial_tool_beam_badge',
@@ -170,18 +170,89 @@
         const triggerBtn = document.getElementById('btnOpenRadialWheel');
         const closeBtn = document.getElementById('btnRadialHudClose');
 
-        if (!backdrop) return;
+        // DŹWIĘKOWY SYNTEZATOR HAPTYCZNY (WEB AUDIO API UI SOUND ENGINE)
+        let audioCtx = null;
+        function playHapticTick(type = 'hover') {
+            try {
+                if (!audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) audioCtx = new AudioContext();
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (!audioCtx) return;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const now = audioCtx.currentTime;
+
+                if (type === 'hover') {
+                    // Dyskretny, aksamitny tick o wysokiej częstotliwości (subtelny)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(320, now + 0.04);
+                    gain.gain.setValueAtTime(0.02, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.045);
+                } else if (type === 'click') {
+                    // Sprężysty, satysfakcjonujący 'pop' z lekkim basem
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.exponentialRampToValueAtTime(90, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.085);
+                }
+            } catch (err) {
+                // Silent fail if audio is disabled
+            }
+        }
+
+        // EFEKT 3D GYRO / PARALLAX TILT
+        const hudContainer = document.querySelector('.radial-hud-container');
+        const centerHub = document.querySelector('.radial-center-hub');
+
+        if (hudContainer && window.matchMedia('(pointer: fine)').matches) {
+            hudContainer.addEventListener('mousemove', (e) => {
+                if (!backdrop.classList.contains('open')) return;
+                const rect = hudContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Subtelny 3D Parallax Tilt (VisionOS style)
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const tiltX = (centerY - y) / 32;
+                const tiltY = (x - centerX) / 32;
+
+                if (centerHub) {
+                    centerHub.style.transform = `translate3d(${tiltY * 0.8}px, ${-tiltX * 0.8}px, 20px)`;
+                }
+            });
+
+            hudContainer.addEventListener('mouseleave', () => {
+                if (centerHub) centerHub.style.transform = '';
+            });
+        }
 
         function openHUD() {
             backdrop.classList.add('open');
             document.body.style.overflow = 'hidden';
             updateHub('default');
-            if (typeof playSound === 'function') playSound('click');
+            playHapticTick('click');
         }
 
         function closeHUD() {
             backdrop.classList.remove('open');
             document.body.style.overflow = '';
+            playHapticTick('hover');
         }
 
         // Obsługa wszystkich przycisków otwierających koło radialne (w tym na mobile i w menu)
@@ -215,6 +286,7 @@
                 nodes.forEach(n => n.classList.remove('active'));
                 node.classList.add('active');
                 updateHub(sectorKey);
+                playHapticTick('hover');
             });
             node.addEventListener('mouseleave', () => {
                 node.classList.remove('active');
@@ -230,10 +302,12 @@
             btn.addEventListener('mouseenter', (e) => {
                 e.stopPropagation();
                 updateHub(action);
+                playHapticTick('hover');
             });
 
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                playHapticTick('click');
                 closeHUD();
                 executeToolAction(action);
             });
@@ -313,9 +387,9 @@
                 break;
             case 'media-grabber':
             case 'grabber':
-                const grabberNav = document.querySelector('[data-target="view-pobieracz"]');
-                if (grabberNav) grabberNav.click();
-                else if (window.switchView) window.switchView('view-pobieracz');
+                if (window.showToast) {
+                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                }
                 break;
             case 'beam-p2p':
             case 'beam':

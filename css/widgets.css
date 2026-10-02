@@ -1800,12 +1800,23 @@ body.is-admin .storage-widget {
     height: 100vh;
     pointer-events: none;
     z-index: 0;
+    contain: strict;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 @media (max-width: 768px) {
     .bg-canvas {
         display: none !important;
     }
+}
+
+/* Wstrzymaj animacje i obciążenie GPU/CPU w ukrytych modalach */
+.mod-modal[hidden] {
+    content-visibility: hidden;
+}
+.mod-modal[hidden] * {
+    animation-play-state: paused !important;
 }
 
 /* 2. Przycisk historii w nawigacji */
@@ -2700,17 +2711,26 @@ body.is-admin .storage-widget {
     bottom: 0;
     left: 0;
     right: 0;
-    max-height: 50vh;
+    max-height: 55vh;
     background: rgba(10, 14, 23, 0.96);
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0 0 16px 16px;
     padding: 14px 20px;
-    z-index: 90;
+    z-index: 100;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.75);
     animation: dlDrawerSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dl-lightbox-tool-btn.active {
+    background: rgba(56, 189, 248, 0.16) !important;
+    color: #38BDF8 !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
 }
 
 @keyframes dlDrawerSlideUp {
@@ -2898,17 +2918,112 @@ body.is-admin .storage-widget {
 }
 
 @media (max-width: 640px) {
+    /* Mobilny pasek narzędzi podglądu pliku (Preview Toolbar) */
+    .dl-preview-toolbar {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 10px 4px 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .dl-preview-toolbar::-webkit-scrollbar {
+        display: none;
+    }
+    .dl-tool-pill {
+        flex: 0 0 auto;
+        font-size: 12px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* Mobilny nagłówek i belka narzędzi w powiększeniu (Lightbox Header & Actions) */
     .dl-lightbox-modal {
-        padding: 10px;
+        padding: 0 !important;
+    }
+    .dl-lightbox-wrap {
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
+    }
+    .dl-lightbox-header {
+        padding: 10px 12px !important;
+        gap: 8px !important;
+        background: rgba(8, 10, 16, 0.85) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
     .dl-lightbox-filename {
-        max-width: 140px;
+        max-width: 110px;
+        font-size: 13px;
     }
-    .dl-lightbox-tool-btn span {
+    .dl-lightbox-actions {
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        max-width: calc(100vw - 140px);
+        justify-content: flex-end;
+    }
+    .dl-lightbox-actions::-webkit-scrollbar {
         display: none;
     }
     .dl-lightbox-tool-btn {
-        padding: 8px;
+        padding: 7px 8px !important;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        min-height: 34px;
+    }
+    .dl-lightbox-tool-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+    /* Chowanie etykiet tekstowych, zostają same czytelne dotykowe ikony z badge'ami */
+    .dl-lightbox-tool-btn span:not(.proofing-remarks-count-pill) {
+        display: none !important;
+    }
+    .dl-lightbox-tool-btn .proofing-remarks-count-pill {
+        margin-left: 0;
+        font-size: 10px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+    }
+    .dl-lightbox-close-btn {
+        margin-left: 2px !important;
+        padding: 7px 10px !important;
+        background: rgba(239, 68, 68, 0.15) !important;
+        color: #F87171 !important;
+    }
+    .dl-lightbox-close-btn::before {
+        display: none;
+    }
+    .dl-lightbox-body {
+        height: calc(100vh - 100px) !important;
+        max-height: calc(100vh - 100px) !important;
+        padding: 8px !important;
+    }
+    .dl-lightbox-nav-btn {
+        width: 38px;
+        height: 38px;
+    }
+    .dl-lightbox-prev {
+        left: 8px;
+    }
+    .dl-lightbox-next {
+        right: 8px;
+    }
+    .dl-lightbox-drawer {
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 70vh !important;
+        padding: 16px 14px !important;
     }
 }
 
@@ -3295,6 +3410,24 @@ body.is-admin .storage-widget {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transition: opacity 0.22s ease, filter 0.22s ease;
+}
+
+.compress-slider-wrap.is-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: grayscale(0.6);
+    user-select: none;
+}
+
+.btn-flyout-trigger.compress-inactive {
+    opacity: 0.55;
+    color: #64748B;
+}
+
+.btn-flyout-trigger.compress-inactive:hover {
+    opacity: 0.9;
+    color: #CBD5E1;
 }
 
 .slider-container {
@@ -6682,17 +6815,17 @@ body.is-admin .ad-container {
     z-index: 1;
     width: 100%;
     box-sizing: border-box;
-    background: linear-gradient(180deg, rgba(14, 20, 34, 0.8) 0%, rgba(9, 13, 23, 0.92) 100%);
+    background: linear-gradient(180deg, rgba(16, 18, 24, 0.45) 0%, rgba(10, 12, 16, 0.6) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 24px;
     padding: clamp(26px, 4vw, 42px);
     box-shadow: 
-        0 30px 80px -15px rgba(0, 0, 0, 0.75),
-        0 0 45px -10px rgba(52, 211, 153, 0.08),
+        0 30px 80px -15px rgba(0, 0, 0, 0.6),
+        0 0 45px -10px rgba(52, 211, 153, 0.05),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -6704,8 +6837,8 @@ body.is-admin .ad-container {
     padding: clamp(42px, 5.5vw, 60px) clamp(20px, 3vw, 36px);
     text-align: center;
     cursor: pointer;
-    background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
-    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+    background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.25);
     transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     margin-bottom: 24px;
 }
@@ -16097,17 +16230,21 @@ body.studio-fullscreen-active {
 
 /* UKRYWANIE / POKAZYWANIE PINEZEK (TOGGLE VISIBILITY) */
 .proofing-pins-layer.is-hidden-pins,
+.proofing-pins-layer.is-hidden-pins *,
+.dl-lightbox-modal.is-hidden-pins .proofing-pins-layer,
+.dl-lightbox-modal.is-hidden-pins .proofing-pin,
+.dl-lightbox-proofing-overlay.is-hidden-pins .proofing-pins-layer,
+.dl-lightbox-proofing-overlay.is-hidden-pins .proofing-pin,
 .proofing-overlay.is-hidden-pins .proofing-pins-layer,
 .proofing-overlay.is-hidden-pins .proofing-pin,
 .proofing-media-container.is-hidden-pins .proofing-pins-layer,
 .proofing-media-container.is-hidden-pins .proofing-pin,
 .dl-preview-image-wrapper.is-hidden-pins .proofing-pins-layer,
-.dl-preview-image-wrapper.is-hidden-pins .proofing-pin,
-.dl-lightbox-modal.is-hidden-pins .proofing-pins-layer,
-.dl-lightbox-modal.is-hidden-pins .proofing-pin {
+.dl-preview-image-wrapper.is-hidden-pins .proofing-pin {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
+    display: none !important;
     transition: opacity 0.22s ease, visibility 0.22s ease !important;
 }
 
@@ -19994,5 +20131,7 @@ body.studio-fullscreen-active {
         font-size: 13px !important;
     }
 }
+
+
 
 

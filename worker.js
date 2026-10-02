@@ -2430,12 +2430,23 @@ export default {
       });
 
       // Sprawdź stan każdego pliku w historii (czy wciąż leży na dysku R2, czy wygasł)
-      const finalFiles = historyFiles.map(f => {
+      const excludeExpired = url.searchParams.get("excludeExpired") === "true";
+      const now = Date.now();
+
+      let finalFiles = historyFiles.map(f => {
         const stillExists = activeKeys.has(f.key);
+        let isExpiredByTime = false;
+        if (f.duration && f.duration !== 'permanent' && f.uploaded) {
+          const age = now - new Date(f.uploaded).getTime();
+          if (f.duration === '1d' && age > 24 * 3600 * 1000) isExpiredByTime = true;
+          if (f.duration === '30d' && age > 30 * 24 * 3600 * 1000) isExpiredByTime = true;
+          if (f.duration === 'burn' && age > 24 * 3600 * 1000) isExpiredByTime = true;
+        }
+        const isExpired = !stillExists || isExpiredByTime;
         return {
           ...f,
-          existsOnDisk: stillExists,
-          status: stillExists ? 'active' : 'expired'
+          existsOnDisk: stillExists && !isExpiredByTime,
+          status: isExpired ? 'expired' : 'active'
         };
       });
 
@@ -2445,6 +2456,10 @@ export default {
           httpMetadata: { contentType: "application/json" }
         });
       } catch (_) {}
+
+      if (excludeExpired) {
+        finalFiles = finalFiles.filter(f => f.status !== 'expired');
+      }
 
       return new Response(JSON.stringify({ success: true, files: finalFiles }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
@@ -2480,6 +2495,64 @@ export default {
         };
         await recordFileToUserHistory(userEmail, record);
         return new Response(JSON.stringify({ success: true, file: record }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+
+    // Endpoint do usuwania wygasłych plików z historii użytkownika w R2
+    if (url.pathname === "/my-files/clean-expired" && request.method === "POST") {
+      const userEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      try {
+        const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const historyKey = `_user_history/${safeEmail}.json`;
+
+        let bodyDeletedKeys = [];
+        try {
+          const body = await request.json();
+          if (Array.isArray(body?.deletedKeys)) bodyDeletedKeys = body.deletedKeys;
+        } catch (_) {}
+        const deletedKeysSet = new Set(bodyDeletedKeys);
+
+        let historyFiles = [];
+        try {
+          const histObj = await env.BUCKET.get(historyKey);
+          if (histObj) {
+            historyFiles = await histObj.json();
+          }
+        } catch (_) {}
+
+        // Weryfikacja aktywnych plików na dysku R2 oraz sprawdzanie upływu czasu (duration)
+        const activeList = await env.BUCKET.list({ limit: 1000 });
+        const activeKeys = new Set(activeList.objects.map(o => o.key));
+        const now = Date.now();
+
+        const validFiles = (historyFiles || []).filter(f => {
+          if (!f || !f.key) return false;
+          if (deletedKeysSet.has(f.key) || deletedKeysSet.has(f.name)) return false;
+          if (!activeKeys.has(f.key)) return false;
+          if (f.duration && f.duration !== 'permanent' && f.uploaded) {
+            const age = now - new Date(f.uploaded).getTime();
+            if (f.duration === '1d' && age > 24 * 3600 * 1000) return false;
+            if (f.duration === '30d' && age > 30 * 24 * 3600 * 1000) return false;
+            if (f.duration === 'burn' && age > 24 * 3600 * 1000) return false;
+          }
+          return true;
+        });
+
+        await env.BUCKET.put(historyKey, JSON.stringify(validFiles.slice(0, 1000)), {
+          httpMetadata: { contentType: "application/json" }
+        });
+
+        // Posprzątaj również stary klucz z dosłownym znakiem @ jeśli istniał
+        if (`_user_history/${userEmail}.json` !== historyKey) {
+          try { await env.BUCKET.delete(`_user_history/${userEmail}.json`); } catch (_) {}
+        }
+
+        return new Response(JSON.stringify({ success: true, count: validFiles.length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
@@ -2663,6 +2736,83 @@ export default {
       }
 
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // =========================================================================
+    // SEJF NOTATEK & KODÓW (ACCOUNT VAULT & REAL-TIME SCRATCHPAD)
+    // =========================================================================
+
+    // A. Pobieranie notatek i kodów powiązanych z kontem użytkownika
+    if (url.pathname === "/api/notes" && request.method === "GET") {
+      const userEmail = (request.headers.get("X-User-Email") || url.searchParams.get("email") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, message: "Wymagany adres e-mail konta." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      if (!env.BUCKET) {
+        return new Response(JSON.stringify({ success: true, notes: [], activeNoteId: null }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const userNotesKey = `_user_notes/${safeEmail}.json`;
+      const existing = await env.BUCKET.get(userNotesKey);
+      let payload = { notes: [], activeNoteId: null, lastSynced: null };
+      if (existing) {
+        try {
+          payload = await existing.json();
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true, ...payload }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    // B. Zapisywanie / Autozapis notatek i kodów na koncie użytkownika
+    if (url.pathname === "/api/notes" && request.method === "POST") {
+      const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
+      if (!userEmail) {
+        return new Response(JSON.stringify({ success: false, message: "Wymagane zalogowanie i adres e-mail konta." }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      try {
+        const body = await request.json();
+        const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const userNotesKey = `_user_notes/${safeEmail}.json`;
+        const notes = Array.isArray(body.notes) ? body.notes.slice(0, 100) : [];
+        const activeNoteId = body.activeNoteId || (notes[0] ? notes[0].id : null);
+        const dataToSave = {
+          notes: notes,
+          activeNoteId: activeNoteId,
+          lastSynced: new Date().toISOString(),
+          email: userEmail
+        };
+
+        if (env.BUCKET) {
+          await env.BUCKET.put(userNotesKey, JSON.stringify(dataToSave), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          message: "Notatki pomyślnie zsynchronizowane z Twoim kontem.",
+          lastSynced: dataToSave.lastSynced,
+          notesCount: notes.length
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd zapisu notatek w chmurze: " + err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
     }
 
     // 2b. LISTA PLIKÓW DLA PANELU MODERACJI (Z INDEKSACJĄ AUTORÓW & METADANYCH)

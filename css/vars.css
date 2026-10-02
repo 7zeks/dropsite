@@ -158,6 +158,8 @@ body::before, body::after {
     z-index: -1;
     pointer-events: none;
     background-blend-mode: screen;
+    will-change: transform;
+    transform: translateZ(0);
 }
 body::before {
     background: radial-gradient(circle at 45% 40%, rgba(52, 211, 153, 0.16), transparent 45%);
@@ -268,4 +270,38 @@ input,
 textarea, 
 [data-cursor='text'] {
     cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iNy41IiB5PSIxLjUiIHdpZHRoPSI3IiBoZWlnaHQ9IjMiIGZpbGw9IndoaXRlIiBzdHJva2U9ImJsYWNrIi8+CjxyZWN0IHg9IjE3LjUiIHk9IjEuNSIgd2lkdGg9IjciIGhlaWdodD0iMyIgZmlsbD0id2hpdGUiIHN0cm9rZT0iYmxhY2siLz4KPHJlY3QgeD0iNy41IiB5PSIyNy41IiB3aWR0aD0iNyIgaGVpZ2h0PSIzIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSJibGFjayIvPgo8cmVjdCB4PSIxNy41IiB5PSIyNy41IiB3aWR0aD0iNyIgaGVpZ2h0PSIzIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSJibGFjayIvPgo8cmVjdCB4PSIxNC41IiB5PSI0LjUiIHdpZHRoPSIzIiBoZWlnaHQ9IjIzIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSJibGFjayIvPgo8L3N2Zz4K") 16 16, text !important;
+}
+
+/* ==========================================================================
+   MOBILE & TOUCH ACCELERATION (0ms Tap Delay, GPU Energy Saving)
+   ========================================================================== */
+button, a, input, select, textarea, [role="button"], 
+.role-pill-btn, .piano-key-btn, .nav-btn, .bento-terminal-block, .subtool-card {
+    touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+    /* Oszczędność baterii i GPU na telefonach */
+    body::after {
+        animation: none;
+        opacity: 0.6;
+    }
+
+    .bento-card-glow,
+    .snake-story-panel::before,
+    .dead-drop-glow {
+        filter: blur(28px) !important;
+        opacity: 0.65 !important;
+    }
+
+    /* Płynne przewijanie dotykowe na iOS i Android */
+    .dead-drop-body,
+    .mod-container,
+    .dl-unified-container,
+    .toolbox-container,
+    .admin-nav-tabs,
+    .bento-deck-grid {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
 }

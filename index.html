@@ -158,8 +158,8 @@
     }
     </script>
 
-    <link rel="icon" type="image/png" href="favicon.png?v=2">
-    <link rel="apple-touch-icon" href="favicon.png?v=2">
+    <link rel="icon" type="image/png" href="favicon.png?v=4">
+    <link rel="apple-touch-icon" href="favicon.png?v=4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
@@ -171,21 +171,27 @@
     <link rel="stylesheet" href="css/upload.css">
     <link rel="stylesheet" href="css/success.css">
     <link rel="stylesheet" href="css/widgets.css">
-    <link rel="stylesheet" href="css/telemetry.css">
-    <link rel="stylesheet" href="css/concierge.css">
     <link rel="stylesheet" href="css/omni-dropzone.css">
-    <link rel="stylesheet" href="css/pdf-matrix.css">
-    <link rel="stylesheet" href="css/watermark-studio.css">
-    <link rel="stylesheet" href="css/rodo-guard.css">
-    <link rel="stylesheet" href="css/drop-request.css">
-    <link rel="stylesheet" href="css/audio-waveform.css">
-    <link rel="stylesheet" href="css/code-viewer.css">
-    <link rel="stylesheet" href="css/dead-drop.css">
-    <link rel="stylesheet" href="css/qr-studio.css">
-    <link rel="stylesheet" href="css/video-compress.css">
-    <link rel="stylesheet" href="css/command-palette.css">
-    <link rel="stylesheet" href="css/radial-wheel.css">
-    <link rel="stylesheet" href="css/media-grabber.css">
+    <link rel="stylesheet" href="css/bento-showcase.css">
+
+    <!-- Style asynchroniczne / modalne (Zero-Block First Contentful Paint) -->
+    <link rel="stylesheet" href="css/my-files.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/telemetry.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/concierge.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/pdf-matrix.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/watermark-studio.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/rodo-guard.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/drop-request.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/audio-waveform.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/code-viewer.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/dead-drop.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/qr-studio.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/video-compress.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/command-palette.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/radial-wheel.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/media-grabber.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/pdf-studio-luxury.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/account-vault.css" media="print" onload="this.media='all'">
     <link rel="manifest" href="manifest.json">
     <script src="js/i18n.js" defer></script>
 
@@ -277,70 +283,99 @@
                     </svg>
                 </a>
                 <div class="nav-dropdown-menu" id="navToolsMenu">
+                    <!-- Magnetyczny Glider pod kursorem (Stripe/Linear style) -->
+                    <div class="nav-dropdown-glider" id="navDropdownGlider" aria-hidden="true"></div>
+
                     <!-- 1. Narzędzia PDF -->
                     <a href="#" class="nav-dropdown-link" data-target="view-narzedzia">
-                        <span class="nav-dropdown-icon">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <span class="nav-dropdown-icon icon-sky">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                             </svg>
                         </span>
                         <div class="nav-dropdown-text">
-                            <span class="nav-dropdown-title" data-i18n="nav_tools_pdf">Narzędzia PDF</span>
+                            <div class="nav-dropdown-title-row">
+                                <span class="nav-dropdown-title" data-i18n="nav_tools_pdf">Narzędzia PDF</span>
+                                <span class="nav-dropdown-badge badge-pdf" data-i18n="nav_badge_ram">100% RAM</span>
+                            </div>
+                            <span class="nav-dropdown-desc" data-i18n="nav_tools_pdf_sub">Podpis eIDAS, scalanie, RODO w RAM</span>
                         </div>
-                        <span class="nav-dropdown-badge badge-pdf">PDF</span>
                     </a>
 
-                    <!-- 2. Pobierz wideo HD -->
-                    <a href="#" class="nav-dropdown-link dropdown-grabber" data-target="view-pobieracz">
-                        <span class="nav-dropdown-icon">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- 2. Pobierz wideo HD (Wkrótce) -->
+                    <a href="#" class="nav-dropdown-link dropdown-grabber" data-status="soon" title="Funkcja w procesie tworzenia">
+                        <span class="nav-dropdown-icon icon-mint">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                         </span>
                         <div class="nav-dropdown-text">
-                            <span class="nav-dropdown-title" data-i18n="nav_grabber">Pobierz wideo HD</span>
+                            <div class="nav-dropdown-title-row">
+                                <span class="nav-dropdown-title" data-i18n="nav_grabber">Pobierz wideo HD</span>
+                                <span class="nav-dropdown-badge badge-soon" data-i18n="nav_badge_soon">Wkrótce</span>
+                            </div>
+                            <span class="nav-dropdown-desc" data-i18n="nav_grabber_sub">TikTok, YouTube, IG bez znaku wodnego</span>
                         </div>
-                        <span class="nav-dropdown-badge badge-hd">HD</span>
                     </a>
 
                     <div class="nav-dropdown-divider"></div>
 
                     <!-- 3. Historia Twoich transferów -->
                     <button type="button" class="nav-dropdown-link" id="navDropdownHistoryBtn">
-                        <span class="nav-dropdown-icon">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <span class="nav-dropdown-icon icon-purple">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                         </span>
                         <div class="nav-dropdown-text">
                             <span class="nav-dropdown-title" data-i18n="nav_history">Historia Twoich transferów</span>
+                            <span class="nav-dropdown-desc" data-i18n="nav_history_sub">Twoje aktywne paczki i statusy odbioru</span>
+                        </div>
+                    </button>
+                    <!-- 3b. Sejf Notatek i Kodów Konta -->
+                    <button type="button" class="nav-dropdown-link" id="navDropdownVaultBtn" onclick="if(window.openAccountVault) window.openAccountVault();">
+                        <span class="nav-dropdown-icon icon-amber">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                        </span>
+                        <div class="nav-dropdown-text">
+                            <div class="nav-dropdown-title-row">
+                                <span class="nav-dropdown-title">Sejf Notatek &amp; Kodów</span>
+                                <span class="nav-dropdown-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">Autozapis</span>
+                            </div>
+                            <span class="nav-dropdown-desc">Hasła, PIN-y, tokeny i notatki w Twoim profilu</span>
                         </div>
                     </button>
 
                     <!-- 4. Kontakt -->
                     <a href="#" class="nav-dropdown-link" data-target="view-kontakt">
-                        <span class="nav-dropdown-icon">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <span class="nav-dropdown-icon icon-amber">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                         </span>
                         <div class="nav-dropdown-text">
                             <span class="nav-dropdown-title" data-i18n="nav_contact">Kontakt</span>
+                            <span class="nav-dropdown-desc" data-i18n="nav_contact_sub">Wsparcie i kontakt z zespołem</span>
                         </div>
                     </a>
 
                     <!-- 5. Dźwięki interfejsu -->
-                    <button type="button" class="nav-dropdown-link" id="navDropdownSoundBtn">
-                        <span class="nav-dropdown-icon">
-                            <svg class="dropdown-sound-icon-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="button" class="nav-dropdown-link nav-dropdown-sound-row" id="navDropdownSoundBtn">
+                        <span class="nav-dropdown-icon icon-emerald">
+                            <svg class="dropdown-sound-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                             </svg>
-                            <svg class="dropdown-sound-icon-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <svg class="dropdown-sound-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                                 <line x1="22" y1="9" x2="16" y2="15"></line>
                                 <line x1="16" y1="9" x2="22" y2="15"></line>
@@ -348,8 +383,12 @@
                         </span>
                         <div class="nav-dropdown-text">
                             <span class="nav-dropdown-title" data-i18n="nav_sounds">Dźwięki interfejsu</span>
+                            <span class="nav-dropdown-desc" data-i18n="nav_sounds_sub">Efekty dźwiękowe i haptyka UI</span>
                         </div>
-                        <span class="badge-sound-state" id="dropdownSoundState">ON</span>
+                        <div class="sound-mini-switch" id="dropdownSoundSwitch">
+                            <div class="sound-switch-thumb"></div>
+                        </div>
+                        <span class="badge-sound-state" id="dropdownSoundState" style="display: none;">ON</span>
                     </button>
                 </div>
             </li>
@@ -434,15 +473,15 @@
                 </svg>
                 <span data-i18n="nav_tools">Tools</span>
             </a>
-            <a href="#" class="mobile-drawer-link" data-target="view-pobieracz">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round"
+            <a href="#" class="mobile-drawer-link" data-status="soon" title="Funkcja w procesie tworzenia">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 <span data-i18n="nav_grabber">Pobierz Wideo</span>
-                <span class="mobile-hud-badge" style="color:#34D399; border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.1);">HD</span>
+                <span class="mobile-hud-badge" style="color:#94A3B8; border-color:rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); font-size:0.65rem;">Wkrótce</span>
             </a>
             <button type="button" class="mobile-drawer-link mobile-drawer-radial-btn btn-open-radial-wheel"
                 id="mobileRadialBtn">
@@ -459,6 +498,16 @@
                 <span data-i18n="nav_radial_tools">Koło Narzędzi & Studio</span>
                 <span class="mobile-hud-badge">HUD</span>
             </button>
+            <a href="#" class="mobile-drawer-link" id="mobileVaultBtn" onclick="if(window.openAccountVault) window.openAccountVault(); const d=document.getElementById('mobileNavDrawer'); if(d){d.classList.remove('open'); d.style.display='none';}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Sejf Notatek &amp; Kody</span>
+                <span class="mobile-hud-badge" style="color:#FBBF24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.1);">Autozapis</span>
+            </a>
             <a href="#" class="mobile-drawer-link" data-target="view-beam">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
@@ -495,7 +544,7 @@
             <div class="mobile-drawer-actions">
                 <button type="button" class="mobile-drawer-action-btn" id="mobileConciergeBtn"
                     aria-label="Zapytaj asystenta" data-i18n-title="dock_concierge">
-                    <span style="color: #34D399; font-size: 13px;">✦</span>
+                    <span style="color: #C4E7D4; font-size: 13px;">✦</span>
                     <span data-i18n="dock_concierge">Zapytaj asystenta</span>
                 </button>
                 <button type="button" class="mobile-drawer-action-btn" id="mobileHistoryBtn"
@@ -572,10 +621,7 @@
                     <!-- LEFT COLUMN: BRAND COPY + VALUE PROPS (CLEAN TRANSFER-FIRST) -->
                     <div class="studio-hero-left">
                         <div class="studio-hero-copy">
-                            <div class="studio-badge">
-                                <span class="studio-badge-pulse"></span>
-                                <span data-i18n="hero_badge_pill">Błyskawiczny &amp; Prywatny Transfer</span>
-                            </div>
+
                             <h1 class="studio-hero-title">
                                 <span class="studio-title-gradient" data-i18n="hero_title">Błyskawiczny transfer
                                     plików</span>
@@ -1567,140 +1613,472 @@
 
                 <!-- SEKCJE BENTO PONIŻEJ HERO -->
                 <div class="studio-panorama-sections">
-                    <!-- TRUST BAR (6 PANORAMIC CARDS) -->
-                    <div class="trust-bar-section" id="trustSection">
-                        <div class="trust-bar-header">
-                            <div class="trust-header-badge">
-                                <span class="trust-badge-pulse"></span>
-                                <span data-i18n="trust_badge_header">Standard Nowej Generacji</span>
-                            </div>
-                            <h2 class="trust-header-title" data-i18n="trust_title_header">Dlaczego Dropsite to nowa
-                                jakość transferu?</h2>
-                            <p class="trust-header-subtitle" data-i18n="trust_sub_header">Prywatność Zero-Knowledge,
-                                przetwarzanie w RAM, bez śledzenia reklamowego i bez dławienia łączy.</p>
+                                                            <!-- CYBER-SNAKE FLUID SHOWCASE (WĄŻ INFORMACYJNY - ZIGZAG HUD TIMELINE) -->
+                    <div class="bento-showcase-section" id="trustSection">
+                        
+                        <!-- NAGŁÓWEK SEKCJI -->
+                        <div class="bento-deck-header">
+                            <h2 class="bento-header-title" data-i18n="trust_title_header">Dlaczego Dropsite to nowa jakość transferu?</h2>
+                            <p class="bento-header-subtitle" data-i18n="trust_sub_header">Prywatność Zero-Knowledge, przetwarzanie w RAM, bez śledzenia reklamowego i bez dławienia łączy.</p>
                         </div>
-                        <div class="trust-grid">
-                            <!-- KARTA 1: KINOWY ODTWARZACZ -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-cinema">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                            <line x1="19" y1="5" x2="19" y2="19"></line>
-                                        </svg>
+
+                        <!-- WRAPPER WĘŻA INFORMACYJNEGO -->
+                        <div class="snake-deck-wrapper">
+
+                            <!-- ========================================== -->
+                            <!-- SEGMENT 1 (CYAN): PDF STUDIO (100% W RAM) -->
+                            <!-- Lewa: Opowieść / Prawa: Interaktywna Siatka 6 Narzędzi -->
+                            <!-- ========================================== -->
+                            <div class="snake-row">
+                                <!-- Lewa: Story Card -->
+                                <div class="snake-story-col">
+                                    <div class="snake-story-panel node-sky">
+                                        <span class="snake-watermark-number" aria-hidden="true">01</span>
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <h3 class="snake-story-title" data-i18n="showcase_pdf_title">PDF Studio (100% w Pamięci RAM)</h3>
+                                        <p class="snake-story-desc" data-i18n="showcase_pdf_desc">Kompletny pakiet biurowy wykonujący operacje w przeglądarce — umowy, dowody i faktury nigdy nie opuszczają Twojego komputera.</p>
+                                        <div class="snake-feature-points">
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_pdf_feat1"><strong>100% Client-Side Privacy:</strong> Przetwarzanie plików lokalnie w pamięci RAM — zerowy transfer na serwer zewnętrzny.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_pdf_feat2"><strong>Wygodny Podpis Cyfrowy:</strong> Odręczny podpis dokumentów i umów z generowaniem audytu.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_pdf_feat3"><strong>Inteligentna Cenzura RODO:</strong> Błyskawiczne maskowanie PESEL, NIP i dowodów osobistych jednym kliknięciem.</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="snake-story-cta" onclick="if(window.switchToolTab) window.switchToolTab('edit');">
+                                            <span data-i18n="showcase_pdf_cta">Otwórz Narzędzia PDF</span>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_1_tag">STREAMING 4K</span>
                                 </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_1_title">Kinowy Odtwarzacz & Albumy
-                                </h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_1_desc">Odbiorca natychmiast ogląda
-                                    wideo 4K, słucha muzyki i przegląda albumy zdjęć bezpośrednio w przeglądarce, bez
-                                    czekania na pobranie.</p>
+
+                                <!-- Prawa: Visual Card (6-Tool Hexagonal Honeycomb Grid) -->
+                                <div class="snake-visual-col">
+                                    <div class="bento-card">
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <div class="bento-card-glow bento-glow-sky"></div>
+
+                                        <div class="bento-telemetry-header">
+                                            <span class="bento-telemetry-pill" data-i18n="showcase_matrix_badge">• 100% W RAM &bull; ZERO ŚLADÓW</span>
+                                        </div>
+
+                                        <div class="bento-pdf-hex-grid">
+                                            <!-- 1. Podpis Cyfrowy -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('edit');" title="Otwórz Podpis Cyfrowy">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_pdf_edit_name">Podpis Cyfrowy PDF</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_eidas_sub">Odręczny podpis umów i formularzy</span>
+                                            </div>
+
+                                            <!-- 2. RODO Guard -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('rodo');" title="Otwórz RODO Guard">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_pdf_rodo_name">RODO Guard (Auto-Cenzura)</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_rodo_sub">Błyskawiczne czernienie dowodów i PESEL</span>
+                                            </div>
+
+                                            <!-- 3. Kompresor PDF -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('compress');" title="Otwórz Kompresor PDF">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_compress_name">Kompresor PDF</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_compress_sub">Zmniejszaj rozmiar z zachowaniem ostrości tekstu</span>
+                                            </div>
+
+                                            <!-- 4. Konwerter Obrazów -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('convert');" title="Otwórz Konwerter Obrazów">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_convert_name">Konwerter Obrazów do PDF</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_convert_sub">Łącz zdjęcia PNG, JPG, WebP w spójny PDF</span>
+                                            </div>
+
+                                            <!-- 5. Układ Matrix & Obrót -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('matrix');" title="Otwórz PDF Matrix">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_pdf_matrix_name">Układ Matrix &amp; Obrót</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_matrix_sub">Obrót o 90° i wizualne układanie stron PDF</span>
+                                            </div>
+
+                                            <!-- 6. Studio Znaków Wodnych -->
+                                            <div class="bento-hex-tool-item" onclick="if(window.switchToolTab) window.switchToolTab('watermark');" title="Otwórz Studio Znaków Wodnych">
+                                                <div class="bento-tool-heading-row">
+                                                    <div class="bento-mini-hex">
+                                                        <div class="bento-mini-hex-shield"></div>
+                                                        <svg class="bento-mini-hex-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"></circle><line x1="3.5" y1="9" x2="20.5" y2="9"></line><line x1="3.5" y1="15" x2="20.5" y2="15"></line><path d="M12 2.5a15.3 15.3 0 0 1 4 9.5 15.3 15.3 0 0 1-4 9.5 15.3 15.3 0 0 1 4-9.5z"></path></svg>
+                                                    </div>
+                                                    <span class="bento-tool-title" data-i18n="radial_tool_pdf_watermark_name">Studio Znaków Wodnych</span>
+                                                </div>
+                                                <span class="bento-tool-sub" data-i18n="showcase_tool_watermark_sub">Stemple poufności z kątem i kafelkowaniem</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- KARTA 2: CZYSZCZENIE EXIF -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-shield">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                            <polyline points="9 12 11 14 15 10"></polyline>
-                                        </svg>
+                            <!-- ========================================== -->
+                            <!-- SEGMENT 2 (MINT): MEDIA STUDIO & 4K STREAMING -->
+                            <!-- Lewa: Visual Cockpit / Prawa: Story Card -->
+                            <!-- ========================================== -->
+                            <div class="snake-row is-inverted">
+                                <!-- Lewa: Visual Card (Cockpit Player & Cyber-Chips) -->
+                                <div class="snake-visual-col">
+                                    <div class="bento-card">
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <div class="bento-card-glow bento-glow-mint"></div>
+
+                                        <div class="bento-telemetry-header">
+                                            <span class="bento-telemetry-pill" data-i18n="showcase_media_badge">• 4K &amp; WEKTORY &bull; STREAMING ZERO-WAIT</span>
+                                        </div>
+
+                                        <!-- Cockpit Mini-Playera -->
+                                        <div class="bento-player-cockpit">
+                                            <div class="bento-player-track">
+                                                <div class="bento-play-btn">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                                                </div>
+                                                <div class="bento-scrub-bar">
+                                                    <div class="bento-scrub-progress"></div>
+                                                </div>
+                                                <div class="bento-equalizer" title="Aktywne dekodowanie w RAM">
+                                                    <div class="bento-eq-bar"></div>
+                                                    <div class="bento-eq-bar"></div>
+                                                    <div class="bento-eq-bar"></div>
+                                                    <div class="bento-eq-bar"></div>
+                                                </div>
+                                            </div>
+                                            <div class="bento-player-telemetry-row">
+                                                <span class="bento-spec-badge">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                    4K UHD 60 FPS
+                                                </span>
+                                                <span class="bento-spec-badge" data-i18n="showcase_spec_streaming">⚡ Zero-Wait Streaming</span>
+                                                <span class="bento-spec-badge" data-i18n="showcase_spec_zip">📦 Odtwarzanie z wnętrza ZIP</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Geometryczne Cyber-Chipy -->
+                                        <div class="bento-cyber-chips-row">
+                                            <button type="button" class="bento-cyber-chip" onclick="if(window.openVideoCompressor) window.openVideoCompressor();" title="Zmniejsz wideo MP4 w RAM">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"></rect><path d="M8 4v16M16 4v16"></path></svg>
+                                                <span data-i18n="radial_tool_video_compress_name">Kompresor Wideo 25MB</span>
+                                            </button>
+                                            <button type="button" class="bento-cyber-chip" onclick="const q=document.getElementById('qrStudioModal'); if(q){q.classList.add('open'); if(window.initQRStudio) window.initQRStudio();}" title="Generator kodów wektorowych SVG">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                                <span data-i18n="radial_tool_qr_studio_name">Studio Kodów QR 4K (SVG)</span>
+                                            </button>
+                                            <span class="bento-cyber-chip is-soon" title="Pobieranie wideo bez znaku wodnego z TikToka i YouTube (w trakcie tworzenia)">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                <span style="color:#94A3B8;" data-i18n="showcase_grabber_soon">Pobieracz Wideo &amp; Foto (Wkrótce)</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_2_tag">BEZ ŚLADÓW GPS</span>
                                 </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_2_title">Czyszczenie Metadanych</h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_2_desc">Automatyczne usuwanie
-                                    współrzędnych GPS, numerów seryjnych aparatów i metadanych z Twoich zdjęć
-                                    bezpośrednio w pamięci przed wysyłką.</p>
+
+                                <!-- Prawa: Story Card -->
+                                <div class="snake-story-col">
+                                    <div class="snake-story-panel node-mint">
+                                        <span class="snake-watermark-number" aria-hidden="true">02</span>
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <h3 class="snake-story-title" data-i18n="showcase_media_title">Media Studio & Kinowy Streaming 4K</h3>
+                                        <p class="snake-story-desc" data-i18n="showcase_media_desc">Odbiorca natychmiast ogląda wideo 4K/60fps, słucha muzyki FLAC/MP3 oraz przegląda galerie zdjęć bezpośrednio z wnętrza archiwów ZIP bez czekania na pobranie gigabajtów na dysk.</p>
+                                        <div class="snake-feature-points">
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_media_feat1"><strong>Zero-Wait Streaming:</strong> Płynne odtwarzanie strumieniowe bez buforowania i pobierania archiwów.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_media_feat2"><strong>Lokalny Kompresor MP4:</strong> Przetwarzanie materiałów wideo bezpośrednio w RAM pod limit 25 MB Discorda i poczty.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_media_feat3"><strong>Wektorowe Studio Kodów QR:</strong> Generowanie kodów 4K i SVG z osadzonym logo i wizytówkami vCard.</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="snake-story-cta" onclick="if(window.openVideoCompressor) window.openVideoCompressor();">
+                                            <span data-i18n="showcase_media_cta">Otwórz Kompresor Wideo</span>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- KARTA 3: ZERO-KNOWLEDGE -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-lock">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                            <circle cx="12" cy="16" r="1.5"></circle>
-                                        </svg>
+                            <!-- ========================================== -->
+                            <!-- SEGMENT 3 (GOLD): DROPSITE PRO (14.99 ZŁ) -->
+                            <!-- Lewa: Story Card & Płatność BLIK / Prawa: Złoty Monolit -->
+                            <!-- ========================================== -->
+                            <div class="snake-row">
+                                <!-- Lewa: Story Card & Oferta BLIK -->
+                                <div class="snake-story-col">
+                                    <div class="snake-story-panel node-amber" style="border-color: rgba(251, 191, 36, 0.28); border-top-color: rgba(251, 191, 36, 0.5);">
+                                        <span class="snake-watermark-number" aria-hidden="true">03</span>
+                                        <div class="bento-corner bento-corner-tl" style="border-color: rgba(251, 191, 36, 0.6);"></div>
+                                        <div class="bento-corner bento-corner-tr" style="border-color: rgba(251, 191, 36, 0.6);"></div>
+                                        <div class="bento-corner bento-corner-bl" style="border-color: rgba(251, 191, 36, 0.6);"></div>
+                                        <div class="bento-corner bento-corner-br" style="border-color: rgba(251, 191, 36, 0.6);"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <h3 class="snake-story-title" style="color: #FDE047;" data-i18n="showcase_pro_title">Paczki 10 GB &amp; Błyskawiczny BLIK</h3>
+                                        <p class="snake-story-desc" data-i18n="showcase_pro_desc">Światłowodowy transfer bez dławienia prędkości. Dla wymagających paczek jednorazowe, bezpieczne mikropłatności BLIK bez abonamentów i bez podpinania karty.</p>
+                                        <div class="snake-feature-points">
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet" style="color: #FBBF24;">◆</span>
+                                                <span data-i18n="showcase_pro_feat1"><strong>14.99 zł jednorazowo na 30 Dni:</strong> Płacisz kodem BLIK tylko wtedy, kiedy potrzebujesz. Zero ukrytych subskrypcji.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet" style="color: #FBBF24;">◆</span>
+                                                <span data-i18n="showcase_pro_feat2"><strong>Światłowód 1000 Mb/s (Warszawa Edge):</strong> Pobieranie i wysyłanie z pełną przepustowością bez kolejkowania.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet" style="color: #FBBF24;">◆</span>
+                                                <span data-i18n="showcase_pro_feat3"><strong>Własny Branding &amp; 100% Czysty Link:</strong> Elegancka strona pobierania z Twoim logo i podpisem, bez reklam.</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="bento-pro-cta-btn" onclick="if(window.redirectToStripePro) window.redirectToStripePro(); else if(window.openProModal) window.openProModal();" style="max-width: 290px;">
+                                            <span data-i18n="showcase_pro_cta">Odblokuj Pakiet PRO (14.99 zł)</span>
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_3_tag">AES-256-GCM</span>
                                 </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_3_title">Prywatność Zero-Knowledge
-                                </h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_3_desc">Szyfrowanie kryptograficzne w
-                                    przeglądarce. Klucz deszyfrujący ma tylko odbiorca w linku — nikt inny nie jest w
-                                    stanie podejrzeć Twoich danych.</p>
+
+                                <!-- Prawa: Visual Card (Złoty Monolit Aerospace) -->
+                                <div class="snake-visual-col">
+                                    <div class="bento-card bento-card-tall-pro">
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <div class="bento-card-glow bento-glow-amber"></div>
+
+                                        <div class="bento-telemetry-header">
+                                            <span class="bento-telemetry-pill" style="color: #FBBF24; border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08);" data-i18n="showcase_pro_speed_badge">MAX PRĘDKOŚĆ</span>
+                                        </div>
+
+                                        <div class="bento-pro-widget">
+                                            <div class="bento-pro-compare-bar">
+                                                <div class="bento-compare-col">
+                                                    <span class="bento-compare-label" data-i18n="showcase_tier_free_label">Darmowy</span>
+                                                    <span class="bento-compare-val">250 MB</span>
+                                                </div>
+                                                <div style="color: #FBBF24; font-weight: 800; font-size: 16px;">➔</div>
+                                                <div class="bento-compare-col" style="text-align: right;">
+                                                    <span class="bento-compare-label" style="color: #FBBF24;" data-i18n="showcase_tier_pro_label">Plan PRO</span>
+                                                    <span class="bento-compare-val is-pro">10 GB (40x)</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="bento-pro-checklist">
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check1">Paczki do 10 GB na pojedynczy transfer</span>
+                                                </div>
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check2">Stałe przechowywanie lub 30 Dni</span>
+                                                </div>
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check3">100% Czysty link bez reklam dla klientów</span>
+                                                </div>
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check4">Twój branding &amp; podpis na pobieralni</span>
+                                                </div>
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check5">Światłowód 1000 Mb/s (Warszawa Edge)</span>
+                                                </div>
+                                                <div class="bento-pro-check-row">
+                                                    <div class="bento-hex-bullet">◆</div>
+                                                    <span data-i18n="showcase_pro_check6">Płatność BLIK — 14.99 zł (bez karty)</span>
+                                                </div>
+                                            </div>
+
+                                            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 4px;">
+                                                <span style="font-size: 11.5px; color: #94A3B8;" data-i18n="showcase_pro_stripe_hint">Natychmiastowe przejście do Stripe</span>
+                                                <span style="font-size: 11.5px; color: #FBBF24; font-weight: 700;" data-i18n="showcase_pro_ssl_hint">Bezpieczny SSL ➔</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- KARTA 4: 10 GB & BLIK -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-rocket">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                        </svg>
+                            <!-- ========================================== -->
+                            <!-- SEGMENT 4 (PURPLE): PRYWATNOŚĆ, BEAM & EXIF -->
+                            <!-- Lewa: Terminale Bezpieczeństwa / Prawa: Story Card -->
+                            <!-- ========================================== -->
+                            <div class="snake-row is-inverted">
+                                <!-- Lewa: Visual Card (Terminale B2B & Paski Stanu) -->
+                                <div class="snake-visual-col">
+                                    <div class="bento-card">
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <div class="bento-card-glow bento-glow-purple"></div>
+
+                                        <div class="bento-telemetry-header">
+                                            <span class="bento-telemetry-pill" data-i18n="showcase_privacy_badge">• ZERO-KNOWLEDGE &bull; P2P</span>
+                                        </div>
+
+                                        <div class="bento-b2b-terminal-list">
+                                            <!-- Dead Drop -->
+                                            <div class="bento-terminal-block" onclick="if(window.openDeadDropCreator) window.openDeadDropCreator();" title="Stwórz samospalającą się notatkę">
+                                                <div class="bento-terminal-hex">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                                                </div>
+                                                <div class="bento-terminal-info">
+                                                    <span class="bento-terminal-title" data-i18n="radial_tool_dead_drop_name">Poufna Notatka</span>
+                                                    <span class="bento-terminal-sub" data-i18n="showcase_tool_deaddrop_sub">Jednorazowe notatki usuwane po odczytaniu</span>
+                                                </div>
+                                                <span class="bento-terminal-badge">1x Odczyt</span>
+                                            </div>
+
+                                            <!-- Drop Request -->
+                                            <div class="bento-terminal-block" onclick="if(window.openDropRequestCreator) window.openDropRequestCreator();" title="Wygeneruj link wrzutni plików">
+                                                <div class="bento-terminal-hex">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                </div>
+                                                <div class="bento-terminal-info">
+                                                    <span class="bento-terminal-title" data-i18n="radial_tool_drop_req_name">Żądanie Plików (Drop Request)</span>
+                                                    <span class="bento-terminal-sub" data-i18n="showcase_tool_dropreq_sub">Dedykowany link wrzutni dla Twoich klientów</span>
+                                                </div>
+                                                <span class="bento-terminal-badge">B2B</span>
+                                            </div>
+                                        </div>
+
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+                                            <!-- Beam P2P -->
+                                            <div class="bento-hud-status-strip" style="cursor: pointer;" onclick="if(window.switchView) window.switchView('view-beam');" title="Otwórz Beam P2P">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <span class="bento-status-dot dot-cyan"></span>
+                                                    <span class="bento-status-text" style="font-size: 11px;">Beam WebRTC</span>
+                                                </div>
+                                                <span style="font-size: 10px; color: #06B6D4; font-weight: 700; font-family: ui-monospace, monospace;">P2P ➔</span>
+                                            </div>
+
+                                            <!-- EXIF Sanitizer -->
+                                            <div class="bento-hud-status-strip" title="GPS Sanitizer & Auto-Burn">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <span class="bento-status-dot dot-rose"></span>
+                                                    <span class="bento-status-text" style="font-size: 11px;">EXIF Purge</span>
+                                                </div>
+                                                <span style="font-size: 10px; color: #FB7185; font-weight: 700; font-family: ui-monospace, monospace;" data-i18n="showcase_exif_badge">0 ŚLADÓW</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_4_tag">MAX PRĘDKOŚĆ</span>
                                 </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_4_title">10 GB & Błyskawiczny BLIK
-                                </h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_4_desc">Światłowodowy transfer bez
-                                    dławienia prędkości. Dla wymagających paczek jednorazowe, bezpieczne mikropłatności
-                                    BLIK bez abonamentów.</p>
+
+                                <!-- Prawa: Story Card -->
+                                <div class="snake-story-col">
+                                    <div class="snake-story-panel node-purple">
+                                        <span class="snake-watermark-number" aria-hidden="true">04</span>
+                                        <div class="bento-corner bento-corner-tl"></div>
+                                        <div class="bento-corner bento-corner-tr"></div>
+                                        <div class="bento-corner bento-corner-bl"></div>
+                                        <div class="bento-corner bento-corner-br"></div>
+                                        <div class="bento-hex-mesh-bg"></div>
+                                        <h3 class="snake-story-title" data-i18n="showcase_privacy_title">Prywatność &amp; Narzędzia B2B</h3>
+                                        <p class="snake-story-desc" data-i18n="showcase_privacy_desc">Bezpieczna wymiana haseł, sekretów i dedykowany odbiór materiałów od klientów w standardzie Zero-Knowledge.</p>
+                                        <div class="snake-feature-points">
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_privacy_feat1"><strong>Poufne notatki jednorazowe:</strong> Hasła i poufne wiadomości usuwane natychmiast po ich 1. odczytaniu.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_privacy_feat2"><strong>Wrzutnia Drop Request dla Klientów:</strong> Generuj bezpieczny link do odbioru plików bezpośrednio od zleceniodawców.</span>
+                                            </div>
+                                            <div class="snake-point-item">
+                                                <span class="snake-point-bullet">◆</span>
+                                                <span data-i18n="showcase_privacy_feat3"><strong>Czyszczenie EXIF &amp; GPS Sanitizer:</strong> Automatyczne wycinanie lokalizacji i metadanych z przesyłanych zdjęć.</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="snake-story-cta" onclick="if(window.openDeadDropCreator) window.openDeadDropCreator();">
+                                            <span data-i18n="showcase_privacy_cta">Utwórz Poufną Notatkę</span>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- KARTA 5: NARZĘDZIA PDF -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-pdf">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                            <polyline points="14 2 14 8 20 8"></polyline>
-                                            <path d="M10 12l4 4m0-4l-4 4"></path>
+                            <!-- DOLNY BANNER PODSUMOWUJĄCY CAŁĄ ARCHITEKTURĘ -->
+                            <div class="bento-pro-bottom-banner" style="margin-top: 18px;">
+                                <div class="bento-corner bento-corner-tl"></div>
+                                <div class="bento-corner bento-corner-tr"></div>
+                                <div class="bento-corner bento-corner-bl"></div>
+                                <div class="bento-corner bento-corner-br"></div>
+                                <div class="bento-pro-banner-left">
+                                    <div class="bento-pro-badge-hex">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                                         </svg>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_5_tag">100% W RAM</span>
-                                </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_5_title">Narzędzia PDF (100% RAM)
-                                </h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_5_desc">Odręczny podpis cyfrowy,
-                                    pieczątki firmowe, scalanie i kompresja dokumentów bez instalacji — pliki nie
-                                    opuszczają Twojego urządzenia.</p>
-                            </div>
-
-                            <!-- KARTA 6: SAMOZNISZCZENIE -->
-                            <div class="trust-card">
-                                <div class="trust-card-top">
-                                    <div class="trust-icon-box trust-icon-burn">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path
-                                                d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z">
-                                            </path>
-                                        </svg>
+                                    <div class="bento-pro-banner-texts">
+                                        <h4 data-i18n="showcase_banner_title">Szukasz niezawodnego transferu do 10 GB bez subskrypcji?</h4>
+                                        <p data-i18n="showcase_banner_desc">Kup pakiet Dropsite PRO za jedyne 14.99 zł na 30 dni kodem BLIK. Własny branding twórcy, stałe archiwum i brak reklam.</p>
                                     </div>
-                                    <span class="trust-card-pill" data-i18n="trust_card_6_tag">BURN-AFTER-READ</span>
                                 </div>
-                                <h3 class="trust-card-title" data-i18n="trust_card_6_title">Tryb Samozniszczenia</h3>
-                                <p class="trust-card-desc" data-i18n="trust_card_6_desc">Trwałe i bezpowrotne wymazanie
-                                    pliku z serwerów pamięci masowej w ułamku sekundy po zakończeniu pobierania przez
-                                    odbiorcę.</p>
+                                <div class="bento-pro-banner-actions">
+                                    <button type="button" class="bento-btn-pricing" onclick="if(window.switchView) window.switchView('view-cennik');">
+                                        <span data-i18n="showcase_banner_btn_pricing">Porównaj Plany &amp; Cennik</span>
+                                    </button>
+                                    <button type="button" class="bento-btn-upgrade-now" onclick="if(window.redirectToStripePro) window.redirectToStripePro(); else if(window.openProModal) window.openProModal();">
+                                        <span data-i18n="showcase_banner_btn_buy">★ Kup Pakiet PRO — 14.99 zł (BLIK)</span>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -1998,188 +2376,237 @@
         <!-- ======================================================== -->
         <!-- WIDOK: ZESTAW NARZĘDZI DROPSITE (PDF & MEDIA TOOLBOX) -->
         <!-- ======================================================== -->
+        <!-- ======================================================== -->
+        <!-- WIDOK: ZESTAW NARZĘDZI DROPSITE (PDF & MEDIA TOOLBOX) -->
+        <!-- ======================================================== -->
         <div id="view-narzedzia" class="view-section" hidden>
-            <div class="main-wrapper">
-                <div class="toolbox-container">
-                    <header class="upload-header">
-                        <div class="toolbox-header-badge">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
-                                </path>
-                            </svg>
-                            <span>Dropsite Toolkit &bull; 100% Client-Side Privacy</span>
-                        </div>
-                        <h1 data-i18n="toolbox_title">Zestaw Narzędzi Dropsite</h1>
-                        <p data-i18n="toolbox_subtitle">Błyskawiczne narzędzia PDF i konwerter formatów w pamięci Twojej
-                            przeglądarki (100% prywatności)</p>
-                    </header>
+            <div class="studio-wrapper toolbox-clean-wrapper">
 
-                    <!-- 1. GŁÓWNY SELEKTOR KATEGORII (ORGANIZACJA / BEZPIECZEŃSTWO / OPTYMALIZACJA) -->
-                    <div class="toolbox-categories-bar" id="toolboxCategoriesBar">
-                        <button type="button" class="toolbox-cat-btn active" data-category="organize">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                            </svg>
-                            <span data-i18n="toolbox_cat_organize">Organizacja &amp; Strony</span>
-                            <span class="toolbox-cat-count">3</span>
-                        </button>
-                        <button type="button" class="toolbox-cat-btn" data-category="security">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                <circle cx="12" cy="11" r="1.5"></circle>
-                                <path d="M12 12.5V15"></path>
-                            </svg>
-                            <span data-i18n="toolbox_cat_security">Bezpieczeństwo &amp; Podpis</span>
-                            <span class="toolbox-cat-count">2</span>
-                        </button>
-                        <button type="button" class="toolbox-cat-btn" data-category="convert">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7">
-                                </path>
-                            </svg>
-                            <span data-i18n="toolbox_cat_convert">Optymalizacja &amp; Konwersja</span>
-                            <span class="toolbox-cat-count">2</span>
-                        </button>
+                <!-- 1. NAGŁÓWEK GŁÓWNY (CLEAN STUDIO HERO) -->
+                <div class="studio-hero-left toolbox-hero-header">
+                    <div class="studio-hero-copy">
+                        <h1 class="studio-hero-title">
+                            <span class="studio-title-gradient" data-i18n="toolbox_title">Zestaw Narzędzi Dropsite</span>
+                        </h1>
+                        <p class="studio-hero-desc" data-i18n="toolbox_subtitle">Błyskawiczne narzędzia PDF i konwerter formatów wykonywane w 100% lokalnie w bezpiecznej pamięci Twojej przeglądarki.</p>
                     </div>
+                </div>
 
-                    <!-- 2. PASEK NARZĘDZI DLA WYBRANEJ KATEGORII -->
-                    <div class="toolbox-subnav-container" id="toolboxSubnavContainer">
-                        <!-- GRUPA 1: ORGANIZACJA & STRONY -->
-                        <div class="toolbox-subnav-group active" data-cat-group="organize">
-                            <button type="button" class="toolbox-tab-btn active" data-tool="merge">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="12" y1="18" x2="12" y2="12"></line>
-                                    <line x1="9" y1="15" x2="15" y2="15"></line>
-                                </svg>
-                                <span data-i18n="tool_tab_merge">Łączenie PDF</span>
-                            </button>
-                            <button type="button" class="toolbox-tab-btn" data-tool="split">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="6" cy="6" r="3"></circle>
-                                    <circle cx="6" cy="18" r="3"></circle>
-                                    <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                                    <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                                    <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
-                                </svg>
-                                <span data-i18n="tool_tab_split">Rozdziel PDF</span>
-                            </button>
-                            <button type="button" class="toolbox-tab-btn" data-tool="organize">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                                </svg>
-                                <span data-i18n="tool_tab_organize">Układ stron &amp; Obrót</span>
-                            </button>
+                <!-- 2. GŁÓWNY MODUŁ WORKSPACE STUDIO (ZE ZINTEGROWANYM PASKIEM NARZĘDZI) -->
+                <div class="toolbox-cyber-deck" id="toolboxWorkspaceDeck">
+
+                    <!-- =====================================================
+                         SIDEBAR: LEWA KOLUMNA NAWIGACJI NARZĘDZI
+                    ====================================================== -->
+                    <nav class="tb-sidebar" id="toolboxSubnavContainer" aria-label="Nawigacja narzędzi">
+
+                        <!-- Nagłówek sidebaru -->
+                        <div class="tb-sidebar-header">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            <span>Narzędzia</span>
                         </div>
 
-                        <!-- GRUPA 2: BEZPIECZEŃSTWO & PODPIS -->
-                        <div class="toolbox-subnav-group" data-cat-group="security" style="display: none;">
-                            <button type="button" class="toolbox-tab-btn" data-tool="edit">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                                </svg>
-                                <span data-i18n="tool_tab_edit">Podpis eIDAS &amp; Edytor</span>
-                            </button>
-                            <button type="button" class="toolbox-tab-btn" data-tool="watermark">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="9.5"></circle>
-                                    <line x1="3.5" y1="9" x2="20.5" y2="9"></line>
-                                    <line x1="3.5" y1="15" x2="20.5" y2="15"></line>
-                                    <path
-                                        d="M12 2.5a15.3 15.3 0 0 1 4 9.5 15.3 15.3 0 0 1-4 9.5 15.3 15.3 0 0 1-4-9.5 15.3 15.3 0 0 1 4-9.5z">
-                                    </path>
-                                </svg>
-                                <span data-i18n="tool_tab_watermark">Znak Wodny &amp; Pieczęć</span>
-                            </button>
-                        </div>
+                        <!-- Grupa 1: Organizuj -->
+                        <div class="tb-sidebar-group">
+                            <span class="tb-sidebar-group-label">Organizuj</span>
 
-                        <!-- GRUPA 3: OPTYMALIZACJA & KONWERSJA -->
-                        <div class="toolbox-subnav-group" data-cat-group="convert" style="display: none;">
-                            <button type="button" class="toolbox-tab-btn" data-tool="compress">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7">
-                                    </path>
-                                </svg>
-                                <span data-i18n="tool_tab_compress">Kompresor PDF</span>
-                            </button>
-                            <button type="button" class="toolbox-tab-btn" data-tool="convert">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="23 4 23 10 17 10"></polyline>
-                                    <polyline points="1 20 1 14 7 14"></polyline>
-                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15">
-                                    </path>
-                                </svg>
-                                <span data-i18n="tool_tab_convert">Konwerter Obrazów</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- PANEL 1: ŁĄCZENIE PDF -->
-                    <div id="toolPanel_merge" class="tool-panel" style="display: block;">
-                        <div class="tool-card-box">
-                            <div class="tool-dropzone" id="mergeDropzone">
-                                <input type="file" id="mergeFileInput" multiple accept=".pdf,application/pdf"
-                                    style="display: none;">
-                                <div class="tool-drop-icon">
-                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#FF4439"
-                                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <button type="button" class="tb-sidebar-item tb-tool-card active" data-tool="merge" data-category="organize">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                         <polyline points="14 2 14 8 20 8"></polyline>
                                         <line x1="12" y1="18" x2="12" y2="12"></line>
                                         <line x1="9" y1="15" x2="15" y2="15"></line>
                                     </svg>
-                                </div>
-                                <strong class="tool-drop-title" data-i18n="tool_merge_drop_title">Wybierz lub upuść
-                                    pliki PDF</strong>
-                                <span class="tool-drop-sub" data-i18n="tool_merge_drop_sub">Ułóż kolejność strzałkami, a
-                                    następnie połącz w jeden spójny plik</span>
-                            </div>
-
-                            <div class="tool-file-manager">
-                                <div class="tool-manager-header">
-                                    <span>Kolejność scalania dokumentów</span>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span class="badge-count" id="mergeFilesCount">0 plików</span>
-                                        <button type="button" class="btn-sm-ghost" id="btnClearMergeList"
-                                            style="padding: 2px 8px; font-size: 0.74rem; display: none;">Wyczyść
-                                            listę</button>
-                                    </div>
-                                </div>
-                                <div class="tool-file-list" id="mergeFileList">
-                                    <div class="tool-empty-placeholder">Brak dodanych plików. Upuść minimum 2 pliki PDF,
-                                        aby je połączyć.</div>
-                                </div>
-                            </div>
-
-                            <button type="button" class="btn-primary tool-action-btn" id="btnExecuteMerge" disabled>
-                                <span class="btn-text" data-i18n="tool_btn_merge_action">Połącz w 1 plik PDF</span>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_merge">Łączenie PDF</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
                             </button>
 
-                            <div id="mergeResultBox" style="display: none;"></div>
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="split" data-category="organize">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="6" cy="6" r="3"></circle>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                        <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                        <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_split">Rozdziel PDF</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="organize" data-category="organize">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_organize">Układ &amp; Obrót</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
                         </div>
-                    </div>
+
+                        <div class="tb-sidebar-divider"></div>
+
+                        <!-- Grupa 2: Bezpieczeństwo -->
+                        <div class="tb-sidebar-group">
+                            <span class="tb-sidebar-group-label">Bezpieczeństwo</span>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="edit" data-category="security">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_edit">Podpis &amp; Edytor</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="watermark" data-category="security">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="9.5"></circle>
+                                        <line x1="3.5" y1="9" x2="20.5" y2="9"></line>
+                                        <line x1="3.5" y1="15" x2="20.5" y2="15"></line>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_watermark">Znak Wodny</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+                        </div>
+
+                        <div class="tb-sidebar-divider"></div>
+
+                        <!-- Grupa 3: Konwersja -->
+                        <div class="tb-sidebar-group">
+                            <span class="tb-sidebar-group-label">Konwersja &amp; Media</span>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="compress" data-category="convert">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 10V4m0 6H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"></path>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_compress">Kompresor PDF</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" data-tool="convert" data-category="convert">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <polyline points="1 20 1 14 7 14"></polyline>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label" data-i18n="tool_tab_convert">Konwerter Obrazów</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" id="btnSidebarVideoCompress" data-tool="video-compress" data-category="convert" onclick="if(window.openVideoCompressor){window.openVideoCompressor();}else{const m=document.getElementById('videoCompressModal');if(m){m.classList.add('open');document.body.style.overflow='hidden';}}">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                                        <line x1="7" y1="2" x2="7" y2="22"></line>
+                                        <line x1="17" y1="2" x2="17" y2="22"></line>
+                                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label">Konwerter Wideo</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+
+                            <button type="button" class="tb-sidebar-item tb-tool-card" id="btnSidebarQRStudio" data-tool="qr-studio" data-category="convert" onclick="const q=document.getElementById('qrStudioModal');if(q){q.classList.add('open');document.body.style.overflow='hidden';if(window.initQRStudio)window.initQRStudio();}">
+                                <span class="tb-sidebar-icon">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </span>
+                                <span class="tb-sidebar-label">Studio Kodów</span>
+                                <span class="tb-sidebar-active-bar" aria-hidden="true"></span>
+                            </button>
+                        </div>
+
+                        <!-- Stopka sidebaru (RAM badge) -->
+                        <div class="tb-sidebar-footer">
+                            <span class="tb-sidebar-ram-dot"></span>
+                            <span>100% RAM &bull; Zero chmury</span>
+                        </div>
+                    </nav>
+
+                    <!-- =====================================================
+                         PRAWA KOLUMNA: WORKSPACE
+                    ====================================================== -->
+                    <div class="tb-workspace">
+                        <!-- Pasek statusu aktywnego narzędzia -->
+                        <div class="deck-top-bar">
+                            <div class="deck-indicator-group">
+                                <span class="deck-beacon-dot"></span>
+                                <span class="deck-tool-label" id="deckActiveToolTitle">Łączenie dokumentów PDF</span>
+                                <span class="deck-badge" id="deckActiveToolBadge">Silnik RAM + Zero chmury</span>
+                            </div>
+                            <div class="deck-security-note">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                </svg>
+                                <span>Bezpieczna Pamięć RAM</span>
+                            </div>
+                        </div>
+
+                    <div class="toolbox-cockpit-content">
+                        <!-- PANEL 1: ŁĄCZENIE PDF -->
+                        <div id="toolPanel_merge" class="tool-panel" style="display: block;">
+                            <div class="tool-card-box">
+                                <div class="tool-dropzone" id="mergeDropzone">
+                                    <input type="file" id="mergeFileInput" multiple accept=".pdf,application/pdf"
+                                        style="display: none;">
+                                    <div class="tool-drop-icon">
+                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <strong class="tool-drop-title" data-i18n="tool_merge_drop_title">Wybierz lub upuść pliki PDF</strong>
+                                    <span class="tool-drop-sub" data-i18n="tool_merge_drop_sub">Ułóż kolejność strzałkami, a następnie połącz w jeden spójny plik</span>
+                                </div>
+
+                                <div class="tool-file-manager">
+                                    <div class="tool-manager-header">
+                                        <span>Kolejność scalania dokumentów</span>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="badge-count" id="mergeFilesCount">0 plików</span>
+                                            <button type="button" class="btn-sm-ghost" id="btnClearMergeList"
+                                                style="padding: 2px 8px; font-size: 0.74rem; display: none;">Wyczyść
+                                                listę</button>
+                                        </div>
+                                    </div>
+                                    <div class="tool-file-list" id="mergeFileList">
+                                        <div class="tool-empty-placeholder">Brak dodanych plików. Upuść minimum 2 pliki PDF,
+                                            aby je połączyć.</div>
+                                    </div>
+                                </div>
+
+                                <button type="button" class="btn-primary tool-action-btn" id="btnExecuteMerge" disabled>
+                                    <span class="btn-text" data-i18n="tool_btn_merge_action">Połącz w 1 plik PDF</span>
+                                </button>
+
+                                <div id="mergeResultBox" style="display: none;"></div>
+                            </div>
+                        </div>
 
                     <!-- PANEL: ROZDZIELANIE PDF (SPLIT & EXTRACT) -->
                     <div id="toolPanel_split" class="tool-panel" style="display: none;">
@@ -2355,10 +2782,6 @@
                                     dokument PDF</strong>
                                 <p class="tool-drop-sub" data-i18n="tool_organize_drop_sub">Przeciągaj strony, obracaj o
                                     90°, usuwaj niepotrzebne i twórz nowy dokument</p>
-                                <button type="button" class="btn-primary"
-                                    style="margin-top: 14px; pointer-events: none;">
-                                    <span data-i18n="btn_select_file">Wybierz plik PDF</span>
-                                </button>
                             </div>
 
                             <!-- Workspace po wczytaniu pliku -->
@@ -2780,10 +3203,6 @@
                                 <strong class="tool-drop-title">Wybierz lub upuść dokument PDF</strong>
                                 <p class="tool-drop-sub">Błyskawiczne dodawanie wektorowych znaków wodnych (POUFNE,
                                     DRAFT, KOPIA, własne teksty) w 100% w pamięci RAM</p>
-                                <button type="button" class="btn-primary"
-                                    style="margin-top: 14px; pointer-events: none;">
-                                    <span>Wybierz plik PDF</span>
-                                </button>
                             </div>
 
                             <!-- Workspace po wczytaniu pliku -->
@@ -3217,91 +3636,74 @@
                         </div>
                     </div>
 
+                    </div> <!-- /.toolbox-cockpit-content -->
+                    </div> <!-- /.tb-workspace -->
+                </div> <!-- /.toolbox-cyber-deck -->
+
+                <!-- 5. DELIKATNY PASEK ZAUFANIA (PRIVACY & SPEED TRUST PILLARS) -->
+                <div class="toolbox-trust-bar">
+                    <div class="trust-badge-pill">
+                        <span class="trust-pill-dot dot-mint"></span>
+                        <span class="trust-pill-text"><strong>Client-Side Engine:</strong> 100% w pamięci RAM</span>
+                    </div>
+                    <div class="trust-badge-pill">
+                        <span class="trust-pill-dot dot-sky"></span>
+                        <span class="trust-pill-text"><strong>Prędkość sprzętowa:</strong> Bez kolejek serwera</span>
+                    </div>
+                    <div class="trust-badge-pill">
+                        <span class="trust-pill-dot dot-amber"></span>
+                        <span class="trust-pill-text"><strong>Zero-Knowledge:</strong> 0 danych w chmurze</span>
+                    </div>
                 </div>
-            </div>
+            </div> <!-- /.studio-wrapper -->
         </div>
 
         <!-- ======================================================== -->
-        <!-- WIDOK: POBIERACZ MULTIMEDIÓW (MEDIA & VIDEO GRABBER) -->
+        <!-- WIDOK: POBIERACZ MULTIMEDIÓW (STATUS: W PROCESIE TWORZENIA) -->
         <!-- ======================================================== -->
         <div id="view-pobieracz" class="view-section" hidden>
-            <div class="main-wrapper" style="max-width: 900px;">
-                <div class="upload-container info-panel" style="padding: 36px 32px;">
-                    <header class="upload-header">
-                        <div class="toolbox-header-badge" style="background: rgba(52, 211, 153, 0.12); border-color: rgba(52, 211, 153, 0.3); color: #34D399;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span>Dropsite Media Grabber &bull; Direct &amp; Cloud Stream</span>
-                        </div>
-                        <h1 data-i18n="nav_grabber">Pobieracz Wideo &amp; Multimediów</h1>
-                        <p class="upload-subtitle">Pobieraj czyste wideo HD bez znaków wodnych z TikToka, YouTube, Instagrama i zapisuj na dysku lub w chmurze R2.</p>
-                    </header>
+            <div class="main-wrapper" style="max-width: 780px; min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: 40px 20px;">
+                <div class="upload-container" style="padding: 48px 36px; text-align: center; border-radius: 28px; background: rgba(13, 17, 23, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(24px); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden;">
+                    
+                    <!-- Ambient Glow Effect -->
+                    <div style="position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 280px; height: 180px; background: radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, rgba(56, 189, 248, 0.1) 50%, transparent 75%); filter: blur(40px); pointer-events: none;"></div>
 
-                    <div class="grabber-container" id="mediaGrabberContainer" style="margin-top: 10px;">
-                        <div class="grabber-input-card">
-                            <div class="grabber-input-header">
-                                <div class="grabber-title-wrap">
-                                    <div class="grabber-icon-badge">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <polyline points="7 10 12 15 17 10"></polyline>
-                                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                                        </svg>
-                                    </div>
-                                    <div class="grabber-title-text">
-                                        <h3>Inteligentny Pobieracz Multimediów</h3>
-                                        <p>Wklej link z dowolnej platformy społecznościowej</p>
-                                    </div>
-                                </div>
-                                <div class="grabber-platforms-row">
-                                    <span class="grabber-platform-pill" data-platform="tiktok">
-                                        <span>TikTok</span>
-                                    </span>
-                                    <span class="grabber-platform-pill" data-platform="youtube">
-                                        <span>YouTube</span>
-                                    </span>
-                                    <span class="grabber-platform-pill" data-platform="instagram">
-                                        <span>Instagram</span>
-                                    </span>
-                                    <span class="grabber-platform-pill" data-platform="twitter">
-                                        <span>X / Twitter</span>
-                                    </span>
-                                    <span class="grabber-platform-pill" data-platform="pinterest">
-                                        <span>Pinterest</span>
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="grabber-search-box">
-                                <input type="url" class="grabber-url-input" id="grabberUrlInput" placeholder="Wklej link do wideo (np. https://vm.tiktok.com/... lub https://youtube.com/shorts/...)" autocomplete="off">
-                                <button type="button" class="grabber-btn-paste" id="grabberPasteBtn" title="Wklej ze schowka">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                                    </svg>
-                                    <span>Wklej</span>
-                                </button>
-                                <button type="button" class="grabber-btn-submit" id="grabberSubmitBtn">
-                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="7 10 12 15 17 10"></polyline>
-                                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                                    </svg>
-                                    <span>Pobierz</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="grabber-loading-wrap" id="grabberLoadingWrap" style="display: none;">
-                            <div class="grabber-radar"></div>
-                            <div class="grabber-loading-text">Dekodowanie strumienia wideo HD bez znaku wodnego...</div>
-                        </div>
-
-                        <div class="grabber-results-wrap" id="grabberResultsWrap"></div>
+                    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 24px;">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #FBBF24; box-shadow: 0 0 10px #FBBF24; display: inline-block;"></span>
+                        <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #CBD5E1;">DROPSITE LABS &bull; WKRÓTCE</span>
                     </div>
+
+                    <div style="width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 20px; background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); display: flex; align-items: center; justify-content: center; color: #34D399; box-shadow: 0 0 30px rgba(52, 211, 153, 0.15);">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                        </svg>
+                    </div>
+
+                    <h1 style="font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em; margin-bottom: 12px; line-height: 1.2;">
+                        Funkcja w procesie tworzenia
+                    </h1>
+
+                    <p style="font-size: 0.95rem; line-height: 1.6; color: #94A3B8; max-width: 520px; margin: 0 auto 32px;">
+                        Moduł pobierania multimediów i wideo bez znaku wodnego jest obecnie w fazie projektowej i zostanie udostępniony w kolejnej aktualizacji platformy Dropsite.
+                    </p>
+
+                    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" class="btn-primary" onclick="if(window.switchView) window.switchView('view-glowna'); else { document.querySelector('[data-target=\'view-glowna\']')?.click(); }" style="padding: 12px 24px; font-size: 0.9rem; font-weight: 600; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            <span>Wróć do strony głównej</span>
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="if(window.switchView) window.switchView('view-narzedzia'); else { document.querySelector('[data-target=\'view-narzedzia\']')?.click(); }" style="padding: 12px 20px; font-size: 0.9rem; font-weight: 600; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;">
+                            <span>Zobacz inne narzędzia PDF &amp; Media</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -3316,7 +3718,7 @@
                     </header>
                     <div class="info-grid">
                         <div class="info-card">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -3325,7 +3727,7 @@
                                 network.</p>
                         </div>
                         <div class="info-card">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -3335,7 +3737,7 @@
                                 tracking or data selling.</p>
                         </div>
                         <div class="info-card">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
@@ -3352,7 +3754,7 @@
                         </div>
                         <div class="info-card info-card-interactive"
                             onclick="if(window.switchToolTab) window.switchToolTab('edit');">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <path d="M12 20h9"></path>
@@ -3364,7 +3766,7 @@
                         </div>
                         <div class="info-card info-card-interactive"
                             onclick="if(window.switchToolTab) window.switchToolTab('merge');">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -3377,7 +3779,7 @@
                         </div>
                         <div class="info-card info-card-interactive"
                             onclick="if(window.switchToolTab) window.switchToolTab('compress');">
-                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+                            <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                     style="vertical-align: -2px; margin-right: 6px;">
                                     <path
@@ -4392,7 +4794,21 @@
     </div>
 
     <div id="modModal" class="mod-modal" hidden>
-        <div class="mod-container">
+        <div class="mod-container" id="modContainer">
+            <!-- Interaktywny Drag & Drop Overlay do bezpośredniego wrzucania plików -->
+            <div id="myfilesDropOverlay" class="myfiles-drop-overlay" style="display: none;">
+                <div class="myfiles-drop-content">
+                    <div class="myfiles-drop-icon-pulse">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h3 class="myfiles-drop-title" data-i18n="myfiles_drop_zone_title">Upuść tutaj, aby dodać plik do Swoich Plików! ✨</h3>
+                    <p class="myfiles-drop-sub" data-i18n="myfiles_drop_zone_sub">Błyskawiczne dodawanie z natychmiastowym szyfrowaniem</p>
+                </div>
+            </div>
             <div class="mod-header">
                 <div class="mod-title-wrap">
                     <div class="mod-icon-badge" id="modIconBadge">
@@ -4407,8 +4823,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 id="modPanelTitle">Panel Plików</h2>
-                        <span class="mod-subtitle" id="modPanelSubtitle">Zarządzanie magazynem plików</span>
+                        <h2 id="modPanelTitle"><span data-i18n="myfiles_hero_title">Twoja Prywatna Chmura</span> <span class="myfiles-title-sparkle">✦</span></h2>
+                        <span class="mod-subtitle" id="modPanelSubtitle" data-i18n="myfiles_hero_subtitle">Wszystkie Twoje transfery, bezpieczne i pod ręką ✨</span>
                     </div>
                 </div>
 
@@ -4906,7 +5322,35 @@
 
             <!-- TAB 5: MODERACJA PLIKÓW (Dotychczasowy widok z pełnymi narzędziami) -->
             <div id="adminTabPane_files" class="admin-tab-pane">
-                <div class="mod-stats-grid">
+                <!-- Pasek Pojemności Chmury w stylu Apple iCloud / macOS -->
+                <div class="myfiles-storage-wrap" id="myfilesStorageWrap">
+                    <div class="storage-bar-header">
+                        <div class="storage-title-group">
+                            <span class="storage-label" data-i18n="myfiles_storage_title">Pojemność Chmury</span>
+                            <span class="storage-summary-badge" id="storageSummaryBadge">0 plików • 0 B</span>
+                        </div>
+                        <span class="storage-status-text">
+                            <span class="storage-live-dot"></span>
+                            <span id="storageStatusText" data-i18n="myfiles_storage_status">Sejf Aktywny</span>
+                        </span>
+                    </div>
+                    <div class="storage-progress-track" id="storageProgressTrack">
+                        <div class="storage-bar-seg seg-images" id="segImages" style="width: 0%;" title="Zdjęcia"></div>
+                        <div class="storage-bar-seg seg-videos" id="segVideos" style="width: 0%;" title="Wideo"></div>
+                        <div class="storage-bar-seg seg-docs" id="segDocs" style="width: 0%;" title="Dokumenty"></div>
+                        <div class="storage-bar-seg seg-archives" id="segArchives" style="width: 0%;" title="Archiwa"></div>
+                        <div class="storage-bar-seg seg-other" id="segOther" style="width: 0%;" title="Inne"></div>
+                    </div>
+                    <div class="storage-legend">
+                        <div class="legend-item"><span class="legend-dot dot-images"></span><span class="legend-name" data-i18n="myfiles_legend_photos">Zdjęcia:</span> <strong class="legend-val" id="legendValImages">0 B</strong></div>
+                        <div class="legend-item"><span class="legend-dot dot-videos"></span><span class="legend-name" data-i18n="myfiles_legend_videos">Wideo:</span> <strong class="legend-val" id="legendValVideos">0 B</strong></div>
+                        <div class="legend-item"><span class="legend-dot dot-docs"></span><span class="legend-name" data-i18n="myfiles_legend_docs">Dokumenty:</span> <strong class="legend-val" id="legendValDocs">0 B</strong></div>
+                        <div class="legend-item"><span class="legend-dot dot-archives"></span><span class="legend-name" data-i18n="myfiles_legend_archives">Archiwa:</span> <strong class="legend-val" id="legendValArchives">0 B</strong></div>
+                        <div class="legend-item"><span class="legend-dot dot-other"></span><span class="legend-name" data-i18n="myfiles_legend_other">Inne:</span> <strong class="legend-val" id="legendValOther">0 B</strong></div>
+                    </div>
+                </div>
+
+                <div class="mod-stats-grid" id="modStatsGrid" style="display: none;">
                     <div class="mod-stat-card">
                         <div class="mod-stat-header">
                             <span class="mod-stat-label" data-i18n="myfiles_stat_all_files">Wszystkie pliki</span>
@@ -4978,6 +5422,18 @@
                         </svg>
                         <span data-i18n="myfiles_subtab_drop_req">Skrytki & Wrzutnie</span>
                         <span class="subtab-count" id="subtabDropReqCount">0</span>
+                    </button>
+                    <button type="button" class="subtab-btn" id="subtabNotesBtn"
+                        onclick="if(window.switchMyFilesSubtab) window.switchMyFilesSubtab('notes');">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        <span data-i18n="myfiles_subtab_notes">Notatnik &amp; Kody</span>
+                        <span class="subtab-count" id="subtabNotesCount">0</span>
                     </button>
                 </div>
 
@@ -5083,8 +5539,47 @@
                                     </div>
                                 </div>
                             </div>
-                            <button id="refreshModBtn" class="btn-select mod-refresh-btn"
-                                data-i18n="myfiles_btn_refresh">Odśwież</button>
+                            <!-- Opcje czyszczenia wygasłych plików -->
+                            <label class="myfiles-autoclean-toggle" title="Automatycznie usuwaj wygasłe pliki z listy">
+                                <input type="checkbox" id="autoCleanExpiredToggle">
+                                <span class="autoclean-slider"></span>
+                                <span class="autoclean-label" data-i18n="myfiles_autoclean_label">Auto-czyszczenie</span>
+                            </label>
+                            <button type="button" id="cleanExpiredMyFilesBtn" class="mod-clean-expired-btn" title="Usuń wygasłe pliki z Twojej chmury" aria-label="Usuń wygasłe pliki" data-i18n-title="myfiles_btn_clean_expired">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                <span data-i18n="myfiles_btn_clean_expired">Usuń wygasłe</span>
+                                <span class="expired-count-badge" id="expiredCountBadge" style="display: none;">0</span>
+                            </button>
+                            <!-- Przełącznik widoku: Kafelki vs Lista -->
+                            <div class="myfiles-view-toggle" id="myfilesViewToggle" role="group" aria-label="Wybierz widok">
+                                <button type="button" class="view-toggle-btn active" id="viewToggleGridBtn" title="Widok kafelkowy (Siatka)" data-view="grid" aria-pressed="true">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                                        <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                    </svg>
+                                    <span class="view-toggle-label" data-i18n="myfiles_view_grid">Kafelki</span>
+                                </button>
+                                <button type="button" class="view-toggle-btn" id="viewToggleListBtn" title="Widok listy" data-view="list" aria-pressed="false">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                                        <circle cx="4" cy="6" r="1.5" fill="currentColor"></circle>
+                                        <circle cx="4" cy="12" r="1.5" fill="currentColor"></circle>
+                                        <circle cx="4" cy="18" r="1.5" fill="currentColor"></circle>
+                                    </svg>
+                                    <span class="view-toggle-label" data-i18n="myfiles_view_list">Lista</span>
+                                </button>
+                            </div>
+                            <button id="refreshModBtn" class="mod-refresh-icon-btn" title="Odśwież listę plików" aria-label="Odśwież" data-i18n-title="myfiles_btn_refresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
+
                         </div>
                     </div>
 
@@ -5151,83 +5646,113 @@
 
                 <!-- SUBPANE 2: ALBUMY I KOLEKCJE -->
                 <div id="subpane_albums" class="myfiles-subpane" style="display: none;">
-                    <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-                        <div>
-                            <strong style="font-size: 15px; color: var(--text-main); display: block;"
-                                data-i18n="myfiles_albums_title">Twoje Kolekcje & Albumy</strong>
-                            <span style="font-size: 12px; color: var(--text-muted);"
-                                data-i18n="myfiles_albums_sub">Zarządzaj swoimi albumami i udostępniaj je jednym
-                                linkiem</span>
+                    <div class="myfiles-subpane-header">
+                        <div class="subpane-header-info">
+                            <div class="subpane-icon-badge album-badge">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                            </div>
+                            <div class="subpane-header-text">
+                                <h3 class="subpane-title" data-i18n="myfiles_albums_title">Twoje Kolekcje &amp; Albumy <span class="subpane-sparkle">✦</span></h3>
+                                <p class="subpane-subtitle" data-i18n="myfiles_albums_sub">Twórz galerie zdjęć, wideo i dokumentów z własnym brandingiem oraz dedykowanym linkiem.</p>
+                            </div>
                         </div>
-                        <button type="button" class="btn-primary"
-                            style="padding: 8px 16px; font-size: 12.5px; margin: 0;"
-                            onclick="if(window.openCreateAlbumModal) window.openCreateAlbumModal();">
-                            <span data-i18n="myfiles_albums_btn_new">+ Nowy Album</span>
+                        <button type="button" class="subpane-action-btn myfiles-btn-primary" onclick="if(window.openCreateAlbumModal) window.openCreateAlbumModal();">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span data-i18n="myfiles_albums_btn_new">Nowy Album</span>
                         </button>
                     </div>
+
                     <div id="modAlbumsGrid" class="albums-grid"></div>
-                    <div id="modAlbumsEmpty"
-                        style="display: none; text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                        <span style="font-size: 32px; display: block; margin-bottom: 10px;">📁</span>
-                        <p style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;"
-                            data-i18n="myfiles_albums_empty_title">Nie utworzyłeś jeszcze żadnego albumu</p>
-                        <p style="font-size: 12.5px; margin-bottom: 16px;" data-i18n="myfiles_albums_empty_desc">Przejdź
-                            do zakładki „Wszystkie pliki”, zaznacz wybrane pliki i kliknij „Utwórz Album”.</p>
-                        <button type="button" class="btn-secondary" style="padding: 8px 16px; font-size: 12px;"
-                            onclick="if(window.switchMyFilesSubtab) window.switchMyFilesSubtab('files');"
-                            data-i18n="myfiles_albums_btn_go_files">Przejdź do plików</button>
+
+                    <div id="modAlbumsEmpty" class="myfiles-subpane-empty" style="display: none;">
+                        <div class="empty-glow-aura album-aura"></div>
+                        <div class="empty-icon-shield album-shield">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3" y="3" width="18" height="18" rx="2.5"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                        </div>
+                        <h4 class="empty-title" data-i18n="myfiles_albums_empty_title">Nie utworzyłeś jeszcze żadnego albumu</h4>
+                        <p class="empty-desc" data-i18n="myfiles_albums_empty_desc">Połącz swoje wgrane pliki w nowoczesną galerię lub interaktywny album dla klienta z hasłem i natychmiastowym linkiem.</p>
+                        <div class="empty-actions">
+                            <button type="button" class="myfiles-btn-primary" onclick="if(window.openCreateAlbumModal) window.openCreateAlbumModal();">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Stwórz pierwszy Album</span>
+                            </button>
+                            <button type="button" class="myfiles-btn-secondary" onclick="if(window.switchMyFilesSubtab) window.switchMyFilesSubtab('files');" data-i18n="myfiles_albums_btn_go_files">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                <span>Wybierz pliki do albumu</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- SUBPANE 3: SKRYTKI & WRZUTNIE (DROP REQUESTS) -->
                 <div id="subpane_drop_req" class="myfiles-subpane" style="display: none;">
-                    <div class="albums-toolbar" style="margin-bottom: 18px;">
-                        <div>
-                            <h3 style="font-size: 15px; font-weight: 700; color: #F8FAFC; margin: 0;"
-                                data-i18n="myfiles_drop_req_title">Twoje Skrytki Wrzutowe (Drop Requests)</h3>
-                            <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0 0;"
-                                data-i18n="myfiles_drop_req_desc">Prywatne skrzynki odbiorcze dla klientów. Przeglądaj
-                                odebrane pliki, pobieraj je lub twórz z nich albumy.</p>
+                    <div class="myfiles-subpane-header">
+                        <div class="subpane-header-info">
+                            <div class="subpane-icon-badge dropreq-badge">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </div>
+                            <div class="subpane-header-text">
+                                <h3 class="subpane-title" data-i18n="myfiles_drop_req_title">Skrytki Wrzutowe (Drop Requests) <span class="subpane-sparkle">✦</span></h3>
+                                <p class="subpane-subtitle" data-i18n="myfiles_drop_req_desc">Prywatne skrzynki odbiorcze dla klientów. Odbieraj pliki, pobieraj je lub twórz z nich gotowe albumy.</p>
+                            </div>
                         </div>
-                        <button type="button" class="btn-primary" style="padding: 7px 14px; font-size: 12px;"
-                            onclick="if(window.openDropRequestCreator) window.openDropRequestCreator();">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
+                        <button type="button" class="subpane-action-btn myfiles-btn-primary" onclick="if(window.openDropRequestCreator) window.openDropRequestCreator();">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            <span data-i18n="myfiles_drop_req_btn_new">+ Nowa Skrytka</span>
+                            <span data-i18n="myfiles_drop_req_btn_new">Nowa Skrytka</span>
                         </button>
                     </div>
+
                     <div id="modDropReqList" class="drop-req-inbox-list"></div>
-                    <div id="modDropReqEmpty"
-                        style="display: none; text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                        <div
-                            style="width: 48px; height: 48px; border-radius: 14px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; color: #34D399;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+
+                    <div id="modDropReqEmpty" class="myfiles-subpane-empty" style="display: none;">
+                        <div class="empty-glow-aura dropreq-aura"></div>
+                        <div class="empty-icon-shield dropreq-shield">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                         </div>
-                        <p style="font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;"
-                            data-i18n="myfiles_drop_req_empty_title">Brak utworzonych skrytek wrzutowych</p>
-                        <p style="font-size: 12.5px; margin-bottom: 16px;" data-i18n="myfiles_drop_req_empty_desc">
-                            Wygeneruj link wrzutowy dla swojego klienta, aby bezpiecznie odbierać pliki prosto do
-                            swojego panelu.</p>
-                        <button type="button" class="btn-primary" style="padding: 8px 18px; font-size: 12.5px;"
-                            onclick="if(window.openDropRequestCreator) window.openDropRequestCreator();">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            <span data-i18n="myfiles_drop_req_btn_new">Utwórz pierwszą skrytkę</span>
-                        </button>
+                        <h4 class="empty-title" data-i18n="myfiles_drop_req_empty_title">Brak utworzonych skrytek wrzutowych</h4>
+                        <p class="empty-desc" data-i18n="myfiles_drop_req_empty_desc">Wygeneruj link wrzutowy dla swojego klienta, aby bezpiecznie odbierać pliki i materiały wideo prosto do swojego panelu.</p>
+                        <div class="empty-actions">
+                            <button type="button" class="myfiles-btn-primary" onclick="if(window.openDropRequestCreator) window.openDropRequestCreator();">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span>Utwórz pierwszą skrytkę</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- SUBPANE 4: SEJF NOTATEK & KODÓW (ACCOUNT VAULT & SCRATCHPAD) -->
+                <div id="subpane_notes" class="myfiles-subpane" style="display: none; padding: 0; min-height: 520px;"></div>
             </div>
 
             <!-- TAB 6: ZGŁOSZENIA & BŁĘDY OD UŻYTKOWNIKÓW -->
@@ -5670,7 +6195,15 @@
                 Pliki przesłane z Twojej
                 przeglądarki (zapisane w pamięci urządzenia):</p>
             <ul id="userHistoryList" class="mod-file-list" style="max-height: 380px;"></ul>
-            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="cleanExpiredHistoryBtn" class="mod-clean-expired-btn" data-i18n-title="history_clean_expired_btn" style="font-size: 12px; padding: 7px 12px; height: 34px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span data-i18n="history_clean_expired_btn">Usuń wygasłe</span>
+                    <span class="expired-count-badge" id="historyExpiredCountBadge" style="display: none;">0</span>
+                </button>
                 <button id="clearHistoryBtn" class="btn-secondary" data-i18n="history_clear_btn"
                     style="font-size: 12px; padding: 8px 16px;">Wyczyść
                     historię</button>
@@ -5977,6 +6510,21 @@
             <span class="dock-label" data-i18n="dock_my_files">Moje Pliki</span>
         </button>
 
+        <span class="dock-divider"></span>
+
+        <!-- Przycisk Sejfu Notatek & Kodów (Notatnik Konta) -->
+        <button id="dockVaultBtn" class="dock-item dock-vault-btn" title="Podręczny sejf notatek, haseł i kodów powiązany z kontem"
+            data-i18n-title="dock_vault_title" type="button" onclick="if(window.openAccountVault) window.openAccountVault();">
+            <svg class="dock-icon icon-amber" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span class="dock-label" data-i18n="dock_vault">Notatnik</span>
+        </button>
+
         <span class="dock-divider" id="dockDividerUser" style="display: none;"></span>
 
         <!-- Segment Użytkownika (Zalogowany: Nick, Ranga PRO, Dyskretne Wyjście) -->
@@ -6012,6 +6560,19 @@
             </svg>
             <span class="dock-label" data-i18n="dock_login">Zaloguj</span>
         </button>
+    </div>
+
+    <!-- MODAL: SEJF NOTATEK & KODÓW (ACCOUNT VAULT & SCRATCHPAD) -->
+    <div id="accountVaultModalWrap" class="mod-modal" hidden>
+        <div class="mod-container account-vault-modal-container" style="position: relative;">
+            <button type="button" class="mod-close" onclick="window.closeAccountVault()" aria-label="Zamknij Sejf" style="position: absolute; top: 12px; right: 14px; z-index: 50;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div id="accountVaultModalMount" style="width: 100%; height: 100%;"></div>
+        </div>
     </div>
 
     <!-- MODAL: ZGŁOŚ BŁĄD LUB UWAGĘ -->
@@ -6247,6 +6808,13 @@
     <!-- MODAL: KREATOR SAMOSPALAJĄCEJ SIĘ NOTATKI (DEAD DROP) -->
     <div id="deadDropModal" class="dead-drop-modal-wrap" aria-hidden="true">
         <div class="dead-drop-modal-card" role="dialog" aria-modal="true" aria-labelledby="deadDropModalTitle">
+            <!-- Living Amber Ambient Glow -->
+            <div class="dead-drop-glow" aria-hidden="true"></div>
+            <!-- Sharp Corner Brackets -->
+            <div class="bento-corner bento-corner-tl" style="border-color: rgba(245, 158, 11, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-tr" style="border-color: rgba(245, 158, 11, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-bl" style="border-color: rgba(245, 158, 11, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-br" style="border-color: rgba(245, 158, 11, 0.65);" aria-hidden="true"></div>
             <div class="dead-drop-header">
                 <div class="dead-drop-title-wrap">
                     <div class="dead-drop-icon-badge">
@@ -6258,10 +6826,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="dead-drop-title" id="deadDropModalTitle" data-i18n="dead_drop_title">Samospalająca
-                            się notatka</h3>
-                        <p class="dead-drop-subtitle" data-i18n="dead_drop_sub">Szyfrowanie AES-256-GCM w pamięci RAM.
-                            Kasowana po 1 odczytaniu.</p>
+                        <h3 class="dead-drop-title" id="deadDropModalTitle" data-i18n="dead_drop_title">Poufna Notatka</h3>
+                        <p class="dead-drop-subtitle" data-i18n="dead_drop_sub">Automatyczne i bezpowrotne usunięcie po 1. przeczytaniu.</p>
                     </div>
                 </div>
                 <div class="dead-drop-header-right">
@@ -6287,22 +6853,20 @@
             <div class="dead-drop-body">
                 <div class="drop-req-field">
                     <label class="drop-req-label" for="deadDropTextInput">
-                        <span data-i18n="dead_drop_label_text">Tajna treść (hasło, token API, klucze, poufna
-                            wiadomość)</span>
-                        <span class="drop-req-label-hint" data-i18n="dead_drop_encrypted_ram">Szyfrowane w RAM</span>
+                        <span data-i18n="dead_drop_label_text">Poufna treść (hasło, token, poufna wiadomość)</span>
+                        <span class="drop-req-label-hint" data-i18n="dead_drop_encrypted_ram">Jednorazowy odczyt</span>
                     </label>
                     <textarea id="deadDropTextInput" class="dead-drop-textarea"
-                        placeholder="Wklej tutaj tajne hasło, dane logowania lub poufny tekst..."></textarea>
+                        placeholder="Wpisz lub wklej poufną wiadomość, hasło lub klucz..."></textarea>
                 </div>
 
                 <div class="dead-drop-options-grid">
                     <div class="drop-req-field">
                         <label class="drop-req-label" for="deadDropExpirySelect">
-                            <span data-i18n="dead_drop_label_burn">Samozniszczenie</span>
+                            <span data-i18n="dead_drop_label_burn">Automatyczne usunięcie</span>
                         </label>
                         <select id="deadDropExpirySelect" class="dead-drop-select">
-                            <option value="read" data-i18n="dead_drop_burn_read" selected>Natychmiast po 1 odczytaniu
-                                (Zalecane)</option>
+                            <option value="read" data-i18n="dead_drop_burn_read" selected>Po 1 odczytaniu (Zalecane)</option>
                             <option value="1" data-i18n="dead_drop_burn_1h">Po 1 godzinie</option>
                             <option value="24" data-i18n="dead_drop_burn_24h">Po 24 godzinach</option>
                             <option value="168" data-i18n="dead_drop_burn_7d">Po 7 dniach</option>
@@ -6317,7 +6881,7 @@
                             stroke-width="2.5">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
-                        <span data-i18n="dead_drop_result_badge">Jednorazowy Tajny Link (AES-256)</span>
+                        <span data-i18n="dead_drop_result_badge">Poufny link jednorazowy</span>
                     </span>
                     <div class="dead-drop-url-row">
                         <input type="text" id="deadDropUrlInput" class="dead-drop-url-input" readonly>
@@ -6343,7 +6907,7 @@
                             d="M12 2c.5 3 2.5 5 4.5 7 2 2 2.5 4.5 1.5 7-1 2.5-3.5 4-6 4s-5-1.5-6-4c-1-2.5-.5-5 1.5-7 2-2 4-4 4.5-7z">
                         </path>
                     </svg>
-                    <span data-i18n="dead_drop_btn_create">Zaszyfruj i wygeneruj link</span>
+                    <span data-i18n="dead_drop_btn_create">Wygeneruj bezpieczny link</span>
                 </button>
             </div>
         </div>
@@ -6352,6 +6916,13 @@
     <!-- MODAL: CZYTNIK SAMOSPALAJĄCEJ SIĘ NOTATKI (ODBIORCA) -->
     <div id="deadDropReaderModal" class="dead-drop-modal-wrap" aria-hidden="true">
         <div class="dead-drop-modal-card" role="dialog" aria-modal="true" aria-labelledby="deadDropReaderTitle">
+            <!-- Living Red Ambient Glow -->
+            <div class="dead-drop-glow is-reader" aria-hidden="true"></div>
+            <!-- Sharp Corner Brackets -->
+            <div class="bento-corner bento-corner-tl" style="border-color: rgba(239, 68, 68, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-tr" style="border-color: rgba(239, 68, 68, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-bl" style="border-color: rgba(239, 68, 68, 0.65);" aria-hidden="true"></div>
+            <div class="bento-corner bento-corner-br" style="border-color: rgba(239, 68, 68, 0.65);" aria-hidden="true"></div>
             <div class="dead-drop-header">
                 <div class="dead-drop-title-wrap">
                     <div class="dead-drop-icon-badge"
@@ -6364,10 +6935,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="dead-drop-title" id="deadDropReaderTitle" data-i18n="dead_drop_reader_title">Tajna
-                            wiadomość Dead Drop</h3>
-                        <p class="dead-drop-subtitle" data-i18n="dead_drop_reader_sub">Szyfrowana Zero-Knowledge
-                            (AES-256)</p>
+                        <h3 class="dead-drop-title" id="deadDropReaderTitle" data-i18n="dead_drop_reader_title">Poufna Wiadomość</h3>
+                        <p class="dead-drop-subtitle" data-i18n="dead_drop_reader_sub">Wiadomość jednorazowa bez śladów na serwerze</p>
                     </div>
                 </div>
                 <button type="button" class="dead-drop-close-btn" id="btnDeadDropReaderClose" aria-label="Zamknij">
@@ -6389,18 +6958,15 @@
                             </path>
                         </svg>
                     </div>
-                    <h3 class="dead-drop-warning-title" data-i18n="dead_drop_warning_title">Ta notatka zostanie
-                        bezpowrotnie zniszczona</h3>
-                    <p class="dead-drop-warning-desc" data-i18n="dead_drop_warning_desc">Po kliknięciu poniższego
-                        przycisku treść zostanie odszyfrowana w Twojej przeglądarce, a zaszyfrowany rekord zostanie
-                        natychmiast wymazany z bazy. Ponowne odczytanie nie będzie możliwe.</p>
+                    <h3 class="dead-drop-warning-title" data-i18n="dead_drop_warning_title">Ta wiadomość zniknie po odsłonięciu</h3>
+                    <p class="dead-drop-warning-desc" data-i18n="dead_drop_warning_desc">Po kliknięciu poniższego przycisku treść zostanie natychmiast wyświetlona i trwale usunięta z serwera. Ponowne odczytanie nie będzie możliwe.</p>
                     <button type="button" class="dead-drop-btn-reveal" id="btnDeadDropReveal">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
-                        <span data-i18n="dead_drop_btn_reveal">Odsłoń i zniszcz treść</span>
+                        <span data-i18n="dead_drop_btn_reveal">Odsłoń treść notatki</span>
                     </button>
                 </div>
 
@@ -6410,8 +6976,7 @@
                             stroke-width="2">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
-                        <span data-i18n="dead_drop_destroyed_badge">Odszyfrowano w RAM • Szyfrogram został bezpowrotnie
-                            usunięty</span>
+                        <span data-i18n="dead_drop_destroyed_badge">Wiadomość wyświetlona • Treść została bezpowrotnie skasowana</span>
                     </div>
                     <div class="dead-drop-secret-text" id="deadDropSecretText"></div>
                     <button type="button" class="dead-drop-btn-create" id="btnDeadDropCopySecret"
@@ -6521,7 +7086,8 @@
                                 <label class="qr-label" for="qrInputUrl" data-i18n="qr_label_url">Adres strony lub link
                                     do pliku</label>
                                 <input type="url" id="qrInputUrl" class="qr-input"
-                                    placeholder="https://twojadomena.pl/plik">
+                                    placeholder="https://twojadomena.pl/plik"
+                                    data-i18n-placeholder="qr_placeholder_url">
                             </div>
                         </div>
 
@@ -6530,21 +7096,23 @@
                             <div class="qr-input-group">
                                 <label class="qr-label" for="qrWifiSsid" data-i18n="qr_label_ssid">Nazwa sieci
                                     (SSID)</label>
-                                <input type="text" id="qrWifiSsid" class="qr-input" placeholder="np. Dom_WiFi_5G">
+                                <input type="text" id="qrWifiSsid" class="qr-input" placeholder="np. Dom_WiFi_5G"
+                                    data-i18n-placeholder="qr_placeholder_ssid">
                             </div>
                             <div class="qr-styling-grid">
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrWifiPass" data-i18n="qr_label_wifipass">Hasło do
                                         Wi-Fi</label>
-                                    <input type="text" id="qrWifiPass" class="qr-input" placeholder="Wprowadź hasło">
+                                    <input type="text" id="qrWifiPass" class="qr-input" placeholder="Wprowadź hasło"
+                                        data-i18n-placeholder="qr_placeholder_wifipass">
                                 </div>
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrWifiType"
                                         data-i18n="qr_label_wifitype">Szyfrowanie</label>
                                     <select id="qrWifiType" class="qr-select">
-                                        <option value="WPA" selected>WPA/WPA2/WPA3</option>
-                                        <option value="WEP">WEP</option>
-                                        <option value="nopass">Otwarta (Brak)</option>
+                                        <option value="WPA" selected data-i18n="qr_wifitype_wpa">WPA/WPA2/WPA3</option>
+                                        <option value="WEP" data-i18n="qr_wifitype_wep">WEP</option>
+                                        <option value="nopass" data-i18n="qr_wifitype_nopass">Otwarta (Brak)</option>
                                     </select>
                                 </div>
                             </div>
@@ -6556,25 +7124,29 @@
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrVcardName" data-i18n="qr_label_name">Imię i
                                         Nazwisko</label>
-                                    <input type="text" id="qrVcardName" class="qr-input" placeholder="Jan Kowalski">
+                                    <input type="text" id="qrVcardName" class="qr-input" placeholder="Jan Kowalski"
+                                        data-i18n-placeholder="qr_placeholder_name">
                                 </div>
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrVcardPhone" data-i18n="qr_label_phone">Numer
                                         telefonu</label>
-                                    <input type="tel" id="qrVcardPhone" class="qr-input" placeholder="+48 600 000 000">
+                                    <input type="tel" id="qrVcardPhone" class="qr-input" placeholder="+48 600 000 000"
+                                        data-i18n-placeholder="qr_placeholder_phone">
                                 </div>
                             </div>
                             <div class="qr-styling-grid">
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrVcardEmail" data-i18n="qr_label_email">E-mail</label>
                                     <input type="email" id="qrVcardEmail" class="qr-input"
-                                        placeholder="kontakt@domena.pl">
+                                        placeholder="kontakt@domena.pl"
+                                        data-i18n-placeholder="qr_placeholder_email">
                                 </div>
                                 <div class="qr-input-group">
                                     <label class="qr-label" for="qrVcardCompany" data-i18n="qr_label_company">Firma /
                                         Stanowisko</label>
                                     <input type="text" id="qrVcardCompany" class="qr-input"
-                                        placeholder="Firma sp. z o.o.">
+                                        placeholder="Firma sp. z o.o."
+                                        data-i18n-placeholder="qr_placeholder_company">
                                 </div>
                             </div>
                         </div>
@@ -6585,7 +7157,8 @@
                                 <label class="qr-label" for="qrInputText" data-i18n="qr_label_text">Wiadomość
                                     tekstowa</label>
                                 <textarea id="qrInputText" class="qr-textarea" rows="3"
-                                    placeholder="Wpisz dowolny tekst, kod lub dane..."></textarea>
+                                    placeholder="Wpisz dowolny tekst, kod lub dane..."
+                                    data-i18n-placeholder="qr_placeholder_text"></textarea>
                             </div>
                         </div>
 
@@ -6596,11 +7169,11 @@
                                 <label class="qr-label" for="qrColorStyle" data-i18n="qr_label_color">Paleta
                                     barwna</label>
                                 <select id="qrColorStyle" class="qr-select">
-                                    <option value="mint" selected>Cyber Mint (#10B981)</option>
-                                    <option value="cyan">Electric Cyan (#06B6D4)</option>
-                                    <option value="emerald">Deep Emerald (#059669)</option>
-                                    <option value="gold">Royal Gold (#D97706)</option>
-                                    <option value="dark">Classic Obsidian (#0B0F19)</option>
+                                    <option value="mint" selected data-i18n="qr_color_mint">Cyber Mint (#10B981)</option>
+                                    <option value="cyan" data-i18n="qr_color_cyan">Electric Cyan (#06B6D4)</option>
+                                    <option value="emerald" data-i18n="qr_color_emerald">Deep Emerald (#059669)</option>
+                                    <option value="gold" data-i18n="qr_color_gold">Royal Gold (#D97706)</option>
+                                    <option value="dark" data-i18n="qr_color_dark">Classic Obsidian (#0B0F19)</option>
                                 </select>
                             </div>
                             <div class="qr-input-group">
@@ -6814,7 +7387,7 @@
                     <span class="cmd-key-hint"><kbd>↵</kbd> Wybierz</span>
                     <span class="cmd-key-hint"><kbd>ESC</kbd> Zamknij</span>
                 </div>
-                <span style="font-weight: 600; color: #34D399;">Dropsite Studio HUD</span>
+                <span style="font-weight: 600; color: #C4E7D4;">Dropsite Studio HUD</span>
             </div>
         </div>
     </div>
@@ -6835,8 +7408,7 @@
 
             <!-- Nagłówek dla Mobile -->
             <div class="radial-sheet-header">
-                <span class="radial-sheet-title" data-i18n="radial_sheet_title">✦ Narzędzia &amp; Technologie
-                    Dropsite</span>
+                <span class="radial-sheet-title" data-i18n="radial_sheet_title">✦ Narzędzia &amp; Technologie Dropsite</span>
             </div>
 
             <!-- Dekoracyjne pierścienie i radar -->
@@ -6892,10 +7464,8 @@
                             </svg>
                         </div>
                         <div class="radial-subtool-content">
-                            <span class="radial-subtool-name" data-i18n="radial_tool_dead_drop_name">Tajna Notatka (Dead
-                                Drop)</span>
-                            <span class="radial-subtool-desc" data-i18n="radial_tool_dead_drop_desc">Hasła AES-256
-                                kasowane po 1 odczytaniu</span>
+                            <span class="radial-subtool-name" data-i18n="radial_tool_dead_drop_name">Poufna Notatka</span>
+                            <span class="radial-subtool-desc" data-i18n="radial_tool_dead_drop_desc">Jednorazowa notatka usuwana po odczytaniu</span>
                         </div>
                     </button>
                     <button type="button" class="radial-subtool-item" data-action="drop-request">
@@ -7071,7 +7641,7 @@
                         </div>
                         <div class="radial-subtool-content">
                             <span class="radial-subtool-name" data-i18n="radial_tool_grabber_name">Pobieracz Wideo &amp; Foto</span>
-                            <span class="radial-subtool-desc" data-i18n="radial_tool_grabber_desc">TikTok, YouTube, IG bez znaku wodnego</span>
+                            <span class="radial-subtool-desc" data-i18n="radial_tool_grabber_desc">W procesie tworzenia • Wkrótce</span>
                         </div>
                     </button>
                     <button type="button" class="radial-subtool-item" data-action="qr-studio">
@@ -7536,7 +8106,8 @@
                 </div>
                 <div class="dl-lightbox-actions">
                     <button type="button" id="dlLightboxToggleVisibilityBtn" class="dl-lightbox-tool-btn"
-                        data-i18n-title="btn_hide_pins" title="Ukryj / Pokaż pinezki z uwagami na zdjęciu (H)">
+                        data-i18n-title="btn_hide_pins" title="Ukryj / Pokaż pinezki z uwagami na zdjęciu (H)"
+                        onclick="if(window.toggleProofingPinsVisibility) window.toggleProofingPinsVisibility();">
                         <svg id="dlLightboxEyeOpenIcon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -7562,7 +8133,8 @@
                         <span data-i18n="btn_add_note_pin">Dodaj uwagę</span>
                     </button>
                     <button type="button" id="dlLightboxToggleDrawerBtn" class="dl-lightbox-tool-btn"
-                        data-i18n-title="btn_remarks_title" title="Lista uwag i poprawek (L)">
+                        data-i18n-title="btn_remarks_title" title="Lista uwag i poprawek (L)"
+                        onclick="if(window.toggleLightboxDrawer) { window.toggleLightboxDrawer(); }">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -7653,7 +8225,8 @@
                         <span>Lista uwag do zdjęcia w powiększeniu</span>
                     </div>
                     <button type="button" class="btn-drawer-close" id="btnDlLightboxDrawerClose"
-                        title="Zwiń listę uwag">
+                        title="Zwiń listę uwag"
+                        onclick="if(window.toggleLightboxDrawer) { window.toggleLightboxDrawer(false); }">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -8548,15 +9121,15 @@
             document.write('<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"><\/script>');
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="js/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
+    <script src="js/qrious.min.js" defer></script>
     <script>
         if (typeof QRious === 'undefined') {
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"><\/script>');
         }
     </script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" defer></script>
     <!-- Inteligentny Lazy-Loader dla Zestawu Narzędzi PDF (oszczędność >1 MB na initial load) -->
     <script>
         let _toolboxLoadingPromise = null;
@@ -8612,25 +9185,22 @@
             }
         });
     </script>
-    <script src="js/ads-engine.js"></script>
-    <script src="js/telemetry.js"></script>
-    <script src="js/ram-engine.js"></script>
-    <script src="js/beam.js"></script>
-    <script src="app.js?v=2.7.7"></script>
-    <script src="js/concierge.js"></script>
-    <script src="js/omni-dropzone.js"></script>
-    <script src="js/pdf-matrix.js"></script>
-    <script src="js/watermark-studio.js"></script>
-    <script src="js/rodo-guard.js"></script>
-    <script src="js/drop-request.js"></script>
-    <script src="js/audio-waveform.js"></script>
-    <script src="js/code-viewer.js"></script>
-    <script src="js/dead-drop.js"></script>
-    <script src="js/qr-studio.js"></script>
-    <script src="js/video-compress.js"></script>
-    <script src="js/media-grabber.js"></script>
-    <script src="js/command-palette.js"></script>
-    <script src="js/radial-wheel.js"></script>
+    <script src="js/ads-engine.js" defer></script>
+    <script src="js/telemetry.js" defer></script>
+    <script src="js/ram-engine.js" defer></script>
+    <script src="js/beam.js" defer></script>
+    <script src="app.js?v=2.7.8" defer></script>
+    <script src="js/concierge.js" defer></script>
+    <script src="js/omni-dropzone.js" defer></script>
+    <script src="js/drop-request.js" defer></script>
+    <script src="js/audio-waveform.js" defer></script>
+    <script src="js/code-viewer.js" defer></script>
+    <script src="js/dead-drop.js" defer></script>
+    <script src="js/account-vault.js" defer></script>
+    <script src="js/qr-studio.js" defer></script>
+    <script src="js/video-compress.js" defer></script>
+    <script src="js/command-palette.js" defer></script>
+    <script src="js/radial-wheel.js" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
