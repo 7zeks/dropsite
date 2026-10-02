@@ -2,6 +2,7 @@
  * DROPSITE ACCOUNT VAULT & SCRATCHPAD
  * Bezpieczny podręczny notatnik z autozapisem w czasie rzeczywistym
  * powiązany bezpośrednio z kontem użytkownika i magazynem R2 w chmurze.
+ * Zwiększone odstępy między liniami, estetyczna numeracja (Gutter) i asystent porządkowania.
  * Brand Guidelines: Obsidian Glass, Cyber Mint & Neon Cyan, Pure inline SVG, Zero Emojis.
  */
 
@@ -10,7 +11,7 @@
 
     const WORKER_URL = window.WORKER_URL || 'https://uploud-api.dropsite33.workers.dev';
 
-    // Domyślne szablony dla nowych użytkowników (czysty styl profesjonalny)
+    // Domyślne szablony dla nowych użytkowników
     const DEFAULT_NOTES = [
         {
             id: 'note_passwords_vault',
@@ -19,18 +20,17 @@
 // Notatka zapisuje się automatycznie na Twoim koncie w chmurze.
 
 [Serwery i Chmura]
-• Cloudflare / R2: admin@dropsite.com
-• PIN do serwerowni: 8492
-• Klucz API Produkcja: dp_live_9f81a72b4c1092e48fa
+Cloudflare / R2: admin@dropsite.com
+PIN do serwerowni: 8492
+Klucz API Produkcja: dp_live_9f81a72b4c1092e48fa
 
 [Konta Zapasowe & 2FA]
-• Kody zapasowe 2FA:
-  1) 8491-2940-1192
-  2) 3902-8819-4820
-  3) 5910-3847-1903
+01. 8491-2940-1192
+02. 3902-8819-4820
+03. 5910-3847-1903
 
 [Wskazówka bezpieczeństwa]
-• Kliknij ikonę oka (Ukryj), aby rozmyć treść przy osobach trzecich!`,
+Kliknij ikonę oka (Ukryj), aby rozmyć treść przy osobach trzecich!`,
             category: 'passwords',
             isMasked: false,
             isMonospace: true,
@@ -42,10 +42,11 @@
             title: 'Podręczny Notatnik',
             content: `Podręczny notatnik Dropsite — wpisuj tutaj tymczasowe teksty, szkice, numery przesyłek, linki i kody BLIK.
 
-Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
+Każda linia ma swój własny odstęp i numer w panelu:
 - Dostępne z każdego urządzenia po zalogowaniu
 - Tryb czcionki programistycznej { } dla kodów i json
-- Wbudowany generator silnych haseł i PIN-ów`,
+- Wbudowany generator silnych haseł i PIN-ów
+- Narzędzie "Uporządkuj" do automatycznej numeracji i zwiększania odstępów`,
             category: 'notes',
             isMasked: false,
             isMonospace: false,
@@ -64,6 +65,8 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             this.lastSynced = null;
             this.debounceSaveTimer = null;
             this.isGeneratorOpen = false;
+            this.isFormatOpen = false;
+            this.showLineNumbers = localStorage.getItem('dropsite_vault_line_nums') !== '0';
             this.generatorSettings = { length: 16, type: 'pass' };
 
             this.init();
@@ -113,7 +116,6 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
                 this.saveToLocalStorage();
             }
 
-            // Jeśli użytkownik jest zalogowany, pobierz najświeższe notatki z chmury R2
             const email = this.getCurrentUserEmail();
             if (email) {
                 this.syncFromCloud();
@@ -146,7 +148,6 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             return note;
         }
 
-        // TRIGGER AUTO-SAVE
         triggerAutoSave() {
             this.saveToLocalStorage();
             this.updateStatusBar();
@@ -168,7 +169,6 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             }, 750);
         }
 
-        // SYNC TO CLOUD (WORKER R2)
         async syncToCloud() {
             const email = this.getCurrentUserEmail();
             if (!email) return;
@@ -206,7 +206,6 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             }
         }
 
-        // SYNC FROM CLOUD (WORKER R2)
         async syncFromCloud() {
             const email = this.getCurrentUserEmail();
             if (!email) return;
@@ -247,13 +246,11 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             }
         }
 
-        // Zmiana zalogowanego konta
         onUserAuthChanged(user) {
             this.loadInitialData();
             this.renderAllViews();
         }
 
-        // ZARZĄDZANIE NOTATKAMI
         createNewNote(template = 'blank') {
             const id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
             let title = 'Nowa notatka';
@@ -263,7 +260,7 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
 
             if (template === 'passwords') {
                 title = 'Nowe Kody i Dostęp';
-                content = `// Dane dostępowe i kody PIN\n• Serwis: \n• Login: \n• Hasło: \n• PIN: \n• Kody 2FA: `;
+                content = `// Dane dostępowe i kody PIN\nSerwis: \nLogin: \nHasło: \nPIN: \nKody 2FA: `;
                 category = 'passwords';
                 isMonospace = true;
             } else if (template === 'codes') {
@@ -345,6 +342,15 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             this.renderEditorPane();
         }
 
+        toggleLineNumbers() {
+            this.showLineNumbers = !this.showLineNumbers;
+            localStorage.setItem('dropsite_vault_line_nums', this.showLineNumbers ? '1' : '0');
+            this.renderEditorPane();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(this.showLineNumbers ? 'Włączono numerację linii' : 'Wyłączono numerację linii', 'info');
+            }
+        }
+
         copyActiveNoteContent() {
             const activeNote = this.getActiveNote();
             if (!activeNote || !activeNote.content) {
@@ -387,6 +393,102 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             URL.revokeObjectURL(url);
         }
 
+        // ASYSTENT ESTETYKI I FORMATOWANIA LISTY HASEŁ
+        formatAddNumbering() {
+            const activeNote = this.getActiveNote();
+            if (!activeNote || !activeNote.content) return;
+
+            const lines = activeNote.content.split('\n');
+            let counter = 1;
+            const formatted = lines.map(line => {
+                if (!line.trim()) return line;
+                // Usuń poprzednie numeracje jeśli istniały
+                const clean = line.replace(/^\s*(\d+[\.\)]|\•|\-)\s*/, '');
+                const numStr = counter < 10 ? `0${counter}` : `${counter}`;
+                counter++;
+                return `${numStr}. ${clean}`;
+            });
+
+            activeNote.content = formatted.join('\n');
+            activeNote.updatedAt = new Date().toISOString();
+            this.triggerAutoSave();
+            this.renderEditorPane();
+            this.isFormatOpen = false;
+            this.renderFormatPopover();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Dodano estetyczną numerację haseł (01., 02....)', 'success');
+            }
+        }
+
+        formatRemoveNumbering() {
+            const activeNote = this.getActiveNote();
+            if (!activeNote || !activeNote.content) return;
+
+            const lines = activeNote.content.split('\n');
+            const formatted = lines.map(line => line.replace(/^\s*(\d+[\.\)]|\•|\-)\s*/, ''));
+            activeNote.content = formatted.join('\n');
+            activeNote.updatedAt = new Date().toISOString();
+            this.triggerAutoSave();
+            this.renderEditorPane();
+            this.isFormatOpen = false;
+            this.renderFormatPopover();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Usunięto numerację z treści', 'info');
+            }
+        }
+
+        formatAddSpacing() {
+            const activeNote = this.getActiveNote();
+            if (!activeNote || !activeNote.content) return;
+
+            const lines = activeNote.content.split('\n');
+            const nonBlank = lines.filter(l => l.trim().length > 0);
+            activeNote.content = nonBlank.join('\n\n');
+            activeNote.updatedAt = new Date().toISOString();
+            this.triggerAutoSave();
+            this.renderEditorPane();
+            this.isFormatOpen = false;
+            this.renderFormatPopover();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Zwiększono odstępy między pozycjami', 'success');
+            }
+        }
+
+        formatCompactSpacing() {
+            const activeNote = this.getActiveNote();
+            if (!activeNote || !activeNote.content) return;
+
+            const lines = activeNote.content.split('\n');
+            const nonBlank = lines.filter(l => l.trim().length > 0);
+            activeNote.content = nonBlank.join('\n');
+            activeNote.updatedAt = new Date().toISOString();
+            this.triggerAutoSave();
+            this.renderEditorPane();
+            this.isFormatOpen = false;
+            this.renderFormatPopover();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Zagęszczono listę (usunięto puste wiersze)', 'info');
+            }
+        }
+
+        formatSortAlpha() {
+            const activeNote = this.getActiveNote();
+            if (!activeNote || !activeNote.content) return;
+
+            const lines = activeNote.content.split('\n');
+            const nonBlank = lines.filter(l => l.trim().length > 0);
+            nonBlank.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
+            activeNote.content = nonBlank.join('\n');
+            activeNote.updatedAt = new Date().toISOString();
+            this.triggerAutoSave();
+            this.renderEditorPane();
+            this.isFormatOpen = false;
+            this.renderFormatPopover();
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Posortowano listę alfabetycznie (A-Z)', 'success');
+            }
+        }
+
         // GENERATOR HASEŁ
         generatePassword(type = 'pass', length = 16) {
             let charset = '';
@@ -413,7 +515,7 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             const activeNote = this.getActiveNote();
             if (!activeNote) return;
 
-            const insertText = `\n${secret}`;
+            const insertText = (activeNote.content && !activeNote.content.endsWith('\n') ? '\n' : '') + secret;
             activeNote.content = (activeNote.content || '') + insertText;
             activeNote.updatedAt = new Date().toISOString();
             this.triggerAutoSave();
@@ -427,7 +529,28 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             this.renderGeneratorPopover();
         }
 
-        // RENDEROWANIE KOMPONENTU
+        generateLineNumbersHtml(content) {
+            const lines = (content || '').split('\n');
+            const count = Math.max(lines.length, 1);
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                const numStr = i < 10 ? `0${i}` : `${i}`;
+                html += `<span class="vault-line-num">${numStr}</span>`;
+            }
+            return html;
+        }
+
+        updateLineNumbersGutter(pane, content) {
+            const gutter = pane.querySelector('#vaultLineNumbers');
+            if (!gutter) return;
+            if (!this.showLineNumbers) {
+                gutter.style.display = 'none';
+                return;
+            }
+            gutter.style.display = 'block';
+            gutter.innerHTML = this.generateLineNumbersHtml(content);
+        }
+
         renderContainer(targetEl) {
             if (!targetEl) return;
 
@@ -681,6 +804,30 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
                                 <span>Generator</span>
                             </button>
 
+                            <!-- Asystent Porządkowania i Odstępów -->
+                            <button type="button" class="vault-tool-btn" id="vaultToolFormatBtn" title="Uporządkuj listę haseł, dodaj numerację lub zwiększ odstępy">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="21" y1="10" x2="3" y2="10"></line>
+                                    <line x1="21" y1="6" x2="3" y2="6"></line>
+                                    <line x1="21" y1="14" x2="3" y2="14"></line>
+                                    <line x1="21" y1="18" x2="3" y2="18"></line>
+                                </svg>
+                                <span>Uporządkuj</span>
+                            </button>
+
+                            <!-- Przełącznik Numeracji Linii (Gutter) -->
+                            <button type="button" class="vault-tool-btn ${this.showLineNumbers ? 'active' : ''}" id="vaultToolLineNumsBtn" title="Pokaż / Ukryj numerację linii na marginesie">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="10" y1="6" x2="21" y2="6"></line>
+                                    <line x1="10" y1="12" x2="21" y2="12"></line>
+                                    <line x1="10" y1="18" x2="21" y2="18"></line>
+                                    <path d="M4 6h1v4"></path>
+                                    <path d="M4 10h2"></path>
+                                    <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
+                                </svg>
+                                <span>Numeracja</span>
+                            </button>
+
                             <!-- Privacy Shield (Masking) -->
                             <button type="button" class="vault-tool-btn ${activeNote.isMasked ? 'active' : ''}" id="vaultToolMaskBtn" title="${activeNote.isMasked ? 'Odkryj treść' : 'Ukryj treść (ochrona przed podglądaniem)'}">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -740,35 +887,103 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
                         </div>
                     </div>
 
-                    <!-- Textarea Wrap -->
+                    <!-- Textarea Wrap z numeracją linii (Gutter) i komfortowymi odstępami -->
                     <div class="vault-textarea-wrap">
-                        <textarea 
-                            class="vault-textarea ${activeNote.isMonospace ? 'is-monospace' : ''} ${activeNote.isMasked ? 'is-masked' : ''}" 
-                            id="vaultTextarea" 
-                            placeholder="Zacznij pisać tutaj... Hasła, kody, notatki zapisują się automatycznie na Twoim koncie."
-                            spellcheck="false"
-                        >${escapeHtml(activeNote.content || '')}</textarea>
+                        <div class="vault-line-numbers" id="vaultLineNumbers" style="${this.showLineNumbers ? '' : 'display: none;'}">
+                            ${this.generateLineNumbersHtml(activeNote.content)}
+                        </div>
 
-                        ${activeNote.isMasked ? `
-                            <div class="vault-mask-overlay">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                                <span>Treść ukryta. Najedź kursorem lub kliknij "Odkryj".</span>
-                            </div>
-                        ` : ''}
+                        <div class="vault-textarea-inner">
+                            <textarea 
+                                class="vault-textarea ${activeNote.isMonospace ? 'is-monospace' : ''} ${activeNote.isMasked ? 'is-masked' : ''}" 
+                                id="vaultTextarea" 
+                                placeholder="Zacznij pisać tutaj... Hasła, kody, notatki zapisują się automatycznie na Twoim koncie."
+                                spellcheck="false"
+                            >${escapeHtml(activeNote.content || '')}</textarea>
+
+                            ${activeNote.isMasked ? `
+                                <div class="vault-mask-overlay">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                    <span>Treść ukryta. Najedź kursorem lub kliknij "Odkryj".</span>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
 
                     <!-- Generator Popover Placeholder -->
                     <div id="vaultGenPopoverSlot"></div>
+
+                    <!-- Format Popover Placeholder -->
+                    <div id="vaultFormatPopoverSlot"></div>
                 `;
 
                 this.bindEditorEvents(pane, activeNote);
                 this.renderGeneratorPopover();
+                this.renderFormatPopover();
             });
 
             this.updateStatusBar();
+        }
+
+        renderFormatPopover() {
+            const slots = document.querySelectorAll('#vaultFormatPopoverSlot');
+            slots.forEach(slot => {
+                if (!this.isFormatOpen) {
+                    slot.innerHTML = '';
+                    return;
+                }
+
+                slot.innerHTML = `
+                    <div class="vault-format-popover" id="vaultFormatPopover">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px;">
+                            <span style="font-size: 11.5px; font-weight: 700; color: #FFFFFF;">Estetyka i Odstępy</span>
+                            <button type="button" class="mod-close" id="closeFormatBtn" style="font-size: 13px; padding: 2px;">✕</button>
+                        </div>
+
+                        <button type="button" class="vault-format-item" id="btnFmtNumbering">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h1v4"></path><path d="M4 10h2"></path><line x1="10" y1="6" x2="20" y2="6"></line><line x1="10" y1="12" x2="20" y2="12"></line><line x1="10" y1="18" x2="20" y2="18"></line></svg>
+                            <span>Ponumeruj hasła (01., 02.)</span>
+                        </button>
+
+                        <button type="button" class="vault-format-item" id="btnFmtAddSpacing">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline><line x1="5" y1="5" x2="19" y2="5"></line></svg>
+                            <span>Zwiększ odstępy (Rozstrzel)</span>
+                        </button>
+
+                        <button type="button" class="vault-format-item" id="btnFmtCompact">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline><line x1="5" y1="19" x2="19" y2="19"></line></svg>
+                            <span>Zagęść (usuń puste linie)</span>
+                        </button>
+
+                        <button type="button" class="vault-format-item" id="btnFmtSort">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12m-9 6h6"></path></svg>
+                            <span>Sortuj alfabetycznie (A-Z)</span>
+                        </button>
+
+                        <button type="button" class="vault-format-item" id="btnFmtRemoveNums" style="color: #94A3B8;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <span>Wyczyść numerację z tekstu</span>
+                        </button>
+                    </div>
+                `;
+
+                const popover = slot.querySelector('#vaultFormatPopover');
+                if (!popover) return;
+
+                popover.querySelector('#closeFormatBtn').addEventListener('click', () => {
+                    this.isFormatOpen = false;
+                    this.renderFormatPopover();
+                });
+
+                popover.querySelector('#btnFmtNumbering').addEventListener('click', () => this.formatAddNumbering());
+                popover.querySelector('#btnFmtAddSpacing').addEventListener('click', () => this.formatAddSpacing());
+                popover.querySelector('#btnFmtCompact').addEventListener('click', () => this.formatCompactSpacing());
+                popover.querySelector('#btnFmtSort').addEventListener('click', () => this.formatSortAlpha());
+                popover.querySelector('#btnFmtRemoveNums').addEventListener('click', () => this.formatRemoveNumbering());
+            });
         }
 
         renderGeneratorPopover() {
@@ -854,6 +1069,8 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
             const titleInput = pane.querySelector('#vaultTitleInput');
             const textarea = pane.querySelector('#vaultTextarea');
             const genBtn = pane.querySelector('#vaultToolGenBtn');
+            const formatBtn = pane.querySelector('#vaultToolFormatBtn');
+            const lineNumsBtn = pane.querySelector('#vaultToolLineNumsBtn');
             const maskBtn = pane.querySelector('#vaultToolMaskBtn');
             const monoBtn = pane.querySelector('#vaultToolMonoBtn');
             const copyBtn = pane.querySelector('#vaultToolCopyBtn');
@@ -875,16 +1092,36 @@ Każda litera zapisuje się w ułamku sekundy na Twoim koncie:
                     activeNote.content = e.target.value;
                     activeNote.updatedAt = new Date().toISOString();
                     this.triggerAutoSave();
+                    this.updateLineNumbersGutter(pane, e.target.value);
+                });
+
+                textarea.addEventListener('scroll', () => {
+                    const gutter = pane.querySelector('#vaultLineNumbers');
+                    if (gutter) {
+                        gutter.scrollTop = textarea.scrollTop;
+                    }
                 });
             }
 
             if (genBtn) {
                 genBtn.addEventListener('click', () => {
                     this.isGeneratorOpen = !this.isGeneratorOpen;
+                    if (this.isGeneratorOpen) this.isFormatOpen = false;
+                    this.renderGeneratorPopover();
+                    this.renderFormatPopover();
+                });
+            }
+
+            if (formatBtn) {
+                formatBtn.addEventListener('click', () => {
+                    this.isFormatOpen = !this.isFormatOpen;
+                    if (this.isFormatOpen) this.isGeneratorOpen = false;
+                    this.renderFormatPopover();
                     this.renderGeneratorPopover();
                 });
             }
 
+            if (lineNumsBtn) lineNumsBtn.addEventListener('click', () => this.toggleLineNumbers());
             if (maskBtn) maskBtn.addEventListener('click', () => this.toggleMaskActiveNote());
             if (monoBtn) monoBtn.addEventListener('click', () => this.toggleMonospaceActiveNote());
             if (copyBtn) copyBtn.addEventListener('click', () => this.copyActiveNoteContent());

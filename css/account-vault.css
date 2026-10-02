@@ -588,7 +588,42 @@
     flex: 1;
     display: flex;
     position: relative;
-    padding: 14px 18px;
+    padding: 0;
+    overflow: hidden;
+    background: rgba(10, 15, 26, 0.4);
+}
+
+/* Rynienka z numeracją linii (Line Numbers Gutter) */
+.vault-line-numbers {
+    width: 44px;
+    min-width: 44px;
+    padding: 16px 8px 16px 6px;
+    background: rgba(11, 17, 32, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    color: #475569;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11.5px;
+    line-height: 28px;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    pointer-events: none;
+    box-sizing: border-box;
+    transition: opacity 0.2s ease;
+}
+
+.vault-line-num {
+    height: 28px;
+    display: block;
+    color: #64748B;
+    opacity: 0.75;
+}
+
+.vault-textarea-inner {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    display: flex;
     overflow: hidden;
 }
 
@@ -601,11 +636,17 @@
     resize: none;
     color: #F1F5F9;
     font-size: 13.5px;
-    line-height: 1.65;
+    line-height: 28px;
+    padding: 16px 18px;
+    box-sizing: border-box;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.015em;
     overflow-y: auto;
     transition: filter 0.2s ease;
+    /* Subtelne poziome linie oddzielające poszczególne hasła/wiersze dla perfekcyjnej estetyki */
+    background-image: linear-gradient(rgba(255, 255, 255, 0.024) 1px, transparent 1px);
+    background-size: 100% 28px;
+    background-position: 0 15px;
 }
 
 .vault-textarea::placeholder {
@@ -645,6 +686,50 @@
     font-size: 12px;
     pointer-events: none;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Menu porządkowania listy haseł i odstępów (Format Popover) */
+.vault-format-popover {
+    position: absolute;
+    top: 52px;
+    right: 70px;
+    background: #0B1322;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.12);
+    border-radius: 12px;
+    padding: 10px;
+    width: 240px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vault-format-item {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #CBD5E1;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.vault-format-item:hover {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.25);
+    color: #FFFFFF;
+}
+
+.vault-format-item svg {
+    color: #38BDF8;
+    flex-shrink: 0;
 }
 
 /* Dolny pasek stanu (Status & Metrics Bar) */
