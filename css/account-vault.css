@@ -28,7 +28,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
+    padding: 14px 72px 14px 20px;
     background: rgba(15, 23, 42, 0.7);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -153,6 +153,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-left: auto;
 }
 
 .vault-btn-ghost {
@@ -819,6 +820,36 @@
     height: 100%;
 }
 
+.account-vault-modal-container .mod-close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    z-index: 60;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0;
+}
+
+.account-vault-modal-container .mod-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #F87171;
+    transform: scale(1.06);
+}
+
+.account-vault-modal-container .mod-close:active {
+    transform: scale(0.94);
+}
+
 /* Responsywność dla telefonów i tabletów */
 @media (max-width: 768px) {
     .vault-split-body {
@@ -833,7 +864,7 @@
     }
 
     .vault-topbar {
-        padding: 10px 14px;
+        padding: 10px 58px 10px 14px;
     }
 
     .vault-statusbar {
