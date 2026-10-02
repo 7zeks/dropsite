@@ -68,6 +68,8 @@ Każda linia ma swój własny odstęp i numer w panelu:
             this.isFormatOpen = false;
             this.showLineNumbers = localStorage.getItem('dropsite_vault_line_nums') !== '0';
             this.generatorSettings = { length: 16, type: 'pass' };
+            this.pendingDeleteNoteId = null;
+            this.pendingDeleteTimer = null;
 
             this.init();
         }
@@ -252,6 +254,7 @@ Każda linia ma swój własny odstęp i numer w panelu:
         }
 
         createNewNote(template = 'blank') {
+            this.resetPendingDelete();
             const id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
             let title = 'Nowa notatka';
             let content = '';
@@ -295,13 +298,57 @@ Każda linia ma swój własny odstęp i numer w panelu:
             }, 100);
         }
 
+        resetPendingDelete() {
+            if (this.pendingDeleteTimer) {
+                clearTimeout(this.pendingDeleteTimer);
+                this.pendingDeleteTimer = null;
+            }
+            this.pendingDeleteNoteId = null;
+            const delBtns = document.querySelectorAll('#vaultToolDeleteBtn');
+            delBtns.forEach(btn => {
+                btn.classList.remove('confirming-delete');
+                btn.title = 'Usuń tę notatkę';
+                btn.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                `;
+            });
+        }
+
         deleteActiveNote() {
             const activeNote = this.getActiveNote();
             if (!activeNote) return;
 
-            if (!confirm(`Czy na pewno chcesz bezpowrotnie usunąć notatkę "${activeNote.title}"?`)) {
+            // Pierwsze kliknięcie: uzbrojenie przycisku (wymaga ponownego kliknięcia w ciągu 3.5s)
+            if (this.pendingDeleteNoteId !== activeNote.id) {
+                this.pendingDeleteNoteId = activeNote.id;
+
+                const delBtns = document.querySelectorAll('#vaultToolDeleteBtn');
+                delBtns.forEach(btn => {
+                    btn.classList.add('confirming-delete');
+                    btn.title = 'Kliknij ponownie, aby bezpowrotnie usunąć tę notatkę';
+                    btn.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        <span class="vault-delete-confirm-label">Kliknij, by usunąć!</span>
+                    `;
+                });
+
+                if (this.pendingDeleteTimer) clearTimeout(this.pendingDeleteTimer);
+                this.pendingDeleteTimer = setTimeout(() => {
+                    this.resetPendingDelete();
+                }, 3500);
                 return;
             }
+
+            // Drugie kliknięcie: faktyczne usunięcie notatki bez żadnych okienek systemowych
+            this.resetPendingDelete();
 
             this.notes = this.notes.filter(n => n.id !== activeNote.id);
             if (this.notes.length === 0) {
@@ -771,6 +818,7 @@ Każda linia ma swój własny odstęp i numer w panelu:
 
                 list.querySelectorAll('.vault-note-item').forEach(item => {
                     item.addEventListener('click', () => {
+                        this.resetPendingDelete();
                         this.activeNoteId = item.getAttribute('data-id');
                         this.renderAllViews();
                     });
