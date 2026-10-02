@@ -1275,6 +1275,15 @@ Każda linia ma swój własny odstęp i numer w panelu:
         }
     };
 
+    const vaultModalEl = document.getElementById('accountVaultModalWrap');
+    if (vaultModalEl) {
+        vaultModalEl.addEventListener('click', (e) => {
+            if (e.target === vaultModalEl) {
+                window.closeAccountVault();
+            }
+        });
+    }
+
     window.renderAccountVaultInline = function() {
         const mount = document.getElementById('subpane_notes');
         if (mount && (!mount.querySelector('.account-vault-wrap') || mount.childElementCount === 0)) {

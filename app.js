@@ -24,14 +24,31 @@ if (!firebase.apps.length) {
 }
 
 // =========================================================================
-// ULTRA-SMOOTH MODAL TRANSITIONS (APPLE / MODERN WEB SPEC)
 // =========================================================================
+// ULTRA-SMOOTH MODAL TRANSITIONS (APPLE / MODERN WEB SPEC)
+// & SEQUENTIAL ESCAPE WINDOW STACK MANAGER (LIFO)
+// =========================================================================
+window.__dropsiteModalStack = window.__dropsiteModalStack || [];
+
+window.registerOpenModal = function(modalEl) {
+    if (!modalEl) return;
+    if (!Array.isArray(window.__dropsiteModalStack)) window.__dropsiteModalStack = [];
+    window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl && document.body.contains(el));
+    window.__dropsiteModalStack.push(modalEl);
+};
+
+window.unregisterClosedModal = function(modalEl) {
+    if (!modalEl || !Array.isArray(window.__dropsiteModalStack)) return;
+    window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl);
+};
+
 window.smoothOpenModal = function(modalEl, displayType = 'flex') {
     if (!modalEl) return;
     modalEl.classList.remove('is-closing');
     modalEl.removeAttribute('hidden');
     modalEl.hidden = false;
     modalEl.style.display = displayType;
+    window.registerOpenModal(modalEl);
 };
 
 window.smoothCloseModal = function(modalEl, callback) {
@@ -39,6 +56,7 @@ window.smoothCloseModal = function(modalEl, callback) {
         if (callback) callback();
         return;
     }
+    window.unregisterClosedModal(modalEl);
     const isHidden = modalEl.hidden || modalEl.hasAttribute('hidden') || (modalEl.style.display === 'none' && !modalEl.classList.contains('is-closing'));
     if (isHidden) {
         if (callback) callback();
@@ -66,6 +84,281 @@ window.smoothCloseModal = function(modalEl, callback) {
 
     setTimeout(done, 220);
 };
+
+window.isModalElementVisible = function(el) {
+    if (!el || !document.body.contains(el)) return false;
+    if (el.hidden || el.hasAttribute('hidden')) return false;
+    if (el.getAttribute('aria-hidden') === 'true') return false;
+    if (el.classList.contains('is-closing')) return false;
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    return (el.offsetWidth > 0 || el.offsetHeight > 0);
+};
+
+window.closeModalByElement = function(targetModal) {
+    if (!targetModal) return false;
+    window.unregisterClosedModal(targetModal);
+
+    // 1. Dedykowane handlery specyficznych okien
+    if (targetModal.id === 'accountVaultModalWrap') {
+        if (typeof window.closeAccountVault === 'function') {
+            window.closeAccountVault();
+            return true;
+        }
+    }
+    if (targetModal.id === 'proModalWrap' && typeof window.closeProModal === 'function') {
+        window.closeProModal();
+        return true;
+    }
+    if (targetModal.id === 'blikModalWrap' && typeof window.closeBlikModal === 'function') {
+        window.closeBlikModal();
+        return true;
+    }
+    if (targetModal.id === 'modalCreateAlbum' && typeof window.closeCreateAlbumModal === 'function') {
+        window.closeCreateAlbumModal();
+        return true;
+    }
+    if (targetModal.id === 'modalPublicAlbumView' && typeof window.closePublicAlbumModal === 'function') {
+        window.closePublicAlbumModal();
+        return true;
+    }
+    if (targetModal.id === 'adminUserDossierModal' && typeof window.closeAdminUserDossier === 'function') {
+        window.closeAdminUserDossier();
+        return true;
+    }
+    if (targetModal.id === 'cinematicModalWrap' && typeof window.closeCinematicModal === 'function') {
+        window.closeCinematicModal();
+        return true;
+    }
+    if (targetModal.id === 'dropRequestModal') {
+        targetModal.classList.remove('open', 'is-open');
+        targetModal.setAttribute('aria-hidden', 'true');
+        targetModal.style.display = 'none';
+        document.body.style.overflow = '';
+        return true;
+    }
+    if (targetModal.id === 'deadDropModal' || targetModal.id === 'deadDropReaderModal') {
+        targetModal.classList.remove('open', 'is-open');
+        targetModal.setAttribute('aria-hidden', 'true');
+        targetModal.style.display = 'none';
+        document.body.style.overflow = '';
+        return true;
+    }
+    if (targetModal.id === 'conciergeModalWrap') {
+        targetModal.classList.remove('open', 'is-open');
+        targetModal.setAttribute('aria-hidden', 'true');
+        targetModal.style.display = 'none';
+        return true;
+    }
+
+    // 2. Kliknięcie w przycisk zamykający wewnątrz modala (gwarantuje wykonanie cleanupu)
+    const closeBtn = targetModal.querySelector(
+        '.mod-close, .close-modal, .btn-close, .modal-close, #btnDropReqClose, #btnDropReqCancel, #btnDeadDropClose, #btnDeadDropReaderClose, #conciergeCloseBtn, #closeLoginModal, #closeHistoryModal, #closeQrModal, #closeFeedbackModal, #unboxingModalCloseBtn, [aria-label*="Zamknij"], [aria-label*="zamknij"], [aria-label="Close"], [data-close-modal]'
+    );
+    if (closeBtn && typeof closeBtn.click === 'function') {
+        closeBtn.click();
+        return true;
+    }
+
+    // 3. Fallback: smoothCloseModal lub ukrycie
+    if (typeof window.smoothCloseModal === 'function') {
+        window.smoothCloseModal(targetModal);
+        return true;
+    }
+
+    targetModal.hidden = true;
+    targetModal.style.display = 'none';
+    return true;
+};
+
+window.closeTopmostWindowOrModal = function() {
+    // Krok 1: Wewnętrzne popovery i narzędzia w Sejfie Notatek (Dropsite Vault)
+    if (window.DropsiteVault) {
+        if (window.DropsiteVault.isGeneratorOpen) {
+            window.DropsiteVault.isGeneratorOpen = false;
+            window.DropsiteVault.renderGeneratorPopover();
+            return true;
+        }
+        if (window.DropsiteVault.isFormatOpen) {
+            window.DropsiteVault.isFormatOpen = false;
+            window.DropsiteVault.renderFormatPopover();
+            return true;
+        }
+        if (window.DropsiteVault.pendingDeleteNoteId) {
+            window.DropsiteVault.resetPendingDelete();
+            return true;
+        }
+    }
+
+    // Krok 2: Popovery osi czasu i komentarzy w Proofingu
+    const timelineMarkerPopover = document.getElementById('timelineMarkerPopover');
+    if (timelineMarkerPopover && !timelineMarkerPopover.hidden && timelineMarkerPopover.style.display !== 'none') {
+        if (typeof window.closeTimelineMarkerPopover === 'function') {
+            window.closeTimelineMarkerPopover();
+            return true;
+        }
+        timelineMarkerPopover.style.display = 'none';
+        return true;
+    }
+
+    const proofingCommentModal = document.getElementById('proofingCommentModal');
+    if (proofingCommentModal && proofingCommentModal.classList.contains('is-open')) {
+        proofingCommentModal.classList.remove('is-open');
+        return true;
+    }
+
+    // Krok 3: Otwarte menu dropdown / select
+    const openDropdowns = document.querySelectorAll('.custom-select-dropdown.open, .custom-sort-dropdown.open, .custom-select-wrap.active');
+    if (openDropdowns.length > 0) {
+        if (typeof window.closeAllCustomDropdowns === 'function') {
+            window.closeAllCustomDropdowns();
+            return true;
+        }
+        openDropdowns.forEach(d => {
+            d.classList.remove('open', 'active');
+            d.hidden = true;
+        });
+        return true;
+    }
+
+    // Krok 4: Paleta poleceń (Command Palette Ctrl+K)
+    const cmdBackdrop = document.getElementById('commandPaletteBackdrop');
+    if (cmdBackdrop && cmdBackdrop.classList.contains('open')) {
+        const closeBtn = cmdBackdrop.querySelector('.cmd-close-btn, .close-btn');
+        if (closeBtn && typeof closeBtn.click === 'function') {
+            closeBtn.click();
+        } else {
+            cmdBackdrop.classList.remove('open');
+        }
+        return true;
+    }
+
+    // Krok 5: Menu kołowe (Radial Wheel)
+    const radialBackdrop = document.getElementById('radialWheelBackdrop');
+    if (radialBackdrop && radialBackdrop.classList.contains('open')) {
+        radialBackdrop.classList.remove('open');
+        return true;
+    }
+
+    // Krok 6: RODO Guard
+    const rodoModal = document.getElementById('rodoGuardModal');
+    if (rodoModal && rodoModal.classList.contains('active')) {
+        rodoModal.classList.remove('active');
+        return true;
+    }
+
+    // Krok 7: Szuflady i Lightboxy
+    const lightboxDrawer = document.getElementById('dlLightboxDrawer');
+    if (lightboxDrawer && !lightboxDrawer.hidden && lightboxDrawer.style.display !== 'none') {
+        if (typeof window.toggleLightboxDrawer === 'function') {
+            window.toggleLightboxDrawer(false);
+            return true;
+        }
+        lightboxDrawer.style.display = 'none';
+        return true;
+    }
+
+    const dlLightboxModal = document.getElementById('dlLightboxModal');
+    if (dlLightboxModal && window.isModalElementVisible(dlLightboxModal)) {
+        window.closeModalByElement(dlLightboxModal);
+        return true;
+    }
+
+    const previewModal = document.getElementById('previewModal');
+    if (previewModal && window.isModalElementVisible(previewModal)) {
+        window.closeModalByElement(previewModal);
+        return true;
+    }
+
+    const cinematicModal = document.getElementById('cinematicModalWrap');
+    if (cinematicModal && window.isModalElementVisible(cinematicModal)) {
+        window.closeModalByElement(cinematicModal);
+        return true;
+    }
+
+    // Krok 8: Menu mobilne (Drawer)
+    const mobileDrawer = document.getElementById('mobileNavDrawer');
+    if (mobileDrawer && (mobileDrawer.classList.contains('open') || mobileDrawer.classList.contains('is-open'))) {
+        mobileDrawer.classList.remove('open', 'is-open');
+        return true;
+    }
+
+    // Krok 9: Flyouty na stronie głównej (zaawansowane, kompresja, slug)
+    const advFlyoutCard = document.getElementById('advFlyoutCard');
+    if (advFlyoutCard && advFlyoutCard.classList.contains('is-visible')) {
+        advFlyoutCard.classList.remove('is-visible');
+        advFlyoutCard.hidden = true;
+        advFlyoutCard.style.display = 'none';
+        return true;
+    }
+
+    const imgCompressFlyout = document.getElementById('imageCompressFlyout');
+    if (imgCompressFlyout && !imgCompressFlyout.hidden && imgCompressFlyout.style.display !== 'none') {
+        if (typeof window.toggleCompressFlyout === 'function') {
+            window.toggleCompressFlyout(false);
+            return true;
+        }
+        imgCompressFlyout.hidden = true;
+        imgCompressFlyout.style.display = 'none';
+        return true;
+    }
+
+    const customSlugBox = document.getElementById('customSlugBox');
+    if (customSlugBox && customSlugBox.classList.contains('is-visible')) {
+        customSlugBox.classList.remove('is-visible');
+        customSlugBox.hidden = true;
+        customSlugBox.style.display = 'none';
+        return true;
+    }
+
+    // Krok 10: Główne modale aplikacji (LIFO ze stosu lub wg hierarchii z-index)
+    if (Array.isArray(window.__dropsiteModalStack)) {
+        while (window.__dropsiteModalStack.length > 0) {
+            const topModal = window.__dropsiteModalStack[window.__dropsiteModalStack.length - 1];
+            if (window.isModalElementVisible(topModal)) {
+                window.__dropsiteModalStack.pop();
+                return window.closeModalByElement(topModal);
+            } else {
+                window.__dropsiteModalStack.pop();
+            }
+        }
+    }
+
+    // Krok 11: Zapasowe sprawdzenie wszystkich widocznych modali w dokumencie
+    const allModals = Array.from(document.querySelectorAll(
+        '.mod-modal, .drop-req-modal-wrap, .dead-drop-modal-wrap, .concierge-modal-wrap, [role="dialog"], .qr-modal-wrap'
+    )).filter(window.isModalElementVisible);
+
+    if (allModals.length > 0) {
+        // Sortuj malejąco po z-index i pozycji w DOM (ostatnio dodany/najwyższy z-index pierwszy)
+        allModals.sort((a, b) => {
+            const zA = parseInt(window.getComputedStyle(a).zIndex, 10) || 0;
+            const zB = parseInt(window.getComputedStyle(b).zIndex, 10) || 0;
+            if (zB !== zA) return zB - zA;
+            return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_PRECEDING ? -1 : 1;
+        });
+
+        const targetModal = allModals[0];
+        return window.closeModalByElement(targetModal);
+    }
+
+    return false;
+};
+
+// Globalny nasłuchiwacz klawisza ESC w fazie przechwytywania (capture phase),
+// gwarantujący sekwencyjne zamykanie dokładnie JEDNEGO okna na jedno kliknięcie ESC.
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.code === 'Escape') {
+        const closedSomething = window.closeTopmostWindowOrModal();
+        if (closedSomething) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof e.stopImmediatePropagation === 'function') {
+                e.stopImmediatePropagation();
+            }
+        }
+    }
+}, true);
 
 // 2. Obsługa okienka logowania i rejestracji (Google + E-mail)
 const auth = firebase.auth();
