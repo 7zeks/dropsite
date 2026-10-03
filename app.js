@@ -5128,11 +5128,12 @@ if (viewToggleListBtn) {
 // Funkcja pomocnicza weryfikująca wygaśnięcie pliku
 function checkIfFileIsExpired(file) {
     if (!file) return false;
+    if (file._isExpired !== undefined) return file._isExpired;
     if (file.status === 'expired' || file.existsOnDisk === false) return true;
     const uploadedTime = file.uploaded || file.date || file.createdAt;
     if (uploadedTime) {
-        const uploadDate = new Date(uploadedTime).getTime();
-        if (!isNaN(uploadDate)) {
+        const uploadDate = file._time || new Date(uploadedTime).getTime();
+        if (!isNaN(uploadDate) && uploadDate > 0) {
             const now = Date.now();
             const ageMs = now - uploadDate;
             const dur = file.duration || '';
@@ -5152,14 +5153,20 @@ function checkIfFileIsExpired(file) {
 }
 window.checkIfFileIsExpired = checkIfFileIsExpired;
 
-let cachedExpiredCount = -1;
-function updateExpiredFilesBadges(forceRecalc = false) {
+let cachedExpiredCount = 0;
+function updateExpiredFilesBadges(forceRecalc = false, precomputedCount = null) {
     let expiredCount = 0;
-    if (Array.isArray(loadedModFiles) && loadedModFiles.length > 0 && (!currentAdminPanelScope || currentAdminPanelScope === 'mine')) {
-        expiredCount = loadedModFiles.filter(checkIfFileIsExpired).length;
+    if (precomputedCount !== null && typeof precomputedCount === 'number') {
+        expiredCount = precomputedCount;
+    } else if (forceRecalc || cachedExpiredCount < 0) {
+        if (Array.isArray(loadedModFiles) && loadedModFiles.length > 0 && (!currentAdminPanelScope || currentAdminPanelScope === 'mine')) {
+            expiredCount = loadedModFiles.filter(f => f._isExpired !== undefined ? f._isExpired : checkIfFileIsExpired(f)).length;
+        } else {
+            const history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
+            expiredCount = history.filter(checkIfFileIsExpired).length;
+        }
     } else {
-        const history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
-        expiredCount = history.filter(checkIfFileIsExpired).length;
+        expiredCount = cachedExpiredCount;
     }
 
     cachedExpiredCount = expiredCount;
@@ -5184,13 +5191,24 @@ window.isAutoCleanExpiredEnabled = isAutoCleanExpiredEnabled;
 
 async function cleanExpiredFiles(options = {}) {
     const silent = options.silent || false;
-    const key = (typeof getHistoryStorageKey === 'function') ? getHistoryStorageKey() : 'dropsite_user_history_guest';
     const history = (typeof getLocalHistory === 'function') ? getLocalHistory() : [];
 
-    // Wykryj wszystkie wygasłe pliki
-    const expiredInHistory = history.filter(checkIfFileIsExpired);
-    const expiredInLoaded = (Array.isArray(loadedModFiles) ? loadedModFiles : []).filter(checkIfFileIsExpired);
+    // Szybka weryfikacja czy w ogóle istnieją jakiekolwiek wygasłe pliki
+    const expiredInHistory = history.filter(f => f._isExpired !== undefined ? f._isExpired : checkIfFileIsExpired(f));
+    const expiredInLoaded = (Array.isArray(loadedModFiles) ? loadedModFiles : []).filter(f => f._isExpired !== undefined ? f._isExpired : checkIfFileIsExpired(f));
 
+    if (expiredInHistory.length === 0 && expiredInLoaded.length === 0) {
+        updateExpiredFilesBadges(false, 0);
+        if (!silent) {
+            const noExpiredMsg = typeof window.t === 'function' ? window.t('myfiles_no_expired_to_clean', 'Brak wygasłych plików do usunięcia.') : 'Brak wygasłych plików do usunięcia.';
+            if (typeof showNotification === 'function') {
+                showNotification(noExpiredMsg, 'info');
+            }
+        }
+        return 0;
+    }
+
+    const key = (typeof getHistoryStorageKey === 'function') ? getHistoryStorageKey() : 'dropsite_user_history_guest';
     const newlyDeletedKeys = new Set();
     expiredInHistory.forEach(item => {
         if (item.key) newlyDeletedKeys.add(item.key);
@@ -5222,12 +5240,12 @@ async function cleanExpiredFiles(options = {}) {
         }
 
         if (Array.isArray(loadedModFiles)) {
-            loadedModFiles = loadedModFiles.filter(item => !checkIfFileIsExpired(item) && !newlyDeletedKeys.has(item.key) && !newlyDeletedKeys.has(item.name));
+            loadedModFiles = loadedModFiles.filter(item => !item._isExpired && !checkIfFileIsExpired(item) && !newlyDeletedKeys.has(item.key) && !newlyDeletedKeys.has(item.name));
         }
         if (typeof updateModStats === 'function') updateModStats(loadedModFiles);
         if (typeof applyModFiltersAndRender === 'function') applyModFiltersAndRender();
         if (typeof renderUserHistory === 'function') renderUserHistory();
-        updateExpiredFilesBadges();
+        updateExpiredFilesBadges(false, 0);
 
         // Oczyść również w chmurze R2 dla konta użytkownika
         const activeUserEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((typeof auth !== 'undefined' && auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
@@ -5250,16 +5268,8 @@ async function cleanExpiredFiles(options = {}) {
             if (typeof playSound === 'function') playSound('trash');
         }
         return removedCount;
-    } else {
-        updateExpiredFilesBadges();
-        if (!silent) {
-            const noExpiredMsg = typeof window.t === 'function' ? window.t('myfiles_no_expired_to_clean', 'Brak wygasłych plików do usunięcia.') : 'Brak wygasłych plików do usunięcia.';
-            if (typeof showNotification === 'function') {
-                showNotification(noExpiredMsg, 'info');
-            }
-        }
-        return 0;
     }
+    return 0;
 }
 window.cleanExpiredFiles = cleanExpiredFiles;
 
@@ -5351,11 +5361,11 @@ if (modSearchInput) {
         if (val === lastProcessedSearchQuery && activeSearchQuery === val) return;
         activeSearchQuery = val;
         clearTimeout(modSearchDebounceTimer);
-        const delay = val === '' ? 0 : 80;
+        const delay = val === '' ? 0 : 120;
         modSearchDebounceTimer = setTimeout(() => {
             lastProcessedSearchQuery = val;
             if (typeof applyModFiltersAndRender === 'function') {
-                applyModFiltersAndRender();
+                requestAnimationFrame(() => applyModFiltersAndRender());
             }
         }, delay);
     });
@@ -7483,13 +7493,19 @@ function updateMyFilesStorageBar(files) {
 
 function updateModStats(files) {
     let totalSize = 0;
+    let expiredCount = 0;
     let counts = { all: files.length, video: 0, image: 0, doc: 0, archive: 0, other: 0 };
 
-    files.forEach(f => {
+    for (let i = 0; i < files.length; i++) {
+        const f = files[i];
         totalSize += f.size || 0;
-        const cat = getFileCategory(f.name);
+        const cat = f._category || getFileCategory(f.name);
         if (counts[cat] !== undefined) counts[cat]++;
-    });
+        else counts.other++;
+        if (f._isExpired || f.status === 'expired' || f.existsOnDisk === false) {
+            expiredCount++;
+        }
+    }
 
     const elTotalFiles = document.getElementById('modTotalFiles');
     const elTotalSize = document.getElementById('modTotalSize');
@@ -7516,7 +7532,7 @@ function updateModStats(files) {
 
     // Aktualizacja paska pojemności w stylu Apple iCloud
     updateMyFilesStorageBar(files);
-    if (typeof updateExpiredFilesBadges === 'function') updateExpiredFilesBadges();
+    updateExpiredFilesBadges(false, expiredCount);
 }
 
 function applyModFiltersAndRender() {
@@ -7607,7 +7623,7 @@ window.triggerMyFilesUpload = function() {
 
 let currentFilteredFiles = [];
 let currentRenderedCount = 0;
-const MOD_FILES_PAGE_CHUNK = 36;
+const MOD_FILES_PAGE_CHUNK = 24;
 let modFilesScrollObserver = null;
 
 function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
@@ -7698,7 +7714,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         <span class="card-type-tag">${ext}</span>
                     </div>
-                    <img src="${directMediaUrl}" class="card-preview-img" alt="" loading="lazy" decoding="async" onload="this.classList.add('is-loaded')" onerror="this.remove()">
+                    <img src="${directMediaUrl}" class="card-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()">
                 `;
             }
         } else if (isVideo) {
@@ -7797,7 +7813,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
             } else {
                 listPreviewHtml = `
                     <div class="mod-preview-thumb-wrap">
-                        <img src="${directMediaUrl}" class="mod-preview-img" alt="" loading="lazy" decoding="async" onload="this.classList.add('is-loaded')" onerror="this.remove()" onclick="${previewAction}" title="Powiększ zdjęcie">
+                        <img src="${directMediaUrl}" class="mod-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()" onclick="${previewAction}" title="Powiększ zdjęcie">
                         <div class="mod-preview-icon">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         </div>

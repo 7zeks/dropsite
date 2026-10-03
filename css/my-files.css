@@ -79,6 +79,8 @@ input[type="checkbox"].file-select-checkbox {
         0 0 50px rgba(94, 234, 212, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
     position: relative;
+    transform: translateZ(0);
+    will-change: scroll-position;
 }
 
 .mod-modal:not(.is-admin-dashboard) .mod-container::before {
@@ -86,7 +88,8 @@ input[type="checkbox"].file-select-checkbox {
     position: absolute;
     top: -90px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
+    will-change: transform;
     width: 580px;
     height: 240px;
     background: radial-gradient(ellipse at center, rgba(94, 234, 212, 0.15) 0%, rgba(56, 189, 248, 0.08) 45%, transparent 70%);
