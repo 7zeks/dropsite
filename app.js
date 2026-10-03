@@ -35,11 +35,18 @@ window.registerOpenModal = function(modalEl) {
     if (!Array.isArray(window.__dropsiteModalStack)) window.__dropsiteModalStack = [];
     window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl && document.body.contains(el));
     window.__dropsiteModalStack.push(modalEl);
+    document.body.style.overflow = 'hidden';
 };
 
 window.unregisterClosedModal = function(modalEl) {
     if (!modalEl || !Array.isArray(window.__dropsiteModalStack)) return;
     window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl);
+    if (window.__dropsiteModalStack.length === 0) {
+        document.body.style.overflow = '';
+    }
+    if (modalEl && modalEl.id === 'modModal' && typeof pauseAllModalVideos === 'function') {
+        pauseAllModalVideos();
+    }
 };
 
 window.smoothOpenModal = function(modalEl, displayType = 'flex') {
@@ -705,6 +712,9 @@ function updateAdminRoleUI() {
     if (adminBar) {
         adminBar.hidden = !isRealAdmin;
         if (isRealAdmin) {
+            const isSavedHidden = localStorage.getItem('dropsite_admin_bar_hidden') === '1';
+            adminBar.classList.toggle('is-hidden-toggle', isSavedHidden);
+
             adminBar.querySelectorAll('.role-pill-btn').forEach(btn => {
                 const role = btn.getAttribute('data-role');
                 btn.classList.toggle('active', role === currentActiveRole);
@@ -955,6 +965,43 @@ document.addEventListener('click', (e) => {
                 'preview-free': '👤 Podgląd jako Zwykły Użytkownik (Free)'
             };
             showNotification(`Widok: ${roleLabels[selectedRole]}`, 'info');
+        }
+    }
+});
+
+// Skrót klawiszowy: 2x strzałka w prawo (ArrowRight) przełącza widoczność paska ról Admina
+let lastRightArrowTime = 0;
+document.addEventListener('keydown', (e) => {
+    // Ignoruj, gdy użytkownik pisze w polach tekstowych
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+        return;
+    }
+
+    if (e.key === 'ArrowRight' || e.code === 'ArrowRight') {
+        const now = Date.now();
+        if (now - lastRightArrowTime < 450) {
+            // Podwójne kliknięcie wykryte
+            const adminBar = document.getElementById('adminRoleBar');
+            if (adminBar && typeof isActualAdminUser === 'function' && isActualAdminUser()) {
+                const isCurrentlyHidden = adminBar.classList.contains('is-hidden-toggle');
+                if (isCurrentlyHidden) {
+                    adminBar.classList.remove('is-hidden-toggle');
+                    localStorage.setItem('dropsite_admin_bar_hidden', '0');
+                    if (typeof showNotification === 'function') {
+                        showNotification('👑 Pasek ról Admina: WIDOCZNY (2x ➔ aby ukryć)', 'info');
+                    }
+                } else {
+                    adminBar.classList.add('is-hidden-toggle');
+                    localStorage.setItem('dropsite_admin_bar_hidden', '1');
+                    if (typeof showNotification === 'function') {
+                        showNotification('👑 Pasek ról Admina: UKRYTY (kliknij 2x ➔ aby przywrócić)', 'info');
+                    }
+                }
+            }
+            lastRightArrowTime = 0;
+        } else {
+            lastRightArrowTime = now;
         }
     }
 });
@@ -1588,8 +1635,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const POLAR_PRO_SUB_URL = 'https://buy.polar.sh/polar_cl_DaDHfV8Q8FH3EGGNH4FeJwppKTAJF9953rh1939ePla';
+
     // Obsługa zakupu subskrypcji przez Polar.sh
-    async function startPolarCheckout(planType, buttonElement) {
+    function startPolarCheckout(buttonElement) {
         if (isProUser()) {
             if (typeof showNotification === 'function') {
                 showNotification(window.t ? window.t('pro_active_text') : 'Masz już aktywny plan PRO!', 'info');
@@ -1598,30 +1647,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const btnText = buttonElement ? buttonElement.querySelector('.btn-text') : null;
-        const origText = btnText ? btnText.textContent : 'Włącz subskrypcję z karty (14.99 zł/mc)';
-        if (btnText) btnText.textContent = 'Przekierowanie do Polar.sh...';
+        if (btnText) btnText.textContent = 'Przekierowanie do płatności Polar...';
         if (buttonElement) buttonElement.style.pointerEvents = 'none';
 
-        try {
-            const res = await fetch(`${WORKER_URL}/create-checkout`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    plan_type: planType,
-                    success_url: `${window.location.origin}${window.location.pathname}?pro_success=1`
-                })
-            });
-            const data = await res.json();
-            if (data.success && data.url) {
-                window.location.href = data.url;
-            } else {
-                // Bezpośrednie przekierowanie do sklepu Polar Dropsite
-                window.location.href = 'https://polar.sh/dropsite';
-            }
-        } catch (err) {
-            console.error('Checkout error:', err);
-            window.location.href = 'https://polar.sh/dropsite';
+        let targetUrl = POLAR_PRO_SUB_URL;
+        const userEmail = window.auth?.currentUser?.email;
+        if (userEmail) {
+            targetUrl += (targetUrl.includes('?') ? '&' : '?') + `customer_email=${encodeURIComponent(userEmail)}`;
         }
+        window.location.href = targetUrl;
+    }
+
+    // Obsługa kliknięcia w cały kafel Subskrypcja PRO
+    const cardBuySub = document.getElementById('cardBuySub');
+    if (cardBuySub) {
+        cardBuySub.addEventListener('click', (e) => {
+            if (e.target.closest('#btnBuyProSub')) return;
+            btnBuyProSub?.click();
+        });
     }
 
     // Obsługa zakupu subskrypcji kartą przez Polar.sh
@@ -1629,7 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnBuyProSub) {
         btnBuyProSub.addEventListener('click', (e) => {
             e.preventDefault();
-            startPolarCheckout('subscription', btnBuyProSub);
+            startPolarCheckout(btnBuyProSub);
         });
     }
 
@@ -1877,6 +1920,61 @@ if (navToolsMenuEl && navDropdownGliderEl) {
         navDropdownGliderEl.style.opacity = '0';
     });
 }
+
+// === JS-KONTROLOWANY HOVER DROPDOWN NARZĘDZIA ===
+// Zastępuje wrażliwy CSS :hover — zamyka się z 200ms opóźnieniem,
+// dzięki czemu mysz ma czas przejść z buttona do menu bez migania.
+(function initNavToolsDropdown() {
+    const dropdownItem = document.getElementById('navToolsDropdown');
+    if (!dropdownItem) return;
+
+    let closeTimer = null;
+
+    function openDropdown() {
+        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+        dropdownItem.classList.add('is-open');
+        const btn = dropdownItem.querySelector('a[aria-haspopup]');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDropdown() {
+        closeTimer = setTimeout(() => {
+            dropdownItem.classList.remove('is-open');
+            const btn = dropdownItem.querySelector('a[aria-haspopup]');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            // Zresetuj liquid glow do aktywnego linka po zamknięciu dropdown
+            if (window._navUpdateGlow && window._navLinks) {
+                const active = window._navLinks.querySelector('a.active, a.nav-btn.active');
+                window._navUpdateGlow(active || null);
+            }
+            closeTimer = null;
+        }, 200);
+    }
+
+    dropdownItem.addEventListener('mouseenter', openDropdown);
+    dropdownItem.addEventListener('mouseleave', closeDropdown);
+
+    // Zamknij przy kliknięciu linku w menu
+    dropdownItem.addEventListener('click', (e) => {
+        const link = e.target.closest('.nav-dropdown-link');
+        if (link) {
+            if (closeTimer) clearTimeout(closeTimer);
+            dropdownItem.classList.remove('is-open');
+            const btn = dropdownItem.querySelector('a[aria-haspopup]');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+
+    // Zamknij przy kliknięciu gdziekolwiek indziej na stronie
+    document.addEventListener('click', (e) => {
+        if (!dropdownItem.contains(e.target)) {
+            if (closeTimer) clearTimeout(closeTimer);
+            dropdownItem.classList.remove('is-open');
+            const btn = dropdownItem.querySelector('a[aria-haspopup]');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+})();
 
 
 // === KOMPRESJA ZDJĘĆ PRZEZ CANVAS (ZAPAMIĘTYWANIE W LOCALSTORAGE) ===
@@ -5607,7 +5705,14 @@ async function fetchModFiles() {
     
     // Tryb Administratora ze wszystkimi plikami serwera
     if (isEffectiveAdmin && currentAdminPanelScope === 'all') {
-        if (titleEl) titleEl.textContent = '👑 Admin Super-Dashboard';
+        if (titleEl) {
+            titleEl.innerHTML = `
+                <span style="display:inline-flex; align-items:center; gap:8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg>
+                    <span>Admin Super-Dashboard</span>
+                </span>
+            `;
+        }
         if (subtitleEl) subtitleEl.textContent = 'Analityka rentowności, zarządzanie użytkownikami & odblokowany magazyn R2';
         
         modModal.classList.add('is-admin-dashboard');
@@ -5893,6 +5998,11 @@ function initAdminDashboardOnce() {
 
     // 8. Zgłoszenia i uwagi użytkowników
     initAdminFeedbackControls();
+
+    // 9. Zarządzanie modułami (Feature Flags: Pobierz Wideo HD)
+    if (typeof initAdminFeatureFlagsControls === 'function') {
+        initAdminFeatureFlagsControls();
+    }
 }
 
 function switchAdminTab(tabName) {
@@ -6104,6 +6214,10 @@ function renderAdminOverviewTab() {
 
     const filesBadge = document.getElementById('adminFilesCountBadge');
     if (filesBadge) filesBadge.textContent = loadedModFiles.length;
+
+    if (typeof updateMediaGrabberUI === 'function') {
+        updateMediaGrabberUI(window.isMediaGrabberUnlocked);
+    }
 }
 
 function updateAdminSimulator(proUsersCount) {
@@ -6176,10 +6290,10 @@ function renderAdminUsersTab() {
                 </td>
                 <td>
                     ${isAdmin 
-                        ? `<span class="status-badge-admin">👑 Administrator</span>` 
+                        ? `<span class="status-badge-admin" style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg><span>Administrator</span></span>` 
                         : (isPro 
-                            ? `<span class="status-badge-pro">⭐ Dropsite PRO</span>` 
-                            : `<span class="status-badge-free">👤 Darmowy (Free)</span>`)}
+                            ? `<span class="status-badge-pro" style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span>Dropsite PRO</span></span>` 
+                            : `<span class="status-badge-free" style="display:inline-flex; align-items:center; gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Darmowy (Free)</span></span>`)}
                 </td>
                 <td style="font-size: 12px; color: ${isPro ? '#34D399' : '#94A3B8'};">
                     ${escapeHtml(u.proExpires || (isPro ? 'Aktywne' : 'Brak'))}
@@ -6193,7 +6307,8 @@ function renderAdminUsersTab() {
                 <td style="text-align: right;">
                     <div style="display: inline-flex; gap: 6px;">
                         <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 11px; gap: 4px; display: inline-flex; align-items: center;" onclick="window.openAdminUserDossier('${escapeHtml(u.email)}')">
-                            <span>👤 Dossier 360°</span>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <span>Dossier 360°</span>
                         </button>
                         ${!isAdmin ? (
                             isPro ? `
@@ -6380,13 +6495,13 @@ window.openAdminUserDossier = function(targetEmail) {
     if (roleBadgeEl) {
         if (isAdmin) {
             roleBadgeEl.className = 'status-badge-admin';
-            roleBadgeEl.textContent = '👑 Administrator';
+            roleBadgeEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path></svg><span>Administrator</span></span>';
         } else if (isPro) {
             roleBadgeEl.className = 'status-badge-pro';
-            roleBadgeEl.textContent = '⭐ Dropsite PRO';
+            roleBadgeEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span>Dropsite PRO</span></span>';
         } else {
             roleBadgeEl.className = 'status-badge-free';
-            roleBadgeEl.textContent = '👤 Darmowy (Free)';
+            roleBadgeEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Darmowy (Free)</span></span>';
         }
     }
 
@@ -6442,7 +6557,9 @@ window.openAdminUserDossier = function(targetEmail) {
     // 11. Zaktualizowanie przycisku PRO
     const quickProBtn = document.getElementById('dossierQuickProBtn');
     if (quickProBtn) {
-        quickProBtn.textContent = isPro ? '⚙️ Zarządzaj PRO (Cofnij)' : '⭐ Nadaj dostęp PRO';
+        quickProBtn.innerHTML = isPro 
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>Zarządzaj PRO (Cofnij)</span>' 
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span>Nadaj dostęp PRO</span>';
     }
 
     // Domyślnie otwórz zakładkę plików
@@ -6489,7 +6606,9 @@ function renderDossierFilesList(files) {
         html += `
             <div class="dossier-list-item">
                 <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1;">
-                    <div style="font-size: 20px;">📄</div>
+                    <div style="color: #60A5FA; display: flex; align-items: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                    </div>
                     <div style="overflow: hidden;">
                         <a href="${pageUrl}" target="_blank" style="color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${f.name} • Otwórz stronę pliku">${escapeHtml(clean)}</a>
                         <div style="color: #94A3B8; font-size: 11px; display: flex; gap: 8px; margin-top: 2px;">
@@ -6523,7 +6642,9 @@ function renderDossierOrdersList(orders) {
         html += `
             <div class="dossier-list-item">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 18px;">💳</div>
+                    <div style="color: #34D399; display: flex; align-items: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                    </div>
                     <div>
                         <strong style="color: #34D399; font-size: 13px;">${escapeHtml(o.amount || '14,99 zł')}</strong>
                         <div style="color: #94A3B8; font-size: 11px;">${escapeHtml(o.planName || o.plan || 'Dropsite PRO')} • ${escapeHtml(o.date || '-')}</div>
@@ -6563,9 +6684,18 @@ function renderDossierSessionsList(sessions) {
                     <span style="color: #94A3B8; font-size: 11px;">${timeStr}</span>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span class="telemetry-badge badge-gpu" style="font-size: 10px; padding: 2px 6px;">🎮 ${escapeHtml(s.gpu || 'GPU')}</span>
-                    <span class="telemetry-badge badge-res" style="font-size: 10px; padding: 2px 6px;">💻 ${escapeHtml(s.os || 'OS')} • ${escapeHtml(s.browser || 'Przeglądarka')}</span>
-                    <span class="telemetry-badge badge-route" style="font-size: 10px; padding: 2px 6px;">📍 ${escapeHtml(s.currentPage || '/')}</span>
+                    <span class="telemetry-badge badge-gpu" style="font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><circle cx="15" cy="11" r="1"></circle><circle cx="18" cy="13" r="1"></circle></svg>
+                        <span>${escapeHtml(s.gpu || 'GPU')}</span>
+                    </span>
+                    <span class="telemetry-badge badge-res" style="font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <span>${escapeHtml(s.os || 'OS')} • ${escapeHtml(s.browser || 'Przeglądarka')}</span>
+                    </span>
+                    <span class="telemetry-badge badge-route" style="font-size: 10px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>${escapeHtml(s.currentPage || '/')}</span>
+                    </span>
                 </div>
             </div>
         `;
@@ -6759,23 +6889,38 @@ function renderAdminStorageTab() {
     if (breakdownList) {
         breakdownList.innerHTML = `
             <div class="cat-breakdown-row">
-                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#FF4439;">🎬</span> Wideo</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF4439" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    <span>Wideo</span>
+                </span>
                 <strong>${formatBytes(sizes.videos)} (${counts.videos})</strong>
             </div>
             <div class="cat-breakdown-row">
-                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#0F91D2;">🖼️</span> Zdjęcia</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F91D2" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <span>Zdjęcia</span>
+                </span>
                 <strong>${formatBytes(sizes.images)} (${counts.images})</strong>
             </div>
             <div class="cat-breakdown-row">
-                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#FFBC39;">📄</span> Dokumenty & PDF</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Dokumenty & PDF</span>
+                </span>
                 <strong>${formatBytes(sizes.documents)} (${counts.documents})</strong>
             </div>
             <div class="cat-breakdown-row">
-                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#59A829;">📦</span> Archiwa ZIP / RAR</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#59A829" stroke-width="2"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    <span>Archiwa ZIP / RAR</span>
+                </span>
                 <strong>${formatBytes(sizes.archives)} (${counts.archives})</strong>
             </div>
             <div class="cat-breakdown-row">
-                <span style="display:flex;align-items:center;gap:8px;"><span style="color:#94A3B8;">📁</span> Inne</span>
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Inne</span>
+                </span>
                 <strong>${formatBytes(sizes.others)} (${counts.others})</strong>
             </div>
         `;
@@ -6999,6 +7144,229 @@ function initAdminGarbageCollector() {
                 cleanBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><span>Uruchom Czyszczenie Wygasłych Plików</span>`;
             }
         });
+    }
+}
+
+// =========================================================================
+// ZARZĄDZANIE DOSTĘPEM DO MODUŁÓW (FEATURE FLAGS: POBIERZ WIDEO HD)
+// =========================================================================
+window.isMediaGrabberUnlocked = localStorage.getItem('dropsite_media_grabber_unlocked') === 'true';
+
+function updateMediaGrabberUI(isUnlocked) {
+    window.isMediaGrabberUnlocked = !!isUnlocked;
+    localStorage.setItem('dropsite_media_grabber_unlocked', isUnlocked ? 'true' : 'false');
+
+    // 1. Nawigacja główna (Navbar dropdown)
+    const dropdownLink = document.querySelector('.dropdown-grabber');
+    if (dropdownLink) {
+        dropdownLink.setAttribute('data-status', isUnlocked ? 'active' : 'soon');
+        dropdownLink.setAttribute('title', isUnlocked ? 'Pobieraj wideo z TikToka, YouTube, IG i X' : 'Funkcja w procesie tworzenia');
+        const badge = dropdownLink.querySelector('.nav-dropdown-badge');
+        if (badge) {
+            badge.textContent = isUnlocked ? 'HD' : 'Wkrótce';
+            badge.className = `nav-dropdown-badge ${isUnlocked ? 'badge-pdf' : 'badge-soon'}`;
+            if (isUnlocked) {
+                badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                badge.style.color = '#34D399';
+                badge.style.borderColor = 'rgba(52, 211, 153, 0.4)';
+            } else {
+                badge.style.background = '';
+                badge.style.color = '';
+                badge.style.borderColor = '';
+            }
+        }
+    }
+
+    // 2. Nawigacja mobilna (Mobile Drawer)
+    const drawerLink = document.querySelector('.mobile-drawer-link[data-target="view-pobieracz"]');
+    if (drawerLink) {
+        drawerLink.setAttribute('data-status', isUnlocked ? 'active' : 'soon');
+        const mobileBadge = drawerLink.querySelector('.mobile-hud-badge');
+        if (mobileBadge) {
+            mobileBadge.textContent = isUnlocked ? 'HD' : 'Wkrótce';
+            mobileBadge.style.color = isUnlocked ? '#34D399' : '#94A3B8';
+            mobileBadge.style.borderColor = isUnlocked ? 'rgba(52, 211, 153, 0.4)' : 'rgba(255,255,255,0.15)';
+            mobileBadge.style.background = isUnlocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.06)';
+        }
+    }
+
+    // 3. Karta w panelu admina (Tab Overview)
+    const statusBadge = document.getElementById('adminGrabberStatusBadge');
+    const statusHeading = document.getElementById('adminGrabberStatusHeading');
+    const statusDesc = document.getElementById('adminGrabberStatusDesc');
+    const navBadgePreview = document.getElementById('adminGrabberNavBadgePreview');
+    const toggleBtn = document.getElementById('adminToggleGrabberBtn');
+    const toggleIcon = document.getElementById('adminToggleGrabberIcon');
+    const toggleText = document.getElementById('adminToggleGrabberText');
+
+    if (statusBadge) {
+        statusBadge.textContent = isUnlocked ? '🌐 Publicznie Odblokowany' : '🔒 Zablokowany (Tylko Admin)';
+        statusBadge.style.background = isUnlocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+        statusBadge.style.borderColor = isUnlocked ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+        statusBadge.style.color = isUnlocked ? '#10B981' : '#F87171';
+    }
+
+    if (statusHeading) {
+        statusHeading.textContent = isUnlocked 
+            ? 'Sekcja jest ODBLOKOWANA i widoczna dla każdego' 
+            : 'Sekcja jest ZABLOKOWANA dla odwiedzających';
+        statusHeading.style.color = isUnlocked ? '#10B981' : '#F87171';
+    }
+
+    if (statusDesc) {
+        statusDesc.innerHTML = isUnlocked
+            ? 'Moduł jest obecnie <strong>dostępny publicznie</strong> dla wszystkich odwiedzających i klientów. W menu widnieje zielona plakietka <em>"HD"</em>. Każdy użytkownik może pobierać wideo bez znaku wodnego.'
+            : 'W trybie blokady zwykli użytkownicy widzą w menu plakietkę <em>"Wkrótce"</em> i nie mogą wejść do narzędzia. Jako Administrator masz stały dostęp do testowania. Kliknij przycisk, aby odblokować.';
+    }
+
+    if (navBadgePreview) {
+        navBadgePreview.textContent = isUnlocked ? 'W menu: HD (Aktywne)' : 'W menu: Wkrótce';
+        navBadgePreview.style.color = isUnlocked ? '#34D399' : '#94A3B8';
+    }
+
+    if (toggleBtn) {
+        toggleBtn.style.background = isUnlocked 
+            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.85), rgba(185, 28, 28, 0.95))' 
+            : '#10B981';
+        toggleBtn.style.borderColor = isUnlocked ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)';
+        toggleBtn.style.boxShadow = isUnlocked ? '0 4px 14px rgba(239, 68, 68, 0.3)' : '0 4px 14px rgba(16, 185, 129, 0.3)';
+    }
+
+    if (toggleIcon) toggleIcon.textContent = isUnlocked ? '🔒' : '🔓';
+    if (toggleText) toggleText.textContent = isUnlocked ? 'Zablokuj Dostęp (Tylko Admin)' : 'Odblokuj dla Wszystkich';
+
+    // 4. Szybki przełącznik w pływającym pasku ról Admina (prawy dolny róg)
+    const quickIcon = document.getElementById('adminQuickGrabberIcon');
+    const quickText = document.getElementById('adminQuickGrabberText');
+    const quickBtn = document.getElementById('adminQuickGrabberToggle');
+    if (quickIcon) quickIcon.textContent = isUnlocked ? '🌐' : '🔒';
+    if (quickText) quickText.textContent = isUnlocked ? 'Pobieracz: Wszyscy' : 'Pobieracz: Tylko Admin';
+    if (quickBtn) {
+        quickBtn.style.color = isUnlocked ? '#10B981' : '#FFD24C';
+        quickBtn.style.borderColor = isUnlocked ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 210, 76, 0.35)';
+        quickBtn.style.background = isUnlocked ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 210, 76, 0.08)';
+    }
+}
+window.updateMediaGrabberUI = updateMediaGrabberUI;
+
+async function fetchMediaGrabberFeatureFlag() {
+    try {
+        const res = await fetch(`${WORKER_URL}/api/feature-flags`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && data.mediaGrabberUnlocked !== undefined) {
+                updateMediaGrabberUI(data.mediaGrabberUnlocked);
+            }
+        }
+    } catch (_) {}
+}
+window.fetchMediaGrabberFeatureFlag = fetchMediaGrabberFeatureFlag;
+
+async function toggleMediaGrabberAccess() {
+    const newTargetState = !window.isMediaGrabberUnlocked;
+    const toggleBtn = document.getElementById('adminToggleGrabberBtn');
+    const quickBtn = document.getElementById('adminQuickGrabberToggle');
+
+    // Optymistyczna aktualizacja UI
+    updateMediaGrabberUI(newTargetState);
+
+    if (toggleBtn) {
+        toggleBtn.disabled = true;
+        toggleBtn.style.opacity = '0.7';
+    }
+    if (quickBtn) {
+        quickBtn.disabled = true;
+        quickBtn.style.opacity = '0.7';
+    }
+
+    try {
+        const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '12345678';
+        const res = await fetch(`${WORKER_URL}/admin/feature-flags`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': apiSecret
+            },
+            body: JSON.stringify({
+                mediaGrabberUnlocked: newTargetState,
+                adminSecret: apiSecret
+            })
+        });
+
+        const data = await res.json();
+        if (data && data.success) {
+            updateMediaGrabberUI(data.mediaGrabberUnlocked);
+            const msg = data.message || (newTargetState ? '✅ Sekcja Pobierz Wideo HD została odblokowana dla wszystkich użytkowników!' : '🔒 Sekcja Pobierz Wideo HD została zablokowana (dostęp tylko dla administratora).');
+            if (typeof window.showToast === 'function') {
+                window.showToast(msg, 'success');
+            } else if (typeof window.showNotification === 'function') {
+                window.showNotification(msg, 'success');
+            }
+        } else {
+            throw new Error(data?.message || 'Błąd serwera podczas zapisywania uprawnień.');
+        }
+    } catch (err) {
+        console.error('Feature flag toggle error:', err);
+        // Przywróć poprzedni stan w razie błędu sieci/uprawnień
+        updateMediaGrabberUI(!newTargetState);
+        const errMsg = `⚠️ Nie udało się zmienić uprawnień: ${err.message}`;
+        if (typeof window.showToast === 'function') {
+            window.showToast(errMsg, 'error');
+        } else if (typeof window.showNotification === 'function') {
+            window.showNotification(errMsg, 'info');
+        }
+    } finally {
+        if (toggleBtn) {
+            toggleBtn.disabled = false;
+            toggleBtn.style.opacity = '1';
+        }
+        if (quickBtn) {
+            quickBtn.disabled = false;
+            quickBtn.style.opacity = '1';
+        }
+    }
+}
+window.toggleMediaGrabberAccess = toggleMediaGrabberAccess;
+
+function initAdminFeatureFlagsControls() {
+    // 1. Zastosuj zapisany lub domyślny stan
+    updateMediaGrabberUI(window.isMediaGrabberUnlocked);
+
+    // 2. Pobierz aktualny stan z chmury Cloudflare R2
+    fetchMediaGrabberFeatureFlag();
+
+    // 3. Podepnij przycisk w panelu admina (Karta Overview)
+    const toggleBtn = document.getElementById('adminToggleGrabberBtn');
+    if (toggleBtn && !toggleBtn.hasAttribute('data-bound')) {
+        toggleBtn.setAttribute('data-bound', 'true');
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleMediaGrabberAccess();
+        });
+    }
+
+    // 4. Podepnij szybki przycisk w pasku AdminRoleBar (prawy dolny róg)
+    const quickToggle = document.getElementById('adminQuickGrabberToggle');
+    if (quickToggle && !quickToggle.hasAttribute('data-bound')) {
+        quickToggle.setAttribute('data-bound', 'true');
+        quickToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleMediaGrabberAccess();
+        });
+    }
+}
+window.initAdminFeatureFlagsControls = initAdminFeatureFlagsControls;
+
+// Globalna automatyczna inicjalizacja flag przy starcie aplikacji
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initAdminFeatureFlagsControls === 'function') {
+            initAdminFeatureFlagsControls();
+        }
+    });
+} else {
+    if (typeof initAdminFeatureFlagsControls === 'function') {
+        initAdminFeatureFlagsControls();
     }
 }
 
@@ -7271,10 +7639,26 @@ function renderAdminFeedbackTab() {
     }
 
     const catLabels = {
-        bug: { label: 'Błąd', icon: '🐞', cls: 'cat-bug' },
-        suggestion: { label: 'Sugestia', icon: '💡', cls: 'cat-suggestion' },
-        payment: { label: 'Płatność', icon: '💳', cls: 'cat-payment' },
-        other: { label: 'Uwaga', icon: '💬', cls: 'cat-other' }
+        bug: { 
+            label: 'Błąd', 
+            icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="6" width="8" height="14" rx="4"></rect><path d="m19 7-3 2"></path><path d="m5 7 3 2"></path><path d="m19 19-3-2"></path><path d="m5 19 3-2"></path><path d="M20 13h-4"></path><path d="M4 13h4"></path><path d="m10 4 1 2"></path><path d="m14 4-1 2"></path></svg>', 
+            cls: 'cat-bug' 
+        },
+        suggestion: { 
+            label: 'Sugestia', 
+            icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7z"></path></svg>', 
+            cls: 'cat-suggestion' 
+        },
+        payment: { 
+            label: 'Płatność', 
+            icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>', 
+            cls: 'cat-payment' 
+        },
+        other: { 
+            label: 'Uwaga', 
+            icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>', 
+            cls: 'cat-other' 
+        }
     };
 
     container.innerHTML = filtered.map(f => {
@@ -7287,12 +7671,13 @@ function renderAdminFeedbackTab() {
             <div class="admin-feedback-card ${isResolved ? 'is-resolved' : ''}" data-id="${escapeHtml(f.id)}">
                 <div class="admin-feedback-header">
                     <div class="admin-feedback-badges">
-                        <span class="feedback-cat-badge ${cat.cls}">
+                        <span class="feedback-cat-badge ${cat.cls}" style="display:inline-flex;align-items:center;gap:5px;">
                             <span>${cat.icon}</span>
                             <span>${cat.label}</span>
                         </span>
-                        <span class="feedback-status-pill ${isResolved ? 'resolved' : 'pending'}">
-                            ${isResolved ? '🟢 Rozwiązane' : '🟡 Oczekujące'}
+                        <span class="feedback-status-pill ${isResolved ? 'resolved' : 'pending'}" style="display:inline-flex;align-items:center;gap:4px;">
+                            <span class="pulse-dot" style="width:6px;height:6px;border-radius:50%;background:${isResolved ? '#10B981' : '#F59E0B'};display:inline-block;"></span>
+                            <span>${isResolved ? 'Rozwiązane' : 'Oczekujące'}</span>
                         </span>
                     </div>
                     <span class="admin-feedback-date">${dateStr}</span>
@@ -7312,14 +7697,14 @@ function renderAdminFeedbackTab() {
                     </div>
 
                     <div class="admin-feedback-diag">
-                        ${f.screen ? `<span>📐 ${escapeHtml(f.screen)}</span>` : ''}
-                        ${f.pageUrl ? `<span title="${escapeHtml(f.pageUrl)}">🔗 ${escapeHtml(f.pageUrl.replace(window.location.origin, ''))}</span>` : ''}
+                        ${f.screen ? `<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg><span>${escapeHtml(f.screen)}</span></span>` : ''}
+                        ${f.pageUrl ? `<span title="${escapeHtml(f.pageUrl)}" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>${escapeHtml(f.pageUrl.replace(window.location.origin, ''))}</span></span>` : ''}
                     </div>
                 </div>
 
                 <div class="admin-feedback-actions">
-                    <button type="button" class="btn-fb-action btn-resolve" onclick="toggleFeedbackResolved('${escapeHtml(f.id)}', ${!isResolved})">
-                        ${isResolved ? '↩️ Przywróć do nowych' : '✅ Oznacz jako rozwiązane'}
+                    <button type="button" class="btn-fb-action btn-resolve" onclick="toggleFeedbackResolved('${escapeHtml(f.id)}', ${!isResolved})" style="display:inline-flex;align-items:center;gap:6px;">
+                        ${isResolved ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg><span>Przywróć do nowych</span>' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Oznacz jako rozwiązane</span>'}
                     </button>
                     ${cleanEmail ? `
                         <a href="mailto:${cleanEmail}?subject=Dropsite: Odpowiedź na Twoje zgłoszenie" class="btn-fb-action">
@@ -7626,6 +8011,76 @@ let currentRenderedCount = 0;
 const MOD_FILES_PAGE_CHUNK = 24;
 let modFilesScrollObserver = null;
 
+// =========================================================================
+// ULTRA-LIGHTWEIGHT ON-DEMAND VIDEO PREVIEW LOADER (ZERO NETWORK THREAD LOCK)
+// =========================================================================
+let videoLazyObserver = null;
+
+function setupVideoLazyObserver(container) {
+    if (!container) return;
+    const pendingVideos = container.querySelectorAll('video[data-video-src]:not([data-lazy-bound])');
+    if (!pendingVideos.length) return;
+
+    if (!videoLazyObserver) {
+        const scrollRoot = document.getElementById('modContainer') || null;
+        videoLazyObserver = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const video = entry.target;
+                    const src = video.getAttribute('data-video-src');
+                    if (src && !video.src) {
+                        video.preload = 'metadata';
+                        video.src = src;
+
+                        const markLoaded = () => {
+                            video.classList.add('is-loaded');
+                            try { video.pause(); } catch (_) {}
+                        };
+
+                        video.onloadedmetadata = markLoaded;
+                        video.onloadeddata = markLoaded;
+                        video.oncanplay = markLoaded;
+                        video.onerror = () => {
+                            video.style.display = 'none';
+                        };
+
+                        try { video.load(); } catch (_) {}
+                    }
+                    obs.unobserve(video);
+                }
+            });
+        }, {
+            root: scrollRoot,
+            rootMargin: '200px 0px 200px 0px',
+            threshold: 0.01
+        });
+    }
+
+    pendingVideos.forEach(v => {
+        v.setAttribute('data-lazy-bound', 'true');
+        videoLazyObserver.observe(v);
+    });
+}
+
+function pauseAllModalVideos() {
+    if (videoLazyObserver) {
+        videoLazyObserver.disconnect();
+        videoLazyObserver = null;
+    }
+    const container = document.getElementById('modContainer');
+    if (container) {
+        container.querySelectorAll('video.card-preview-video, video.mod-preview-video').forEach(v => {
+            try {
+                v.pause();
+                v.removeAttribute('src');
+                v.load();
+            } catch (_) {}
+            v.classList.remove('is-loaded');
+            v.removeAttribute('data-lazy-bound');
+        });
+    }
+}
+
 function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
     let directMediaUrl = file.directUrl;
     if (!directMediaUrl || directMediaUrl.includes('?f=') || !directMediaUrl.startsWith('http')) {
@@ -7653,7 +8108,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
     const isSelected = selectedSet.has(fileKey);
 
     const checkboxHtml = isFileExpired ? '' : `
-        <input type="checkbox" class="file-select-checkbox" data-key="${escapeHtml(fileKey)}" ${isSelected ? 'checked' : ''} onchange="if(window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum('${escapeHtml(fileKey)}', this.checked)" title="Zaznacz plik do albumu">
+        <input type="checkbox" class="file-select-checkbox" data-key="${escapeHtml(fileKey)}" ${isSelected ? 'checked' : ''} onchange="if(window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum(this.getAttribute('data-key'), this.checked, this)" onclick="event.stopPropagation()" title="Zaznacz plik do albumu">
     `;
 
     const expSelectHtml = isEffectiveAdmin ? `
@@ -7719,13 +8174,16 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
             }
         } else if (isVideo) {
             cardMediaHtml = `
-                <div class="card-icon-art">
+                <div class="card-icon-art card-preview-placeholder">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                     <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
                 </div>
                 ${isFileExpired ? '' : `
+                    <video class="card-preview-video" preload="none" data-video-src="${directMediaUrl}#t=0.1" muted playsinline></video>
                     <div class="card-video-play-btn">
-                        <span class="card-video-play-pill">▶</span>
+                        <svg class="card-video-play-icon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                        </svg>
                     </div>
                 `}
             `;
@@ -7767,9 +8225,9 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
         }
 
         return `
-            <li class="mod-file-card">
+            <li class="mod-file-card ${isSelected ? 'is-selected' : ''}">
                 <div class="card-preview-area" onclick="${previewAction}" title="Kliknij, aby otworzyć podgląd">
-                    <div class="card-select-checkbox-wrap" onclick="event.stopPropagation()">
+                    <div class="card-select-checkbox-wrap" onclick="event.stopPropagation(); const cb = this.querySelector('input'); if (cb && event.target !== cb) { cb.checked = !cb.checked; if (window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum(cb.getAttribute('data-key'), cb.checked, cb); }">
                         ${checkboxHtml}
                     </div>
                     <span class="card-floating-badge ${floatingBadgeClass}">
@@ -7821,11 +8279,22 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                 `;
             }
         } else if (isVideo) {
-            listPreviewHtml = `
-                <div class="mod-preview-icon video-icon" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                </div>
-            `;
+            if (isFileExpired) {
+                listPreviewHtml = `
+                    <div class="mod-preview-icon" style="background: rgba(148, 163, 184, 0.12);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                    </div>
+                `;
+            } else {
+                listPreviewHtml = `
+                    <div class="mod-preview-thumb-wrap" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
+                        <video class="mod-preview-video" preload="none" data-video-src="${directMediaUrl}#t=0.1" muted playsinline></video>
+                        <div class="mod-preview-icon video-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             let iconSvg = '';
             if (isPdf) {
@@ -7846,9 +8315,9 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
         const listCheckCol = isFileExpired ? `<div class="file-select-checkbox-spacer"></div>` : checkboxHtml;
 
         return `
-            <li class="mod-file-item ${isFileExpired ? 'is-expired-item' : ''}">
+            <li class="mod-file-item ${isFileExpired ? 'is-expired-item' : ''} ${isSelected ? 'is-selected' : ''}">
                 <div class="mod-file-main">
-                    <div class="mod-file-check-col">
+                    <div class="mod-file-check-col" onclick="event.stopPropagation(); const cb = this.querySelector('input'); if (cb && event.target !== cb) { cb.checked = !cb.checked; if (window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum(cb.getAttribute('data-key'), cb.checked, cb); }">
                         ${listCheckCol}
                     </div>
                     ${listPreviewHtml}
@@ -7896,7 +8365,7 @@ function setupModFilesScrollObserver(isGridView, selectedSet, expiryLabels, i18n
     const sentinel = document.getElementById('modFilesScrollSentinel');
     if (!sentinel) return;
 
-    const scrollContainer = modFileList.closest('.mod-container') || null;
+    const scrollContainer = document.getElementById('modContainer') || (modFileList ? modFileList.closest('.mod-container') : null);
 
     modFilesScrollObserver = new IntersectionObserver((entries) => {
         const entry = entries[0];
@@ -7923,6 +8392,7 @@ function renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nText
 
     if (sentinel) {
         sentinel.insertAdjacentHTML('beforebegin', newHtml);
+        setupVideoLazyObserver(modFileList);
         if (currentRenderedCount >= currentFilteredFiles.length) {
             if (modFilesScrollObserver) {
                 modFilesScrollObserver.disconnect();
@@ -8007,6 +8477,8 @@ function renderModFilesList(files) {
     } else {
         modFileList.innerHTML = initialHtml;
     }
+
+    setupVideoLazyObserver(modFileList);
 }
 
 // Re-render when language changes
@@ -8537,7 +9009,7 @@ window.openVideoPreview = function(url) {
             display: none;
             position: fixed;
             inset: 0;
-            z-index: 99999;
+            z-index: 2000000;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -8556,28 +9028,37 @@ window.openVideoPreview = function(url) {
         `;
 
         const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&times;';
+        closeBtn.type = 'button';
+        closeBtn.className = 'mod-close';
+        closeBtn.id = 'videoPreviewCloseBtn';
+        closeBtn.setAttribute('aria-label', 'Zamknij podgląd');
+        closeBtn.title = 'Zamknij (Esc)';
+        closeBtn.innerHTML = `
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        `;
         closeBtn.style.cssText = `
             position: absolute;
-            top: 8px;
+            top: 10px;
             right: 12px;
-            z-index: 10;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
+            z-index: 20;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+            padding: 8px;
+            cursor: pointer;
+            color: #94A3B8;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #FFFFFF;
-            font-size: 20px;
-            cursor: pointer;
             line-height: 1;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: color 0.2s ease, transform 0.2s ease;
         `;
-        closeBtn.onmouseover = () => { closeBtn.style.background = '#FF4439'; closeBtn.style.transform = 'scale(1.08)'; };
-        closeBtn.onmouseout = () => { closeBtn.style.background = 'rgba(0,0,0,0.5)'; closeBtn.style.transform = 'scale(1)'; };
+        closeBtn.onmouseover = () => { closeBtn.style.color = '#FFFFFF'; closeBtn.style.transform = 'scale(1.15)'; };
+        closeBtn.onmouseout = () => { closeBtn.style.color = '#94A3B8'; closeBtn.style.transform = 'scale(1)'; };
 
         const videoPlayer = document.createElement('video');
         videoPlayer.id = 'videoPreviewSrc';
@@ -8610,6 +9091,38 @@ window.openVideoPreview = function(url) {
         document.body.appendChild(previewModal);
     }
 
+    const existingCloseBtn = previewModal.querySelector('button');
+    if (existingCloseBtn && (existingCloseBtn.id !== 'videoPreviewCloseBtn' || existingCloseBtn.style.borderRadius === '50%')) {
+        existingCloseBtn.id = 'videoPreviewCloseBtn';
+        existingCloseBtn.className = 'mod-close';
+        existingCloseBtn.innerHTML = `
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        `;
+        existingCloseBtn.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            z-index: 20;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+            padding: 8px;
+            cursor: pointer;
+            color: #94A3B8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: color 0.2s ease, transform 0.2s ease;
+        `;
+        existingCloseBtn.onmouseover = () => { existingCloseBtn.style.color = '#FFFFFF'; existingCloseBtn.style.transform = 'scale(1.15)'; };
+        existingCloseBtn.onmouseout = () => { existingCloseBtn.style.color = '#94A3B8'; existingCloseBtn.style.transform = 'scale(1)'; };
+    }
+
     const videoElement = document.getElementById('videoPreviewSrc');
     if (videoElement) {
         videoElement.src = url;
@@ -8618,6 +9131,7 @@ window.openVideoPreview = function(url) {
             playProm.catch(() => {});
         }
     }
+    previewModal.style.zIndex = '2000000';
     window.smoothOpenModal(previewModal);
 };
 
@@ -10279,7 +10793,7 @@ function navigateToHome(resetUpload = true) {
         view.classList.toggle('active', isHome);
     });
 
-    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
+    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right, .nav-links-center');
     navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
 
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -10322,6 +10836,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const views = document.querySelectorAll('.view-section');
 
     function isCurrentUserAdminRole() {
+        if (typeof currentActiveRole !== 'undefined' && currentActiveRole === 'preview-free') {
+            return false;
+        }
         if (typeof isActualAdminUser === 'function' && isActualAdminUser()) return true;
         if (sessionStorage.getItem('adminSecret') === '12345678') return true;
         if (localStorage.getItem('dropsite_admin_authenticated') === 'true') return true;
@@ -10337,7 +10854,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (targetId === 'view-pobieracz') {
             const isAdmin = isCurrentUserAdminRole();
-            if (!isAdmin) {
+            const isUnlocked = !!window.isMediaGrabberUnlocked;
+            if (!isAdmin && !isUnlocked) {
                 if (typeof window.showToast === 'function') {
                     window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                 }
@@ -10398,7 +10916,11 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', (e) => {
             const isPobieracz = link.getAttribute('data-target') === 'view-pobieracz' || link.getAttribute('data-action') === 'media-grabber';
             const isAdmin = isCurrentUserAdminRole();
-            if ((link.getAttribute('data-status') === 'soon' || isPobieracz) && !isAdmin) {
+            const isUnlocked = !!window.isMediaGrabberUnlocked;
+            const isBlockedPobieracz = isPobieracz && !isAdmin && !isUnlocked;
+            const isOtherSoon = link.getAttribute('data-status') === 'soon' && !isPobieracz;
+
+            if (isBlockedPobieracz || isOtherSoon) {
                 e.preventDefault();
                 if (typeof window.showToast === 'function') {
                     window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
@@ -10525,7 +11047,107 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // === SMART AUTO-HIDE NAVBAR & MOBILE QUICK-HOME THUMB FAB ===
-    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right');
+    const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right, .nav-links-center');
+
+    // === LIQUID GLOW INDICATOR ===
+    (function initLiquidGlow() {
+        const navLinks = document.querySelector('.nav-links');
+        if (!navLinks) return;
+
+        function updateGlow(targetEl) {
+            if (!targetEl) {
+                navLinks.style.setProperty('--glow-opacity', '0');
+                return;
+            }
+            const listRect = navLinks.getBoundingClientRect();
+            const itemRect = targetEl.getBoundingClientRect();
+            const x = itemRect.left - listRect.left;
+            const w = itemRect.width;
+            navLinks.style.setProperty('--glow-x', x + 'px');
+            navLinks.style.setProperty('--glow-w', w + 'px');
+            navLinks.style.setProperty('--glow-opacity', '1');
+        }
+
+        // Init on active link
+        const activeLink = navLinks.querySelector('a.active, a.nav-btn.active');
+        if (activeLink) updateGlow(activeLink);
+
+        navLinks.querySelectorAll('a.nav-btn').forEach(link => {
+            link.addEventListener('mouseenter', () => updateGlow(link));
+            link.addEventListener('mouseleave', () => {
+                // Jeśli dropdown Narzećdzia jest otwarty, nie resetuj glowa
+                // (mysz przeszła z <a> do menu dropdown, wciąż jesteśmy w obszarze Narzećdzi)
+                const toolsDropdown = document.getElementById('navToolsDropdown');
+                if (toolsDropdown && toolsDropdown.classList.contains('is-open')) return;
+                const active = navLinks.querySelector('a.active, a.nav-btn.active');
+                updateGlow(active || null);
+            });
+            link.addEventListener('click', () => {
+                setTimeout(() => {
+                    const active = navLinks.querySelector('a.active, a.nav-btn.active');
+                    updateGlow(active || null);
+                }, 50);
+            });
+        });
+
+        // Watch for active class changes via MutationObserver
+        const observer = new MutationObserver(() => {
+            const active = navLinks.querySelector('a.active, a.nav-btn.active');
+            const toolsDropdown = document.getElementById('navToolsDropdown');
+            const isDropdownOpen = toolsDropdown && toolsDropdown.classList.contains('is-open');
+            if (active && !navLinks.matches(':hover') && !isDropdownOpen) updateGlow(active);
+        });
+        observer.observe(navLinks, { subtree: true, attributeFilter: ['class'] });
+
+        // Udostępnij updateGlow globalnie (do użytku przez dropdown controller)
+        window._navUpdateGlow = updateGlow;
+        window._navLinks = navLinks;
+    })();
+
+    // === AMBIENT BODY GLOW ON NAV HOVER ===
+    (function initAmbientGlow() {
+        const ambientColors = {
+            'view-glowna':    'rgba(52, 211, 153, 0.07)',
+            'view-narzedzia': 'rgba(56, 189, 248, 0.07)',
+            'view-funkcje':   'rgba(167, 139, 250, 0.07)',
+            'view-cennik':    'rgba(255, 210, 76, 0.06)',
+        };
+
+        let ambientDiv = document.getElementById('nav-ambient-bg');
+        if (!ambientDiv) {
+            ambientDiv = document.createElement('div');
+            ambientDiv.id = 'nav-ambient-bg';
+            ambientDiv.style.cssText = `
+                position: fixed; inset: 0; pointer-events: none; z-index: 0;
+                transition: background 1.1s ease;
+                background: transparent;
+            `;
+            document.body.prepend(ambientDiv);
+        }
+
+        // Glow zmienia kolor przy wejściu na link,
+        // ale kasuje się dopiero gdy mysz opuszcza całą nawigację (nie migota między linkami)
+        const navContainer = document.querySelector('.nav-links-center');
+        let clearTimer = null;
+
+        document.querySelectorAll('a.nav-btn[data-target]').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; }
+                const target = link.getAttribute('data-target');
+                const color = ambientColors[target] || 'transparent';
+                ambientDiv.style.background = `radial-gradient(ellipse 60% 40% at 50% 0%, ${color}, transparent 70%)`;
+            });
+        });
+
+        if (navContainer) {
+            navContainer.addEventListener('mouseleave', () => {
+                clearTimer = setTimeout(() => {
+                    ambientDiv.style.background = 'transparent';
+                    clearTimer = null;
+                }, 300);
+            });
+        }
+    })();
     const mobileHomeFab = document.getElementById('mobileHomeFab') || document.getElementById('scrollToTopBtn');
 
     function updateMobileHomeFabVisibility() {
@@ -10564,6 +11186,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
     let ticking = false;
+    let navHideTimer = null;
+    let navIsCurrentlyHidden = false;
 
     window.addEventListener('scroll', () => {
         if (!ticking) {
@@ -10572,26 +11196,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 updateMobileHomeFabVisibility();
 
-                // Stabilne zachowanie nawigacji: na telefonach pasek jest stały i nie skacze przy scrollu
                 if (navFloatingElements.length) {
                     const isMobileScreen = window.innerWidth <= 768;
                     if (isMobileScreen) {
-                        // Na mobile pasek jest zawsze stabilny bez animacji skakania
-                        navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                        if (navIsCurrentlyHidden) {
+                            navIsCurrentlyHidden = false;
+                            navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                        }
                     } else {
-                        // Na desktopie: chowamy przy wyraźnym zjeździe w dół
-                        if (currentScrollY > 70) {
-                            if (currentScrollY > lastScrollY && (currentScrollY - lastScrollY > 12)) {
-                                navFloatingElements.forEach(el => el.classList.add('nav-hidden'));
-                                const langMenu = document.getElementById('langMenu');
-                                if (langMenu && !langMenu.hidden) {
-                                    langMenu.hidden = true;
-                                }
-                            } else if (lastScrollY - currentScrollY > 12) {
+                        if (currentScrollY <= 80) {
+                            // Zawsze widoczny blisko góry strony
+                            if (navHideTimer) { clearTimeout(navHideTimer); navHideTimer = null; }
+                            if (navIsCurrentlyHidden) {
+                                navIsCurrentlyHidden = false;
                                 navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
                             }
-                        } else {
-                            navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                        } else if (currentScrollY > lastScrollY + 8) {
+                            // Scroll w dół — chowamy z opóźnieniem 200ms (debounce)
+                            if (!navIsCurrentlyHidden && !navHideTimer) {
+                                navHideTimer = setTimeout(() => {
+                                    navHideTimer = null;
+                                    const stillScrollingDown = (window.pageYOffset || document.documentElement.scrollTop) > 80;
+                                    if (stillScrollingDown) {
+                                        navIsCurrentlyHidden = true;
+                                        navFloatingElements.forEach(el => el.classList.add('nav-hidden'));
+                                        const langMenu = document.getElementById('langMenu');
+                                        if (langMenu && !langMenu.hidden) langMenu.hidden = true;
+                                    }
+                                }, 200);
+                            }
+                        } else if (currentScrollY < lastScrollY - 5) {
+                            // Scroll w górę — natychmiastowe pokazanie
+                            if (navHideTimer) { clearTimeout(navHideTimer); navHideTimer = null; }
+                            if (navIsCurrentlyHidden) {
+                                navIsCurrentlyHidden = false;
+                                navFloatingElements.forEach(el => el.classList.remove('nav-hidden'));
+                            }
                         }
                     }
                 }
@@ -10863,7 +11503,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 path === '/pobierz-z-youtube' || path === '/instagram-downloader' ||
                 hash.includes('pobierz-wideo') || hash.includes('media-grabber') || toolParam === 'grabber') {
                 const isAdmin = isCurrentUserAdminRole();
-                if (isAdmin) {
+                const isUnlocked = !!window.isMediaGrabberUnlocked;
+                if (isAdmin || isUnlocked) {
                     if (window.switchView) window.switchView('view-pobieracz');
                     setSeoMeta('Pobieracz Wideo & Audio — TikTok HD, YouTube, Instagram | Dropsite', 'Inteligentny pobieracz materiałów wideo bez znaku wodnego z TikToka, YouTube, Instagrama i X.');
                     if (window.loadToolboxScripts) {
@@ -10996,6 +11637,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mouse = { x: width / 2, y: height / 2, active: false };
     let mouseTimer;
     window.addEventListener('mousemove', (e) => {
+        const modM = document.getElementById('modModal');
+        if (modM && !modM.hidden && modM.style.display !== 'none') return;
         mouse.x = e.clientX;
         mouse.y = e.clientY;
         mouse.active = true;
@@ -11062,7 +11705,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function animate() {
-        if (!isRunning || isScrolling || !isHeroVisible) {
+        const modM = document.getElementById('modModal');
+        const isModOpen = modM && !modM.hidden && modM.style.display !== 'none';
+        if (!isRunning || isScrolling || !isHeroVisible || isModOpen) {
             animId = null;
             return;
         }
@@ -11421,8 +12066,14 @@ async function syncUserHistory() {
                     });
 
                     const finalCombined = isAutoClean ? combined.filter(item => !checkIfFileIsExpired(item)) : combined;
-                    localStorage.setItem(key, JSON.stringify(finalCombined.slice(0, 500)));
-                    return true;
+                    const newSlice = finalCombined.slice(0, 500);
+                    const currentSerialized = JSON.stringify(local);
+                    const newSerialized = JSON.stringify(newSlice);
+                    if (currentSerialized !== newSerialized) {
+                        localStorage.setItem(key, newSerialized);
+                        return true;
+                    }
+                    return false;
                 }
             }
         } catch (e) {
@@ -17184,7 +17835,7 @@ window.switchMyFilesSubtab = function(tab) {
     }
 };
 
-window.toggleFileSelectionForAlbum = function(fileKey, isChecked) {
+window.toggleFileSelectionForAlbum = function(fileKey, isChecked, checkboxEl) {
     if (!fileKey) return;
     if (isChecked) {
         window.selectedFilesForAlbum.add(fileKey);
@@ -17192,20 +17843,35 @@ window.toggleFileSelectionForAlbum = function(fileKey, isChecked) {
         window.selectedFilesForAlbum.delete(fileKey);
     }
 
+    if (checkboxEl) {
+        const item = checkboxEl.closest('.mod-file-card, .mod-file-item');
+        if (item) item.classList.toggle('is-selected', isChecked);
+    }
+
     const count = window.selectedFilesForAlbum.size;
     const bar = document.getElementById('modSelectionBar');
     const countElem = document.getElementById('selectedFilesCount');
-    if (countElem) countElem.innerText = `${count}`;
-    if (bar) bar.style.display = count > 0 ? 'flex' : 'none';
+    if (countElem) countElem.textContent = `${count}`;
+    if (bar) {
+        const shouldShow = count > 0;
+        if (shouldShow && bar.style.display !== 'flex') {
+            bar.style.display = 'flex';
+        } else if (!shouldShow && bar.style.display !== 'none') {
+            bar.style.display = 'none';
+        }
+    }
 };
 
 window.clearFileSelection = function() {
     window.selectedFilesForAlbum.clear();
     document.querySelectorAll('.file-select-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.mod-file-card.is-selected, .mod-file-item.is-selected').forEach(el => el.classList.remove('is-selected'));
     const bar = document.getElementById('modSelectionBar');
-    if (bar) bar.style.display = 'none';
+    if (bar && bar.style.display !== 'none') {
+        bar.style.display = 'none';
+    }
     const countElem = document.getElementById('selectedFilesCount');
-    if (countElem) countElem.innerText = '0';
+    if (countElem) countElem.textContent = '0';
 };
 
 window.openCreateAlbumModal = function() {

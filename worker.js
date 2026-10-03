@@ -481,6 +481,30 @@ export default {
           }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
+        // 0. SPRAWDZENIE BLOKADY DOSTĘPU DLA ZWYKŁYCH UŻYTKOWNIKÓW (KONTROLA Z PANELU ADMINA)
+        let isGrabberUnlocked = false;
+        if (env.BUCKET) {
+          try {
+            const fObj = await env.BUCKET.get("_system/feature_flags.json");
+            if (fObj) {
+              const fData = await fObj.json();
+              if (fData && fData.mediaGrabberUnlocked !== undefined) {
+                isGrabberUnlocked = !!fData.mediaGrabberUnlocked;
+              }
+            }
+          } catch (_) {}
+        }
+        if (!isGrabberUnlocked) {
+          const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+          const authKey = (request.headers.get("X-Admin-Secret") || request.headers.get("X-Pro-Key") || (reqData && reqData.adminSecret) || "").trim();
+          if (authKey !== ADMIN_SECRET) {
+            return new Response(JSON.stringify({
+              success: false,
+              message: "Moduł Pobieracza Wideo jest obecnie zablokowany przez Administratora (tryb testowy). Wkrótce będzie dostępny publicznie!"
+            }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+        }
+
         const isTikTok = /tiktok\.com|douyin\.com/i.test(targetUrl);
         const isYouTube = /youtu\.be|youtube\.com/i.test(targetUrl);
         const isInstagram = /instagram\.com/i.test(targetUrl);
@@ -488,17 +512,96 @@ export default {
         const isPinterest = /pinterest\.com|pin\.it/i.test(targetUrl);
         const isReddit = /reddit\.com/i.test(targetUrl);
 
-        // 1. DEDYKOWANY OBSŁUGIWANY SILNIK DLA TIKTOKA (TikWM - 100% HD No-Watermark + Audio)
+        // 1. DEDYKOWANY OBSŁUGIWANY SILNIK DLA TIKTOKA (TikMate HD No-Watermark + TikWM Fallback)
         if (isTikTok) {
           try {
-            const tikwmRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(targetUrl)}&hd=1`, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            // Próba 1: TikMate API (Błyskawiczne dekodowanie bez znaku wodnego)
+            try {
+              const tmRes = await fetch("https://api.tikmate.app/api/lookup", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  "Accept": "application/json"
+                },
+                body: `url=${encodeURIComponent(targetUrl)}`
+              });
+              if (tmRes.ok) {
+                const tm = await tmRes.json();
+                if (tm && tm.success && tm.id && tm.token) {
+                  const cleanDownloadUrl = `https://tikmate.app/download/${tm.token}/${tm.id}.mp4`;
+                  const hdDownloadUrl = `https://tikmate.app/download/${tm.token}/${tm.id}.mp4?hd=1`;
+
+                  return new Response(JSON.stringify({
+                    success: true,
+                    platform: "tiktok",
+                    title: tm.desc || "Wideo TikTok",
+                    author: {
+                      name: tm.author_name || tm.author_id || "Twórca TikTok",
+                      handle: tm.author_id ? `@${tm.author_id}` : "",
+                      avatar: tm.author_avatar || ""
+                    },
+                    thumbnail: tm.cover || tm.dynamic_cover || "",
+                    duration: 0,
+                    media: [
+                      {
+                        type: "video",
+                        label: "Wideo HD (Bez znaku wodnego)",
+                        quality: "HD 1080p / Clean MP4",
+                        format: "mp4",
+                        url: cleanDownloadUrl,
+                        isPrimary: true
+                      },
+                      {
+                        type: "video",
+                        label: "Wideo HD Ultra",
+                        quality: "Ultra HD",
+                        format: "mp4",
+                        url: hdDownloadUrl
+                      }
+                    ],
+                    photos: []
+                  }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                }
               }
-            });
-            if (tikwmRes.ok) {
-              const tikwm = await tikwmRes.json();
-              if (tikwm && tikwm.code === 0 && tikwm.data) {
+            } catch (tmErr) {
+              console.error("TikMate error:", tmErr);
+            }
+
+            // Próba 2: TikWM API fallback
+            try {
+              const pRes = await fetch("https://www.tikwm.com/api/", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                  "Accept": "application/json"
+                },
+                body: `url=${encodeURIComponent(targetUrl)}&hd=1`
+              });
+              if (pRes.ok) {
+                const pj = await pRes.json();
+                if (pj && pj.code === 0 && pj.data) tikwm = pj;
+              }
+            } catch (_) {}
+
+            // Próba 2: GET fallback
+            if (!tikwm) {
+              try {
+                const gRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(targetUrl)}&hd=1`, {
+                  headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    "Accept": "application/json"
+                  }
+                });
+                if (gRes.ok) {
+                  const gj = await gRes.json();
+                  if (gj && gj.code === 0 && gj.data) tikwm = gj;
+                }
+              } catch (_) {}
+            }
+
+            if (tikwm && tikwm.code === 0 && tikwm.data) {
                 const d = tikwm.data;
                 const mediaItems = [];
                 
@@ -548,18 +651,149 @@ export default {
                   photos: photos
                 }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
               }
-            }
           } catch (tikErr) {
             console.error("TikWM error:", tikErr);
           }
         }
 
-        // 2. UNIWERSALNY SILNIK KASKADOWY (Cobalt Instances + Fallbacks dla YouTube, Instagram, X itp.)
+        // 2. DEDYKOWANY SILNIK DLA X / TWITTERA (FxTwitter REST API v2 + v1 bez płatnych kluczy)
+        if (isTwitter) {
+          const twMatch = targetUrl.match(/\/status(?:es)?\/(\d+)/i);
+          if (twMatch && twMatch[1]) {
+            const statusId = twMatch[1];
+            try {
+              let tweetData = null;
+              const fxEndpoints = [
+                `https://api.fxtwitter.com/2/status/${statusId}`,
+                `https://api.fxtwitter.com/status/${statusId}`
+              ];
+
+              for (const fxEndpoint of fxEndpoints) {
+                try {
+                  const fxRes = await fetch(fxEndpoint, {
+                    headers: {
+                      "User-Agent": "Dropsite-Media-Grabber/2.8",
+                      "Accept": "application/json"
+                    }
+                  });
+                  if (fxRes.ok) {
+                    const json = await fxRes.json();
+                    if (json && (json.status || json.tweet)) {
+                      tweetData = json.status || json.tweet;
+                      break;
+                    }
+                  }
+                } catch (_) {}
+              }
+
+              if (tweetData) {
+                const mediaItems = [];
+                const photos = [];
+                const mediaObj = tweetData.media || {};
+
+                let vids = [];
+                if (Array.isArray(mediaObj.videos)) vids = mediaObj.videos;
+                else if (Array.isArray(mediaObj.all)) vids = mediaObj.all.filter(m => m.type === 'video' || m.type === 'gif');
+                else if (Array.isArray(mediaObj)) vids = mediaObj.filter(m => m.type === 'video' || m.type === 'gif');
+
+                let pts = [];
+                if (Array.isArray(mediaObj.photos)) pts = mediaObj.photos;
+                else if (Array.isArray(mediaObj.all)) pts = mediaObj.all.filter(m => m.type === 'photo');
+                else if (Array.isArray(mediaObj)) pts = mediaObj.filter(m => m.type === 'photo');
+
+                // Fallback dla pojedynczego wideo
+                if (vids.length === 0 && tweetData.url) {
+                  try {
+                    const headRes = await fetch(`https://d.fxtwitter.com/i/status/${statusId}`, {
+                      method: "HEAD",
+                      redirect: "follow",
+                      headers: { "User-Agent": "Dropsite-Media-Grabber/2.8" }
+                    });
+                    const finalUrl = headRes.url;
+                    const finalType = headRes.headers.get("content-type") || "";
+                    if (finalUrl && (finalType.includes("video") || finalUrl.includes(".mp4"))) {
+                      vids.push({
+                        url: finalUrl,
+                        format: "mp4",
+                        width: 1920,
+                        height: 1080
+                      });
+                    }
+                  } catch (_) {}
+                }
+
+                vids.forEach((v, idx) => {
+                  if (v.url) {
+                    const label = idx === 0 ? "Wideo MP4 HD (Oryginalna jakość)" : `Wideo #${idx + 1} MP4`;
+                    const quality = (v.width && v.height) ? `${v.width}x${v.height} HD` : "HD 1080p / MP4";
+                    mediaItems.push({
+                      type: "video",
+                      label: label,
+                      quality: quality,
+                      format: "mp4",
+                      url: v.url,
+                      isPrimary: idx === 0
+                    });
+                  }
+                });
+
+                pts.forEach((p, idx) => {
+                  if (p.url) {
+                    photos.push({
+                      type: "photo",
+                      label: `Zdjęcie #${idx + 1}`,
+                      url: p.url,
+                      format: "jpg"
+                    });
+                  }
+                });
+
+                if (mediaItems.length > 0 || photos.length > 0) {
+                  const author = tweetData.author ? {
+                    name: tweetData.author.name || "Twórca X",
+                    handle: tweetData.author.screen_name ? `@${tweetData.author.screen_name}` : "",
+                    avatar: tweetData.author.avatar_url || ""
+                  } : null;
+
+                  const thumb = (vids[0] && vids[0].thumbnail_url)
+                    || (pts[0] && pts[0].url)
+                    || (author && author.avatar)
+                    || "";
+
+                  const title = tweetData.text || "Wpis z multimediami (X / Twitter)";
+
+                  return new Response(JSON.stringify({
+                    success: true,
+                    platform: "twitter",
+                    title: title,
+                    author: author,
+                    thumbnail: thumb,
+                    duration: (vids[0] && vids[0].duration) || 0,
+                    media: mediaItems,
+                    photos: photos
+                  }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                } else {
+                  return new Response(JSON.stringify({
+                    success: false,
+                    message: "Ten wpis na platformie X (Twitter) nie zawiera żadnego pliku wideo ani zdjęć."
+                  }), { status: 422, headers: { "Content-Type": "application/json", ...corsHeaders } });
+                }
+              }
+            } catch (twErr) {
+              console.error("X/Twitter Grabber error:", twErr);
+            }
+          } else {
+            return new Response(JSON.stringify({
+              success: false,
+              message: "Nieprawidłowy adres wpisu X (Twitter). Upewnij się, że link zawiera identyfikator statusu (np. https://x.com/username/status/123456)."
+            }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+        }
+
+        // 3. UNIWERSALNY SILNIK KASKADOWY (Cobalt Instances dla YouTube, Threads, itp.)
         const cobaltInstances = [
-          "https://api.cobalt.tools",
-          "https://cobalt-api.kwiatekm.tokyo",
-          "https://co.wuk.sh/api/json",
-          "https://api.wuk.sh"
+          "https://cobaltapi.cjs.nz",
+          "https://co.otomir23.me"
         ];
 
         let cobaltData = null;
@@ -572,7 +806,7 @@ export default {
               headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-                "User-Agent": "Dropsite-Media-Grabber/1.0"
+                "User-Agent": "Dropsite-Media-Grabber/2.0"
               },
               body: JSON.stringify({
                 url: targetUrl,
@@ -599,8 +833,8 @@ export default {
           if (cobaltData.url) {
             mediaItems.push({
               type: "video",
-              label: "Wideo MP4 (Najwyższa jakość)",
-              quality: "HD / MP4",
+              label: "Wideo MP4 (1080p Full HD)",
+              quality: "1080p HD",
               format: "mp4",
               url: cobaltData.url,
               isPrimary: true
@@ -650,56 +884,81 @@ export default {
           }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
-        // 3. FALLBACK DLA YOUTUBE (Piped / Invidious API)
+        // 4. DEDYKOWANY FALLBACK DLA YOUTUBE (Invidious API)
         if (isYouTube) {
           const ytMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
           if (ytMatch && ytMatch[1]) {
             const videoId = ytMatch[1];
             try {
-              const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
-              if (pipedRes.ok) {
-                const piped = await pipedRes.json();
-                const videoStreams = piped.videoStreams || [];
-                const audioStreams = piped.audioStreams || [];
+              const invRes = await fetch(`https://invidious.f5.si/api/v1/videos/${videoId}`, {
+                headers: { "Accept": "application/json" }
+              });
+              if (invRes.ok) {
+                const inv = await invRes.json();
+                const formatStreams = inv.formatStreams || [];
+                const adaptiveFormats = inv.adaptiveFormats || [];
                 
-                const bestVideo = videoStreams.find(v => v.format === "MPEG_4" || v.mimeType?.includes("mp4")) || videoStreams[0];
-                const bestAudio = audioStreams[0];
-
                 const mediaItems = [];
-                if (bestVideo && bestVideo.url) {
+                const directStream = formatStreams.find(s => s.container === "mp4" || s.type?.includes("video/mp4")) || formatStreams[0];
+                if (directStream && directStream.url) {
                   mediaItems.push({
                     type: "video",
-                    label: `Wideo (${bestVideo.quality || "HD"})`,
-                    quality: bestVideo.quality || "HD",
+                    label: `Wideo MP4 (${directStream.resolution || "HD"})`,
+                    quality: directStream.resolution || "HD",
                     format: "mp4",
-                    url: bestVideo.url,
+                    url: directStream.url,
                     isPrimary: true
                   });
                 }
-                if (bestAudio && bestAudio.url) {
+                
+                const hdStream = adaptiveFormats.find(s => s.type?.includes("video/mp4") && (s.qualityLabel === "1080p" || s.qualityLabel === "720p"));
+                if (hdStream && hdStream.url && (!directStream || hdStream.url !== directStream.url)) {
+                  mediaItems.push({
+                    type: "video",
+                    label: `Wideo MP4 (${hdStream.qualityLabel || "HD"})`,
+                    quality: hdStream.qualityLabel || "HD",
+                    format: "mp4",
+                    url: hdStream.url,
+                    isPrimary: mediaItems.length === 0
+                  });
+                }
+
+                const audioStream = adaptiveFormats.find(s => s.type?.includes("audio"));
+                if (audioStream && audioStream.url) {
                   mediaItems.push({
                     type: "audio",
-                    label: "Ścieżka Audio MP3/M4A",
-                    quality: bestAudio.quality || "Audio",
+                    label: "Ścieżka Dźwiękowa (Audio MP3)",
+                    quality: audioStream.audioQuality || "Audio",
                     format: "mp3",
-                    url: bestAudio.url,
+                    url: audioStream.url,
                     isAudio: true
                   });
                 }
 
-                return new Response(JSON.stringify({
-                  success: true,
-                  platform: "youtube",
-                  title: piped.title || "YouTube Video",
-                  author: piped.uploader ? { name: piped.uploader, handle: piped.uploaderUrl || "", avatar: piped.uploaderAvatar || "" } : null,
-                  thumbnail: piped.thumbnailUrl || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                  duration: piped.duration || 0,
-                  media: mediaItems,
-                  photos: []
-                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                if (mediaItems.length > 0) {
+                  return new Response(JSON.stringify({
+                    success: true,
+                    platform: "youtube",
+                    title: inv.title || "Wideo YouTube",
+                    author: inv.author ? { name: inv.author, handle: inv.authorUrl || "", avatar: "" } : null,
+                    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                    duration: inv.lengthSeconds || 0,
+                    media: mediaItems,
+                    photos: []
+                  }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+                }
               }
             } catch (_) {}
           }
+        }
+
+        // 5. OBSŁUGA INSTAGRAMA
+        if (isInstagram) {
+          return new Response(JSON.stringify({
+            success: false,
+            platform: "instagram",
+            message: "Instagram aktywnie blokuje publiczne pobieranie bez logowania i sesji Meta. Dostępne są TikTok, YouTube oraz X (Twitter)."
+          }), { status: 422, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         return new Response(JSON.stringify({
@@ -725,10 +984,22 @@ export default {
           return new Response("Nieprawidłowy parametr URL", { status: 400, headers: corsHeaders });
         }
 
+        let originHeader = "https://www.tiktok.com/";
+        try {
+          const parsedTarget = new URL(targetUrl);
+          if (parsedTarget.hostname.includes("twimg") || parsedTarget.hostname.includes("twitter") || parsedTarget.hostname.includes("x.com")) {
+            originHeader = "https://twitter.com/";
+          } else if (parsedTarget.hostname.includes("tiktok")) {
+            originHeader = "https://www.tiktok.com/";
+          } else {
+            originHeader = parsedTarget.origin;
+          }
+        } catch (_) {}
+
         const streamRes = await fetch(targetUrl, {
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": new URL(targetUrl).origin
+            "Referer": originHeader
           }
         });
 
@@ -772,11 +1043,23 @@ export default {
           return new Response(JSON.stringify({ success: false, message: "Brak prawidłowego adresu URL multimediów." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
+        let originHeader = "https://www.tiktok.com/";
+        try {
+          const parsedTarget = new URL(targetUrl);
+          if (parsedTarget.hostname.includes("twimg") || parsedTarget.hostname.includes("twitter") || parsedTarget.hostname.includes("x.com")) {
+            originHeader = "https://twitter.com/";
+          } else if (parsedTarget.hostname.includes("tiktok")) {
+            originHeader = "https://www.tiktok.com/";
+          } else {
+            originHeader = parsedTarget.origin;
+          }
+        } catch (_) {}
+
         // Pobranie strumienia ze źródła bezpośrednio do RAMu workera
         const fetchRes = await fetch(targetUrl, {
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": new URL(targetUrl).origin
+            "Referer": originHeader
           }
         });
 
@@ -3395,6 +3678,67 @@ export default {
           });
         }
         return new Response(JSON.stringify({ success: true, quotaGb, message: "Limit pomyślnie zaktualizowany." }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // --- ODCZYT FLAG FUNKCJI (FEATURE FLAGS) ---
+    if (url.pathname === "/api/feature-flags" && request.method === "GET") {
+      let mediaGrabberUnlocked = false;
+      if (env.BUCKET) {
+        try {
+          const fObj = await env.BUCKET.get("_system/feature_flags.json");
+          if (fObj) {
+            const data = await fObj.json();
+            if (data && data.mediaGrabberUnlocked !== undefined) {
+              mediaGrabberUnlocked = !!data.mediaGrabberUnlocked;
+            }
+          }
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ success: true, mediaGrabberUnlocked }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    // --- ZAPIS FLAG FUNKCJI PRZEZ ADMINISTRATORA ---
+    if ((url.pathname === "/admin/feature-flags" || url.pathname === "/api/admin/feature-flags") && request.method === "POST") {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || request.headers.get("X-Pro-Key") || "").trim();
+      let body = {};
+      try { body = await request.json(); } catch (_) {}
+      const bodySecret = (body.adminSecret || "").trim();
+
+      if (clientSecret !== ADMIN_SECRET && bodySecret !== ADMIN_SECRET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      try {
+        const mediaGrabberUnlocked = !!body.mediaGrabberUnlocked;
+        if (env.BUCKET) {
+          await env.BUCKET.put("_system/feature_flags.json", JSON.stringify({
+            mediaGrabberUnlocked,
+            updatedAt: new Date().toISOString()
+          }), {
+            httpMetadata: { contentType: "application/json" }
+          });
+        }
+        return new Response(JSON.stringify({
+          success: true,
+          mediaGrabberUnlocked,
+          message: mediaGrabberUnlocked
+            ? "Sekcja Pobierz Wideo HD została odblokowana dla wszystkich użytkowników."
+            : "Sekcja Pobierz Wideo HD została zablokowana (dostęp tylko dla administratora)."
+        }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
       } catch (err) {

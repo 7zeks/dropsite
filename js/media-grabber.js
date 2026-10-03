@@ -35,6 +35,18 @@
         },
 
         bindEvents() {
+            if (this.input) {
+                this.input.addEventListener('input', () => {
+                    this.updatePlatformHighlight(this.input.value.trim());
+                });
+                this.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.handleGrab();
+                    }
+                });
+            }
+
             if (this.submitBtn) {
                 this.submitBtn.addEventListener('click', (e) => {
                     this.createRipple(e, this.submitBtn);
@@ -167,11 +179,17 @@
             this.setLoading(true);
 
             try {
+                const adminSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '';
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (adminSecret) {
+                    headers['X-Admin-Secret'] = adminSecret;
+                }
+
                 const res = await fetch(`${this.apiBase}/api/grab-media`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: headers,
                     body: JSON.stringify({ url: targetUrl })
                 });
 

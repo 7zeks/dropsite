@@ -11,49 +11,8 @@
 
     const WORKER_URL = window.WORKER_URL || 'https://uploud-api.dropsite33.workers.dev';
 
-    // Domyślne szablony dla nowych użytkowników
-    const DEFAULT_NOTES = [
-        {
-            id: 'note_passwords_vault',
-            title: 'Hasła, Kody i Dostęp',
-            content: `// DROPSITE ACCOUNT VAULT — KODY I HASŁA
-// Notatka zapisuje się automatycznie na Twoim koncie w chmurze.
-
-[Serwery i Chmura]
-Cloudflare / R2: admin@dropsite.com
-PIN do serwerowni: 8492
-Klucz API Produkcja: dp_live_9f81a72b4c1092e48fa
-
-[Konta Zapasowe & 2FA]
-01. 8491-2940-1192
-02. 3902-8819-4820
-03. 5910-3847-1903
-
-[Wskazówka bezpieczeństwa]
-Kliknij ikonę oka (Ukryj), aby rozmyć treść przy osobach trzecich!`,
-            category: 'passwords',
-            isMasked: false,
-            isMonospace: true,
-            isPinned: true,
-            updatedAt: new Date().toISOString()
-        },
-        {
-            id: 'note_quick_scratchpad',
-            title: 'Podręczny Notatnik',
-            content: `Podręczny notatnik Dropsite — wpisuj tutaj tymczasowe teksty, szkice, numery przesyłek, linki i kody BLIK.
-
-Każda linia ma swój własny odstęp i numer w panelu:
-- Dostępne z każdego urządzenia po zalogowaniu
-- Tryb czcionki programistycznej { } dla kodów i json
-- Wbudowany generator silnych haseł i PIN-ów
-- Narzędzie "Uporządkuj" do automatycznej numeracji i zwiększania odstępów`,
-            category: 'notes',
-            isMasked: false,
-            isMonospace: false,
-            isPinned: false,
-            updatedAt: new Date().toISOString()
-        }
-    ];
+    // Czysty start dla nowego użytkownika — brak predefiniowanych danych/haseł
+    const DEFAULT_NOTES = [];
 
     class DropsiteVaultEngine {
         constructor() {
@@ -110,12 +69,35 @@ Każda linia ma swój własny odstęp i numer w panelu:
             } catch (_) {}
 
             if (saved && Array.isArray(saved.notes) && saved.notes.length > 0) {
-                this.notes = saved.notes;
-                this.activeNoteId = saved.activeNoteId || this.notes[0].id;
+                // Usuń stare domyślne wzorce z wcześniejszych wersji jeśli użytkownik ich nie edytował
+                this.notes = saved.notes.filter(n => n.id !== 'note_passwords_vault' && n.id !== 'note_quick_scratchpad');
+                if (this.notes.length > 0) {
+                    this.activeNoteId = (saved.activeNoteId && this.notes.some(n => n.id === saved.activeNoteId)) 
+                        ? saved.activeNoteId 
+                        : this.notes[0].id;
+                } else {
+                    this.activeNoteId = null;
+                }
                 this.lastSynced = saved.lastSynced || null;
             } else {
-                this.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
-                this.activeNoteId = this.notes[0].id;
+                this.notes = [];
+                this.activeNoteId = null;
+            }
+
+            // Jeśli użytkownik nie ma jeszcze żadnej notatki, utwórz jedną czystą nową notatkę
+            if (this.notes.length === 0) {
+                const initialId = 'note_' + Date.now();
+                this.notes = [{
+                    id: initialId,
+                    title: 'Moja notatka',
+                    content: '',
+                    category: 'notes',
+                    isMasked: false,
+                    isMonospace: false,
+                    isPinned: false,
+                    updatedAt: new Date().toISOString()
+                }];
+                this.activeNoteId = initialId;
                 this.saveToLocalStorage();
             }
 
@@ -226,11 +208,27 @@ Każda linia ma swój własny odstęp i numer w panelu:
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && Array.isArray(data.notes) && data.notes.length > 0) {
-                        this.notes = data.notes;
-                        if (data.activeNoteId && this.notes.some(n => n.id === data.activeNoteId)) {
-                            this.activeNoteId = data.activeNoteId;
+                        const cleaned = data.notes.filter(n => n.id !== 'note_passwords_vault' && n.id !== 'note_quick_scratchpad');
+                        if (cleaned.length > 0) {
+                            this.notes = cleaned;
+                            if (data.activeNoteId && this.notes.some(n => n.id === data.activeNoteId)) {
+                                this.activeNoteId = data.activeNoteId;
+                            } else {
+                                this.activeNoteId = this.notes[0].id;
+                            }
                         } else {
-                            this.activeNoteId = this.notes[0].id;
+                            const initialId = 'note_' + Date.now();
+                            this.notes = [{
+                                id: initialId,
+                                title: 'Moja notatka',
+                                content: '',
+                                category: 'notes',
+                                isMasked: false,
+                                isMonospace: false,
+                                isPinned: false,
+                                updatedAt: new Date().toISOString()
+                            }];
+                            this.activeNoteId = initialId;
                         }
                         this.lastSynced = data.lastSynced || new Date().toISOString();
                         this.saveToLocalStorage();

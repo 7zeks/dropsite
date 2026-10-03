@@ -547,7 +547,7 @@
 /* --- Nawigacja: Logo (Lewa strona) - Ożywiony Sygnet w stylu Dropsite --- */
 .nav-logo {
     position: fixed;
-    top: 24px;
+    top: 26px;
     left: 40px;
     display: inline-flex;
     align-items: center;
@@ -753,17 +753,58 @@
     filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.45));
 }
 
-/* --- Nawigacja: Menu Prawa strona --- */
+/* --- Nawigacja: Linki nawigacyjne - absolutny środek ekranu --- */
+/* .nav-right jest teraz tylko pojemnikiem na akcje po PRAWEJ stronie */
 .nav-right {
     position: fixed;
-    top: 20px;
+    top: 26px;
     right: 40px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
     z-index: 1000;
+}
+
+/* Linki w środku ekranu */
+.nav-links-center {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 72px;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+/* Aurora bottom border na dolnej krawędzi całego topbara */
+.nav-links-center::after {
+    content: '';
+    position: fixed;
+    top: 71px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(94, 234, 212, 0) 5%,
+        rgba(94, 234, 212, 0.35) 25%,
+        rgba(56, 189, 248, 0.5) 50%,
+        rgba(167, 139, 250, 0.35) 75%,
+        rgba(94, 234, 212, 0) 95%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: auroraShift 6s linear infinite;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+@keyframes auroraShift {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
 }
 
 /* Auto-hide przy scrollu w dół: płynne usunięcie w górę, zero kolizji z tekstem */
@@ -774,12 +815,38 @@
     pointer-events: none;
 }
 
+.nav-links-center.nav-hidden {
+    transform: translateX(-50%) translateY(-130%);
+    opacity: 0;
+    pointer-events: none;
+}
+
 .nav-links {
     display: flex;
     list-style: none;
-    gap: 22px;
+    gap: 28px;
     margin: 0;
     padding: 0;
+    align-items: center;
+    position: relative;
+}
+
+/* Liquid glow indicator — płynna smuga światła pod aktywnym linkiem */
+.nav-links::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #5EEAD4, #38BDF8, #5EEAD4, transparent);
+    box-shadow: 0 0 12px #5EEAD4, 0 0 24px rgba(94, 234, 212, 0.4);
+    width: var(--glow-w, 60px);
+    left: var(--glow-x, 0px);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    opacity: var(--glow-opacity, 1);
+    pointer-events: none;
 }
 
 .nav-links a {
@@ -787,7 +854,7 @@
     text-decoration: none;
     font-size: 15.5px;
     font-weight: 600;
-    transition: color 0.35s ease;
+    transition: color 0.3s ease;
     position: relative;
     padding: 6px 0;
     display: inline-flex;
@@ -799,22 +866,9 @@
     color: var(--text-main);
 }
 
+/* Usuwamy stary statyczny ::after indicator — zastąpiony przez liquid glow */
 .nav-links a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--accent-blue);
-    border-radius: 2px;
-    box-shadow: 0 0 8px var(--accent-glow);
-    opacity: 0;
-    transition: opacity 0.35s ease;
-}
-
-.nav-links a.active::after {
-    opacity: 1;
+    display: none;
 }
 
 /* --- Menu Rozwijane Narzędzi (Dropdown na Hover) --- */
@@ -835,7 +889,6 @@
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
-.nav-dropdown-item:hover .nav-dropdown-arrow,
 .nav-dropdown-item.is-open .nav-dropdown-arrow {
     transform: rotate(180deg);
     opacity: 1;
@@ -866,9 +919,9 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.12s,
-                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.12s,
-                visibility 0.22s ease 0.12s;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.22s,
+                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) 0.22s,
+                visibility 0.22s ease 0.22s;
 }
 
 /* Górna subtelna smuga światła z akcentem Brand Mint & Sky */
@@ -889,16 +942,15 @@
 .nav-dropdown-menu::before {
     content: '';
     position: absolute;
-    top: -18px;
-    left: -14px;
-    right: -14px;
-    height: 22px;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 14px;
     pointer-events: auto;
     background: transparent;
     z-index: 10001;
 }
 
-.nav-dropdown-item:hover .nav-dropdown-menu,
 .nav-dropdown-item:focus-within .nav-dropdown-menu,
 .nav-dropdown-item.is-open .nav-dropdown-menu {
     opacity: 1;
@@ -2159,11 +2211,11 @@
 }
 
 @media (max-width: 768px) {
-    /* --- EKRAN MOBILNY: PŁYWAJĄCE LOGO I PRZYCISKI W JEDNEJ LINII --- */
+    /* --- EKRAN MOBILNY: PŁYWAJĄCE LOGO I PRZYCISKI W JEDNEJ LINII Z OBSŁUGĄ SAFE-AREA --- */
     .nav-logo {
         position: fixed !important;
-        top: 10px !important;
-        left: 12px !important;
+        top: max(10px, env(safe-area-inset-top, 10px)) !important;
+        left: max(12px, env(safe-area-inset-left, 12px)) !important;
         margin: 0 !important;
         z-index: 1002 !important;
         display: inline-flex !important;
@@ -2201,8 +2253,8 @@
 
     .nav-right {
         position: fixed !important;
-        top: 10px !important;
-        right: 12px !important;
+        top: max(10px, env(safe-area-inset-top, 10px)) !important;
+        right: max(12px, env(safe-area-inset-right, 12px)) !important;
         margin: 0 !important;
         z-index: 1002 !important;
         display: flex !important;
@@ -2289,7 +2341,7 @@
     }
 
     .studio-wrapper {
-        padding: 56px 12px 24px 12px !important;
+        padding: max(64px, env(safe-area-inset-top, 20px) + 52px) 12px max(24px, env(safe-area-inset-bottom, 16px) + 16px) 12px !important;
         width: 100% !important;
         max-width: 520px !important;
         box-sizing: border-box !important;
@@ -2575,7 +2627,7 @@
     min-height: 100%;
     height: 100%;
     gap: 8px;
-    padding: max(72px, env(safe-area-inset-top, 24px) + 56px) 20px max(40px, env(safe-area-inset-bottom, 20px) + 20px);
+    padding: max(84px, env(safe-area-inset-top, 24px) + 64px) 20px max(40px, env(safe-area-inset-bottom, 20px) + 24px);
     box-sizing: border-box;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -2804,8 +2856,8 @@
 
 .mobile-drawer-close {
     position: absolute;
-    top: 18px;
-    right: 18px;
+    top: max(18px, env(safe-area-inset-top, 18px));
+    right: max(18px, env(safe-area-inset-right, 18px));
     width: 40px;
     height: 40px;
     display: flex;
