@@ -134,7 +134,22 @@
             tag: 'Wkrótce',
             keywords: ['tiktok', 'youtube', 'instagram', 'twitter', 'x', 'pinterest', 'pobierz', 'grabber', 'mp4', 'mp3', 'wideo', 'film', 'bez znaku'],
             action: () => {
-                if (window.showToast) {
+                const isAdmin = (typeof window.isActualAdminUser === 'function' && window.isActualAdminUser()) ||
+                                sessionStorage.getItem('adminSecret') === '12345678' ||
+                                localStorage.getItem('dropsite_admin_authenticated') === 'true' ||
+                                (typeof auth !== 'undefined' && auth.currentUser && ['dropsite33@gmail.com', 'admin@zk.pl', 'admin@dropsite.com', 'admin@dropsite.pl'].includes((auth.currentUser.email || '').toLowerCase().trim()));
+                if (isAdmin) {
+                    if (window.switchView) window.switchView('view-pobieracz');
+                    if (window.loadToolboxScripts) {
+                        window.loadToolboxScripts().then(() => {
+                            if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
+                                window.DropsiteMediaGrabber.init();
+                            }
+                        });
+                    } else if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
+                        window.DropsiteMediaGrabber.init();
+                    }
+                } else if (window.showToast) {
                     window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                 }
             }

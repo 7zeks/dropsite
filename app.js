@@ -639,6 +639,7 @@ function isActualAdminUser() {
     const email = user.email.toLowerCase().trim();
     return ADMIN_EMAILS.includes(email) || email.includes('dropsite33') || email === 'admin@zk.pl';
 }
+window.isActualAdminUser = isActualAdminUser;
 
 function isSuperAdmin() {
     if (!isActualAdminUser()) {
@@ -646,6 +647,7 @@ function isSuperAdmin() {
     }
     return currentActiveRole === 'admin';
 }
+window.isSuperAdmin = isSuperAdmin;
 
 function getProKey() {
     if (isActualAdminUser()) {
@@ -10303,14 +10305,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.nav-btn');
     const views = document.querySelectorAll('.view-section');
 
+    function isCurrentUserAdminRole() {
+        if (typeof isActualAdminUser === 'function' && isActualAdminUser()) return true;
+        if (sessionStorage.getItem('adminSecret') === '12345678') return true;
+        if (localStorage.getItem('dropsite_admin_authenticated') === 'true') return true;
+        if (typeof auth !== 'undefined' && auth.currentUser) {
+            const em = (auth.currentUser.email || '').toLowerCase().trim();
+            if (['dropsite33@gmail.com', 'admin@zk.pl', 'admin@dropsite.com', 'admin@dropsite.pl'].includes(em)) return true;
+        }
+        return false;
+    }
+
     function switchView(targetId, updateHistory = false) {
         stopAllMediaPlayback();
 
         if (targetId === 'view-pobieracz') {
-            if (typeof window.showToast === 'function') {
-                window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+            const isAdmin = isCurrentUserAdminRole();
+            if (!isAdmin) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                }
+                return;
             }
-            return;
+            if (window.loadToolboxScripts) {
+                window.loadToolboxScripts().then(() => {
+                    if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
+                        window.DropsiteMediaGrabber.init();
+                    }
+                });
+            } else if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
+                window.DropsiteMediaGrabber.init();
+            }
         }
 
         if (targetId === 'view-glowna') {
@@ -10355,7 +10380,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const allNavClickables = document.querySelectorAll('.nav-btn, .nav-dropdown-link, .mobile-drawer-link');
     allNavClickables.forEach(link => {
         link.addEventListener('click', (e) => {
-            if (link.getAttribute('data-status') === 'soon' || link.getAttribute('data-target') === 'view-pobieracz') {
+            const isPobieracz = link.getAttribute('data-target') === 'view-pobieracz' || link.getAttribute('data-action') === 'media-grabber';
+            const isAdmin = isCurrentUserAdminRole();
+            if ((link.getAttribute('data-status') === 'soon' || isPobieracz) && !isAdmin) {
                 e.preventDefault();
                 if (typeof window.showToast === 'function') {
                     window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
@@ -10812,6 +10839,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (m) { window.smoothOpenModal ? window.smoothOpenModal(m) : m.classList.add('open'); document.body.style.overflow = 'hidden'; }
                     }
                 }, 200);
+                return;
+            }
+
+            // 12c. Pobieracz Wideo & Foto (Media Grabber)
+            if (path === '/pobierz-wideo' || path === '/media-grabber' || path === '/tiktok-downloader' ||
+                path === '/pobierz-z-youtube' || path === '/instagram-downloader' ||
+                hash.includes('pobierz-wideo') || hash.includes('media-grabber') || toolParam === 'grabber') {
+                const isAdmin = isCurrentUserAdminRole();
+                if (isAdmin) {
+                    if (window.switchView) window.switchView('view-pobieracz');
+                    setSeoMeta('Pobieracz Wideo & Audio — TikTok HD, YouTube, Instagram | Dropsite', 'Inteligentny pobieracz materiałów wideo bez znaku wodnego z TikToka, YouTube, Instagrama i X.');
+                    if (window.loadToolboxScripts) {
+                        window.loadToolboxScripts().then(() => {
+                            if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
+                                window.DropsiteMediaGrabber.init();
+                            }
+                        });
+                    }
+                } else {
+                    if (window.switchView) window.switchView('view-glowna');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                    }
+                }
                 return;
             }
 
