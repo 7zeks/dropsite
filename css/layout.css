@@ -2235,31 +2235,42 @@
 
     .nav-right .lang-btn,
     .lang-btn {
-        height: 32px !important;
-        padding: 0 9px !important;
-        font-size: 11px !important;
+        height: auto !important;
+        padding: 4px 0 !important;
+        font-size: 13px !important;
         font-weight: 600 !important;
-        border-radius: 9px !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
         gap: 4px !important;
     }
 
     .nav-right .btn-open-command-palette,
     .btn-nav-glass.btn-open-command-palette {
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
-        border-radius: 9px !important;
+        width: auto !important;
+        height: auto !important;
+        min-width: unset !important;
+        padding: 4px !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
     .nav-right .pro-nav-btn,
     .pro-nav-btn,
     body.is-pro .pro-nav-btn {
-        height: 32px !important;
-        padding: 0 9px !important;
-        font-size: 11px !important;
-        font-weight: 600 !important;
-        border-radius: 9px !important;
-        gap: 4px !important;
+        height: auto !important;
+        padding: 4px 0 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #FFD24C !important;
+        gap: 3px !important;
         display: inline-flex !important;
     }
 
