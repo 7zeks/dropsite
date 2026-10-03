@@ -605,8 +605,8 @@
     position: absolute;
     top: 24px;
     right: 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    border: none;
     border-radius: 50%;
     outline: none;
     color: #94A3B8;
@@ -621,14 +621,14 @@
 }
 
 .radial-hud-close-btn:hover {
-    background: rgba(239, 68, 68, 0.16);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: transparent;
+    border-color: transparent;
     color: #EF4444;
-    transform: scale(1.1) rotate(90deg);
+    transform: scale(1.15) rotate(90deg);
 }
 
 .radial-hud-close-btn:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 
 /* ==========================================================================
