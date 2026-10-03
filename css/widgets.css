@@ -1302,6 +1302,10 @@ body.is-admin .storage-widget {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
+.custom-expiry-wrap.open {
+    z-index: 1000 !important;
+}
+
 .custom-expiry-wrap.open .custom-expiry-trigger {
     box-shadow: 0 0 0 2px rgba(196, 231, 212, 0.35);
 }
@@ -1315,6 +1319,7 @@ body.is-admin .storage-widget {
     min-width: 155px;
     top: calc(100% + 5px);
     left: 0;
+    z-index: 99999 !important;
 }
 
 .exp-dot {

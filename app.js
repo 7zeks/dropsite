@@ -5485,6 +5485,7 @@ function closeAllCustomDropdowns() {
     });
     document.querySelectorAll('.custom-expiry-wrap.open').forEach(w => {
         w.classList.remove('open');
+        w.style.zIndex = '';
         const row = w.closest('.mod-file-item');
         if (row) row.style.zIndex = '';
         const m = w.querySelector('.custom-select-menu');
@@ -8500,9 +8501,10 @@ window.toggleExpiryDropdown = function(triggerBtn, event) {
     
     if (!isOpen) {
         wrap.classList.add('open');
+        wrap.style.zIndex = '1001';
         if (menu) menu.hidden = false;
         const row = wrap.closest('.mod-file-item');
-        if (row) row.style.zIndex = '50';
+        if (row) row.style.zIndex = '1000';
     }
 };
 
