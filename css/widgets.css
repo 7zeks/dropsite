@@ -275,11 +275,11 @@ body.is-admin .storage-widget {
 .lang-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     height: auto;
-    padding: 6px 0 !important;
-    font-size: 15.5px !important;
-    font-weight: 600 !important;
+    padding: 2px 0 !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
     border-radius: 0 !important;
     cursor: pointer;
     background: transparent !important;
@@ -288,7 +288,7 @@ body.is-admin .storage-widget {
     border: none !important;
     color: var(--text-muted) !important;
     box-shadow: none !important;
-    transition: color 0.3s ease, transform 0.2s ease;
+    transition: color 0.25s ease, transform 0.2s ease;
     user-select: none;
     font-family: inherit;
 }
@@ -3059,12 +3059,12 @@ body.is-admin .storage-widget {
    FAZA 3: PREMIUM UI - PRZYCISKI NAWIGACJI, PRZEŁĄCZNIK SWITCH I SUWAK
    ========================================================================== */
 
-/* 1. Nowoczesna minimalistyczna grupa przycisków w prawym górnym rogu */
+/* 1. Nowoczesna minimalistyczna grupa przycisków w prawym górnym rogu (dolna linia) */
 .nav-action-group {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-left: 2px;
+    gap: 16px;
+    margin-left: 0;
 }
 
 .btn-nav-glass {
@@ -4617,17 +4617,17 @@ body.is-admin .storage-widget {
 /* Przycisk PRO w pasku nawigacji - czysty złoty styl zgodny z brand guidelines, bez kapsułki */
 .pro-nav-btn {
     height: auto;
-    padding: 6px 0 !important;
+    padding: 2px 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     border: none !important;
     color: #FFD24C !important;
-    font-size: 15.5px !important;
+    font-size: 13.5px !important;
     font-weight: 700 !important;
     letter-spacing: 0.3px;
-    transition: color 0.3s ease, filter 0.3s ease, transform 0.2s ease;
+    transition: color 0.25s ease, filter 0.25s ease, transform 0.2s ease;
     gap: 4px;
     display: inline-flex;
     align-items: center;

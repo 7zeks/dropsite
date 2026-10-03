@@ -259,7 +259,7 @@
     width: auto !important;
     height: auto !important;
     min-width: unset !important;
-    padding: 6px 0 !important;
+    padding: 2px 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     backdrop-filter: none !important;
@@ -271,7 +271,7 @@
     justify-content: center !important;
     cursor: pointer !important;
     box-shadow: none !important;
-    transition: color 0.3s ease, transform 0.2s ease !important;
+    transition: color 0.25s ease, transform 0.2s ease !important;
     font-family: inherit !important;
     position: relative;
     overflow: visible;
@@ -282,7 +282,7 @@
     background: transparent !important;
     border: none !important;
     color: var(--text-main) !important;
-    transform: scale(1.12) !important;
+    transform: scale(1.1) !important;
     box-shadow: none !important;
 }
 
@@ -291,8 +291,8 @@
 }
 
 .btn-nav-glass.btn-open-command-palette svg {
-    width: 17px;
-    height: 17px;
+    width: 14.5px;
+    height: 14.5px;
     color: var(--text-muted) !important;
     transition: transform 0.2s ease, color 0.25s ease !important;
     flex-shrink: 0;
