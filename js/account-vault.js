@@ -70,6 +70,7 @@ Każda linia ma swój własny odstęp i numer w panelu:
             this.generatorSettings = { length: 16, type: 'pass' };
             this.pendingDeleteNoteId = null;
             this.pendingDeleteTimer = null;
+            this.mobileView = 'list'; // 'list' | 'editor'
 
             this.init();
         }
@@ -255,6 +256,7 @@ Każda linia ma swój własny odstęp i numer w panelu:
 
         createNewNote(template = 'blank') {
             this.resetPendingDelete();
+            this.mobileView = 'editor';
             const id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
             let title = 'Nowa notatka';
             let content = '';
@@ -706,7 +708,16 @@ Każda linia ma swój własny odstęp i numer w panelu:
             this.renderAllViews();
         }
 
+        updateMobileViewClasses() {
+            const wraps = document.querySelectorAll('.account-vault-wrap');
+            wraps.forEach(w => {
+                w.classList.remove('mobile-view-list', 'mobile-view-editor');
+                w.classList.add(this.mobileView === 'editor' ? 'mobile-view-editor' : 'mobile-view-list');
+            });
+        }
+
         renderAllViews() {
+            this.updateMobileViewClasses();
             this.renderSidebarList();
             this.renderEditorPane();
             this.renderSyncIndicator();
@@ -820,6 +831,8 @@ Każda linia ma swój własny odstęp i numer w panelu:
                     item.addEventListener('click', () => {
                         this.resetPendingDelete();
                         this.activeNoteId = item.getAttribute('data-id');
+                        this.mobileView = 'editor';
+                        this.updateMobileViewClasses();
                         this.renderAllViews();
                     });
                 });
@@ -839,8 +852,16 @@ Każda linia ma swój własny odstęp i numer w panelu:
                 pane.innerHTML = `
                     <!-- Editor Header -->
                     <div class="vault-editor-header">
-                        <div class="vault-title-input-wrap">
-                            <input type="text" class="vault-title-input" id="vaultTitleInput" value="${escapeHtml(activeNote.title || '')}" placeholder="Tytuł notatki...">
+                        <div class="vault-header-top-row">
+                            <button type="button" class="vault-mobile-back-btn" id="vaultMobileBackBtn" title="Wróć do listy notatek">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                <span>Lista</span>
+                            </button>
+                            <div class="vault-title-input-wrap">
+                                <input type="text" class="vault-title-input" id="vaultTitleInput" value="${escapeHtml(activeNote.title || '')}" placeholder="Tytuł notatki...">
+                            </div>
                         </div>
 
                         <div class="vault-editor-tools">
@@ -1114,6 +1135,7 @@ Każda linia ma swój własny odstęp i numer w panelu:
         }
 
         bindEditorEvents(pane, activeNote) {
+            const backBtn = pane.querySelector('#vaultMobileBackBtn');
             const titleInput = pane.querySelector('#vaultTitleInput');
             const textarea = pane.querySelector('#vaultTextarea');
             const genBtn = pane.querySelector('#vaultToolGenBtn');
@@ -1125,6 +1147,13 @@ Każda linia ma swój własny odstęp i numer w panelu:
             const downloadBtn = pane.querySelector('#vaultToolDownloadBtn');
             const pinBtn = pane.querySelector('#vaultToolPinBtn');
             const deleteBtn = pane.querySelector('#vaultToolDeleteBtn');
+
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    this.mobileView = 'list';
+                    this.updateMobileViewClasses();
+                });
+            }
 
             if (titleInput) {
                 titleInput.addEventListener('input', (e) => {

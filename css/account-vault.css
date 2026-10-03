@@ -451,9 +451,21 @@
     flex-wrap: wrap;
 }
 
-.vault-title-input-wrap {
+.vault-header-top-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     flex: 1;
     min-width: 200px;
+}
+
+.vault-mobile-back-btn {
+    display: none;
+}
+
+.vault-title-input-wrap {
+    flex: 1;
+    min-width: 160px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -807,8 +819,8 @@
 .account-vault-modal-container {
     width: 95%;
     max-width: 980px;
-    height: 82vh;
-    max-height: 720px;
+    height: 84vh;
+    max-height: 740px;
     padding: 0;
     overflow: hidden;
     background: transparent;
@@ -850,31 +862,247 @@
     transform: scale(0.94);
 }
 
-/* Responsywność dla telefonów i tabletów */
+/* ==========================================================================
+   RESPONSYWNOŚĆ DLA SMARTFONÓW, TABLETÓW I MAŁYCH EKRANÓW (MOBILE FIRST)
+   ========================================================================== */
 @media (max-width: 768px) {
-    .vault-split-body {
-        flex-direction: column;
+    .account-vault-modal-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-width: 100vw !important;
+        max-height: 100dvh !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        position: fixed;
+        inset: 0;
     }
 
-    .vault-sidebar {
-        width: 100%;
-        max-height: 180px;
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    .account-vault-modal-container .account-vault-wrap {
+        border-radius: 0;
+        border: none;
+        height: 100%;
+        min-height: 100dvh;
     }
 
+    .account-vault-modal-container .mod-close {
+        top: 10px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+    }
+
+    /* Top Bar na mobilkach */
     .vault-topbar {
-        padding: 10px 58px 10px 14px;
+        padding: 10px 52px 10px 12px;
+        gap: 8px;
     }
 
-    .vault-statusbar {
-        padding: 6px 12px;
+    .vault-badge-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+    }
+
+    .vault-main-title {
+        font-size: 13px;
+    }
+
+    .vault-user-chip {
         font-size: 10.5px;
     }
 
-    .account-vault-modal-container {
-        width: 96%;
-        height: 90vh;
+    .vault-top-actions {
+        gap: 6px;
+    }
+
+    .vault-btn-ghost, .vault-btn-primary {
+        padding: 5px 9px;
+        font-size: 11px;
+    }
+
+    /* Master-Detail (Przełączanie: Lista Notatek <-> Pełnoekranowy Edytor) */
+    .vault-split-body {
+        flex-direction: row;
+        position: relative;
+        overflow: hidden;
+        flex: 1;
+    }
+
+    .account-vault-wrap.mobile-view-list .vault-sidebar {
+        display: flex;
+        width: 100%;
         max-height: none;
+        flex: 1;
+        border-right: none;
+    }
+
+    .account-vault-wrap.mobile-view-list .vault-editor-pane {
+        display: none;
+    }
+
+    .account-vault-wrap.mobile-view-editor .vault-sidebar {
+        display: none;
+    }
+
+    .account-vault-wrap.mobile-view-editor .vault-editor-pane {
+        display: flex;
+        width: 100%;
+        flex: 1;
+    }
+
+    /* Przycisk powrotu w nagłówku edytora */
+    .vault-mobile-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        color: #38BDF8;
+        padding: 5px 9px;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+    }
+
+    .vault-mobile-back-btn:active {
+        background: rgba(56, 189, 248, 0.25);
+        transform: scale(0.95);
+    }
+
+    .vault-editor-header {
+        padding: 10px 12px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .vault-header-top-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* Pasek narzędzi z poziomym przewijaniem swipe bez paska przewijania */
+    .vault-editor-tools {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+        width: 100%;
+        scrollbar-width: none;
+    }
+
+    .vault-editor-tools::-webkit-scrollbar {
+        display: none;
+    }
+
+    .vault-tool-btn {
+        padding: 5px 9px;
+        font-size: 11px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Pole edycji i odstępy */
+    .vault-textarea {
+        font-size: 15px;
+        line-height: 26px;
+        padding: 12px 12px;
+    }
+
+    .vault-line-numbers {
+        font-size: 11px;
+        line-height: 26px;
+        padding: 12px 4px;
+        min-width: 24px;
+    }
+
+    /* Popovery jako dolne karty (bottom sheets) */
+    .vault-generator-popover,
+    .vault-format-popover {
+        position: fixed;
+        top: auto;
+        bottom: 14px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-width: 440px;
+        margin: 0 auto;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(56, 189, 248, 0.35);
+        z-index: 100;
+        animation: slideUpMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .vault-category-chips {
+        display: flex;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding: 8px 12px;
+        scrollbar-width: none;
+        flex-wrap: nowrap;
+    }
+
+    .vault-category-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .vault-cat-chip {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .vault-notes-list {
+        padding: 8px 10px;
+    }
+
+    .vault-note-item {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+    }
+
+    .vault-statusbar {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vault-topbar {
+        padding: 8px 44px 8px 10px;
+    }
+
+    .vault-user-chip {
+        display: none;
+    }
+
+    .vault-sync-label {
+        display: none;
+    }
+
+    .vault-sync-indicator {
+        padding: 4px 6px;
+    }
+
+    .vault-stats-group {
+        gap: 8px;
+    }
+}
+
+@keyframes slideUpMobile {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
