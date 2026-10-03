@@ -303,6 +303,24 @@
             });
         });
 
+        const ACTION_ROUTES = {
+            'account-vault': '/account-vault',
+            'dead-drop': '/dead-drop',
+            'drop-request': '/drop-request',
+            'beam-p2p': '/beam',
+            'beam': '/beam',
+            'pdf-edit': '/podpisz-pdf',
+            'pdf-rodo': '/cenzura-pdf',
+            'pdf-compress': '/kompresor-pdf',
+            'pdf-convert': '/konwertuj-pdf',
+            'pdf-matrix': '/uklad-pdf',
+            'pdf-watermark': '/znak-wodny-pdf',
+            'media-grabber': '/pobierz-wideo',
+            'grabber': '/pobierz-wideo',
+            'qr-studio': '/qr-studio',
+            'video-compress': '/kompresor-wideo'
+        };
+
         // Obsługa najechania i kliknięć w konkretne podnarzędzia
         const subtools = document.querySelectorAll('.radial-subtool-item');
         subtools.forEach(btn => {
@@ -315,6 +333,11 @@
             });
 
             btn.addEventListener('click', (e) => {
+                // Pozwól na otwarcie w nowej karcie przy Ctrl/Cmd/Shift/Middle click
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.which === 2 || e.button === 1) {
+                    return;
+                }
+                e.preventDefault();
                 e.stopPropagation();
                 playHapticTick('click');
                 closeHUD();
@@ -364,6 +387,30 @@
     }
 
     function executeToolAction(action) {
+        const route = {
+            'account-vault': '/account-vault',
+            'dead-drop': '/dead-drop',
+            'drop-request': '/drop-request',
+            'beam-p2p': '/beam',
+            'beam': '/beam',
+            'pdf-edit': '/podpisz-pdf',
+            'pdf-rodo': '/cenzura-pdf',
+            'pdf-compress': '/kompresor-pdf',
+            'pdf-convert': '/konwertuj-pdf',
+            'pdf-matrix': '/uklad-pdf',
+            'pdf-watermark': '/znak-wodny-pdf',
+            'media-grabber': '/pobierz-wideo',
+            'grabber': '/pobierz-wideo',
+            'qr-studio': '/qr-studio',
+            'video-compress': '/kompresor-wideo'
+        }[action];
+
+        if (route && window.history && window.history.pushState) {
+            try {
+                window.history.pushState({}, document.title, route);
+            } catch (_) {}
+        }
+
         switch (action) {
             case 'account-vault':
                 if (window.openAccountVault) window.openAccountVault();

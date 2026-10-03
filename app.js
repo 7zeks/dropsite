@@ -10798,6 +10798,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // 12b. Sejf Notatek & Haseł (Account Vault)
+            if (path === '/sejf-notatek' || path === '/account-vault' || path === '/vault' || path === '/notatnik' ||
+                hash.includes('account-vault') || hash.includes('vault') || hash.includes('sejf') ||
+                toolParam === 'account-vault' || toolParam === 'vault') {
+                if (window.switchView) window.switchView('view-glowna');
+                setSeoMeta('Sejf Notatek & Kodów — Szyfrowany Notatnik R2 | Dropsite', 'Bezpieczny podręczny notatnik powiązany z kontem. Autozapis haseł, tokenów i kodów w chmurze R2 z szyfrowaniem.');
+                setTimeout(() => {
+                    if (window.openAccountVault) {
+                        window.openAccountVault();
+                    } else {
+                        const m = document.getElementById('accountVaultModalWrap');
+                        if (m) { window.smoothOpenModal ? window.smoothOpenModal(m) : m.classList.add('open'); document.body.style.overflow = 'hidden'; }
+                    }
+                }, 200);
+                return;
+            }
+
             // 13. Narzędzia ogólne
             if (path === '/narzedzia' || path === '/tools' || hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 if (window.switchView) window.switchView('view-narzedzia');

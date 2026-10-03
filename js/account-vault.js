@@ -1295,6 +1295,12 @@ Każda linia ma swój własny odstęp i numer w panelu:
         }
 
         window.smoothOpenModal(modal);
+        try {
+            const p = window.location.pathname.toLowerCase();
+            if (p !== '/account-vault' && !p.startsWith('/f/') && !p.startsWith('/v/') && window.history && window.history.pushState) {
+                window.history.pushState({}, document.title, '/account-vault');
+            }
+        } catch (_) {}
     };
 
     window.closeAccountVault = function() {
@@ -1302,6 +1308,12 @@ Każda linia ma swój własny odstęp i numer w panelu:
         if (modal) {
             window.smoothCloseModal(modal);
         }
+        try {
+            const p = window.location.pathname.toLowerCase();
+            if (['/account-vault', '/sejf-notatek', '/vault', '/notatnik'].includes(p) && window.history && window.history.replaceState) {
+                window.history.replaceState({}, document.title, '/');
+            }
+        } catch (_) {}
     };
 
     const vaultModalEl = document.getElementById('accountVaultModalWrap');

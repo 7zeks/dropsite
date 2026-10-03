@@ -1,4 +1,8 @@
 # Cloudflare Pages SPA Rewrites for Dropsite SEO & Tool Landing Pages
+/account-vault          /index.html 200
+/sejf-notatek           /index.html 200
+/vault                  /index.html 200
+/notatnik               /index.html 200
 /podpisz-pdf            /index.html 200
 /polacz-pdf             /index.html 200
 /podziel-pdf            /index.html 200
@@ -35,3 +39,4 @@
 /polityka-prywatnosci   /index.html 200
 /faq                    /index.html 200
 /trust                  /index.html 200
+
