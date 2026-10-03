@@ -973,9 +973,9 @@ function updateProUI() {
     const proNavLabel = document.getElementById('proNavLabel');
     if (proNavLabel) {
         if (isAdmin) {
-            proNavLabel.textContent = 'PRO (Admin)';
+            proNavLabel.textContent = 'Admin';
         } else {
-            proNavLabel.textContent = isPro ? 'PRO ⭐' : 'PRO';
+            proNavLabel.textContent = 'PRO';
         }
     }
 
