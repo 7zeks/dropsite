@@ -45,6 +45,15 @@
             desc: 'Wektorowe kody QR do druku, kompresor wideo 25 MB oraz podglądy kodu i audio'
         },
         // Szczegółowe opisy dla każdego podnarzędzia:
+        'account-vault': {
+            badgeKey: 'radial_tool_vault_badge',
+            badge: 'CHMURA R2 & AES',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+            titleKey: 'radial_tool_vault_name',
+            title: 'Sejf Notatek & Kodów',
+            descKey: 'radial_tool_vault_detail',
+            desc: 'Bezpieczny podręczny notatnik powiązany z kontem – autozapis haseł, tokenów i kodów w chmurze R2.'
+        },
         'dead-drop': {
             badgeKey: 'radial_tool_dead_drop_badge',
             badge: 'AES-256-GCM',
@@ -356,6 +365,9 @@
 
     function executeToolAction(action) {
         switch (action) {
+            case 'account-vault':
+                if (window.openAccountVault) window.openAccountVault();
+                break;
             case 'dead-drop':
                 if (window.openDeadDropCreator) window.openDeadDropCreator();
                 break;
