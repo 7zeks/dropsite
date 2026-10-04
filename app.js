@@ -659,7 +659,7 @@ window.isSuperAdmin = isSuperAdmin;
 function getProKey() {
     if (isActualAdminUser()) {
         if (currentActiveRole === 'admin' || currentActiveRole === 'preview-pro') {
-            return sessionStorage.getItem('adminSecret') || '12345678';
+            return sessionStorage.getItem('adminSecret') || 'boe9sco68FfE8vs+';
         }
         if (currentActiveRole === 'preview-free') {
             return '';
@@ -703,7 +703,7 @@ function updateAdminRoleUI() {
 
     if (isRealAdmin) {
         if (!sessionStorage.getItem('adminSecret')) {
-            sessionStorage.setItem('adminSecret', '12345678');
+            sessionStorage.setItem('adminSecret', 'boe9sco68FfE8vs+');
         }
     } else {
         sessionStorage.removeItem('adminSecret');
@@ -5723,7 +5723,7 @@ async function fetchModFiles() {
         if (adminStorageWrap) adminStorageWrap.style.display = 'none';
         if (adminStatsGrid) adminStatsGrid.style.display = 'grid';
 
-        let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        let apiSecret = sessionStorage.getItem('adminSecret');
         if (!apiSecret) {
             if (authBox) authBox.style.display = 'flex';
             if (refreshModBtn) refreshModBtn.classList.remove('is-loading');
@@ -5742,7 +5742,7 @@ async function fetchModFiles() {
             if (response.status === 401 || response.status === 403) {
                 sessionStorage.removeItem('adminSecret');
                 if (authBox) authBox.style.display = 'flex';
-                throw new Error('Nieprawidłowe hasło administratora! Domyślne hasło to: 12345678');
+                throw new Error('Nieprawidłowe hasło administratora!');
             }
             
             if (!response.ok) throw new Error('Błąd pobierania listy plików z serwera.');
@@ -6392,7 +6392,7 @@ window.adminRevokePro = function(userId) {
         target.plan = 'free';
         target.proExpires = 'Brak (Cofnięto)';
         saveAdminUsersDB(users);
-        const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        const apiSecret = sessionStorage.getItem('adminSecret') || '';
         if (apiSecret && target.email) {
             fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
                 method: 'POST',
@@ -6414,7 +6414,7 @@ window.adminGrantProPrompt = function(userId) {
         target.plan = 'pro_30d';
         target.proExpires = `30 dni (do ${new Date(Date.now() + 30 * 86400000).toLocaleDateString('pl-PL')})`;
         saveAdminUsersDB(users);
-        const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        const apiSecret = sessionStorage.getItem('adminSecret') || '';
         if (apiSecret && target.email) {
             fetch(`${WORKER_URL}/admin/user-pro/toggle`, {
                 method: 'POST',
@@ -6725,7 +6725,7 @@ window.dossierTogglePro = function() {
     }
 
     const isCurrentlyPro = target.role === 'pro' || target.plan?.startsWith('pro');
-    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    const apiSecret = sessionStorage.getItem('adminSecret') || '';
 
     if (isCurrentlyPro) {
         if (confirm(`Czy na pewno chcesz cofnąć dostęp PRO dla ${email}?`)) {
@@ -6794,7 +6794,7 @@ window.dossierDeleteAllFiles = async function() {
         return;
     }
 
-    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    const apiSecret = sessionStorage.getItem('adminSecret') || '';
     try {
         const res = await fetch(`${WORKER_URL}/admin/user-files/delete-all`, {
             method: 'POST',
@@ -6943,7 +6943,7 @@ function initAdminQuotaControls() {
 
     // Pobierz aktualny stan z chmury R2 jeśli admin jest zalogowany
     try {
-        const apiSecret = localStorage.getItem('dropsite_pro_license') || '12345678';
+        const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '';
         fetch(`${WORKER_URL}/admin/quota`, {
             headers: { 'X-Admin-Secret': apiSecret }
         }).then(r => r.ok ? r.json() : null).then(data => {
@@ -6990,7 +6990,7 @@ function initAdminQuotaControls() {
             saveBtn.textContent = 'Zapisywanie w R2...';
 
             try {
-                const apiSecret = localStorage.getItem('dropsite_pro_license') || '12345678';
+                const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '';
                 const res = await fetch(`${WORKER_URL}/admin/quota`, {
                     method: 'POST',
                     headers: {
@@ -7124,7 +7124,7 @@ function initAdminGarbageCollector() {
             cleanBtn.disabled = true;
             cleanBtn.innerText = 'Czyszczenie dysku...';
             try {
-                const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+                const apiSecret = sessionStorage.getItem('adminSecret') || '';
                 const res = await fetch(`${WORKER_URL}/admin/clean-expired`, {
                     method: 'POST',
                     headers: { 'X-Admin-Secret': apiSecret }
@@ -7281,7 +7281,7 @@ async function toggleMediaGrabberAccess() {
     }
 
     try {
-        const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '12345678';
+        const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_pro_license') || '';
         const res = await fetch(`${WORKER_URL}/admin/feature-flags`, {
             method: 'POST',
             headers: {
@@ -7548,7 +7548,7 @@ function initAdminFeedbackControls() {
 }
 
 async function fetchAdminFeedback() {
-    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    const apiSecret = sessionStorage.getItem('adminSecret') || '';
     let remoteItems = [];
 
     try {
@@ -7722,7 +7722,7 @@ function renderAdminFeedbackTab() {
 }
 
 window.toggleFeedbackResolved = async function(id, resolved) {
-    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    const apiSecret = sessionStorage.getItem('adminSecret') || '';
     
     const item = adminFeedbackList.find(f => f.id === id);
     if (item) {
@@ -7763,7 +7763,7 @@ window.toggleFeedbackResolved = async function(id, resolved) {
 window.deleteFeedbackItem = async function(id) {
     if (!confirm('Czy na pewno chcesz usunąć to zgłoszenie?')) return;
 
-    const apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    const apiSecret = sessionStorage.getItem('adminSecret') || '';
     adminFeedbackList = adminFeedbackList.filter(f => f.id !== id);
 
     try {
@@ -8520,7 +8520,7 @@ window.selectExpiryOption = async function(filename, newExpiry, optionElement) {
     wrap.classList.add('loading');
     trigger.disabled = true;
 
-    let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+    let apiSecret = sessionStorage.getItem('adminSecret') || '';
     if (!apiSecret) {
         showNotification("Brak autoryzacji do zmiany terminu.", "error");
         wrap.classList.remove('loading');
@@ -8637,7 +8637,7 @@ window.handleSafeDelete = async function(btn, filename) {
     const isEffectiveAdmin = isSuperAdmin() && currentActiveRole === 'admin' && currentAdminPanelScope === 'all';
 
     if (isEffectiveAdmin) {
-        let apiSecret = sessionStorage.getItem('adminSecret') || '12345678';
+        let apiSecret = sessionStorage.getItem('adminSecret') || '';
         if (!apiSecret) {
             showNotification("Brak autoryzacji! Wpisz hasło administratora.", "error");
             btn.disabled = false;
@@ -10842,7 +10842,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
         if (typeof isActualAdminUser === 'function' && isActualAdminUser()) return true;
-        if (sessionStorage.getItem('adminSecret') === '12345678') return true;
+        if (sessionStorage.getItem('adminSecret') === 'boe9sco68FfE8vs+') return true;
         if (localStorage.getItem('dropsite_admin_authenticated') === 'true') return true;
         if (typeof auth !== 'undefined' && auth.currentUser) {
             const em = (auth.currentUser.email || '').toLowerCase().trim();

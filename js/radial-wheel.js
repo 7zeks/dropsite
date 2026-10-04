@@ -447,7 +447,7 @@
             case 'media-grabber':
             case 'grabber':
                 const isUserAdmin = (typeof window.isActualAdminUser === 'function' && window.isActualAdminUser()) ||
-                                    sessionStorage.getItem('adminSecret') === '12345678' ||
+                                    sessionStorage.getItem('adminSecret') === 'boe9sco68FfE8vs+' ||
                                     localStorage.getItem('dropsite_admin_authenticated') === 'true' ||
                                     (typeof auth !== 'undefined' && auth.currentUser && ['dropsite33@gmail.com', 'admin@zk.pl', 'admin@dropsite.com', 'admin@dropsite.pl'].includes((auth.currentUser.email || '').toLowerCase().trim()));
                 if (isUserAdmin) {

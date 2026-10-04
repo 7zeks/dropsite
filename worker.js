@@ -1,3 +1,36 @@
+// Ochrona przed botami i zalewaniem serwera (Rate Limiting dla kont darmowych)
+const ipUploadTracker = new Map();
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minut
+const MAX_UPLOADS_PER_WINDOW = 35; // Max 35 transferów na 10 minut z 1 IP dla kont darmowych
+
+function checkUploadRateLimit(request, isPro) {
+  if (isPro) return { allowed: true };
+  const clientIp = request.headers.get("CF-Connecting-IP") || "anonymous_ip";
+  const now = Date.now();
+  const record = ipUploadTracker.get(clientIp);
+
+  if (!record || (now - record.startTime > RATE_LIMIT_WINDOW_MS)) {
+    ipUploadTracker.set(clientIp, { count: 1, startTime: now });
+    if (ipUploadTracker.size > 5000) {
+      for (const [ip, data] of ipUploadTracker.entries()) {
+        if (now - data.startTime > RATE_LIMIT_WINDOW_MS) ipUploadTracker.delete(ip);
+      }
+    }
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_UPLOADS_PER_WINDOW) {
+    const minutesLeft = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - record.startTime)) / 60000);
+    return {
+      allowed: false,
+      message: `Przekroczono limit przesyłania plików (${MAX_UPLOADS_PER_WINDOW} plików na 10 minut dla konta darmowego). Spróbuj ponownie za ${minutesLeft} min lub odblokuj Dropsite PRO.`
+    };
+  }
+
+  record.count++;
+  return { allowed: true };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -107,7 +140,7 @@ export default {
             if (gb === 0) return 10995116277760; // 10 TB (Auto-Scale / nielimitowany)
             if (!isNaN(gb) && gb > 0) return gb * 1024 * 1024 * 1024;
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       return 1099511627776; // Domyślnie 1 TB (zniesienie blokady 10 GB)
     }
@@ -123,7 +156,7 @@ export default {
         if (existing) {
           try {
             history = await existing.json();
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!Array.isArray(history)) history = [];
         // Usuń ewentualny duplikat tego samego klucza
@@ -165,7 +198,7 @@ export default {
                 message: "Konto Dropsite PRO jest aktywne dla Twojego profilu!"
               };
             }
-          } catch(storageErr) {
+          } catch (storageErr) {
             console.error("R2 user license lookup error:", storageErr);
           }
         }
@@ -174,7 +207,7 @@ export default {
 
       const trimmed = rawKey.trim();
       const upper = trimmed.toUpperCase();
-      const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const adminSecret = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim().toUpperCase();
 
       // 1. Sprawdzenie uprawnień Administratora
       if (upper === adminSecret) {
@@ -231,7 +264,7 @@ export default {
               }
             }
           }
-        } catch(storageErr) {
+        } catch (storageErr) {
           console.error("R2 license binding check error:", storageErr);
         }
       }
@@ -322,11 +355,10 @@ export default {
 
       if (!proKey && !userEmail) return false;
 
-      const trimmed = proKey.trim();
-      const upper = trimmed.toUpperCase();
-      const adminSecret = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const rawSecret = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const adminSecret = rawSecret.toUpperCase();
 
-      if (upper && upper === adminSecret) return true;
+      if (trimmed === rawSecret || (upper && upper === adminSecret)) return true;
 
       if (env.PRO_KEYS && upper) {
         const keyList = env.PRO_KEYS.split(",").map(k => k.trim().toUpperCase());
@@ -354,7 +386,7 @@ export default {
             }
             return true;
           }
-        } catch(e) {}
+        } catch (e) { }
       }
 
       // Sprawdzenie w R2 po emailu zalogowanego użytkownika (_user_licenses/)
@@ -369,7 +401,7 @@ export default {
             }
             return true;
           }
-        } catch(e) {}
+        } catch (e) { }
       }
 
       return false;
@@ -381,16 +413,16 @@ export default {
     if (url.pathname === "/create-checkout" && request.method === "POST") {
       try {
         if (!env.POLAR_ACCESS_TOKEN) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: "Brak skonfigurowanego tokenu POLAR_ACCESS_TOKEN w Cloudflare Workers." 
+          return new Response(JSON.stringify({
+            success: false,
+            error: "Brak skonfigurowanego tokenu POLAR_ACCESS_TOKEN w Cloudflare Workers."
           }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         let body = {};
         try {
           body = await request.json();
-        } catch(e){}
+        } catch (e) { }
 
         const successUrl = body.success_url || `${env.FRONTEND_URL || "https://dropsite.pages.dev"}/?pro_success=1`;
         let priceId = body.product_price_id || body.price_id;
@@ -447,7 +479,7 @@ export default {
             key = body.key || key;
             email = body.email || email;
           }
-        } catch(e){}
+        } catch (e) { }
 
         const check = await checkProKeyValidity(key, email);
         return new Response(JSON.stringify({
@@ -471,13 +503,13 @@ export default {
         let reqData = {};
         try {
           reqData = await request.json();
-        } catch (_) {}
+        } catch (_) { }
 
         const targetUrl = (reqData.url || "").trim();
         if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            message: "Podaj prawidłowy link URL (rozpoczynający się od http:// lub https://)." 
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Podaj prawidłowy link URL (rozpoczynający się od http:// lub https://)."
           }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
@@ -492,12 +524,12 @@ export default {
                 isGrabberUnlocked = !!fData.mediaGrabberUnlocked;
               }
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (!isGrabberUnlocked) {
-          const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+          const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
           const authKey = (request.headers.get("X-Admin-Secret") || request.headers.get("X-Pro-Key") || (reqData && reqData.adminSecret) || "").trim();
-          if (authKey !== ADMIN_SECRET) {
+          if (authKey !== ADMIN_SECRET && authKey.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
             return new Response(JSON.stringify({
               success: false,
               message: "Moduł Pobieracza Wideo jest obecnie zablokowany przez Administratora (tryb testowy). Wkrótce będzie dostępny publicznie!"
@@ -583,7 +615,7 @@ export default {
                 const pj = await pRes.json();
                 if (pj && pj.code === 0 && pj.data) tikwm = pj;
               }
-            } catch (_) {}
+            } catch (_) { }
 
             // Próba 2: GET fallback
             if (!tikwm) {
@@ -598,59 +630,59 @@ export default {
                   const gj = await gRes.json();
                   if (gj && gj.code === 0 && gj.data) tikwm = gj;
                 }
-              } catch (_) {}
+              } catch (_) { }
             }
 
             if (tikwm && tikwm.code === 0 && tikwm.data) {
-                const d = tikwm.data;
-                const mediaItems = [];
-                
-                // Wideo HD bez znaku wodnego
-                const hdUrl = d.hdplay || d.play;
-                if (hdUrl) {
-                  mediaItems.push({
-                    type: "video",
-                    label: "Wideo HD (Bez znaku wodnego)",
-                    quality: "HD 1080p / Original",
-                    format: "mp4",
-                    url: hdUrl.startsWith("http") ? hdUrl : `https://www.tikwm.com${hdUrl}`,
-                    isPrimary: true
-                  });
-                }
-                // Dźwięk MP3
-                if (d.music) {
-                  mediaItems.push({
-                    type: "audio",
-                    label: "Ścieżka Dźwiękowa (Audio MP3)",
-                    quality: "MP3 Audio",
-                    format: "mp3",
-                    url: d.music.startsWith("http") ? d.music : `https://www.tikwm.com${d.music}`,
-                    isAudio: true
-                  });
-                }
+              const d = tikwm.data;
+              const mediaItems = [];
 
-                const photos = Array.isArray(d.images) ? d.images.map((imgUrl, idx) => ({
-                  type: "photo",
-                  label: `Zdjęcie #${idx + 1}`,
-                  url: imgUrl.startsWith("http") ? imgUrl : `https://www.tikwm.com${imgUrl}`,
-                  format: "jpg"
-                })) : [];
-
-                return new Response(JSON.stringify({
-                  success: true,
-                  platform: "tiktok",
-                  title: d.title || "Wideo TikTok",
-                  author: d.author ? {
-                    name: d.author.nickname || d.author.unique_id || "Twórca TikTok",
-                    handle: d.author.unique_id ? `@${d.author.unique_id}` : "",
-                    avatar: d.author.avatar || ""
-                  } : null,
-                  thumbnail: d.cover || d.origin_cover || "",
-                  duration: d.duration || 0,
-                  media: mediaItems,
-                  photos: photos
-                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+              // Wideo HD bez znaku wodnego
+              const hdUrl = d.hdplay || d.play;
+              if (hdUrl) {
+                mediaItems.push({
+                  type: "video",
+                  label: "Wideo HD (Bez znaku wodnego)",
+                  quality: "HD 1080p / Original",
+                  format: "mp4",
+                  url: hdUrl.startsWith("http") ? hdUrl : `https://www.tikwm.com${hdUrl}`,
+                  isPrimary: true
+                });
               }
+              // Dźwięk MP3
+              if (d.music) {
+                mediaItems.push({
+                  type: "audio",
+                  label: "Ścieżka Dźwiękowa (Audio MP3)",
+                  quality: "MP3 Audio",
+                  format: "mp3",
+                  url: d.music.startsWith("http") ? d.music : `https://www.tikwm.com${d.music}`,
+                  isAudio: true
+                });
+              }
+
+              const photos = Array.isArray(d.images) ? d.images.map((imgUrl, idx) => ({
+                type: "photo",
+                label: `Zdjęcie #${idx + 1}`,
+                url: imgUrl.startsWith("http") ? imgUrl : `https://www.tikwm.com${imgUrl}`,
+                format: "jpg"
+              })) : [];
+
+              return new Response(JSON.stringify({
+                success: true,
+                platform: "tiktok",
+                title: d.title || "Wideo TikTok",
+                author: d.author ? {
+                  name: d.author.nickname || d.author.unique_id || "Twórca TikTok",
+                  handle: d.author.unique_id ? `@${d.author.unique_id}` : "",
+                  avatar: d.author.avatar || ""
+                } : null,
+                thumbnail: d.cover || d.origin_cover || "",
+                duration: d.duration || 0,
+                media: mediaItems,
+                photos: photos
+              }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+            }
           } catch (tikErr) {
             console.error("TikWM error:", tikErr);
           }
@@ -683,7 +715,7 @@ export default {
                       break;
                     }
                   }
-                } catch (_) {}
+                } catch (_) { }
               }
 
               if (tweetData) {
@@ -719,7 +751,7 @@ export default {
                         height: 1080
                       });
                     }
-                  } catch (_) {}
+                  } catch (_) { }
                 }
 
                 vids.forEach((v, idx) => {
@@ -897,7 +929,7 @@ export default {
                 const inv = await invRes.json();
                 const formatStreams = inv.formatStreams || [];
                 const adaptiveFormats = inv.adaptiveFormats || [];
-                
+
                 const mediaItems = [];
                 const directStream = formatStreams.find(s => s.container === "mp4" || s.type?.includes("video/mp4")) || formatStreams[0];
                 if (directStream && directStream.url) {
@@ -910,7 +942,7 @@ export default {
                     isPrimary: true
                   });
                 }
-                
+
                 const hdStream = adaptiveFormats.find(s => s.type?.includes("video/mp4") && (s.qualityLabel === "1080p" || s.qualityLabel === "720p"));
                 if (hdStream && hdStream.url && (!directStream || hdStream.url !== directStream.url)) {
                   mediaItems.push({
@@ -948,7 +980,7 @@ export default {
                   }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
           }
         }
 
@@ -994,7 +1026,7 @@ export default {
           } else {
             originHeader = parsedTarget.origin;
           }
-        } catch (_) {}
+        } catch (_) { }
 
         const streamRes = await fetch(targetUrl, {
           headers: {
@@ -1031,7 +1063,7 @@ export default {
         let reqData = {};
         try {
           reqData = await request.json();
-        } catch (_) {}
+        } catch (_) { }
 
         const targetUrl = (reqData.url || "").trim();
         const originalName = (reqData.filename || `grabbed_media_${Date.now()}.mp4`).trim();
@@ -1053,7 +1085,7 @@ export default {
           } else {
             originHeader = parsedTarget.origin;
           }
-        } catch (_) {}
+        } catch (_) { }
 
         // Pobranie strumienia ze źródła bezpośrednio do RAMu workera
         const fetchRes = await fetch(targetUrl, {
@@ -1073,10 +1105,10 @@ export default {
         // Walidacja limitu darmowego
         const FREE_MAX_BYTES = 262144000; // 250 MB
         if (!isPro && fileSize > FREE_MAX_BYTES) {
-          return new Response(JSON.stringify({ 
-            success: false, 
+          return new Response(JSON.stringify({
+            success: false,
             code: "PRO_REQUIRED",
-            message: "Plik przekracza limit 250 MB dla konta darmowego." 
+            message: "Plik przekracza limit 250 MB dla konta darmowego."
           }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
@@ -1190,7 +1222,7 @@ export default {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
 
       const mimeType = getMimeType(fileKey);
       const sizeLabel = fileSizeStr ? ` (${fileSizeStr})` : '';
@@ -1290,51 +1322,61 @@ export default {
         const timehintParam = url.searchParams.get("timehint") || "";
         const lockUntil = timelockParam ? parseInt(timelockParam, 10) : null;
         const isTimeLocked = Boolean(lockUntil && lockUntil > Date.now());
-        const fileSize = parseInt(request.headers.get("content-length") || "0", 10); 
-        
+        const fileSize = parseInt(request.headers.get("content-length") || "0", 10);
+
         const isPro = await isProAuthorized(request);
         const uploaderEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
         const uploaderRole = isPro ? (uploaderEmail.includes("admin") ? "admin" : "pro") : (uploaderEmail ? "user" : "guest");
+
+        // --- OCHRONA PRZED BOTAMI & RATE LIMITING (Konta Darmowe) ---
+        const rateCheck = checkUploadRateLimit(request, isPro);
+        if (!rateCheck.allowed) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "RATE_LIMITED",
+            message: rateCheck.message
+          }), { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
         // --- WALIDACJA WETA (BEZPIECZEŃSTWO) ---
         const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
         const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
         if (dangerousExtensions.includes(ext)) {
-          return new Response(JSON.stringify({ 
-            success: false, 
+          return new Response(JSON.stringify({
+            success: false,
             code: "DANGEROUS_FILE_TYPE",
-            message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)." 
+            message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)."
           }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         // --- WALIDACJA LIMITÓW DARMOWYCH (BEZPIECZEŃSTWO & MONETYZACJA) ---
         const FREE_MAX_BYTES = 262144000; // 250 MB
         if (!isPro && fileSize > FREE_MAX_BYTES) {
-          return new Response(JSON.stringify({ 
-            success: false, 
+          return new Response(JSON.stringify({
+            success: false,
             code: "PRO_REQUIRED",
-            message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby wysyłać pliki do 10 GB." 
+            message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby wysyłać pliki do 10 GB."
           }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         if (!isPro && (expiry === "permanent" || expiry === "30d")) {
-          return new Response(JSON.stringify({ 
-            success: false, 
+          return new Response(JSON.stringify({
+            success: false,
             code: "PRO_REQUIRED",
-            message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO." 
+            message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO."
           }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         // --- ZABEZPIECZENIE BACKENDOWE POJEMNOŚCI DYSKU ---
         // Konta PRO nigdy nie są blokowane pojemnością darmowego tieru serwera
         if (env.BUCKET && !isPro) {
-            let totalUsedBytes = 0;
-            const list = await env.BUCKET.list({ limit: 1000 });
-            list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-            const MAX_BYTES = await getMaxStorageBytes();
-            if (totalUsedBytes + fileSize > MAX_BYTES) {
-                return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze dla kont darmowych. Przejdź na Dropsite PRO, aby przesyłać bez limitów." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
+          let totalUsedBytes = 0;
+          const list = await env.BUCKET.list({ limit: 1000 });
+          list.objects.forEach(obj => { totalUsedBytes += obj.size; });
+          const MAX_BYTES = await getMaxStorageBytes();
+          if (totalUsedBytes + fileSize > MAX_BYTES) {
+            return new Response(JSON.stringify({ success: false, message: "Odmowa: Chwilowy brak miejsca na serwerze dla kont darmowych. Przejdź na Dropsite PRO, aby przesyłać bez limitów." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
         }
 
         const fileExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
@@ -1342,8 +1384,8 @@ export default {
 
         // Jeśli podano własny alias (slug)
         if (customSlug) {
-            const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-            uniqueFilename = `${cleanSlug}${fileExt}`;
+          const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+          uniqueFilename = `${cleanSlug}${fileExt}`;
         }
 
         let fileKey = uniqueFilename;
@@ -1358,67 +1400,67 @@ export default {
         const safePwd = pwd ? encodeURIComponent(pwd) : "";
 
         await env.BUCKET.put(fileKey, request.body, {
-            httpMetadata: {
-                contentType: detectedMime
-            },
-            customMetadata: {
-                originalName: filename,
-                views: "0",
-                downloads: "0",
-                password: safePwd,
-                maxDownloads: maxdl,
-                note: safeNote,
-                brand: safeBrand,
-                isSpy: isSpy ? "true" : "false",
-                isCinematic: isCinematic ? "true" : "false",
-                isAlbum: isAlbum ? "true" : "false",
-                cinematicTrack: cinematicTrack,
-                isPro: isPro ? "true" : "false",
-                uploaderEmail: uploaderEmail || "anonymous",
-                uploaderRole: uploaderRole,
-                lockUntil: isTimeLocked ? String(lockUntil) : "",
-                lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
-            }
+          httpMetadata: {
+            contentType: detectedMime
+          },
+          customMetadata: {
+            originalName: filename,
+            views: "0",
+            downloads: "0",
+            password: safePwd,
+            maxDownloads: maxdl,
+            note: safeNote,
+            brand: safeBrand,
+            isSpy: isSpy ? "true" : "false",
+            isCinematic: isCinematic ? "true" : "false",
+            isAlbum: isAlbum ? "true" : "false",
+            cinematicTrack: cinematicTrack,
+            isPro: isPro ? "true" : "false",
+            uploaderEmail: uploaderEmail || "anonymous",
+            uploaderRole: uploaderRole,
+            lockUntil: isTimeLocked ? String(lockUntil) : "",
+            lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
+          }
         });
 
         if (note || brand || isTimeLocked) {
-            const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
-            try {
-                await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
-                    note: note,
-                    brand: brand,
-                    maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
-                    lockUntil: isTimeLocked ? lockUntil : null,
-                    lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
-                }), {
-                    httpMetadata: { contentType: "application/json" }
-                });
-            } catch (_) {}
+          const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+          try {
+            await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
+              note: note,
+              brand: brand,
+              maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
+              lockUntil: isTimeLocked ? lockUntil : null,
+              lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
+            }), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          } catch (_) { }
         }
 
         if (uploaderEmail && uploaderEmail !== "anonymous") {
-            const rawSize = parseInt(request.headers.get("content-length") || "0", 10);
-            await recordFileToUserHistory(uploaderEmail, {
-                key: fileKey,
-                name: filename,
-                size: rawSize || fileSize || 0,
-                uploaded: new Date().toISOString(),
-                duration: expiry,
-                directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
-                pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(fileKey)}`
-            });
+          const rawSize = parseInt(request.headers.get("content-length") || "0", 10);
+          await recordFileToUserHistory(uploaderEmail, {
+            key: fileKey,
+            name: filename,
+            size: rawSize || fileSize || 0,
+            uploaded: new Date().toISOString(),
+            duration: expiry,
+            directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
+            pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(fileKey)}`
+          });
         }
 
         return new Response(JSON.stringify({
           success: true,
           key: fileKey,
-          finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}` 
+          finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
         });
       } catch (err) {
-        return new Response(JSON.stringify({ success: false, message: err.message }), { 
-          status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } 
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500, headers: { "Content-Type": "application/json", ...corsHeaders }
         });
       }
     }
@@ -1426,487 +1468,508 @@ export default {
     // =========================================================================
     // MULTIPART UPLOAD (Dla dużych plików)
     // =========================================================================
-    
+
     // KROK 1: Inicjalizacja uploadu
     if (url.pathname === "/multipart/create" && request.method === "GET") {
-        try {
-            const filename = url.searchParams.get("file") || "plik";
-            const expiry = url.searchParams.get("expiry") || "1d"; 
-            const customSlug = url.searchParams.get("slug");
-            const pwd = url.searchParams.get("pwd") || "";
-            const maxdl = url.searchParams.get("maxdl") || "";
-            const note = url.searchParams.get("note") || "";
-            const brand = url.searchParams.get("brand") || "";
-            const isSpy = url.searchParams.get("spy") === "1" || url.searchParams.get("spy") === "true";
-            const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
-            const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
-            const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
-            const timelockParam = url.searchParams.get("timelock");
-            const timehintParam = url.searchParams.get("timehint") || "";
-            const lockUntil = timelockParam ? parseInt(timelockParam, 10) : null;
-            const isTimeLocked = Boolean(lockUntil && lockUntil > Date.now());
-            const fileSize = parseInt(url.searchParams.get("size") || "0", 10); 
-            
-            const isPro = await isProAuthorized(request);
-            const uploaderEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
-            const uploaderRole = isPro ? (uploaderEmail.includes("admin") ? "admin" : "pro") : (uploaderEmail ? "user" : "guest");
+      try {
+        const filename = url.searchParams.get("file") || "plik";
+        const expiry = url.searchParams.get("expiry") || "1d";
+        const customSlug = url.searchParams.get("slug");
+        const pwd = url.searchParams.get("pwd") || "";
+        const maxdl = url.searchParams.get("maxdl") || "";
+        const note = url.searchParams.get("note") || "";
+        const brand = url.searchParams.get("brand") || "";
+        const isSpy = url.searchParams.get("spy") === "1" || url.searchParams.get("spy") === "true";
+        const isCinematic = url.searchParams.get("cinematic") === "1" || url.searchParams.get("cinematic") === "true";
+        const isAlbum = url.searchParams.get("album") === "1" || url.searchParams.get("album") === "true" || (filename && filename.startsWith("Album_"));
+        const cinematicTrack = (url.searchParams.get("track") || "piano").trim();
+        const timelockParam = url.searchParams.get("timelock");
+        const timehintParam = url.searchParams.get("timehint") || "";
+        const lockUntil = timelockParam ? parseInt(timelockParam, 10) : null;
+        const isTimeLocked = Boolean(lockUntil && lockUntil > Date.now());
+        const fileSize = parseInt(url.searchParams.get("size") || "0", 10);
 
-            // --- WALIDACJA WETA (BEZPIECZEŃSTWO) ---
-            const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
-            const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
-            if (dangerousExtensions.includes(ext)) {
-              return new Response(JSON.stringify({ 
-                success: false, 
-                code: "DANGEROUS_FILE_TYPE",
-                message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)." 
-              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
+        const isPro = await isProAuthorized(request);
+        const uploaderEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+        const uploaderRole = isPro ? (uploaderEmail.includes("admin") ? "admin" : "pro") : (uploaderEmail ? "user" : "guest");
 
-            // --- WALIDACJA LIMITÓW DARMOWYCH DLA MULTIPART ---
-            const FREE_MAX_BYTES = 262144000; // 250 MB
-            if (!isPro && fileSize > FREE_MAX_BYTES) {
-              return new Response(JSON.stringify({ 
-                success: false, 
-                code: "PRO_REQUIRED",
-                message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby przesyłać pliki do 10 GB." 
-              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-
-            if (!isPro && (expiry === "permanent" || expiry === "30d")) {
-              return new Response(JSON.stringify({ 
-                success: false, 
-                code: "PRO_REQUIRED",
-                message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO." 
-              }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-
-            // Konta PRO przesyłają bez blokowania pojemnością serwera
-            if (env.BUCKET && !isPro) {
-                let totalUsedBytes = 0;
-                const list = await env.BUCKET.list({ limit: 1000 });
-                list.objects.forEach(obj => { totalUsedBytes += obj.size; });
-                const MAX_BYTES = await getMaxStorageBytes();
-                if (totalUsedBytes + fileSize > MAX_BYTES) {
-                    return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera dla kont darmowych. Odblokuj Dropsite PRO." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
-                }
-            }
-
-            const fileExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
-            let uniqueFilename = `${generateNanoId(6)}${fileExt}`;
-
-            if (customSlug) {
-                const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-                uniqueFilename = `${cleanSlug}${fileExt}`;
-            }
-
-            let fileKey = uniqueFilename;
-            if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
-            else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
-            else if (expiry === 'burn' || isSpy) fileKey = `burn/${uniqueFilename}`;
-
-            const detectedMime = getMimeType(filename);
-            const safeNote = note ? encodeURIComponent(note) : "";
-            const safeBrand = brand ? encodeURIComponent(brand) : "";
-            const safePwd = pwd ? encodeURIComponent(pwd) : "";
-
-            const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey, {
-                httpMetadata: {
-                    contentType: detectedMime
-                },
-                customMetadata: {
-                    originalName: filename,
-                    views: "0",
-                    downloads: "0",
-                    password: safePwd,
-                    maxDownloads: maxdl,
-                    note: safeNote,
-                    brand: safeBrand,
-                    isSpy: isSpy ? "true" : "false",
-                    isCinematic: isCinematic ? "true" : "false",
-                    isAlbum: isAlbum ? "true" : "false",
-                    cinematicTrack: cinematicTrack,
-                    isPro: isPro ? "true" : "false",
-                    uploaderEmail: uploaderEmail || "anonymous",
-                    uploaderRole: uploaderRole,
-                    lockUntil: isTimeLocked ? String(lockUntil) : "",
-                    lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
-                }
-            });
-
-            if (note || brand || isTimeLocked) {
-                const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
-                try {
-                    await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
-                        note: note,
-                        brand: brand,
-                        maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
-                        lockUntil: isTimeLocked ? lockUntil : null,
-                        lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
-                    }), {
-                        httpMetadata: { contentType: "application/json" }
-                    });
-                } catch (_) {}
-            }
-            
-            return new Response(JSON.stringify({
-                success: true,
-                uploadId: multipartUpload.uploadId,
-                key: multipartUpload.key,
-                finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${multipartUpload.key}`
-            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        // --- OCHRONA PRZED BOTAMI & RATE LIMITING (Konta Darmowe) ---
+        const rateCheck = checkUploadRateLimit(request, isPro);
+        if (!rateCheck.allowed) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "RATE_LIMITED",
+            message: rateCheck.message
+          }), { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
+
+        // --- WALIDACJA WETA (BEZPIECZEŃSTWO) ---
+        const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
+        const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+        if (dangerousExtensions.includes(ext)) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "DANGEROUS_FILE_TYPE",
+            message: "Plik zablokowany ze względów bezpieczeństwa (niedozwolone rozszerzenie)."
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        // --- WALIDACJA LIMITÓW DARMOWYCH DLA MULTIPART ---
+        const FREE_MAX_BYTES = 262144000; // 250 MB
+        if (!isPro && fileSize > FREE_MAX_BYTES) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "PRO_REQUIRED",
+            message: "Plik przekracza limit 250 MB dla konta darmowego. Aktywuj Dropsite PRO, aby przesyłać pliki do 10 GB."
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        if (!isPro && (expiry === "permanent" || expiry === "30d")) {
+          return new Response(JSON.stringify({
+            success: false,
+            code: "PRO_REQUIRED",
+            message: "Przechowywanie na 30 dni lub Bezterminowo wymaga aktywnego konta Dropsite PRO."
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        // Konta PRO przesyłają bez blokowania pojemnością serwera
+        if (env.BUCKET && !isPro) {
+          let totalUsedBytes = 0;
+          const list = await env.BUCKET.list({ limit: 1000 });
+          list.objects.forEach(obj => { totalUsedBytes += obj.size; });
+          const MAX_BYTES = await getMaxStorageBytes();
+          if (totalUsedBytes + fileSize > MAX_BYTES) {
+            return new Response(JSON.stringify({ success: false, message: "Odmowa: Brak miejsca na dysku serwera dla kont darmowych. Odblokuj Dropsite PRO." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
+        }
+
+        const fileExt = filename.includes('.') ? filename.substring(filename.lastIndexOf('.')) : '';
+        let uniqueFilename = `${generateNanoId(6)}${fileExt}`;
+
+        if (customSlug) {
+          const cleanSlug = customSlug.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+          uniqueFilename = `${cleanSlug}${fileExt}`;
+        }
+
+        let fileKey = uniqueFilename;
+        if (expiry === '1d') fileKey = `1d/${uniqueFilename}`;
+        else if (expiry === '30d') fileKey = `30d/${uniqueFilename}`;
+        else if (expiry === 'burn' || isSpy) fileKey = `burn/${uniqueFilename}`;
+
+        const detectedMime = getMimeType(filename);
+        const safeNote = note ? encodeURIComponent(note) : "";
+        const safeBrand = brand ? encodeURIComponent(brand) : "";
+        const safePwd = pwd ? encodeURIComponent(pwd) : "";
+
+        const multipartUpload = await env.BUCKET.createMultipartUpload(fileKey, {
+          httpMetadata: {
+            contentType: detectedMime
+          },
+          customMetadata: {
+            originalName: filename,
+            views: "0",
+            downloads: "0",
+            password: safePwd,
+            maxDownloads: maxdl,
+            note: safeNote,
+            brand: safeBrand,
+            isSpy: isSpy ? "true" : "false",
+            isCinematic: isCinematic ? "true" : "false",
+            isAlbum: isAlbum ? "true" : "false",
+            cinematicTrack: cinematicTrack,
+            isPro: isPro ? "true" : "false",
+            uploaderEmail: uploaderEmail || "anonymous",
+            uploaderRole: uploaderRole,
+            lockUntil: isTimeLocked ? String(lockUntil) : "",
+            lockHint: isTimeLocked && timehintParam ? encodeURIComponent(timehintParam.slice(0, 150)) : ""
+          }
+        });
+
+        if (note || brand || isTimeLocked) {
+          const safeKey = encodeURIComponent(fileKey).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+          try {
+            await env.BUCKET.put(`_system/meta_${safeKey}.json`, JSON.stringify({
+              note: note,
+              brand: brand,
+              maxDownloads: maxdl ? parseInt(maxdl, 10) : null,
+              lockUntil: isTimeLocked ? lockUntil : null,
+              lockHint: isTimeLocked ? timehintParam.slice(0, 150) : null
+            }), {
+              httpMetadata: { contentType: "application/json" }
+            });
+          } catch (_) { }
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          uploadId: multipartUpload.uploadId,
+          key: multipartUpload.key,
+          finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${multipartUpload.key}`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // KROK 2: Wgrywanie pojedynczej części (chunka)
     if (url.pathname === "/multipart/upload" && request.method === "PUT") {
-        try {
-            const key = url.searchParams.get("key");
-            const uploadId = url.searchParams.get("uploadId");
-            const partNumber = parseInt(url.searchParams.get("partNumber"), 10);
+      try {
+        const key = url.searchParams.get("key");
+        const uploadId = url.searchParams.get("uploadId");
+        const partNumber = parseInt(url.searchParams.get("partNumber"), 10);
 
-            if (!key || !uploadId || !partNumber) {
-                return new Response(JSON.stringify({ success: false, message: "Brak parametrów" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-
-            const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
-            const uploadedPart = await multipartUpload.uploadPart(partNumber, request.body);
-
-            return new Response(JSON.stringify({
-                success: true,
-                partNumber: uploadedPart.partNumber,
-                etag: uploadedPart.etag
-            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        if (!key || !uploadId || !partNumber) {
+          return new Response(JSON.stringify({ success: false, message: "Brak parametrów" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
+
+        const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
+        const uploadedPart = await multipartUpload.uploadPart(partNumber, request.body);
+
+        return new Response(JSON.stringify({
+          success: true,
+          partNumber: uploadedPart.partNumber,
+          etag: uploadedPart.etag
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // KROK 3: Zakończenie uploadu (złożenie pliku)
     if (url.pathname === "/multipart/complete" && request.method === "POST") {
-        try {
-            const key = url.searchParams.get("key");
-            const uploadId = url.searchParams.get("uploadId");
-            const data = await request.json();
-            const parts = data.parts; 
-            const headerEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
+      try {
+        const key = url.searchParams.get("key");
+        const uploadId = url.searchParams.get("uploadId");
+        const data = await request.json();
+        const parts = data.parts;
+        const headerEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
 
-            const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
-            await multipartUpload.complete(parts);
+        const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
+        await multipartUpload.complete(parts);
 
-            try {
-              const headObj = await env.BUCKET.head(key);
-              const metaEmail = headObj?.customMetadata?.uploaderEmail;
-              const uEmail = (metaEmail && metaEmail !== "anonymous") ? metaEmail : headerEmail;
-
-              if (uEmail && uEmail !== "anonymous") {
-                const dur = key.startsWith('1d/') ? '1d' : (key.startsWith('30d/') ? '30d' : (key.startsWith('burn/') ? 'burn' : 'permanent'));
-                await recordFileToUserHistory(uEmail, {
-                  key: key,
-                  name: headObj?.customMetadata?.originalName || key.split('/').pop() || key,
-                  size: headObj?.size || 0,
-                  uploaded: (headObj?.uploaded || new Date()).toISOString(),
-                  duration: dur,
-                  directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
-                  pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
-                });
-              }
-            } catch (histErr) {
-              console.warn("User history log error in multipart:", histErr);
-            }
-
-            return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        const headObj = await env.BUCKET.head(key);
+        const isPro = await isProAuthorized(request);
+        const FREE_MAX_BYTES = 262144000; // 250 MB
+        if (!isPro && headObj && headObj.size > FREE_MAX_BYTES) {
+          await env.BUCKET.delete(key);
+          return new Response(JSON.stringify({
+            success: false,
+            code: "PRO_REQUIRED",
+            message: "Plik przekracza limit 250 MB dla konta darmowego."
+          }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
+
+        try {
+          const metaEmail = headObj?.customMetadata?.uploaderEmail;
+          const uEmail = (metaEmail && metaEmail !== "anonymous") ? metaEmail : headerEmail;
+
+          if (uEmail && uEmail !== "anonymous") {
+            const dur = key.startsWith('1d/') ? '1d' : (key.startsWith('30d/') ? '30d' : (key.startsWith('burn/') ? 'burn' : 'permanent'));
+            await recordFileToUserHistory(uEmail, {
+              key: key,
+              name: headObj?.customMetadata?.originalName || key.split('/').pop() || key,
+              size: headObj?.size || 0,
+              uploaded: (headObj?.uploaded || new Date()).toISOString(),
+              duration: dur,
+              directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+              pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
+            });
+          }
+        } catch (histErr) {
+          console.warn("User history log error in multipart:", histErr);
+        }
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // KROK 4: Anulowanie uploadu
     if (url.pathname === "/multipart/abort" && request.method === "DELETE") {
-        try {
-            const key = url.searchParams.get("key");
-            const uploadId = url.searchParams.get("uploadId");
-            
-            const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
-            await multipartUpload.abort();
+      try {
+        const key = url.searchParams.get("key");
+        const uploadId = url.searchParams.get("uploadId");
 
-            return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
-        }
+        const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
+        await multipartUpload.abort();
+
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // =========================================================================
     // ENDPOINTY: DEDYKOWANA STRONA POBIERANIA, STATYSTYKI I HASŁA
     // =========================================================================
-    
+
     // Rejestracja wyświetlenia lub pobrania pliku (z obsługą limitu pobrań)
     if (url.pathname === "/track-stat" && request.method === "POST") {
-        const key = url.searchParams.get("key");
-        const type = url.searchParams.get("type"); // 'view' lub 'download'
-        
-        if (!key || !env.BUCKET) {
-            return new Response(JSON.stringify({ success: false }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-        }
+      const key = url.searchParams.get("key");
+      const type = url.searchParams.get("type"); // 'view' lub 'download'
 
-        try {
-            const object = await env.BUCKET.head(key);
-            if (object) {
-                const meta = object.customMetadata || {};
-                let views = parseInt(meta.views || "0", 10);
-                let downloads = parseInt(meta.downloads || "0", 10);
+      if (!key || !env.BUCKET) {
+        return new Response(JSON.stringify({ success: false }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
 
-                if (type === "view") views++;
-                if (type === "download") {
-                    downloads++;
-                    // Sprawdzenie limitu pobrań
-                    if (meta.maxDownloads) {
-                        const maxDls = parseInt(meta.maxDownloads, 10);
-                        if (maxDls > 0 && downloads >= maxDls) {
-                            // Osiągnięto limit pobrań -> skasuj plik
-                            await env.BUCKET.delete(key);
-                            return new Response(JSON.stringify({ success: true, views, downloads, limitReached: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-                        }
-                    }
-                }
+      try {
+        const object = await env.BUCKET.head(key);
+        if (object) {
+          const meta = object.customMetadata || {};
+          let views = parseInt(meta.views || "0", 10);
+          let downloads = parseInt(meta.downloads || "0", 10);
 
-                return new Response(JSON.stringify({ success: true, views, downloads }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          if (type === "view") views++;
+          if (type === "download") {
+            downloads++;
+            // Sprawdzenie limitu pobrań
+            if (meta.maxDownloads) {
+              const maxDls = parseInt(meta.maxDownloads, 10);
+              if (maxDls > 0 && downloads >= maxDls) {
+                // Osiągnięto limit pobrań -> skasuj plik
+                await env.BUCKET.delete(key);
+                return new Response(JSON.stringify({ success: true, views, downloads, limitReached: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+              }
             }
-        } catch {}
+          }
 
-        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          return new Response(JSON.stringify({ success: true, views, downloads }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+      } catch { }
+
+      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
     // Weryfikacja hasła do pliku
     if (url.pathname === "/verify-password" && request.method === "POST") {
-        try {
-            const body = await request.json();
-            const { key, password } = body;
+      try {
+        const body = await request.json();
+        const { key, password } = body;
 
-            if (!key || !env.BUCKET) {
-                return new Response(JSON.stringify({ success: false, message: "Brak parametrów" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-
-            const object = await env.BUCKET.head(key);
-            if (!object) {
-                return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-
-            const meta = object.customMetadata || {};
-            const storedPassword = meta.password || "";
-            let decodedStoredPassword = "";
-            try { decodedStoredPassword = decodeURIComponent(storedPassword); } catch(_) { decodedStoredPassword = storedPassword; }
-
-            if (!storedPassword || decodedStoredPassword === password || storedPassword === password) {
-                const isBurn = key.startsWith("burn/");
-                return new Response(JSON.stringify({
-                    success: true,
-                    isBurn: isBurn,
-                    directUrl: isBurn 
-                        ? `${url.origin}/burn-download?key=${encodeURIComponent(key)}` 
-                        : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
-                }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-            } else {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: "Nieprawidłowe hasło dostępu do pliku."
-                }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        if (!key || !env.BUCKET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak parametrów" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
+
+        const object = await env.BUCKET.head(key);
+        if (!object) {
+          return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+
+        const meta = object.customMetadata || {};
+        const storedPassword = meta.password || "";
+        let decodedStoredPassword = "";
+        try { decodedStoredPassword = decodeURIComponent(storedPassword); } catch (_) { decodedStoredPassword = storedPassword; }
+
+        if (!storedPassword || decodedStoredPassword === password || storedPassword === password) {
+          const isBurn = key.startsWith("burn/");
+          return new Response(JSON.stringify({
+            success: true,
+            isBurn: isBurn,
+            directUrl: isBurn
+              ? `${url.origin}/burn-download?key=${encodeURIComponent(key)}`
+              : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`
+          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        } else {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Nieprawidłowe hasło dostępu do pliku."
+          }), { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // Aktualizacja ustawień transferu (wiadomość dla odbiorcy, marka, limity) bez wydłużania linku
     if (url.pathname === "/update-transfer-settings" && request.method === "POST") {
-        try {
-            const body = await request.json();
-            const { key, note, brand, maxDownloads } = body;
+      try {
+        const body = await request.json();
+        const { key, note, brand, maxDownloads } = body;
 
-            if (!key || !env.BUCKET) {
-                return new Response(JSON.stringify({ success: false, message: "Brak klucza lub bucketu" }), { 
-                    status: 400, 
-                    headers: { "Content-Type": "application/json", ...corsHeaders } 
-                });
-            }
-
-            const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
-            const sidecarKey = `_system/meta_${safeKey}.json`;
-
-            let currentSidecar = {};
-            try {
-                const existing = await env.BUCKET.get(sidecarKey);
-                if (existing) {
-                    currentSidecar = JSON.parse(await existing.text());
-                }
-            } catch (_) {}
-
-            if (note !== undefined) currentSidecar.note = String(note).trim();
-            if (brand !== undefined) currentSidecar.brand = String(brand).trim();
-            if (maxDownloads !== undefined) currentSidecar.maxDownloads = maxDownloads ? parseInt(maxDownloads, 10) : null;
-
-            await env.BUCKET.put(sidecarKey, JSON.stringify(currentSidecar), {
-                httpMetadata: { contentType: "application/json" }
-            });
-
-            return new Response(JSON.stringify({ success: true, meta: currentSidecar }), {
-                headers: { "Content-Type": "application/json", ...corsHeaders }
-            });
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), {
-                status: 500, 
-                headers: { "Content-Type": "application/json", ...corsHeaders } 
-            });
+        if (!key || !env.BUCKET) {
+          return new Response(JSON.stringify({ success: false, message: "Brak klucza lub bucketu" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
         }
+
+        const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        const sidecarKey = `_system/meta_${safeKey}.json`;
+
+        let currentSidecar = {};
+        try {
+          const existing = await env.BUCKET.get(sidecarKey);
+          if (existing) {
+            currentSidecar = JSON.parse(await existing.text());
+          }
+        } catch (_) { }
+
+        if (note !== undefined) currentSidecar.note = String(note).trim();
+        if (brand !== undefined) currentSidecar.brand = String(brand).trim();
+        if (maxDownloads !== undefined) currentSidecar.maxDownloads = maxDownloads ? parseInt(maxDownloads, 10) : null;
+
+        await env.BUCKET.put(sidecarKey, JSON.stringify(currentSidecar), {
+          httpMetadata: { contentType: "application/json" }
+        });
+
+        return new Response(JSON.stringify({ success: true, meta: currentSidecar }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
     }
 
     // Metadane pliku dla strony pobierania
     if (url.pathname === "/file-info" && request.method === "GET") {
-        const key = url.searchParams.get("key");
-        if (!key || !env.BUCKET) {
-            return new Response(JSON.stringify({ success: false, message: "Brak pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      const key = url.searchParams.get("key");
+      if (!key || !env.BUCKET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      try {
+        const object = await env.BUCKET.head(key);
+        if (!object) {
+          return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
+
+        const isBurn = key.startsWith("burn/");
+        let expiryType = "permanent";
+        if (key.startsWith("1d/")) expiryType = "1d";
+        else if (key.startsWith("30d/")) expiryType = "30d";
+        else if (isBurn) expiryType = "burn";
+
+        const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+        let sidecarMeta = {};
+        try {
+          const sObj = await env.BUCKET.get(`_system/meta_${safeKey}.json`);
+          if (sObj) {
+            sidecarMeta = JSON.parse(await sObj.text());
+          }
+        } catch (_) { }
+
+        const meta = object.customMetadata || {};
+        const originalName = meta.originalName || key.split('/').pop();
+        const hasPassword = Boolean(meta.password && meta.password.trim().length > 0);
+        const maxDownloads = sidecarMeta.maxDownloads !== undefined
+          ? sidecarMeta.maxDownloads
+          : (meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null);
+
+        const rawNote = sidecarMeta.note !== undefined ? sidecarMeta.note : (meta.note || "");
+        const note = safeDecode(rawNote);
+        const rawBrand = sidecarMeta.brand !== undefined ? sidecarMeta.brand : (meta.brand || "");
+        const brand = safeDecode(rawBrand);
+        let hasUnboxing = Boolean(meta.hasUnboxing === "true" || meta.hasUnboxing === true);
+        let unboxingType = meta.unboxingType || "video";
+        let unboxingUrl = null;
 
         try {
-            const object = await env.BUCKET.head(key);
-            if (!object) {
-                return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub wygasł." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          const unboxHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.webm`);
+          if (unboxHead) {
+            hasUnboxing = true;
+            unboxingType = unboxHead.customMetadata?.type || "video";
+            unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
+          } else {
+            const unboxAudioHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.mp3`);
+            if (unboxAudioHead) {
+              hasUnboxing = true;
+              unboxingType = "audio";
+              unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
             }
+          }
+        } catch (e) { }
 
-            const isBurn = key.startsWith("burn/");
-            let expiryType = "permanent";
-            if (key.startsWith("1d/")) expiryType = "1d";
-            else if (key.startsWith("30d/")) expiryType = "30d";
-            else if (isBurn) expiryType = "burn";
+        const lockUntil = sidecarMeta.lockUntil || (meta.lockUntil ? parseInt(meta.lockUntil, 10) : null);
+        const isTimeLocked = Boolean(lockUntil && Date.now() < lockUntil);
+        const lockHint = safeDecode(sidecarMeta.lockHint || meta.lockHint || "");
 
-            const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
-            let sidecarMeta = {};
-            try {
-                const sObj = await env.BUCKET.get(`_system/meta_${safeKey}.json`);
-                if (sObj) {
-                    sidecarMeta = JSON.parse(await sObj.text());
-                }
-            } catch (_) {}
+        return new Response(JSON.stringify({
+          success: true,
+          key: key,
+          originalName: originalName,
+          name: originalName,
+          size: object.size,
+          uploaded: object.uploaded,
+          httpMetadata: object.httpMetadata,
+          isBurn: isBurn,
+          isSpy: Boolean(meta.isSpy === "true" || meta.isSpy === true),
+          isCinematic: Boolean(meta.isCinematic === "true" || meta.isCinematic === true),
+          isAlbum: Boolean(meta.isAlbum === "true" || meta.isAlbum === true || (originalName && originalName.startsWith("Album_"))),
+          cinematicTrack: meta.cinematicTrack || "piano",
+          brand: meta.brand || "",
+          hasUnboxing: hasUnboxing,
+          unboxingType: unboxingType,
+          unboxingUrl: unboxingUrl,
+          expiryType: expiryType,
+          hasPassword: hasPassword,
+          maxDownloads: maxDownloads,
+          note: note,
+          isTimeLocked: isTimeLocked,
+          lockUntil: lockUntil,
+          lockHint: lockHint,
+          serverTime: Date.now(),
+          views: parseInt(meta.views || "1", 10),
+          downloads: parseInt(meta.downloads || "0", 10),
+          directUrl: (hasPassword || isTimeLocked) ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+          streamUrl: isTimeLocked ? null : `${url.origin}/stream?key=${encodeURIComponent(key)}`
+        }), {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Content-Type-Options": "nosniff",
+            ...corsHeaders
+          }
+        });
 
-            const meta = object.customMetadata || {};
-            const originalName = meta.originalName || key.split('/').pop();
-            const hasPassword = Boolean(meta.password && meta.password.trim().length > 0);
-            const maxDownloads = sidecarMeta.maxDownloads !== undefined 
-                ? sidecarMeta.maxDownloads 
-                : (meta.maxDownloads ? parseInt(meta.maxDownloads, 10) : null);
-
-            const rawNote = sidecarMeta.note !== undefined ? sidecarMeta.note : (meta.note || "");
-            const note = safeDecode(rawNote);
-            const rawBrand = sidecarMeta.brand !== undefined ? sidecarMeta.brand : (meta.brand || "");
-            const brand = safeDecode(rawBrand);
-            let hasUnboxing = Boolean(meta.hasUnboxing === "true" || meta.hasUnboxing === true);
-            let unboxingType = meta.unboxingType || "video";
-            let unboxingUrl = null;
-
-            try {
-                const unboxHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.webm`);
-                if (unboxHead) {
-                    hasUnboxing = true;
-                    unboxingType = unboxHead.customMetadata?.type || "video";
-                    unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
-                } else {
-                    const unboxAudioHead = await env.BUCKET.head(`_system/unboxing_${safeKey}.mp3`);
-                    if (unboxAudioHead) {
-                        hasUnboxing = true;
-                        unboxingType = "audio";
-                        unboxingUrl = `${url.origin}/unboxing?key=${encodeURIComponent(key)}`;
-                    }
-                }
-            } catch (e) {}
-
-            const lockUntil = sidecarMeta.lockUntil || (meta.lockUntil ? parseInt(meta.lockUntil, 10) : null);
-            const isTimeLocked = Boolean(lockUntil && Date.now() < lockUntil);
-            const lockHint = safeDecode(sidecarMeta.lockHint || meta.lockHint || "");
-
-            return new Response(JSON.stringify({
-                success: true,
-                key: key,
-                originalName: originalName,
-                name: originalName,
-                size: object.size,
-                uploaded: object.uploaded,
-                httpMetadata: object.httpMetadata,
-                isBurn: isBurn,
-                isSpy: Boolean(meta.isSpy === "true" || meta.isSpy === true),
-                isCinematic: Boolean(meta.isCinematic === "true" || meta.isCinematic === true),
-                isAlbum: Boolean(meta.isAlbum === "true" || meta.isAlbum === true || (originalName && originalName.startsWith("Album_"))),
-                cinematicTrack: meta.cinematicTrack || "piano",
-                brand: meta.brand || "",
-                hasUnboxing: hasUnboxing,
-                unboxingType: unboxingType,
-                unboxingUrl: unboxingUrl,
-                expiryType: expiryType,
-                hasPassword: hasPassword,
-                maxDownloads: maxDownloads,
-                note: note,
-                isTimeLocked: isTimeLocked,
-                lockUntil: lockUntil,
-                lockHint: lockHint,
-                serverTime: Date.now(),
-                views: parseInt(meta.views || "1", 10),
-                downloads: parseInt(meta.downloads || "0", 10),
-                directUrl: (hasPassword || isTimeLocked) ? null : `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
-                streamUrl: isTimeLocked ? null : `${url.origin}/stream?key=${encodeURIComponent(key)}`
-            }), { 
-                headers: { 
-                    "Content-Type": "application/json", 
-                    "X-Content-Type-Options": "nosniff",
-                    ...corsHeaders 
-                } 
-            });
-
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
-        }
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // =========================================================================
     // ENDPOINT: STRUMIENIOWANIE I ODCZYT PLIKU Z PEŁNYMI NAGŁÓWKAMI CORS (/stream)
     // =========================================================================
     if (url.pathname === "/stream" && (request.method === "GET" || request.method === "HEAD")) {
-        const key = url.searchParams.get("key");
-        if (!key || !env.BUCKET) {
-            return new Response("Brak klucza pliku.", { status: 404, headers: corsHeaders });
+      const key = url.searchParams.get("key");
+      if (!key || !env.BUCKET) {
+        return new Response("Brak klucza pliku.", { status: 404, headers: corsHeaders });
+      }
+
+      try {
+        const range = request.headers.get("Range");
+        const options = range ? { range: request.headers } : undefined;
+        const object = await env.BUCKET.get(key, options);
+        if (!object) {
+          return new Response("Plik wygasł lub nie został znaleziony.", { status: 404, headers: corsHeaders });
         }
 
-        try {
-            const range = request.headers.get("Range");
-            const options = range ? { range: request.headers } : undefined;
-            const object = await env.BUCKET.get(key, options);
-            if (!object) {
-                return new Response("Plik wygasł lub nie został znaleziony.", { status: 404, headers: corsHeaders });
-            }
-
-            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
-            if (lockUntil && Date.now() < lockUntil) {
-                return new Response("Plik jest zablokowany Kapsułą Czasu do " + new Date(lockUntil).toLocaleString(), { status: 423, headers: corsHeaders });
-            }
-
-            const headers = new Headers();
-            object.writeHttpMetadata(headers);
-            headers.set("etag", object.httpEtag);
-            headers.set("Access-Control-Allow-Origin", "*");
-            headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-            headers.set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization");
-            headers.set("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
-            headers.set("X-Content-Type-Options", "nosniff");
-
-            if (range && object.range) {
-                headers.set("Content-Range", `bytes ${object.range.offset}-${object.range.offset + object.range.length - 1}/${object.size}`);
-                return new Response(object.body, { status: 206, headers });
-            }
-
-            return new Response(object.body, { headers });
-        } catch (err) {
-            return new Response("Błąd strumieniowania: " + err.message, { status: 500, headers: corsHeaders });
+        const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+        if (lockUntil && Date.now() < lockUntil) {
+          return new Response("Plik jest zablokowany Kapsułą Czasu do " + new Date(lockUntil).toLocaleString(), { status: 423, headers: corsHeaders });
         }
+
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("etag", object.httpEtag);
+        headers.set("Access-Control-Allow-Origin", "*");
+        headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+        headers.set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization");
+        headers.set("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
+        headers.set("X-Content-Type-Options", "nosniff");
+
+        if (range && object.range) {
+          headers.set("Content-Range", `bytes ${object.range.offset}-${object.range.offset + object.range.length - 1}/${object.size}`);
+          return new Response(object.body, { status: 206, headers });
+        }
+
+        return new Response(object.body, { headers });
+      } catch (err) {
+        return new Response("Błąd strumieniowania: " + err.message, { status: 500, headers: corsHeaders });
+      }
     }
 
     // =========================================================================
@@ -1915,310 +1978,310 @@ export default {
     // Oraz streaming HTTP 206 w locie dla pojedynczych plików (np. wideo) wewnątrz ZIP
     // =========================================================================
     async function readZipCentralDirectory(bucket, key) {
-        const head = await bucket.head(key);
-        if (!head) return null;
-        const totalSize = head.size;
-        if (totalSize < 22) return null;
+      const head = await bucket.head(key);
+      if (!head) return null;
+      const totalSize = head.size;
+      if (totalSize < 22) return null;
 
-        const tailLen = Math.min(65536, totalSize);
-        const tailObj = await bucket.get(key, { range: { offset: totalSize - tailLen, length: tailLen } });
-        if (!tailObj) return null;
+      const tailLen = Math.min(65536, totalSize);
+      const tailObj = await bucket.get(key, { range: { offset: totalSize - tailLen, length: tailLen } });
+      if (!tailObj) return null;
 
-        const tailBuf = new Uint8Array(await tailObj.arrayBuffer());
-        const dataView = new DataView(tailBuf.buffer, tailBuf.byteOffset, tailBuf.byteLength);
+      const tailBuf = new Uint8Array(await tailObj.arrayBuffer());
+      const dataView = new DataView(tailBuf.buffer, tailBuf.byteOffset, tailBuf.byteLength);
 
-        // Znajdź sygnaturę EOCD 0x06054b50 (PK\x05\x06) od końca bufora
-        let eocdRelOffset = -1;
-        for (let i = tailBuf.length - 22; i >= 0; i--) {
-            if (dataView.getUint32(i, true) === 0x06054b50) {
-                eocdRelOffset = i;
-                break;
-            }
+      // Znajdź sygnaturę EOCD 0x06054b50 (PK\x05\x06) od końca bufora
+      let eocdRelOffset = -1;
+      for (let i = tailBuf.length - 22; i >= 0; i--) {
+        if (dataView.getUint32(i, true) === 0x06054b50) {
+          eocdRelOffset = i;
+          break;
         }
-        if (eocdRelOffset < 0) return null;
+      }
+      if (eocdRelOffset < 0) return null;
 
-        const cdSize = dataView.getUint32(eocdRelOffset + 12, true);
-        const cdOffset = dataView.getUint32(eocdRelOffset + 16, true);
+      const cdSize = dataView.getUint32(eocdRelOffset + 12, true);
+      const cdOffset = dataView.getUint32(eocdRelOffset + 16, true);
 
-        // Pobierz bufor Central Directory
-        const cdObj = await bucket.get(key, { range: { offset: cdOffset, length: cdSize } });
-        if (!cdObj) return null;
+      // Pobierz bufor Central Directory
+      const cdObj = await bucket.get(key, { range: { offset: cdOffset, length: cdSize } });
+      if (!cdObj) return null;
 
-        const cdBuf = new Uint8Array(await cdObj.arrayBuffer());
-        const cdView = new DataView(cdBuf.buffer, cdBuf.byteOffset, cdBuf.byteLength);
+      const cdBuf = new Uint8Array(await cdObj.arrayBuffer());
+      const cdView = new DataView(cdBuf.buffer, cdBuf.byteOffset, cdBuf.byteLength);
 
-        const files = [];
-        let pos = 0;
-        const decoder = new TextDecoder('utf-8');
+      const files = [];
+      let pos = 0;
+      const decoder = new TextDecoder('utf-8');
 
-        while (pos < cdBuf.length - 46) {
-            if (cdView.getUint32(pos, true) !== 0x02014b50) break;
-            const compMethod = cdView.getUint16(pos + 10, true);
-            const compSize = cdView.getUint32(pos + 20, true);
-            const uncompSize = cdView.getUint32(pos + 24, true);
-            const nameLen = cdView.getUint16(pos + 28, true);
-            const extraLen = cdView.getUint16(pos + 30, true);
-            const commentLen = cdView.getUint16(pos + 32, true);
-            const localHeaderOffset = cdView.getUint32(pos + 42, true);
+      while (pos < cdBuf.length - 46) {
+        if (cdView.getUint32(pos, true) !== 0x02014b50) break;
+        const compMethod = cdView.getUint16(pos + 10, true);
+        const compSize = cdView.getUint32(pos + 20, true);
+        const uncompSize = cdView.getUint32(pos + 24, true);
+        const nameLen = cdView.getUint16(pos + 28, true);
+        const extraLen = cdView.getUint16(pos + 30, true);
+        const commentLen = cdView.getUint16(pos + 32, true);
+        const localHeaderOffset = cdView.getUint32(pos + 42, true);
 
-            const nameSlice = cdBuf.subarray(pos + 46, pos + 46 + nameLen);
-            const filename = decoder.decode(nameSlice);
+        const nameSlice = cdBuf.subarray(pos + 46, pos + 46 + nameLen);
+        const filename = decoder.decode(nameSlice);
 
-            if (!filename.endsWith('/')) {
-                files.push({
-                    name: filename,
-                    size: uncompSize,
-                    compSize: compSize,
-                    compMethod: compMethod,
-                    localHeaderOffset: localHeaderOffset
-                });
-            }
-
-            pos += 46 + nameLen + extraLen + commentLen;
+        if (!filename.endsWith('/')) {
+          files.push({
+            name: filename,
+            size: uncompSize,
+            compSize: compSize,
+            compMethod: compMethod,
+            localHeaderOffset: localHeaderOffset
+          });
         }
 
-        return { totalSize, files };
+        pos += 46 + nameLen + extraLen + commentLen;
+      }
+
+      return { totalSize, files };
     }
 
     // Endpoint A: Pobranie struktury i spisu plików w archiwum ZIP (błyskawiczny odczyt Central Directory)
     if (url.pathname === "/archive-info" && request.method === "GET") {
-        const key = url.searchParams.get("key");
-        if (!key || !env.BUCKET) {
-            return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      const key = url.searchParams.get("key");
+      if (!key || !env.BUCKET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      try {
+        const cd = await readZipCentralDirectory(env.BUCKET, key);
+        if (!cd) {
+          return new Response(JSON.stringify({ success: false, message: "Nie udało się odczytać spisu archiwum" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
-        try {
-            const cd = await readZipCentralDirectory(env.BUCKET, key);
-            if (!cd) {
-                return new Response(JSON.stringify({ success: false, message: "Nie udało się odczytać spisu archiwum" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
-            }
-            const origin = url.origin;
-            const filesList = cd.files.map(f => {
-                const ext = f.name.split('.').pop().toLowerCase();
-                const isVideo = ['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext);
-                const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
-                const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext);
-                return {
-                    name: f.name,
-                    size: f.size,
-                    compMethod: f.compMethod,
-                    streamable: (f.compMethod === 0),
-                    isVideo: isVideo,
-                    isAudio: isAudio,
-                    isImage: isImage,
-                    streamUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}`,
-                    downloadUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}&download=1`
-                };
-            });
+        const origin = url.origin;
+        const filesList = cd.files.map(f => {
+          const ext = f.name.split('.').pop().toLowerCase();
+          const isVideo = ['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext);
+          const isAudio = ['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext);
+          const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext);
+          return {
+            name: f.name,
+            size: f.size,
+            compMethod: f.compMethod,
+            streamable: (f.compMethod === 0),
+            isVideo: isVideo,
+            isAudio: isAudio,
+            isImage: isImage,
+            streamUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}`,
+            downloadUrl: `${origin}/archive-stream?key=${encodeURIComponent(key)}&path=${encodeURIComponent(f.name)}&download=1`
+          };
+        });
 
-            return new Response(JSON.stringify({
-                success: true,
-                key: key,
-                totalSize: cd.totalSize,
-                filesCount: filesList.length,
-                hasVideo: filesList.some(f => f.isVideo),
-                hasAudio: filesList.some(f => f.isAudio),
-                hasImage: filesList.some(f => f.isImage),
-                files: filesList
-            }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-        } catch (err) {
-            return new Response(JSON.stringify({ success: false, message: "Błąd odczytu archiwum: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
-        }
+        return new Response(JSON.stringify({
+          success: true,
+          key: key,
+          totalSize: cd.totalSize,
+          filesCount: filesList.length,
+          hasVideo: filesList.some(f => f.isVideo),
+          hasAudio: filesList.some(f => f.isAudio),
+          hasImage: filesList.some(f => f.isImage),
+          files: filesList
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Błąd odczytu archiwum: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
     }
 
     // Endpoint B: Streaming HTTP 206 w locie pojedynczego pliku z wnętrza archiwum ZIP
     if (url.pathname === "/archive-stream" && (request.method === "GET" || request.method === "HEAD")) {
-        const key = url.searchParams.get("key");
-        const path = url.searchParams.get("path");
-        const forceDownload = url.searchParams.get("download") === "1";
+      const key = url.searchParams.get("key");
+      const path = url.searchParams.get("path");
+      const forceDownload = url.searchParams.get("download") === "1";
 
-        if (!key || !path || !env.BUCKET) {
-            return new Response("Brak parametrów archiwum.", { status: 400, headers: corsHeaders });
+      if (!key || !path || !env.BUCKET) {
+        return new Response("Brak parametrów archiwum.", { status: 400, headers: corsHeaders });
+      }
+
+      try {
+        const cd = await readZipCentralDirectory(env.BUCKET, key);
+        if (!cd) {
+          return new Response("Nie udało się odczytać spisu archiwum.", { status: 404, headers: corsHeaders });
         }
 
-        try {
-            const cd = await readZipCentralDirectory(env.BUCKET, key);
-            if (!cd) {
-                return new Response("Nie udało się odczytać spisu archiwum.", { status: 404, headers: corsHeaders });
-            }
-
-            const fileEntry = cd.files.find(f => f.name === path);
-            if (!fileEntry) {
-                return new Response("Plik nie istnieje w archiwum.", { status: 404, headers: corsHeaders });
-            }
-
-            const locHeaderObj = await env.BUCKET.get(key, { range: { offset: fileEntry.localHeaderOffset, length: 30 } });
-            if (!locHeaderObj) return new Response("Błąd odczytu nagłówka pliku.", { status: 500, headers: corsHeaders });
-
-            const locBuf = new Uint8Array(await locHeaderObj.arrayBuffer());
-            const locView = new DataView(locBuf.buffer, locBuf.byteOffset, locBuf.byteLength);
-            const locNameLen = locView.getUint16(26, true);
-            const locExtraLen = locView.getUint16(28, true);
-
-            const fileDataStart = fileEntry.localHeaderOffset + 30 + locNameLen + locExtraLen;
-            const fileSize = fileEntry.size;
-            const mimeType = getMimeType(path);
-            const cleanFileName = path.split('/').pop() || path;
-
-            const dispHeader = forceDownload 
-                ? `attachment; filename="${encodeURIComponent(cleanFileName)}"` 
-                : `inline; filename="${encodeURIComponent(cleanFileName)}"`;
-
-            if (request.method === "HEAD") {
-                const headers = new Headers({
-                    "Content-Type": mimeType,
-                    "Content-Length": String(fileSize),
-                    "Accept-Ranges": "bytes",
-                    "Content-Disposition": dispHeader,
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Range",
-                    "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
-                    "X-Content-Type-Options": "nosniff"
-                });
-                return new Response(null, { headers });
-            }
-
-            // Jeśli plik jest w Store mode (compMethod === 0), to są to surowe bajty gotowe do streamingu HTTP 206 Range!
-            if (fileEntry.compMethod === 0) {
-                const reqRange = request.headers.get("Range");
-
-                if (reqRange && reqRange.startsWith("bytes=")) {
-                    const parts = reqRange.replace("bytes=", "").split("-");
-                    let start = parseInt(parts[0], 10);
-                    let end = parts[1] ? parseInt(parts[1], 10) : (fileSize - 1);
-                    if (isNaN(start)) {
-                        start = Math.max(0, fileSize - end);
-                        end = fileSize - 1;
-                    }
-                    end = Math.min(end, fileSize - 1);
-                    const chunkLen = (end - start) + 1;
-
-                    const r2Offset = fileDataStart + start;
-                    const streamPart = await env.BUCKET.get(key, { range: { offset: r2Offset, length: chunkLen } });
-
-                    const headers = new Headers({
-                        "Content-Type": mimeType,
-                        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-                        "Content-Length": String(chunkLen),
-                        "Accept-Ranges": "bytes",
-                        "Content-Disposition": dispHeader,
-                        "Access-Control-Allow-Origin": "*",
-                        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-                        "Access-Control-Allow-Headers": "Content-Type, Range",
-                        "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
-                        "X-Content-Type-Options": "nosniff"
-                    });
-
-                    return new Response(streamPart.body, { status: 206, headers });
-                }
-
-                // Pełne pobranie pliku ze Store mode
-                const fullStream = await env.BUCKET.get(key, { range: { offset: fileDataStart, length: fileSize } });
-                const headers = new Headers({
-                    "Content-Type": mimeType,
-                    "Content-Length": String(fileSize),
-                    "Accept-Ranges": "bytes",
-                    "Content-Disposition": dispHeader,
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Range",
-                    "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
-                    "X-Content-Type-Options": "nosniff"
-                });
-
-                return new Response(fullStream.body, { status: 200, headers });
-            }
-
-            return new Response("Format kompresji pliku wymaga pobrania całego archiwum ZIP.", { status: 415, headers: corsHeaders });
-        } catch (err) {
-            return new Response("Błąd strumieniowania z archiwum: " + err.message, { status: 500, headers: corsHeaders });
+        const fileEntry = cd.files.find(f => f.name === path);
+        if (!fileEntry) {
+          return new Response("Plik nie istnieje w archiwum.", { status: 404, headers: corsHeaders });
         }
+
+        const locHeaderObj = await env.BUCKET.get(key, { range: { offset: fileEntry.localHeaderOffset, length: 30 } });
+        if (!locHeaderObj) return new Response("Błąd odczytu nagłówka pliku.", { status: 500, headers: corsHeaders });
+
+        const locBuf = new Uint8Array(await locHeaderObj.arrayBuffer());
+        const locView = new DataView(locBuf.buffer, locBuf.byteOffset, locBuf.byteLength);
+        const locNameLen = locView.getUint16(26, true);
+        const locExtraLen = locView.getUint16(28, true);
+
+        const fileDataStart = fileEntry.localHeaderOffset + 30 + locNameLen + locExtraLen;
+        const fileSize = fileEntry.size;
+        const mimeType = getMimeType(path);
+        const cleanFileName = path.split('/').pop() || path;
+
+        const dispHeader = forceDownload
+          ? `attachment; filename="${encodeURIComponent(cleanFileName)}"`
+          : `inline; filename="${encodeURIComponent(cleanFileName)}"`;
+
+        if (request.method === "HEAD") {
+          const headers = new Headers({
+            "Content-Type": mimeType,
+            "Content-Length": String(fileSize),
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": dispHeader,
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Range",
+            "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+            "X-Content-Type-Options": "nosniff"
+          });
+          return new Response(null, { headers });
+        }
+
+        // Jeśli plik jest w Store mode (compMethod === 0), to są to surowe bajty gotowe do streamingu HTTP 206 Range!
+        if (fileEntry.compMethod === 0) {
+          const reqRange = request.headers.get("Range");
+
+          if (reqRange && reqRange.startsWith("bytes=")) {
+            const parts = reqRange.replace("bytes=", "").split("-");
+            let start = parseInt(parts[0], 10);
+            let end = parts[1] ? parseInt(parts[1], 10) : (fileSize - 1);
+            if (isNaN(start)) {
+              start = Math.max(0, fileSize - end);
+              end = fileSize - 1;
+            }
+            end = Math.min(end, fileSize - 1);
+            const chunkLen = (end - start) + 1;
+
+            const r2Offset = fileDataStart + start;
+            const streamPart = await env.BUCKET.get(key, { range: { offset: r2Offset, length: chunkLen } });
+
+            const headers = new Headers({
+              "Content-Type": mimeType,
+              "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+              "Content-Length": String(chunkLen),
+              "Accept-Ranges": "bytes",
+              "Content-Disposition": dispHeader,
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Range",
+              "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+              "X-Content-Type-Options": "nosniff"
+            });
+
+            return new Response(streamPart.body, { status: 206, headers });
+          }
+
+          // Pełne pobranie pliku ze Store mode
+          const fullStream = await env.BUCKET.get(key, { range: { offset: fileDataStart, length: fileSize } });
+          const headers = new Headers({
+            "Content-Type": mimeType,
+            "Content-Length": String(fileSize),
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": dispHeader,
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Range",
+            "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, Content-Disposition",
+            "X-Content-Type-Options": "nosniff"
+          });
+
+          return new Response(fullStream.body, { status: 200, headers });
+        }
+
+        return new Response("Format kompresji pliku wymaga pobrania całego archiwum ZIP.", { status: 415, headers: corsHeaders });
+      } catch (err) {
+        return new Response("Błąd strumieniowania z archiwum: " + err.message, { status: 500, headers: corsHeaders });
+      }
     }
 
     // Pobieranie bezpośrednie z wymuszeniem zapisu (Content-Disposition: attachment)
     if ((url.pathname === "/download" || url.pathname === "/api/download") && request.method === "GET") {
-        const key = url.searchParams.get("key");
-        if (!key || !env.BUCKET) {
-            return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+      const key = url.searchParams.get("key");
+      if (!key || !env.BUCKET) {
+        return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+      }
+
+      try {
+        const object = await env.BUCKET.get(key);
+        if (!object) {
+          return new Response("Plik wygasł lub nie istnieje na serwerze.", { status: 404, headers: corsHeaders });
         }
 
-        try {
-            const object = await env.BUCKET.get(key);
-            if (!object) {
-                return new Response("Plik wygasł lub nie istnieje na serwerze.", { status: 404, headers: corsHeaders });
-            }
-
-            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
-            if (lockUntil && Date.now() < lockUntil) {
-                return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
-            }
-
-            const headers = new Headers();
-            object.writeHttpMetadata(headers);
-            headers.set("etag", object.httpEtag);
-            headers.set("Access-Control-Allow-Origin", allowOrigin);
-            headers.set("X-Content-Type-Options", "nosniff");
-
-            const meta = object.customMetadata || {};
-            const requestedName = url.searchParams.get("name");
-            const rawFilename = requestedName || meta.originalName || key.split('/').pop() || key;
-            const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
-            headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
-
-            return new Response(object.body, { headers });
-        } catch (err) {
-            return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+        const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+        if (lockUntil && Date.now() < lockUntil) {
+          return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
         }
+
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("etag", object.httpEtag);
+        headers.set("Access-Control-Allow-Origin", allowOrigin);
+        headers.set("X-Content-Type-Options", "nosniff");
+
+        const meta = object.customMetadata || {};
+        const requestedName = url.searchParams.get("name");
+        const rawFilename = requestedName || meta.originalName || key.split('/').pop() || key;
+        const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
+        headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
+
+        return new Response(object.body, { headers });
+      } catch (err) {
+        return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+      }
     }
 
     // Pobieranie z natychmiastowym zniszczeniem (Burn after read)
     if (url.pathname === "/burn-download" && request.method === "GET") {
-        const key = url.searchParams.get("key");
-        if (!key || !env.BUCKET) {
-            return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+      const key = url.searchParams.get("key");
+      if (!key || !env.BUCKET) {
+        return new Response("Plik nie został znaleziony.", { status: 404, headers: corsHeaders });
+      }
+
+      try {
+        const object = await env.BUCKET.get(key);
+        if (!object) {
+          return new Response("Plik wygasł lub został już zniszczony po pobraniu.", { status: 404, headers: corsHeaders });
         }
 
-        try {
-            const object = await env.BUCKET.get(key);
-            if (!object) {
-                return new Response("Plik wygasł lub został już zniszczony po pobraniu.", { status: 404, headers: corsHeaders });
-            }
-
-            const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
-            if (lockUntil && Date.now() < lockUntil) {
-                return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
-            }
-
-            const headers = new Headers();
-            object.writeHttpMetadata(headers);
-            headers.set("etag", object.httpEtag);
-            headers.set("Access-Control-Allow-Origin", allowOrigin);
-            headers.set("X-Content-Type-Options", "nosniff");
-            headers.set("Content-Security-Policy", "default-src 'none'; sandbox;");
-
-            const meta = object.customMetadata || {};
-            const rawFilename = meta.originalName || key.split('/').pop() || key;
-            const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
-            headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
-
-            // Jeśli plik jest oznaczony jako 'burn', kasujemy go z R2 od razu po pobraniu!
-            if (key.startsWith("burn/")) {
-                await env.BUCKET.delete(key);
-                const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
-                try {
-                    await Promise.all([
-                        env.BUCKET.delete(`_system/meta_${safeKey}.json`),
-                        env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
-                        env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
-                        env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
-                    ]);
-                } catch (_) {}
-            }
-
-            return new Response(object.body, { headers });
-        } catch (err) {
-            return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+        const lockUntil = object.customMetadata?.lockUntil ? parseInt(object.customMetadata.lockUntil, 10) : null;
+        if (lockUntil && Date.now() < lockUntil) {
+          return new Response("Plik jest zablokowany Kapsułą Czasu.", { status: 423, headers: corsHeaders });
         }
+
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("etag", object.httpEtag);
+        headers.set("Access-Control-Allow-Origin", allowOrigin);
+        headers.set("X-Content-Type-Options", "nosniff");
+        headers.set("Content-Security-Policy", "default-src 'none'; sandbox;");
+
+        const meta = object.customMetadata || {};
+        const rawFilename = meta.originalName || key.split('/').pop() || key;
+        const safeDownloadName = encodeURIComponent(rawFilename).replace(/['()]/g, escape);
+        headers.set("Content-Disposition", `attachment; filename="${safeDownloadName}"; filename*=UTF-8''${safeDownloadName}`);
+
+        // Jeśli plik jest oznaczony jako 'burn', kasujemy go z R2 od razu po pobraniu!
+        if (key.startsWith("burn/")) {
+          await env.BUCKET.delete(key);
+          const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
+          try {
+            await Promise.all([
+              env.BUCKET.delete(`_system/meta_${safeKey}.json`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
+              env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
+              env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
+            ]);
+          } catch (_) { }
+        }
+
+        return new Response(object.body, { headers });
+      } catch (err) {
+        return new Response("Błąd pobierania pliku: " + err.message, { status: 500, headers: corsHeaders });
+      }
     }
 
     // =========================================================================
@@ -2246,7 +2309,7 @@ export default {
               feedbackList = JSON.parse(text);
               if (!Array.isArray(feedbackList)) feedbackList = [];
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const newEntry = {
@@ -2287,8 +2350,9 @@ export default {
 
     // 2. ODCZYT ZGŁOSZEŃ DLA ADMINISTRATORA
     if (url.pathname === "/admin/feedback" && request.method === "GET") {
-      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
-      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -2304,7 +2368,7 @@ export default {
             feedbackList = JSON.parse(text);
             if (!Array.isArray(feedbackList)) feedbackList = [];
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return new Response(JSON.stringify({ success: true, feedback: feedbackList }), {
@@ -2314,8 +2378,9 @@ export default {
 
     // 3. ZMIANA STATUSU ZGŁOSZENIA (ROZWIĄZANE / AKTYWNE)
     if (url.pathname === "/admin/feedback/toggle-status" && request.method === "POST") {
-      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
-      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -2369,8 +2434,9 @@ export default {
 
     // 4. USUNIĘCIE ZGŁOSZENIA PRZEZ ADMINA
     if (url.pathname.startsWith("/admin/feedback/delete/") && request.method === "DELETE") {
-      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
-      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -2429,7 +2495,7 @@ export default {
             pins = JSON.parse(await obj.text());
             if (!Array.isArray(pins)) pins = [];
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       return new Response(JSON.stringify({ success: true, pins }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -2456,7 +2522,7 @@ export default {
               pins = JSON.parse(await obj.text());
               if (!Array.isArray(pins)) pins = [];
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const newPin = {
@@ -2514,7 +2580,7 @@ export default {
               pins = JSON.parse(await obj.text());
               if (!Array.isArray(pins)) pins = [];
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         let updatedResolved = false;
@@ -2565,7 +2631,7 @@ export default {
               pins = JSON.parse(await obj.text());
               if (!Array.isArray(pins)) pins = [];
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         pins = pins.filter(p => p.id !== pinId);
@@ -2666,16 +2732,16 @@ export default {
     // =========================================================================
     // ZABEZPIECZENIE PANELU MODERACJI
     // =========================================================================
-    const ADMIN_SECRET = env.ADMIN_SECRET || "12345678"; 
-    
+    const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+
     // 2. LISTA PLIKÓW DLA ZALOGOWANEGO UŻYTKOWNIKA (MOJE PLIKI - TRWAŁA HISTORIA KONTA)
     if (url.pathname === "/my-files" && request.method === "GET") {
       const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
       if (!userEmail) {
-         return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Brak adresu email." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-      
+
       const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
       const historyKey = `_user_history/${safeEmail}.json`;
 
@@ -2684,7 +2750,7 @@ export default {
       if (historyObj) {
         try {
           historyFiles = await historyObj.json();
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!Array.isArray(historyFiles)) historyFiles = [];
 
@@ -2696,7 +2762,7 @@ export default {
       // Dołącz pliki z R2, których jeszcze nie było w trwałej historii
       const currentR2Files = list.objects
         .filter(obj => !obj.key.startsWith("_") && (obj.customMetadata?.uploaderEmail || "").toLowerCase().trim() === userEmail);
-      
+
       currentR2Files.forEach(obj => {
         if (!historyKeySet.has(obj.key)) {
           const rawUploaded = obj.uploaded ? (typeof obj.uploaded.toISOString === 'function' ? obj.uploaded.toISOString() : obj.uploaded) : new Date().toISOString();
@@ -2738,7 +2804,7 @@ export default {
         await env.BUCKET.put(historyKey, JSON.stringify(finalFiles.slice(0, 1000)), {
           httpMetadata: { contentType: "application/json" }
         });
-      } catch (_) {}
+      } catch (_) { }
 
       if (excludeExpired) {
         finalFiles = finalFiles.filter(f => f.status !== 'expired');
@@ -2763,7 +2829,7 @@ export default {
         if (env.BUCKET) {
           try {
             headObj = await env.BUCKET.head(fileKey);
-          } catch (_) {}
+          } catch (_) { }
         }
         const record = {
           key: fileKey,
@@ -2797,7 +2863,7 @@ export default {
         try {
           const body = await request.json();
           if (Array.isArray(body?.deletedKeys)) bodyDeletedKeys = body.deletedKeys;
-        } catch (_) {}
+        } catch (_) { }
         const deletedKeysSet = new Set(bodyDeletedKeys);
 
         let historyFiles = [];
@@ -2806,7 +2872,7 @@ export default {
           if (histObj) {
             historyFiles = await histObj.json();
           }
-        } catch (_) {}
+        } catch (_) { }
 
         // Weryfikacja aktywnych plików na dysku R2 oraz sprawdzanie upływu czasu (duration)
         const activeList = await env.BUCKET.list({ limit: 1000 });
@@ -2832,7 +2898,7 @@ export default {
 
         // Posprzątaj również stary klucz z dosłownym znakiem @ jeśli istniał
         if (`_user_history/${userEmail}.json` !== historyKey) {
-          try { await env.BUCKET.delete(`_user_history/${userEmail}.json`); } catch (_) {}
+          try { await env.BUCKET.delete(`_user_history/${userEmail}.json`); } catch (_) { }
         }
 
         return new Response(JSON.stringify({ success: true, count: validFiles.length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -2879,7 +2945,7 @@ export default {
         let userAlbums = [];
         const existing = await env.BUCKET.get(userAlbumsKey);
         if (existing) {
-          try { userAlbums = await existing.json(); } catch (_) {}
+          try { userAlbums = await existing.json(); } catch (_) { }
         }
         if (!Array.isArray(userAlbums)) userAlbums = [];
         userAlbums.unshift({
@@ -2916,7 +2982,7 @@ export default {
       const existing = await env.BUCKET.get(userAlbumsKey);
       let albums = [];
       if (existing) {
-        try { albums = await existing.json(); } catch (_) {}
+        try { albums = await existing.json(); } catch (_) { }
       }
       return new Response(JSON.stringify({ success: true, albums }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
@@ -2930,7 +2996,7 @@ export default {
           const b = await request.json();
           if (b.id) albumId = b.id;
           if (b.password) reqPassword = b.password;
-        } catch (_) {}
+        } catch (_) { }
       }
       if (!albumId) {
         return new Response(JSON.stringify({ success: false, message: "Brak identyfikatora albumu." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -2969,7 +3035,7 @@ export default {
               pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
             });
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       return new Response(JSON.stringify({
@@ -3014,7 +3080,7 @@ export default {
             let albums = await existing.json();
             albums = albums.filter(a => a.id !== albumId);
             await env.BUCKET.put(userAlbumsKey, JSON.stringify(albums), { httpMetadata: { contentType: "application/json" } });
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -3047,7 +3113,7 @@ export default {
       if (existing) {
         try {
           payload = await existing.json();
-        } catch (_) {}
+        } catch (_) { }
       }
       return new Response(JSON.stringify({ success: true, ...payload }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3101,7 +3167,7 @@ export default {
     // 2b. LISTA PLIKÓW DLA PANELU MODERACJI (Z INDEKSACJĄ AUTORÓW & METADANYCH)
     if (url.pathname === "/list" && request.method === "GET") {
       if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
-          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response(JSON.stringify({ files: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -3125,7 +3191,7 @@ export default {
     // 2b. HURTOWE USUWANIE WSZYSTKICH PLIKÓW DANEGO UŻYTKOWNIKA
     if (url.pathname === "/admin/user-files/delete-all" && request.method === "POST") {
       if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
-          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
       if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
       try {
@@ -3147,7 +3213,7 @@ export default {
               env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
               env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
             ]);
-          } catch (_) {}
+          } catch (_) { }
           deletedCount++;
         }
         return new Response(JSON.stringify({ success: true, deletedCount }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -3221,7 +3287,7 @@ export default {
       const userEmail = (request.headers.get("X-User-Email") || "").toLowerCase().trim();
 
       if (!isAdmin && !userEmail) {
-          return new Response(JSON.stringify({ success: false, message: "Brak dostępu." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Brak dostępu." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response("Błąd: Brak podpiętego dysku", { status: 500, headers: corsHeaders });
@@ -3239,7 +3305,7 @@ export default {
             await env.BUCKET.put(historyKey, JSON.stringify(hist), {
               httpMetadata: { contentType: "application/json" }
             });
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -3247,113 +3313,113 @@ export default {
       await env.BUCKET.delete(key);
       const safeKey = encodeURIComponent(key).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 100);
       try {
-          await Promise.all([
-              env.BUCKET.delete(`_system/meta_${safeKey}.json`),
-              env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
-              env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
-              env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
-          ]);
-      } catch (_) {}
+        await Promise.all([
+          env.BUCKET.delete(`_system/meta_${safeKey}.json`),
+          env.BUCKET.delete(`_system/unboxing_${safeKey}.webm`),
+          env.BUCKET.delete(`_system/unboxing_${safeKey}.mp3`),
+          env.BUCKET.delete(`_system/proofing_${safeKey}.json`)
+        ]);
+      } catch (_) { }
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
     // 4. ZMIANA TERMINOWOŚCI PLIKU PRZEZ ADMINISTRATORA
     if (url.pathname === "/update-expiry" && request.method === "POST") {
       if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
-          return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Brak dostępu. Złe hasło API." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response(JSON.stringify({ success: false, message: "Błąd: Brak podpiętego dysku" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
       try {
-          const body = await request.json();
-          const { key, newExpiry } = body;
+        const body = await request.json();
+        const { key, newExpiry } = body;
 
-          if (!key || !newExpiry) {
-              return new Response(JSON.stringify({ success: false, message: "Brak parametrów key lub newExpiry." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
-          }
+        if (!key || !newExpiry) {
+          return new Response(JSON.stringify({ success: false, message: "Brak parametrów key lub newExpiry." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
-          let baseKey = key;
-          if (baseKey.startsWith("1d/")) baseKey = baseKey.substring(3);
-          else if (baseKey.startsWith("30d/")) baseKey = baseKey.substring(4);
-          else if (baseKey.startsWith("burn/")) baseKey = baseKey.substring(5);
+        let baseKey = key;
+        if (baseKey.startsWith("1d/")) baseKey = baseKey.substring(3);
+        else if (baseKey.startsWith("30d/")) baseKey = baseKey.substring(4);
+        else if (baseKey.startsWith("burn/")) baseKey = baseKey.substring(5);
 
-          let newKey = baseKey;
-          if (newExpiry === "1d") newKey = `1d/${baseKey}`;
-          else if (newExpiry === "30d") newKey = `30d/${baseKey}`;
-          else if (newExpiry === "burn") newKey = `burn/${baseKey}`;
-          else if (newExpiry === "permanent") newKey = baseKey;
+        let newKey = baseKey;
+        if (newExpiry === "1d") newKey = `1d/${baseKey}`;
+        else if (newExpiry === "30d") newKey = `30d/${baseKey}`;
+        else if (newExpiry === "burn") newKey = `burn/${baseKey}`;
+        else if (newExpiry === "permanent") newKey = baseKey;
 
-          if (key === newKey) {
-              return new Response(JSON.stringify({ success: true, oldKey: key, newKey: newKey }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
-          }
+        if (key === newKey) {
+          return new Response(JSON.stringify({ success: true, oldKey: key, newKey: newKey }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
-          const object = await env.BUCKET.get(key);
-          if (!object) {
-              return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub został już usunięty." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
-          }
+        const object = await env.BUCKET.get(key);
+        if (!object) {
+          return new Response(JSON.stringify({ success: false, message: "Plik nie istnieje lub został już usunięty." }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
-          await env.BUCKET.put(newKey, object.body, {
-              httpMetadata: object.httpMetadata,
-              customMetadata: object.customMetadata
-          });
-          await env.BUCKET.delete(key);
+        await env.BUCKET.put(newKey, object.body, {
+          httpMetadata: object.httpMetadata,
+          customMetadata: object.customMetadata
+        });
+        await env.BUCKET.delete(key);
 
-          return new Response(JSON.stringify({
-              success: true,
-              oldKey: key,
-              newKey: newKey,
-              finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${newKey}`
-          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({
+          success: true,
+          oldKey: key,
+          newKey: newKey,
+          finalUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${newKey}`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
 
       } catch (err) {
-          return new Response(JSON.stringify({ success: false, message: "Błąd podczas zmiany terminu: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: false, message: "Błąd podczas zmiany terminu: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
     }
 
     // 5. STATYSTYKI DYSKU
     if (url.pathname === "/stats" && request.method === "GET") {
       if (!env.BUCKET) {
-          return new Response(JSON.stringify({ error: "Brak podpiętego bucketu w Workerze" }), { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Brak podpiętego bucketu w Workerze" }), { status: 500, headers: corsHeaders });
       }
 
       let totalUsedBytes = 0;
       let categories = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
       const MAX_BYTES = await getMaxStorageBytes();
-      
+
       try {
-          const list = await env.BUCKET.list();
-          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
+        const list = await env.BUCKET.list();
+        const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
 
-          validObjects.forEach(obj => {
-              const size = obj.size;
-              const name = obj.key.toLowerCase();
-              totalUsedBytes += size;
+        validObjects.forEach(obj => {
+          const size = obj.size;
+          const name = obj.key.toLowerCase();
+          totalUsedBytes += size;
 
-              if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(name)) {
-                  categories.images += size;
-              } else if (/\.(mp4|webm|avi|mov|mkv)$/.test(name)) {
-                  categories.videos += size;
-              } else if (/\.(pdf|doc|docx|txt|rtf)$/.test(name)) {
-                  categories.documents += size;
-              } else if (/\.(zip|rar|7z|tar|gz)$/.test(name)) {
-                  categories.archives += size;
-              } else {
-                  categories.others += size;
-              }
-          });
+          if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(name)) {
+            categories.images += size;
+          } else if (/\.(mp4|webm|avi|mov|mkv)$/.test(name)) {
+            categories.videos += size;
+          } else if (/\.(pdf|doc|docx|txt|rtf)$/.test(name)) {
+            categories.documents += size;
+          } else if (/\.(zip|rar|7z|tar|gz)$/.test(name)) {
+            categories.archives += size;
+          } else {
+            categories.others += size;
+          }
+        });
 
-          return new Response(JSON.stringify({
-              totalBytes: MAX_BYTES,
-              usedBytes: totalUsedBytes,
-              categories: categories,
-              fileCount: validObjects.length
-          }), { 
-              headers: { "Content-Type": "application/json", ...corsHeaders } 
-          });
+        return new Response(JSON.stringify({
+          totalBytes: MAX_BYTES,
+          usedBytes: totalUsedBytes,
+          categories: categories,
+          fileCount: validObjects.length
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
 
       } catch (err) {
-          return new Response(JSON.stringify({ error: "Błąd zliczania dysku", msg: err.message }), { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Błąd zliczania dysku", msg: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
@@ -3377,7 +3443,7 @@ export default {
         let body = {};
         try {
           body = await request.json();
-        } catch(e) {}
+        } catch (e) { }
 
         const sessionId = (body.sessionId || "").trim();
         if (!sessionId) {
@@ -3433,7 +3499,7 @@ export default {
             if (indexObj) {
               sessions = await indexObj.json();
             }
-          } catch(e) {}
+          } catch (e) { }
 
           const existingIdx = sessions.findIndex(s => s.sessionId === sessionId);
           if (existingIdx !== -1) {
@@ -3466,7 +3532,7 @@ export default {
     }
 
     if (url.pathname === "/admin/telemetry" && request.method === "GET") {
-      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim().toUpperCase();
       const reqSecret = (request.headers.get("X-Admin-Secret") || url.searchParams.get("secret") || "").trim().toUpperCase();
       if (reqSecret !== ADMIN_SECRET) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
@@ -3482,7 +3548,7 @@ export default {
           if (indexObj) {
             sessions = await indexObj.json();
           }
-        } catch(e) {}
+        } catch (e) { }
       }
 
       const now = Date.now();
@@ -3505,7 +3571,7 @@ export default {
     }
 
     if (url.pathname === "/admin/telemetry/clear" && request.method === "POST") {
-      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim().toUpperCase();
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim().toUpperCase();
       const reqSecret = (request.headers.get("X-Admin-Secret") || "").trim().toUpperCase();
       if (reqSecret !== ADMIN_SECRET) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień." }), {
@@ -3516,7 +3582,7 @@ export default {
       if (env.BUCKET) {
         try {
           await env.BUCKET.put(`_telemetry/active_index.json`, JSON.stringify([]));
-        } catch(e) {}
+        } catch (e) { }
       }
       return new Response(JSON.stringify({ success: true, message: "Wyczyszczono telemetrię." }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3525,116 +3591,119 @@ export default {
 
     // 6. ANALITYKA I ZARZĄDZANIE DLA ADMIN SUPER-DASHBOARD
     if (url.pathname === "/admin/analytics" && request.method === "GET") {
-      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
-      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
-          return new Response(JSON.stringify({ success: false, message: "Brak dostępu administratora." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
+        return new Response(JSON.stringify({ success: false, message: "Brak dostępu administratora." }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       if (!env.BUCKET) return new Response(JSON.stringify({ error: "Brak bucketu" }), { status: 500, headers: corsHeaders });
 
       try {
-          const list = await env.BUCKET.list();
-          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
-          let totalBytes = 0;
-          let counts = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
-          let sizes = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
-          let retentionStats = { permanent: 0, '30d': 0, '1d': 0, burn: 0, root: 0 };
-          let expiredCount = 0;
-          const now = Date.now();
+        const list = await env.BUCKET.list();
+        const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
+        let totalBytes = 0;
+        let counts = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+        let sizes = { images: 0, videos: 0, documents: 0, archives: 0, others: 0 };
+        let retentionStats = { permanent: 0, '30d': 0, '1d': 0, burn: 0, root: 0 };
+        let expiredCount = 0;
+        const now = Date.now();
 
-          validObjects.forEach(obj => {
-              totalBytes += obj.size;
-              const k = obj.key;
-              const lower = k.toLowerCase();
+        validObjects.forEach(obj => {
+          totalBytes += obj.size;
+          const k = obj.key;
+          const lower = k.toLowerCase();
 
-              // Klasyfikacja typów
-              if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(lower)) { counts.images++; sizes.images += obj.size; }
-              else if (/\.(mp4|webm|avi|mov|mkv)$/.test(lower)) { counts.videos++; sizes.videos += obj.size; }
-              else if (/\.(pdf|doc|docx|txt|rtf)$/.test(lower)) { counts.documents++; sizes.documents += obj.size; }
-              else if (/\.(zip|rar|7z|tar|gz)$/.test(lower)) { counts.archives++; sizes.archives += obj.size; }
-              else { counts.others++; sizes.others += obj.size; }
+          // Klasyfikacja typów
+          if (/\.(jpg|jpeg|png|gif|webp|svg)$/.test(lower)) { counts.images++; sizes.images += obj.size; }
+          else if (/\.(mp4|webm|avi|mov|mkv)$/.test(lower)) { counts.videos++; sizes.videos += obj.size; }
+          else if (/\.(pdf|doc|docx|txt|rtf)$/.test(lower)) { counts.documents++; sizes.documents += obj.size; }
+          else if (/\.(zip|rar|7z|tar|gz)$/.test(lower)) { counts.archives++; sizes.archives += obj.size; }
+          else { counts.others++; sizes.others += obj.size; }
 
-              // Klasyfikacja retencji
-              if (k.startsWith('1d/')) {
-                  retentionStats['1d']++;
-                  if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000)) expiredCount++;
-              } else if (k.startsWith('30d/')) {
-                  retentionStats['30d']++;
-                  if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000)) expiredCount++;
-              } else if (k.startsWith('burn/')) {
-                  retentionStats.burn++;
-              } else {
-                  retentionStats.permanent++;
-              }
-          });
+          // Klasyfikacja retencji
+          if (k.startsWith('1d/')) {
+            retentionStats['1d']++;
+            if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000)) expiredCount++;
+          } else if (k.startsWith('30d/')) {
+            retentionStats['30d']++;
+            if (obj.uploaded && (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000)) expiredCount++;
+          } else if (k.startsWith('burn/')) {
+            retentionStats.burn++;
+          } else {
+            retentionStats.permanent++;
+          }
+        });
 
-          const MAX_STORAGE = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776;
-          // Koszt Cloudflare R2: $0.015 / GB powyżej 10 GB darmowych
-          const usedGB = totalBytes / (1024 * 1024 * 1024);
-          const billableGB = Math.max(0, usedGB - 10);
-          const r2CostUSD = Math.round(billableGB * 0.015 * 100) / 100;
-          const r2CostPLN = Math.round(r2CostUSD * 4.05 * 100) / 100;
+        const MAX_STORAGE = env.MAX_STORAGE_BYTES ? parseInt(env.MAX_STORAGE_BYTES, 10) : 1099511627776;
+        // Koszt Cloudflare R2: $0.015 / GB powyżej 10 GB darmowych
+        const usedGB = totalBytes / (1024 * 1024 * 1024);
+        const billableGB = Math.max(0, usedGB - 10);
+        const r2CostUSD = Math.round(billableGB * 0.015 * 100) / 100;
+        const r2CostPLN = Math.round(r2CostUSD * 4.05 * 100) / 100;
 
-          return new Response(JSON.stringify({
-              success: true,
-              totalFiles: validObjects.length,
-              totalBytes: totalBytes,
-              maxStorageBytes: MAX_STORAGE,
-              usedGB: Math.round(usedGB * 100) / 100,
-              r2CostUSD,
-              r2CostPLN,
-              counts,
-              sizes,
-              retentionStats,
-              expiredCount
-          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({
+          success: true,
+          totalFiles: validObjects.length,
+          totalBytes: totalBytes,
+          maxStorageBytes: MAX_STORAGE,
+          usedGB: Math.round(usedGB * 100) / 100,
+          r2CostUSD,
+          r2CostPLN,
+          counts,
+          sizes,
+          retentionStats,
+          expiredCount
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
-          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
     // 7. CZYSZCZENIE WYGASŁYCH PLIKÓW (GARBAGE COLLECTOR)
     if (url.pathname === "/admin/clean-expired" && request.method === "POST") {
-      const ADMIN_SECRET = env.ADMIN_SECRET || "12345678";
-      if (request.headers.get("X-Admin-Secret") !== ADMIN_SECRET) {
-          return new Response(JSON.stringify({ success: false, message: "Brak uprawnień." }), { status: 403, headers: corsHeaders });
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
+        return new Response(JSON.stringify({ success: false, message: "Brak uprawnień." }), { status: 403, headers: corsHeaders });
       }
 
       if (!env.BUCKET) return new Response(JSON.stringify({ error: "Brak bucketu" }), { status: 500, headers: corsHeaders });
 
       try {
-          const list = await env.BUCKET.list();
-          const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
-          const now = Date.now();
-          const toDelete = [];
+        const list = await env.BUCKET.list();
+        const validObjects = list.objects.filter(obj => !obj.key.startsWith('_system/'));
+        const now = Date.now();
+        const toDelete = [];
 
-          validObjects.forEach(obj => {
-              const k = obj.key;
-              if (k.startsWith('1d/') && obj.uploaded) {
-                  if (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000) toDelete.push(k);
-              } else if (k.startsWith('30d/') && obj.uploaded) {
-                  if (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000) toDelete.push(k);
-              }
-          });
-
-          for (const key of toDelete) {
-              await env.BUCKET.delete(key);
+        validObjects.forEach(obj => {
+          const k = obj.key;
+          if (k.startsWith('1d/') && obj.uploaded) {
+            if (now - new Date(obj.uploaded).getTime() > 24 * 3600 * 1000) toDelete.push(k);
+          } else if (k.startsWith('30d/') && obj.uploaded) {
+            if (now - new Date(obj.uploaded).getTime() > 30 * 24 * 3600 * 1000) toDelete.push(k);
           }
+        });
 
-          return new Response(JSON.stringify({
-              success: true,
-              deletedCount: toDelete.length,
-              message: `Usunięto ${toDelete.length} wygasłych plików.`
-          }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        for (const key of toDelete) {
+          await env.BUCKET.delete(key);
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          deletedCount: toDelete.length,
+          message: `Usunięto ${toDelete.length} wygasłych plików.`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
-          return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
     // --- ZARZĄDZANIE LIMITAMI POJEMNOŚCI DYSKU DLA ADMINISTRATORA ---
     if (url.pathname === "/admin/quota" && request.method === "GET") {
-      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
-      if ((request.headers.get("X-Admin-Secret") || "").trim() !== ADMIN_SECRET) {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3648,7 +3717,7 @@ export default {
             const data = await qObj.json();
             if (data && data.quotaGb !== undefined) quotaGb = parseInt(data.quotaGb, 10);
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       return new Response(JSON.stringify({ success: true, quotaGb }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3656,8 +3725,9 @@ export default {
     }
 
     if (url.pathname === "/admin/quota" && request.method === "POST") {
-      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
-      if ((request.headers.get("X-Admin-Secret") || "").trim() !== ADMIN_SECRET) {
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
+      const clientSecret = (request.headers.get("X-Admin-Secret") || "").trim();
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3700,7 +3770,7 @@ export default {
               mediaGrabberUnlocked = !!data.mediaGrabberUnlocked;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
       return new Response(JSON.stringify({ success: true, mediaGrabberUnlocked }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3709,13 +3779,14 @@ export default {
 
     // --- ZAPIS FLAG FUNKCJI PRZEZ ADMINISTRATORA ---
     if ((url.pathname === "/admin/feature-flags" || url.pathname === "/api/admin/feature-flags") && request.method === "POST") {
-      const ADMIN_SECRET = (env.ADMIN_SECRET || "12345678").trim();
+      const ADMIN_SECRET = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
       const clientSecret = (request.headers.get("X-Admin-Secret") || request.headers.get("X-Pro-Key") || "").trim();
       let body = {};
-      try { body = await request.json(); } catch (_) {}
+      try { body = await request.json(); } catch (_) { }
       const bodySecret = (body.adminSecret || "").trim();
 
-      if (clientSecret !== ADMIN_SECRET && bodySecret !== ADMIN_SECRET) {
+      if (clientSecret !== ADMIN_SECRET && clientSecret.toUpperCase() !== ADMIN_SECRET.toUpperCase() &&
+          bodySecret !== ADMIN_SECRET && bodySecret.toUpperCase() !== ADMIN_SECRET.toUpperCase()) {
         return new Response(JSON.stringify({ success: false, message: "Brak uprawnień administratora." }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -3889,7 +3960,7 @@ export default {
       if (pin && env.BUCKET) {
         try {
           await env.BUCKET.delete(`_beam/${pin}.json`);
-        } catch (_) {}
+        } catch (_) { }
       }
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
@@ -3904,32 +3975,41 @@ export default {
     if (!env.BUCKET) return;
 
     try {
-        const now = Date.now();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        const thirtyDaysMs = 30 * oneDayMs;
+      const now = Date.now();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const thirtyDaysMs = 30 * oneDayMs;
 
-        const list = await env.BUCKET.list();
+      let truncated = true;
+      let cursor = undefined;
+
+      while (truncated) {
+        const list = await env.BUCKET.list({ cursor, limit: 1000 });
 
         for (const obj of list.objects) {
-            if (obj.key.startsWith("_system/")) continue;
-            if (obj.key.startsWith("_beam/") && ageMs > 15 * 60 * 1000) {
-                await env.BUCKET.delete(obj.key);
-                continue;
-            }
-            const uploadTime = new Date(obj.uploaded).getTime();
-            const ageMs = now - uploadTime;
+          if (obj.key.startsWith("_system/")) continue;
+          const uploadTime = new Date(obj.uploaded).getTime();
+          const ageMs = now - uploadTime;
 
-            // Pliki 1-dniowe
-            if (obj.key.startsWith("1d/") && ageMs > oneDayMs) {
-                await env.BUCKET.delete(obj.key);
-            }
-            // Pliki 30-dniowe
-            else if (obj.key.startsWith("30d/") && ageMs > thirtyDaysMs) {
-                await env.BUCKET.delete(obj.key);
-            }
+          if (obj.key.startsWith("_beam/") && ageMs > 15 * 60 * 1000) {
+            await env.BUCKET.delete(obj.key);
+            continue;
+          }
+
+          // Pliki 1-dniowe
+          if (obj.key.startsWith("1d/") && ageMs > oneDayMs) {
+            await env.BUCKET.delete(obj.key);
+          }
+          // Pliki 30-dniowe
+          else if (obj.key.startsWith("30d/") && ageMs > thirtyDaysMs) {
+            await env.BUCKET.delete(obj.key);
+          }
         }
+
+        truncated = list.truncated;
+        cursor = list.cursor;
+      }
     } catch (e) {
-        console.error("Błąd podczas automatycznego czyszczenia dysku:", e);
+      console.error("Błąd podczas automatycznego czyszczenia dysku:", e);
     }
   }
 };
@@ -3938,40 +4018,40 @@ export default {
 // FUNKCJE POMOCNICZE DO GENEROWANIA SZYFROWANEGO LINKU
 // ============================================================================
 async function createPresignedUrl(accountId, accessKey, secretKey, bucket, key) {
-    const host = `${accountId}.r2.cloudflarestorage.com`;
-    const method = "PUT";
-    const date = new Date();
-    const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const dateStamp = amzDate.substring(0, 8);
-    const region = "auto";
-    const service = "s3";
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const method = "PUT";
+  const date = new Date();
+  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.substring(0, 8);
+  const region = "auto";
+  const service = "s3";
 
-    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-    const signedHeaders = "host";
-    const algorithm = "AWS4-HMAC-SHA256";
-    const expires = "3600";
-    
-    const canonicalQueryString = `X-Amz-Algorithm=${algorithm}&X-Amz-Credential=${encodeURIComponent(accessKey + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=${expires}&X-Amz-SignedHeaders=${signedHeaders}`;
-    const canonicalHeaders = `host:${host}\n`;
-    const canonicalRequest = `${method}\n/${bucket}/${key}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const signedHeaders = "host";
+  const algorithm = "AWS4-HMAC-SHA256";
+  const expires = "3600";
 
-    const hashedCanonicalRequest = await hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalRequest)));
-    const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${hashedCanonicalRequest}`;
+  const canonicalQueryString = `X-Amz-Algorithm=${algorithm}&X-Amz-Credential=${encodeURIComponent(accessKey + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=${expires}&X-Amz-SignedHeaders=${signedHeaders}`;
+  const canonicalHeaders = `host:${host}\n`;
+  const canonicalRequest = `${method}\n/${bucket}/${key}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\nUNSIGNED-PAYLOAD`;
 
-    const kDate = await hmac(new TextEncoder().encode("AWS4" + secretKey), dateStamp);
-    const kRegion = await hmac(kDate, region);
-    const kService = await hmac(kRegion, service);
-    const kSigning = await hmac(kService, "aws4_request");
-    const signature = await hex(await hmac(kSigning, stringToSign));
+  const hashedCanonicalRequest = await hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalRequest)));
+  const stringToSign = `${algorithm}\n${amzDate}\n${credentialScope}\n${hashedCanonicalRequest}`;
 
-    return `https://${host}/${bucket}/${key}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
+  const kDate = await hmac(new TextEncoder().encode("AWS4" + secretKey), dateStamp);
+  const kRegion = await hmac(kDate, region);
+  const kService = await hmac(kRegion, service);
+  const kSigning = await hmac(kService, "aws4_request");
+  const signature = await hex(await hmac(kSigning, stringToSign));
+
+  return `https://${host}/${bucket}/${key}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
 }
 
 async function hmac(key, string) {
-    const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(string));
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(string));
 }
 
 async function hex(buffer) {
-    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }

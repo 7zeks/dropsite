@@ -339,7 +339,7 @@
     }
 
     async function fetchAdminTelemetry() {
-        const apiSecret = localStorage.getItem('dropsite_admin_secret') || '12345678';
+        const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_admin_secret') || '';
         const listContainer = document.getElementById('telemetrySessionsList');
         const onlineCountEl = document.getElementById('telemetryOnlineCount');
         const badgeOnlineEl = document.getElementById('adminOnlineBadge');
@@ -568,7 +568,7 @@
         if (clearBtn) {
             clearBtn.addEventListener('click', async () => {
                 if (!confirm('Czy na pewno chcesz wyczyścić całą historię telemetrii sesji?')) return;
-                const apiSecret = localStorage.getItem('dropsite_admin_secret') || '12345678';
+                const apiSecret = sessionStorage.getItem('adminSecret') || localStorage.getItem('dropsite_admin_secret') || '';
                 try {
                     await fetch(`${WORKER_URL}/admin/telemetry/clear`, {
                         method: 'POST',

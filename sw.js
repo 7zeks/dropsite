@@ -1,9 +1,9 @@
 /**
- * Dropsite PWA Service Worker (v3.3.0 Production Engine)
+ * Dropsite PWA Service Worker (v3.3.1 Production Engine)
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.3.0';
+const CACHE_NAME = 'dropsite-studio-v3.3.1';
 
 const PRECACHE_ASSETS = [
     './',
