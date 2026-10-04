@@ -129,8 +129,8 @@
         {
             id: 'media-grabber',
             category: 'Transfer & B2B',
-            title: 'Pobieracz Wideo & Audio (TikTok, YT, Insta)',
-            desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka, YouTube, Instagrama (w przygotowaniu)',
+            title: 'Pobieracz Wideo & Audio (TikTok, X / Twitter)',
+            desc: 'Pobieraj wideo HD bez znaku wodnego z TikToka i X (YouTube i Instagram wkrótce)',
             tag: 'Wkrótce',
             keywords: ['tiktok', 'youtube', 'instagram', 'twitter', 'x', 'pinterest', 'pobierz', 'grabber', 'mp4', 'mp3', 'wideo', 'film', 'bez znaku'],
             action: () => {

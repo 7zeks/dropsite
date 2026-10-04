@@ -80,6 +80,20 @@
                 if (targetBtn && targetBtn !== this.submitBtn && targetBtn !== this.pasteBtn) {
                     this.createRipple(e, targetBtn);
                 }
+
+                const chip = e.target.closest('.grabber-platform-chip');
+                if (chip) {
+                    const plat = chip.getAttribute('data-platform');
+                    if (plat === 'youtube') {
+                        this.showToast('ℹ️ YouTube: pobieranie jeszcze nie działa (w trakcie prac technicznych).', 'warning');
+                    } else if (plat === 'instagram') {
+                        this.showToast('ℹ️ Instagram: pobieranie jeszcze nie działa (w trakcie prac technicznych).', 'warning');
+                    } else if (plat === 'tiktok') {
+                        this.showToast('✅ TikTok: pobieranie HD bez znaku wodnego w pełni aktywne!', 'success');
+                    } else if (plat === 'twitter') {
+                        this.showToast('✅ X / Twitter: pobieranie wideo i zdjęć w pełni aktywne!', 'success');
+                    }
+                }
             });
         },
 
@@ -170,8 +184,47 @@
             const targetUrl = (overrideUrl || (this.input ? this.input.value : '')).trim();
 
             if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
-                this.showToast('Wprowadź prawidłowy link do wideo (np. TikTok, YouTube, Instagram).', 'warning');
+                this.showToast('Wprowadź prawidłowy link do wideo (np. TikTok lub X / Twitter).', 'warning');
                 if (this.input) this.input.focus();
+                return;
+            }
+
+            // Informacja o platformach w trakcie integracji (YouTube & Instagram)
+            if (/youtu\.be|youtube\.com/i.test(targetUrl)) {
+                this.showToast('ℹ️ Pobieranie z YouTube nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
+                if (this.resultsWrap) {
+                    this.resultsWrap.innerHTML = `
+                        <div class="grabber-error-box" style="padding:24px 20px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28); border-radius:16px; text-align:center; color:#FDE68A; backdrop-filter:blur(14px);">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.15); margin-bottom:12px; color:#FBBF24;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            </div>
+                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa YouTube jeszcze nie działa</div>
+                            <div style="font-size:0.875rem; color:#CBD5E1; max-width:480px; margin:0 auto; line-height:1.55;">
+                                Silnik pobierania z YouTube jest obecnie w trakcie prac integracyjnych i zostanie uruchomiony wkrótce.<br><br>
+                                W tej chwili możesz pobierać wideo bez znaku wodnego z <strong style="color:#34D399;">TikToka HD</strong> oraz <strong style="color:#38BDF8;">X (Twittera)</strong>.
+                            </div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            if (/instagram\.com/i.test(targetUrl)) {
+                this.showToast('ℹ️ Pobieranie z Instagrama nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
+                if (this.resultsWrap) {
+                    this.resultsWrap.innerHTML = `
+                        <div class="grabber-error-box" style="padding:24px 20px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28); border-radius:16px; text-align:center; color:#FDE68A; backdrop-filter:blur(14px);">
+                            <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.15); margin-bottom:12px; color:#FBBF24;">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            </div>
+                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa Instagrama jeszcze nie działa</div>
+                            <div style="font-size:0.875rem; color:#CBD5E1; max-width:480px; margin:0 auto; line-height:1.55;">
+                                Silnik pobierania rolek i postów z Instagrama jest w trakcie dopracowywania i będzie dostępny wkrótce.<br><br>
+                                W tej chwili stabilnie działa pobieranie wideo z <strong style="color:#34D399;">TikToka HD</strong> oraz <strong style="color:#38BDF8;">X (Twittera)</strong>.
+                            </div>
+                        </div>
+                    `;
+                }
                 return;
             }
 
