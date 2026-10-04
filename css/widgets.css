@@ -1115,13 +1115,13 @@ body.is-admin .storage-widget {
     border: 1px solid rgba(255, 255, 255, 0.045);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-        border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-        background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-        box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
     box-sizing: border-box;
     position: relative;
     overflow: visible;
+    transform: translate3d(0, 0, 0);
+    will-change: transform, border-color;
+    backface-visibility: hidden;
     animation: modItemEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -1141,8 +1141,7 @@ body.is-admin .storage-widget {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(56, 189, 248, 0.2);
     border-top-color: rgba(56, 189, 248, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+    transform: translate3d(0, -1px, 0);
 }
 
 .mod-file-main {
@@ -1163,13 +1162,13 @@ body.is-admin .storage-widget {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s ease;
+    transition: transform 0.18s cubic-bezier(0.25, 0.8, 0.25, 1);
     flex-shrink: 0;
+    transform: translateZ(0);
 }
 
 .mod-preview-img:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(196, 231, 212, 0.25);
+    transform: scale(1.05);
     cursor: zoom-in;
 }
 
@@ -1184,11 +1183,11 @@ body.is-admin .storage-widget {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     flex-shrink: 0;
-    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.18s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s ease, border-color 0.2s ease;
+    transform: translateZ(0);
 }
 
 .mod-file-item:hover .mod-preview-icon {
-    transform: scale(1.06);
     background: rgba(255, 255, 255, 0.07);
     border-color: rgba(196, 231, 212, 0.25);
 }

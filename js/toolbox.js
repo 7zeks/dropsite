@@ -5605,17 +5605,24 @@
         }
     });
 
-    // Śledzenie pozycji kursora dla efektu ambientowego światła w dropzone
+    // Śledzenie pozycji kursora dla efektu ambientowego światła w dropzone (tylko gdy widok narzędzi jest aktywny)
+    let tbGlowRaf = null;
     document.addEventListener('mousemove', (e) => {
+        const viewNarzedzia = document.getElementById('view-narzedzia');
+        if (!viewNarzedzia || viewNarzedzia.hidden || viewNarzedzia.style.display === 'none') return;
+
         const activeDropzone = document.querySelector('.tool-panel:not([style*="display: none"]) .tool-dropzone');
-        if (activeDropzone) {
-            const rect = activeDropzone.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            activeDropzone.style.setProperty('--mouse-x', `${x}px`);
-            activeDropzone.style.setProperty('--mouse-y', `${y}px`);
+        if (activeDropzone && !tbGlowRaf) {
+            tbGlowRaf = requestAnimationFrame(() => {
+                const rect = activeDropzone.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                activeDropzone.style.setProperty('--mouse-x', `${x}px`);
+                activeDropzone.style.setProperty('--mouse-y', `${y}px`);
+                tbGlowRaf = null;
+            });
         }
-    });
+    }, { passive: true });
 
     // Globalny odbiornik upuszczonych plików dla Zestawu Narzędzi (Toolbox)
     window.handleToolboxDrop = function (files) {

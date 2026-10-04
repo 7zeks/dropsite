@@ -747,15 +747,17 @@ input[type="checkbox"].file-select-checkbox {
     border-radius: 14px !important;
     padding: 10px 14px !important;
     margin-bottom: 8px !important;
-    transition: transform 0.16s ease, border-color 0.16s ease !important;
+    transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+    transform: translate3d(0, 0, 0);
+    will-change: transform, border-color;
+    backface-visibility: hidden;
 }
 
 .mod-file-item:hover {
     background: rgba(255, 255, 255, 0.045) !important;
     border-color: rgba(94, 234, 212, 0.3) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3) !important;
+    transform: translate3d(0, -1px, 0) !important;
 }
 
 .mod-file-item.is-selected {
@@ -909,10 +911,13 @@ input[type="checkbox"].file-select-checkbox {
     flex-direction: column;
     gap: 10px;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    transition: transform 0.16s ease, border-color 0.16s ease !important;
+    transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease !important;
     position: relative;
     overflow: hidden;
     animation: none !important;
+    transform: translate3d(0, 0, 0);
+    will-change: transform, border-color;
+    backface-visibility: hidden;
 }
 
 @keyframes cardEnter {
@@ -928,11 +933,10 @@ input[type="checkbox"].file-select-checkbox {
 }
 
 .mod-file-card:hover {
-    transform: translateY(-2px);
+    transform: translate3d(0, -2px, 0);
     background: rgba(255, 255, 255, 0.055);
     border-color: rgba(94, 234, 212, 0.35);
     border-top-color: rgba(94, 234, 212, 0.6);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .mod-file-card.is-selected {
