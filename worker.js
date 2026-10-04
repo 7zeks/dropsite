@@ -355,6 +355,9 @@ export default {
 
       if (!proKey && !userEmail) return false;
 
+      const trimmed = (proKey || "").trim();
+      const upper = trimmed.toUpperCase();
+
       const rawSecret = (env.ADMIN_SECRET || "boe9sco68FfE8vs+").trim();
       const adminSecret = rawSecret.toUpperCase();
 

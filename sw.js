@@ -1,9 +1,9 @@
 /**
- * Dropsite PWA Service Worker (v3.3.2 Production Engine)
+ * Dropsite PWA Service Worker (v3.3.3 Production Engine)
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.3.2';
+const CACHE_NAME = 'dropsite-studio-v3.3.3';
 
 const PRECACHE_ASSETS = [
     './',
@@ -125,8 +125,9 @@ self.addEventListener('fetch', (event) => {
         caches.match(event.request).then((cachedResponse) => {
             const fetchPromise = fetch(event.request).then((networkResponse) => {
                 if (networkResponse && networkResponse.status === 200) {
+                    const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, networkResponse.clone());
+                        cache.put(event.request, responseToCache);
                     });
                 }
                 return networkResponse;
