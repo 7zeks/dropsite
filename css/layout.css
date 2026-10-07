@@ -912,7 +912,7 @@
                 visibility 0.22s ease 0.22s;
 }
 
-/* Górna subtelna smuga światła z akcentem Brand Cyan & Mint */
+/* Górna subtelna smuga światła z czystym akcentem Brand Mint */
 .nav-dropdown-menu::after {
     content: '';
     position: absolute;
@@ -921,8 +921,8 @@
     right: 20px;
     height: 1.5px;
     border-radius: 999px;
-    background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.6) 40%, rgba(52, 211, 153, 0.45) 70%, transparent 100%);
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+    background: linear-gradient(90deg, transparent 0%, rgba(52, 211, 153, 0.7) 50%, transparent 100%);
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
     pointer-events: none;
 }
 
@@ -948,7 +948,7 @@
     transition-delay: 0s;
 }
 
-/* MAGNETYCZNY GLIDER POD KURSOREM (ŚWIEŻY, ŚWIETLISTY GLOW - COMPOSITOR ACCELERATED) */
+/* MAGNETYCZNY GLIDER POD KURSOREM (ŚWIEŻY MIĘTOWY GLOW - COMPOSITOR ACCELERATED) */
 .nav-dropdown-glider {
     position: absolute;
     top: 0;
@@ -956,8 +956,8 @@
     right: 7px;
     width: calc(100% - 14px);
     border-radius: 12px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(56, 189, 248, 0.06) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(52, 211, 153, 0.07) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.15);
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     pointer-events: none;
     opacity: 0;
@@ -1130,50 +1130,44 @@
     color: #CBD5E1;
 }
 
-/* ELEGANCKIE SPÓJNE BADGE */
+/* ELEGANCKIE UJEDNOLICONE BADGE (SPÓJNY MIĘTOWY AKCENT MARKI) */
 .nav-dropdown-badge {
     font-size: 9.5px;
     font-weight: 700;
-    padding: 2px 7px;
+    padding: 2px 7.5px;
     border-radius: 6px;
     letter-spacing: 0.3px;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-}
-
-.badge-pdf,
-.badge-fps,
-.badge-cyan {
-    background: rgba(56, 189, 248, 0.14);
-    color: #38BDF8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
-}
-
-.badge-soon {
-    background: rgba(255, 255, 255, 0.06);
-    color: #94A3B8;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.badge-hd {
     background: rgba(52, 211, 153, 0.14);
     color: #34D399;
     border: 1px solid rgba(52, 211, 153, 0.3);
     box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
 }
 
+.badge-mint,
+.badge-pdf,
+.badge-hd,
+.badge-vault,
+.badge-fps,
 .badge-amber,
-.badge-vault {
-    background: rgba(245, 158, 11, 0.14);
-    color: #FBBF24;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.12);
+.badge-cyan {
+    background: rgba(52, 211, 153, 0.14);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
 }
 
-/* PRZEŁĄCZNIKI SUWAKOWE iOS-STYLE (60 FPS HARDWARE ACCELERATED) */
+.badge-soon {
+    background: rgba(255, 255, 255, 0.06);
+    color: #94A3B8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+}
+
+/* PRZEŁĄCZNIKI SUWAKOWE iOS-STYLE (UJEDNOLICONY MIĘTOWY AKCENT, 60 FPS GPU) */
 .sound-mini-switch {
     width: 36px;
     height: 20px;
@@ -1191,7 +1185,7 @@
                 background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Subtelny płynny gradient podkładowy z płynnym fade-in */
+/* Miętowy płynny gradient podkładowy pod aktywne suwaki */
 .sound-mini-switch::before {
     content: '';
     position: absolute;
@@ -1201,14 +1195,12 @@
     pointer-events: none;
     transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 0;
-}
-
-#dropdownSoundSwitch::before {
     background: linear-gradient(135deg, #059669 0%, #10B981 100%);
 }
 
+#dropdownSoundSwitch::before,
 #dropdownPerfSwitch::before {
-    background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
 }
 
 .sound-mini-switch.is-active::before,
@@ -1231,18 +1223,13 @@
     will-change: transform;
 }
 
-/* Aktywny przełącznik dźwięku (Emerald) */
+/* Aktywne przełączniki (Dźwięk & Tryb Płynności ujednolicone na Brand Mint) */
 .sound-mini-switch.is-active,
-.sound-mini-switch.active {
-    border-color: rgba(52, 211, 153, 0.7);
-    box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
-}
-
-/* Aktywny przełącznik Trybu Płynności / Eco (Electric Cyan) */
+.sound-mini-switch.active,
 #dropdownPerfSwitch.is-active,
 #dropdownPerfSwitch.active {
-    border-color: rgba(56, 189, 248, 0.85);
-    box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+    border-color: rgba(52, 211, 153, 0.7);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
 }
 
 .sound-mini-switch.is-active .sound-switch-thumb,
