@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.3.8';
+const CACHE_NAME = 'dropsite-studio-v3.3.9';
 
 const PRECACHE_ASSETS = [
     './',

@@ -824,18 +824,17 @@
     content: '';
     position: absolute;
     bottom: -2px;
-    height: 2.5px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, transparent 0%, #5EEAD4 25%, #38BDF8 50%, #5EEAD4 75%, transparent 100%);
-    box-shadow: 0 0 12px #5EEAD4, 0 0 24px rgba(94, 234, 212, 0.45);
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #5EEAD4, #38BDF8, #5EEAD4, transparent);
+    box-shadow: 0 0 12px #5EEAD4, 0 0 24px rgba(94, 234, 212, 0.4);
     width: var(--glow-w, 60px);
     left: var(--glow-x, 0px);
-    transition: left 0.26s cubic-bezier(0.16, 1, 0.3, 1),
-                width 0.26s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.2s ease;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
     opacity: var(--glow-opacity, 1);
     pointer-events: none;
-    will-change: left, width, opacity;
 }
 
 .nav-links a {

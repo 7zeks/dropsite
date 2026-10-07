@@ -11126,8 +11126,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const x = itemRect.left - listRect.left;
             const w = itemRect.width;
-            navLinks.style.setProperty('--glow-x', Math.round(x) + 'px');
-            navLinks.style.setProperty('--glow-w', Math.round(w) + 'px');
+            navLinks.style.setProperty('--glow-x', x + 'px');
+            navLinks.style.setProperty('--glow-w', w + 'px');
             navLinks.style.setProperty('--glow-opacity', '1');
         }
 
