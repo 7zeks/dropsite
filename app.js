@@ -1951,10 +1951,13 @@ if (navToolsMenuEl && navDropdownGliderEl) {
             dropdownItem.classList.remove('is-open');
             const btn = dropdownItem.querySelector('a[aria-haspopup]');
             if (btn) btn.setAttribute('aria-expanded', 'false');
-            // Zresetuj liquid glow do aktywnego linka po zamknięciu dropdown
-            if (window._navUpdateGlow && window._navLinks) {
+            // Zresetuj liquid glow inteligentnie (sprawdź czy mysz nie najechała już na inny link nav)
+            if (window._navRefreshGlow) {
+                window._navRefreshGlow();
+            } else if (window._navUpdateGlow && window._navLinks) {
+                const hovered = window._navLinks.querySelector('a.nav-btn:hover');
                 const active = window._navLinks.querySelector('a.active, a.nav-btn.active');
-                window._navUpdateGlow(active || null);
+                window._navUpdateGlow(hovered || active || null);
             }
             closeTimer = null;
         }, 200);
@@ -10838,6 +10841,7 @@ function navigateToHome(resetUpload = true) {
     navLinks.forEach(nav => {
         nav.classList.toggle('active', nav.getAttribute('data-target') === 'view-glowna');
     });
+    if (window._navRefreshGlow) window._navRefreshGlow();
 
     drawerLinks.forEach(dl => {
         dl.classList.toggle('active', dl.getAttribute('data-target') === 'view-glowna');
@@ -10945,6 +10949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         allNavs.forEach(nav => {
             nav.classList.toggle('active', nav.getAttribute('data-target') === targetId);
         });
+        if (window._navRefreshGlow) window._navRefreshGlow();
 
         drawerLinks.forEach(dl => {
             dl.classList.toggle('active', dl.getAttribute('data-target') === targetId);
@@ -11105,7 +11110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // === SMART AUTO-HIDE NAVBAR & MOBILE QUICK-HOME THUMB FAB ===
     const navFloatingElements = document.querySelectorAll('.nav-logo, .nav-right, .nav-links-center');
 
-    // === LIQUID GLOW INDICATOR ===
+    // === LIQUID GLOW INDICATOR (APPLE / LINEAR STYLE ROCK-SOLID GLOW) ===
     (function initLiquidGlow() {
         const navLinks = document.querySelector('.nav-links');
         if (!navLinks) return;
@@ -11117,46 +11122,73 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const listRect = navLinks.getBoundingClientRect();
             const itemRect = targetEl.getBoundingClientRect();
+            if (!itemRect.width || !listRect.width) return;
+
             const x = itemRect.left - listRect.left;
             const w = itemRect.width;
-            navLinks.style.setProperty('--glow-x', x + 'px');
-            navLinks.style.setProperty('--glow-w', w + 'px');
+            navLinks.style.setProperty('--glow-x', Math.round(x) + 'px');
+            navLinks.style.setProperty('--glow-w', Math.round(w) + 'px');
             navLinks.style.setProperty('--glow-opacity', '1');
         }
 
-        // Init on active link
-        const activeLink = navLinks.querySelector('a.active, a.nav-btn.active');
-        if (activeLink) updateGlow(activeLink);
+        function getTargetGlowEl() {
+            const hovered = navLinks.querySelector('a.nav-btn:hover');
+            if (hovered) return hovered;
 
+            const toolsDropdown = document.getElementById('navToolsDropdown');
+            if (toolsDropdown && toolsDropdown.classList.contains('is-open')) {
+                const toolsBtn = toolsDropdown.querySelector('a.nav-btn-tools');
+                if (toolsBtn) return toolsBtn;
+            }
+
+            return navLinks.querySelector('a.active, a.nav-btn.active');
+        }
+
+        function refreshGlow() {
+            const target = getTargetGlowEl();
+            if (target) updateGlow(target);
+        }
+
+        // 1. Hover na poszczególnych linkach (nie resetuj w lukach między przyciskami!)
         navLinks.querySelectorAll('a.nav-btn').forEach(link => {
             link.addEventListener('mouseenter', () => updateGlow(link));
-            link.addEventListener('mouseleave', () => {
-                // Jeśli dropdown Narzećdzia jest otwarty, nie resetuj glowa
-                // (mysz przeszła z <a> do menu dropdown, wciąż jesteśmy w obszarze Narzećdzi)
-                const toolsDropdown = document.getElementById('navToolsDropdown');
-                if (toolsDropdown && toolsDropdown.classList.contains('is-open')) return;
-                const active = navLinks.querySelector('a.active, a.nav-btn.active');
-                updateGlow(active || null);
-            });
             link.addEventListener('click', () => {
-                setTimeout(() => {
-                    const active = navLinks.querySelector('a.active, a.nav-btn.active');
-                    updateGlow(active || null);
-                }, 50);
+                setTimeout(refreshGlow, 40);
             });
         });
 
-        // Watch for active class changes via MutationObserver
-        const observer = new MutationObserver(() => {
+        // 2. Opuszczenie całego paska nawigacji — wracaj do aktywnego linku dopiero gdy kursor opuści całe menu
+        const navCenter = document.querySelector('.nav-links-center') || navLinks;
+        navCenter.addEventListener('mouseleave', () => {
+            const toolsDropdown = document.getElementById('navToolsDropdown');
+            if (toolsDropdown && toolsDropdown.classList.contains('is-open')) return;
             const active = navLinks.querySelector('a.active, a.nav-btn.active');
+            updateGlow(active || null);
+        });
+
+        // 3. Obserwacja zmian atrybutów active
+        const observer = new MutationObserver(() => {
             const toolsDropdown = document.getElementById('navToolsDropdown');
             const isDropdownOpen = toolsDropdown && toolsDropdown.classList.contains('is-open');
-            if (active && !navLinks.matches(':hover') && !isDropdownOpen) updateGlow(active);
+            const isHovered = navLinks.matches(':hover');
+            if (!isHovered && !isDropdownOpen) {
+                const active = navLinks.querySelector('a.active, a.nav-btn.active');
+                if (active) updateGlow(active);
+            }
         });
         observer.observe(navLinks, { subtree: true, attributeFilter: ['class'] });
 
-        // Udostępnij updateGlow globalnie (do użytku przez dropdown controller)
+        // 4. Odporność na zmianę rozmiaru okna, załadowanie czcionek i tłumaczeń i18n
+        window.addEventListener('resize', refreshGlow, { passive: true });
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => setTimeout(refreshGlow, 50));
+        }
+        setTimeout(refreshGlow, 100);
+        setTimeout(refreshGlow, 600);
+
+        // Globalne udostępnienie
         window._navUpdateGlow = updateGlow;
+        window._navRefreshGlow = refreshGlow;
         window._navLinks = navLinks;
     })();
 
