@@ -948,9 +948,10 @@
     transition-delay: 0s;
 }
 
-/* MAGNETYCZNY GLIDER POD KURSOREM (ŚWIEŻY, ŚWIETLISTY GLOW) */
+/* MAGNETYCZNY GLIDER POD KURSOREM (ŚWIEŻY, ŚWIETLISTY GLOW - COMPOSITOR ACCELERATED) */
 .nav-dropdown-glider {
     position: absolute;
+    top: 0;
     left: 7px;
     right: 7px;
     width: calc(100% - 14px);
@@ -961,9 +962,11 @@
     pointer-events: none;
     opacity: 0;
     z-index: 1;
-    transition: top 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                height 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform: translateY(0);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                height 0.24s cubic-bezier(0.16, 1, 0.3, 1),
                 opacity 0.18s ease;
+    will-change: transform, height, opacity;
 }
 
 .nav-dropdown-link {
@@ -979,7 +982,7 @@
     cursor: pointer;
     text-align: left;
     text-decoration: none !important;
-    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: color 0.18s ease !important;
     font-family: inherit;
     box-sizing: border-box;
     position: relative;
@@ -992,7 +995,6 @@
 
 .nav-dropdown-link:hover {
     color: #FFFFFF !important;
-    background: rgba(255, 255, 255, 0.035);
 }
 
 /* HARMONIJNE IKONY FROSTED GLASS Z SUBTELNYM TINTEM */
@@ -1171,38 +1173,67 @@
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.12);
 }
 
-/* PRZEŁĄCZNIKI SUWAKOWE iOS-STYLE */
+/* PRZEŁĄCZNIKI SUWAKOWE iOS-STYLE (60 FPS HARDWARE ACCELERATED) */
 .sound-mini-switch {
-    width: 34px;
-    height: 19px;
+    width: 36px;
+    height: 20px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.18);
     position: relative;
     margin-left: auto;
     flex-shrink: 0;
     cursor: pointer;
-    transition: background-color 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-                border-color 0.24s ease,
-                box-shadow 0.24s ease;
+    overflow: hidden;
+    transform: translateZ(0);
+    transition: border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Subtelny płynny gradient podkładowy z płynnym fade-in */
+.sound-mini-switch::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 0;
+}
+
+#dropdownSoundSwitch::before {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+}
+
+#dropdownPerfSwitch::before {
+    background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+}
+
+.sound-mini-switch.is-active::before,
+.sound-mini-switch.active::before {
+    opacity: 1;
 }
 
 .sound-switch-thumb {
     position: absolute;
-    top: 1.5px;
+    top: 2px;
     left: 2px;
     width: 14px;
     height: 14px;
     border-radius: 50%;
     background: #FFFFFF;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-    transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+    z-index: 1;
+    transform: translateX(0) translateZ(0);
+    will-change: transform;
 }
 
 /* Aktywny przełącznik dźwięku (Emerald) */
 .sound-mini-switch.is-active,
 .sound-mini-switch.active {
-    background: #10B981;
     border-color: rgba(52, 211, 153, 0.7);
     box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
 }
@@ -1210,14 +1241,13 @@
 /* Aktywny przełącznik Trybu Płynności / Eco (Electric Cyan) */
 #dropdownPerfSwitch.is-active,
 #dropdownPerfSwitch.active {
-    background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
-    border-color: rgba(56, 189, 248, 0.8);
+    border-color: rgba(56, 189, 248, 0.85);
     box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
 }
 
 .sound-mini-switch.is-active .sound-switch-thumb,
 .sound-mini-switch.active .sound-switch-thumb {
-    transform: translateX(16px);
+    transform: translateX(16px) translateZ(0);
 }
 
 .nav-dropdown-divider {

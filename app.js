@@ -1913,17 +1913,15 @@ if (navDropdownPerfBtn) {
     });
 }
 
-// MAGNETYCZNY GLIDER MENU NARZĘDZI (STRIPE / LINEAR STYLE)
+// MAGNETYCZNY GLIDER MENU NARZĘDZI (STRIPE / LINEAR STYLE - GPU ACCELERATED)
 const navToolsMenuEl = document.getElementById('navToolsMenu');
 const navDropdownGliderEl = document.getElementById('navDropdownGlider');
 if (navToolsMenuEl && navDropdownGliderEl) {
     const dropdownLinks = navToolsMenuEl.querySelectorAll('.nav-dropdown-link');
     dropdownLinks.forEach((link) => {
         link.addEventListener('mouseenter', () => {
-            const menuRect = navToolsMenuEl.getBoundingClientRect();
-            const linkRect = link.getBoundingClientRect();
-            navDropdownGliderEl.style.top = (linkRect.top - menuRect.top) + 'px';
-            navDropdownGliderEl.style.height = linkRect.height + 'px';
+            navDropdownGliderEl.style.transform = `translateY(${link.offsetTop}px)`;
+            navDropdownGliderEl.style.height = `${link.offsetHeight}px`;
             navDropdownGliderEl.style.opacity = '1';
         });
     });
@@ -11654,31 +11652,52 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // SYSTEM ZARZĄDZANIA WYDAJNOŚCIĄ I TRYB ECO (POTATO PC SHIELD)
 // ============================================================================
+let _isTogglingPerf = false;
 window.setPerformanceMode = function(enable, notify) {
     const root = document.documentElement;
-    if (enable) {
-        root.classList.add('eco-mode');
-        try { localStorage.setItem('dropsite_perf_mode', 'true'); } catch(_) {}
-        const canvas = document.getElementById('bgCanvas');
-        if (canvas) canvas.style.display = 'none';
-        if (notify && typeof window.showToast === 'function') {
-            window.showToast('⚡ Aktywowano Tryb Wydajności – pełna płynność 60 FPS', 'info');
-        }
-    } else {
-        root.classList.remove('eco-mode');
-        try { localStorage.setItem('dropsite_perf_mode', 'false'); } catch(_) {}
-        const canvas = document.getElementById('bgCanvas');
-        if (canvas && window.innerWidth > 768) {
-            canvas.style.display = 'block';
-        }
-        if (notify && typeof window.showToast === 'function') {
-            window.showToast('✨ Włączono pełne efekty wizualne', 'info');
-        }
+    
+    // 1. Zaktualizuj suwak natychmiast, aby animacja ruszyła w klatce 0 bez opóźnień
+    const switchEl = document.getElementById('dropdownPerfSwitch');
+    if (switchEl) {
+        switchEl.classList.toggle('active', enable);
+        switchEl.classList.toggle('is-active', enable);
     }
-    updatePerformanceModeUI();
+    const footerBtn = document.getElementById('footerPerfToggle');
+    if (footerBtn) {
+        footerBtn.textContent = enable ? '⚡ Tryb: Płynny (Eco)' : '✨ Tryb: Efekty (Full)';
+        footerBtn.title = enable ? 'Kliknij, aby włączyć pełne efekty wizualne' : 'Kliknij, aby włączyć Tryb Wydajności (Eco 60 FPS)';
+    }
+
+    // 2. Operacje na drzewie DOM (wyłączenie canvasu, klasa na <html>) wykonaj w kolejnej klatce (requestAnimationFrame),
+    // aby wątek kompozytora nie przyciął płynnej animacji suwaka (pełne 60/120 FPS)
+    requestAnimationFrame(() => {
+        if (enable) {
+            root.classList.add('eco-mode');
+            try { localStorage.setItem('dropsite_perf_mode', 'true'); } catch(_) {}
+            const canvas = document.getElementById('bgCanvas');
+            if (canvas) canvas.style.display = 'none';
+            if (notify && typeof window.showToast === 'function') {
+                window.showToast('⚡ Aktywowano Tryb Wydajności – pełna płynność 60 FPS', 'info');
+            }
+        } else {
+            root.classList.remove('eco-mode');
+            try { localStorage.setItem('dropsite_perf_mode', 'false'); } catch(_) {}
+            const canvas = document.getElementById('bgCanvas');
+            if (canvas && window.innerWidth > 768) {
+                canvas.style.display = 'block';
+            }
+            if (notify && typeof window.showToast === 'function') {
+                window.showToast('✨ Włączono pełne efekty wizualne', 'info');
+            }
+        }
+    });
 };
 
 window.togglePerformanceMode = function() {
+    if (_isTogglingPerf) return;
+    _isTogglingPerf = true;
+    setTimeout(() => { _isTogglingPerf = false; }, 280);
+
     const isEco = document.documentElement.classList.contains('eco-mode');
     window.setPerformanceMode(!isEco, true);
 };
