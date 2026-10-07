@@ -222,7 +222,7 @@
         var(--pigment-secondary, rgba(56, 189, 248, 0.06)) 45%, 
         transparent 72%
     );
-    filter: blur(48px);
+    filter: blur(14px);
     pointer-events: none;
     z-index: 0;
     opacity: 0.85;
@@ -255,7 +255,7 @@
 
 .snake-story-panel:hover::before {
     opacity: 1;
-    filter: blur(42px);
+    filter: blur(12px);
 }
 
 .snake-telemetry-badge {
@@ -382,7 +382,7 @@
     position: absolute;
     inset: -4% -4%;
     border-radius: 46% 54% 60% 40% / 48% 48% 52% 52%;
-    filter: blur(42px);
+    filter: blur(12px);
     pointer-events: none;
     opacity: 0.85;
     transition: opacity 0.5s ease, filter 0.5s ease;
@@ -994,7 +994,7 @@
     position: absolute;
     inset: -10% -5%;
     background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(251, 191, 36, 0.14) 0%, rgba(217, 119, 6, 0.04) 50%, transparent 75%);
-    filter: blur(48px);
+    filter: blur(14px);
     pointer-events: none;
     z-index: 0;
     border-radius: 50%;

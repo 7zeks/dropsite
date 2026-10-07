@@ -1831,8 +1831,37 @@ export default {
     // Metadane pliku dla strony pobierania
     if (url.pathname === "/file-info" && request.method === "GET") {
       const key = url.searchParams.get("key");
-      if (!key || !env.BUCKET) {
-        return new Response(JSON.stringify({ success: false, message: "Brak pliku" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      if (!key) {
+        return new Response(JSON.stringify({ success: false, message: "Brak klucza pliku" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+
+      // Obsługa plików z Dysku Google (BYOS - Bring Your Own Storage)
+      if (key.startsWith("gdrive_")) {
+        const gId = key.replace("gdrive_", "");
+        const fileName = safeDecode(url.searchParams.get("name") || "plik_google_drive");
+        const fileSize = parseInt(url.searchParams.get("size") || "0", 10);
+        return new Response(JSON.stringify({
+          success: true,
+          source: "gdrive",
+          isGdrive: true,
+          key: key,
+          gdriveId: gId,
+          originalName: fileName,
+          name: fileName,
+          size: fileSize,
+          expiryType: "permanent",
+          isPermanent: true,
+          directUrl: `https://drive.google.com/uc?export=download&id=${gId}`,
+          views: 1,
+          downloads: 0
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+
+      if (!env.BUCKET) {
+        return new Response(JSON.stringify({ success: false, message: "Brak magazynu dyskowego" }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
       try {

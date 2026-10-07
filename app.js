@@ -1902,6 +1902,17 @@ if (navDropdownHistoryBtn) {
     });
 }
 
+const navDropdownPerfBtn = document.getElementById('navDropdownPerfBtn');
+if (navDropdownPerfBtn) {
+    navDropdownPerfBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.togglePerformanceMode === 'function') {
+            window.togglePerformanceMode();
+        }
+    });
+}
+
 // MAGNETYCZNY GLIDER MENU NARZĘDZI (STRIPE / LINEAR STYLE)
 const navToolsMenuEl = document.getElementById('navToolsMenu');
 const navDropdownGliderEl = document.getElementById('navDropdownGlider');
@@ -1954,10 +1965,14 @@ if (navToolsMenuEl && navDropdownGliderEl) {
     dropdownItem.addEventListener('mouseenter', openDropdown);
     dropdownItem.addEventListener('mouseleave', closeDropdown);
 
-    // Zamknij przy kliknięciu linku w menu
+    // Zamknij przy kliknięciu linku w menu (z pominięciem interaktywnych przełączników)
     dropdownItem.addEventListener('click', (e) => {
         const link = e.target.closest('.nav-dropdown-link');
         if (link) {
+            // Nie zamykaj menu przy kliknięciu suwaków dźwięku ani trybu płynności
+            if (link.id === 'navDropdownSoundBtn' || link.id === 'navDropdownPerfBtn' || e.target.closest('.sound-mini-switch')) {
+                return;
+            }
             if (closeTimer) clearTimeout(closeTimer);
             dropdownItem.classList.remove('is-open');
             const btn = dropdownItem.querySelector('a[aria-haspopup]');
@@ -3366,8 +3381,8 @@ async function uploadCollectionMultiFiles(filesList) {
 
 async function updateSelectedFile(filesList) {
     if (!filesList || filesList.length === 0) return;
-    
     const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    if (uploadBoxEl) uploadBoxEl.classList.add('has-files');
     const initialHeight = uploadBoxEl ? uploadBoxEl.offsetHeight : 0;
     
     playSound('drop');
@@ -3832,12 +3847,13 @@ async function uploadFile() {
 
     // Weryfikacja konta PRO dla dużych plików i długich okresów
     const isPro = isProUser();
+    const isGoogleDrive = Boolean(window.DropsiteCloudBridge && window.DropsiteCloudBridge.isGoogleDriveActive());
     const FREE_LIMIT = 250 * 1024 * 1024; // 250 MB
 
-    if (!isPro && file.size > FREE_LIMIT) {
+    if (!isGoogleDrive && !isPro && file.size > FREE_LIMIT) {
         showError(`Plik (${formatBytes(file.size)}) przekracza limit 250 MB dla konta darmowego.`);
         if (typeof showNotification === 'function') {
-            showNotification('Wysyłanie plików powyżej 250 MB wymaga odblokowania konta Dropsite PRO (14,99 zł)!', 'info');
+            showNotification('Wysyłanie plików powyżej 250 MB wymaga odblokowania konta Dropsite PRO (14,99 zł) lub podłączenia Dysku Google!', 'info');
         }
         window.openProModal({
             reason: 'file_limit',
@@ -3847,10 +3863,10 @@ async function uploadFile() {
         return;
     }
 
-    if (!isPro && (duration === '30d' || duration === 'permanent')) {
+    if (!isGoogleDrive && !isPro && (duration === '30d' || duration === 'permanent')) {
         showError('Przechowywanie na 30 dni lub Bezterminowo wymaga konta Dropsite PRO.');
         if (typeof showNotification === 'function') {
-            showNotification('Wybierz 1 Dzień lub odblokuj konto Dropsite PRO!', 'info');
+            showNotification('Wybierz 1 Dzień lub odblokuj konto Dropsite PRO (lub przełącz na Dysk Google)!', 'info');
         }
         window.openProModal();
         return;
@@ -4006,6 +4022,33 @@ async function uploadFile() {
         }
 
         window._isUploadingActive = true;
+
+        // BYOS: OBSŁUGA TRANSFERU BEZPOŚREDNIO DO DYSKU GOOGLE (0 MB NA R2)
+        if (window.DropsiteCloudBridge && window.DropsiteCloudBridge.isGoogleDriveActive()) {
+            if (btnTextSpan) btnTextSpan.textContent = 'Wgrywanie na Dysk Google...';
+            try {
+                const bridgeRes = await window.DropsiteCloudBridge.uploadFile(file, {
+                    password: filePassword,
+                    note: fileNote
+                }, (loaded, total, percent) => {
+                    fsProgressBar.style.width = percent + '%';
+                    fsSizeOrProgress.innerText = `${percent}% - ${formatBytes(loaded)} z ${formatBytes(total)}`;
+                    updateTelemetry(loaded);
+                });
+
+                if (bridgeRes && bridgeRes.success) {
+                    showSuccessScreen(bridgeRes.finalUrl, bridgeRes.key, 'permanent');
+                    if (typeof showNotification === 'function') {
+                        showNotification('✓ Plik bezpiecznie przesłany na Twój Dysk Google!', 'success');
+                    }
+                }
+                return;
+            } catch (gdriveErr) {
+                showError('Błąd transferu do Google Drive: ' + gdriveErr.message);
+                return;
+            }
+        }
+
         if (file.size <= 10 * 1024 * 1024) { 
             await uploadFileStandard(file, duration, customSlug, filePassword, fileNote, fileMaxDl, creatorBrand, isSpyMode, isCinematic, cinematicTrack, timelockTimestamp, timelockHint, btnTextSpan, updateTelemetry);
         } else { 
@@ -4644,6 +4687,9 @@ function updateAdvActiveBadges() {
     if (isCinematic) badges.push({ color: 'purple', label: getSafeLabel('badge_active_cinematic', 'Cinematic') });
     if (hasUnboxing) badges.push({ color: 'emerald', label: getSafeLabel('badge_active_unboxing', 'Powitanie') });
     if (document.getElementById('timeLockCheckbox')?.checked) badges.push({ color: 'purple', label: getSafeLabel('adv_timelock_title', 'Kapsuła Czasu') });
+    if (window.DropsiteCloudBridge && window.DropsiteCloudBridge.isGoogleDriveActive()) {
+        badges.push({ color: 'cyan', label: getSafeLabel('storage_gdrive_label', 'Dysk Google') });
+    }
 
     const countEl = document.getElementById('advActiveBadgeCount');
     const subtextEl = document.getElementById('advActiveSubtext');
@@ -8780,6 +8826,11 @@ function shareLink() {
 
 function resetUpload() {
     successFlow.style.animation = 'slideOutDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    if (uploadBoxEl) {
+        uploadBoxEl.classList.remove('has-files');
+        uploadBoxEl.classList.remove('options-forced');
+    }
     
     setTimeout(() => {
         successFlow.hidden = true;
@@ -10673,6 +10724,11 @@ window.stopAllMediaPlayback = stopAllMediaPlayback;
 
 function resetUploadFlow() {
     selectedFile = null;
+    const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    if (uploadBoxEl) {
+        uploadBoxEl.classList.remove('has-files');
+        uploadBoxEl.classList.remove('options-forced');
+    }
     originalImageFile = null;
     currentCompressionQuality = 0.82;
     window._rawMultiFiles = null;
@@ -11595,18 +11651,75 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // 1. INTERAKTYWNE TŁO CZĄSTECZEK AURORA (CANVAS - WYSOKA WYDAJNOŚĆ)
 // ============================================================================
+// ============================================================================
+// SYSTEM ZARZĄDZANIA WYDAJNOŚCIĄ I TRYB ECO (POTATO PC SHIELD)
+// ============================================================================
+window.setPerformanceMode = function(enable, notify) {
+    const root = document.documentElement;
+    if (enable) {
+        root.classList.add('eco-mode');
+        try { localStorage.setItem('dropsite_perf_mode', 'true'); } catch(_) {}
+        const canvas = document.getElementById('bgCanvas');
+        if (canvas) canvas.style.display = 'none';
+        if (notify && typeof window.showToast === 'function') {
+            window.showToast('⚡ Aktywowano Tryb Wydajności – pełna płynność 60 FPS', 'info');
+        }
+    } else {
+        root.classList.remove('eco-mode');
+        try { localStorage.setItem('dropsite_perf_mode', 'false'); } catch(_) {}
+        const canvas = document.getElementById('bgCanvas');
+        if (canvas && window.innerWidth > 768) {
+            canvas.style.display = 'block';
+        }
+        if (notify && typeof window.showToast === 'function') {
+            window.showToast('✨ Włączono pełne efekty wizualne', 'info');
+        }
+    }
+    updatePerformanceModeUI();
+};
+
+window.togglePerformanceMode = function() {
+    const isEco = document.documentElement.classList.contains('eco-mode');
+    window.setPerformanceMode(!isEco, true);
+};
+
+function updatePerformanceModeUI() {
+    const isEco = document.documentElement.classList.contains('eco-mode');
+    const switchEl = document.getElementById('dropdownPerfSwitch');
+    if (switchEl) {
+        switchEl.classList.toggle('active', isEco);
+        switchEl.classList.toggle('is-active', isEco);
+    }
+    const footerBtn = document.getElementById('footerPerfToggle');
+    if (footerBtn) {
+        footerBtn.textContent = isEco ? '⚡ Tryb: Płynny (Eco)' : '✨ Tryb: Efekty (Full)';
+        footerBtn.title = isEco ? 'Kliknij, aby włączyć pełne efekty wizualne' : 'Kliknij, aby włączyć Tryb Wydajności (Eco 60 FPS)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
+
+// ============================================================================
+// 1. INTERAKTYWNE TŁO CZĄSTECZEK AURORA (CANVAS - WYSOKA WYDAJNOŚĆ + AUTO SLEEP)
+// ============================================================================
 (function initAuroraCanvas() {
     const canvas = document.getElementById('bgCanvas');
     if (!canvas) return;
 
-    // Na urządzeniach mobilnych i małych ekranach dotykowych wyłączamy animację cząsteczek canvas:
-    const isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024);
-    if (isMobileDevice) {
+    // Detekcja słabszego sprzętu lub aktywnego trybu Eco
+    const isWeakHardware = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+                           (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+                           (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+                           document.documentElement.classList.contains('eco-mode');
+
+    // Na słabych maszynach, telefonach i małych ekranach wyłączamy canvas natychmiast:
+    if (isWeakHardware || window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024)) {
         canvas.style.display = 'none';
         return;
     }
 
     const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
     
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
@@ -11617,7 +11730,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Math.abs(window.innerWidth - lastCanvasWinWidth) < 15) return;
         lastCanvasWinWidth = window.innerWidth;
 
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768 || document.documentElement.classList.contains('eco-mode')) {
             canvas.style.display = 'none';
             if (animId) { cancelAnimationFrame(animId); animId = null; }
             return;
@@ -11629,54 +11742,71 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeTimer = setTimeout(() => {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            if (isRunning && !animId) animId = requestAnimationFrame(animate);
+            resetIdleTimer();
         }, 150);
     }, { passive: true });
 
     const particles = [];
-    const count = Math.min(Math.floor(width / 60), 22);
+    const count = Math.min(Math.floor(width / 70), 18);
     
     const mouse = { x: width / 2, y: height / 2, active: false };
     let mouseTimer;
+    let idleSleepTimer = null;
+    let isRunning = true;
+    let isScrolling = false;
+    let isHeroVisible = true;
+    let animId = null;
+
+    function wakeAnimation() {
+        if (document.documentElement.classList.contains('eco-mode')) return;
+        if (!animId && isRunning && isHeroVisible && !isScrolling) {
+            animId = requestAnimationFrame(animate);
+        }
+    }
+
+    function resetIdleTimer() {
+        wakeAnimation();
+        clearTimeout(idleSleepTimer);
+        // Po 3.5s bezruchu wstrzymaj pętlę rAF (0% CPU / 0% GPU)
+        idleSleepTimer = setTimeout(() => {
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+        }, 3500);
+    }
+
     window.addEventListener('mousemove', (e) => {
+        if (document.documentElement.classList.contains('eco-mode')) return;
         const modM = document.getElementById('modModal');
         if (modM && !modM.hidden && modM.style.display !== 'none') return;
         mouse.x = e.clientX;
         mouse.y = e.clientY;
         mouse.active = true;
         clearTimeout(mouseTimer);
-        mouseTimer = setTimeout(() => { mouse.active = false; }, 2000);
-        if (isRunning && !animId && !isScrolling) {
-            animId = requestAnimationFrame(animate);
-        }
+        mouseTimer = setTimeout(() => { mouse.active = false; }, 1800);
+        resetIdleTimer();
     }, { passive: true });
 
     for (let i = 0; i < count; i++) {
         particles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.45,
-            vy: (Math.random() - 0.5) * 0.45,
-            radius: Math.random() * 1.8 + 1,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            radius: Math.random() * 1.6 + 1,
             color: i % 3 === 0 ? 'rgba(52, 211, 153, 0.65)' : (i % 3 === 1 ? 'rgba(56, 189, 248, 0.65)' : 'rgba(167, 139, 250, 0.55)')
         });
     }
 
-    let isRunning = true;
-    let isScrolling = false;
-    let isHeroVisible = true;
-    let animId = null;
-    let scrollEndTimer = null;
-
     // SCROLL PACING (Pauza canvas podczas scrollowania – 100% płynności dla kompozytora)
+    let scrollEndTimer = null;
     function onScrollActive() {
         if (!isScrolling) isScrolling = true;
         clearTimeout(scrollEndTimer);
         scrollEndTimer = setTimeout(() => {
             isScrolling = false;
-            if (isRunning && isHeroVisible && !animId) {
-                animId = requestAnimationFrame(animate);
-            }
+            resetIdleTimer();
         }, 80);
     }
     window.addEventListener('scroll', onScrollActive, { passive: true });
@@ -11684,9 +11814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('scrollend', () => {
             clearTimeout(scrollEndTimer);
             isScrolling = false;
-            if (isRunning && isHeroVisible && !animId) {
-                animId = requestAnimationFrame(animate);
-            }
+            resetIdleTimer();
         }, { passive: true });
     }
 
@@ -11697,8 +11825,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     isHeroVisible = entry.isIntersecting;
-                    if (isHeroVisible && isRunning && !animId && !isScrolling) {
-                        animId = requestAnimationFrame(animate);
+                    if (isHeroVisible) {
+                        resetIdleTimer();
+                    } else if (animId) {
+                        cancelAnimationFrame(animId);
+                        animId = null;
                     }
                 });
             }, { rootMargin: '100px 0px 100px 0px' });
@@ -11706,12 +11837,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function animate() {
+    // AUTO FPS MONITOR
+    const frameTimes = [];
+    let fpsChecked = false;
+
+    function animate(timestamp) {
         const modM = document.getElementById('modModal');
         const isModOpen = modM && !modM.hidden && modM.style.display !== 'none';
-        if (!isRunning || isScrolling || !isHeroVisible || isModOpen) {
+        if (!isRunning || isScrolling || !isHeroVisible || isModOpen || document.documentElement.classList.contains('eco-mode')) {
             animId = null;
             return;
+        }
+
+        // Monitoring FPS w pierwszych klatkach
+        if (!fpsChecked && timestamp) {
+            frameTimes.push(timestamp);
+            if (frameTimes.length >= 40) {
+                fpsChecked = true;
+                const duration = frameTimes[frameTimes.length - 1] - frameTimes[0];
+                const avgFps = ((frameTimes.length - 1) * 1000) / duration;
+                if (avgFps < 38) {
+                    console.warn('[Dropsite Perf] Słaba wydajność GPU/CPU (' + Math.round(avgFps) + ' FPS). Włączam automatycznie Tryb Eco.');
+                    window.setPerformanceMode(true, true);
+                    animId = null;
+                    return;
+                }
+            }
         }
 
         ctx.clearRect(0, 0, width, height);
@@ -11729,9 +11880,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dx = mouse.x - p.x;
                 const dy = mouse.y - p.y;
                 const distSq = dx * dx + dy * dy;
-                if (distSq < 25600) {
-                    p.x += dx * 0.012;
-                    p.y += dy * 0.012;
+                if (distSq < 22500) {
+                    p.x += dx * 0.01;
+                    p.y += dy * 0.01;
                 }
             }
 
@@ -11741,7 +11892,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fill();
         }
 
-        // 2. Batchowane rysowanie linii (1 wywołanie stroke zamiast 50!)
+        // 2. Batchowane rysowanie linii
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
         ctx.lineWidth = 0.55;
@@ -11751,7 +11902,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const p2 = particles[j];
                 const dx = p.x - p2.x;
                 const dy = p.y - p2.y;
-                if (dx * dx + dy * dy < 14400) {
+                if (dx * dx + dy * dy < 12000) {
                     ctx.moveTo(p.x, p.y);
                     ctx.lineTo(p2.x, p2.y);
                 }
@@ -11768,14 +11919,15 @@ document.addEventListener('DOMContentLoaded', () => {
             isRunning = false;
             if (animId) { cancelAnimationFrame(animId); animId = null; }
         } else {
-            if (!isRunning && window.innerWidth > 768) {
+            if (!isRunning && window.innerWidth > 768 && !document.documentElement.classList.contains('eco-mode')) {
                 isRunning = true;
-                if (isHeroVisible && !animId) animId = requestAnimationFrame(animate);
+                resetIdleTimer();
             }
         }
     });
 
-    animId = requestAnimationFrame(animate);
+    // Uruchomienie z limitem idle na start
+    resetIdleTimer();
 })();
 
 // ============================================================================
@@ -16081,11 +16233,34 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
     try {
         let data;
         
-        
-        // Rejestracja wyświetlenia na backendzie
-        fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=view`, { method: 'POST' }).catch(()=>{});
-        const res = await fetch(`${WORKER_URL}/file-info?key=${encodeURIComponent(fileKey)}`);
-        data = await res.json();
+        // OBSŁUGA PLIKÓW PRZECHOWYWANYCH NA DYSKU GOOGLE (BYOS)
+        if (fileKey && (fileKey.startsWith('gdrive_') || urlParams.get('source') === 'gdrive')) {
+            const gdriveId = fileKey.replace('gdrive_', '');
+            const gName = urlParams.get('name') || urlParams.get('gname') || 'plik_google_drive';
+            const gSize = parseInt(urlParams.get('size') || urlParams.get('gsize') || '0', 10);
+            const directDl = `https://drive.google.com/uc?export=download&id=${gdriveId}`;
+
+            data = {
+                success: true,
+                source: 'gdrive',
+                isGdrive: true,
+                key: fileKey,
+                gdriveId: gdriveId,
+                name: gName,
+                originalName: gName,
+                size: gSize,
+                expiryType: 'permanent',
+                isPermanent: true,
+                directUrl: directDl,
+                views: 1,
+                downloads: 0
+            };
+        } else {
+            // Rejestracja wyświetlenia na backendzie
+            fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=view`, { method: 'POST' }).catch(()=>{});
+            const res = await fetch(`${WORKER_URL}/file-info?key=${encodeURIComponent(fileKey)}`);
+            data = await res.json();
+        }
 
         if (!data.success) {
             dlFileName.innerText = 'Plik niedostępny';
@@ -16780,7 +16955,11 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             let badgeClass = 'temp';
             let expLabel = '';
 
-            if (spyMode) {
+            if (currentData.source === 'gdrive' || currentData.isGdrive) {
+                badgeClass = 'perm';
+                expLabel = 'Dysk Google (Bezterminowy)';
+                if (dlBurnWarning) dlBurnWarning.hidden = true;
+            } else if (spyMode) {
                 badgeClass = 'spy';
                 expLabel = typeof t === 'function' ? t('exp_spy', 'Tryb Szpiegowski') : 'Tryb Szpiegowski';
                 if (dlBurnWarning) dlBurnWarning.hidden = true;
@@ -16810,6 +16989,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             if (dlFileSize) {
                 dlFileSize.innerHTML = `
                     <div class="dl-meta-row">
+                        ${(currentData.source === 'gdrive' || currentData.isGdrive) ? `<span class="dl-meta-pill dl-badge-byos">Google Drive BYOS</span><span class="dl-meta-sep">•</span>` : ''}
                         <span class="dl-meta-pill">${formattedSize}</span>
                         <span class="dl-meta-sep">•</span>
                         <span class="dl-meta-pill">${extLabel}</span>
@@ -18708,3 +18888,20 @@ document.addEventListener('dropsite_language_changed', () => {
     });
 });
 
+
+
+// Obsługa przycisku Zen Options Toggle (dla wcześniejszego otwarcia opcji)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnZenToggle = document.getElementById('btnZenOptionsToggle');
+    if (btnZenToggle) {
+        btnZenToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const box = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+            if (box) {
+                box.classList.toggle('options-forced');
+                const isForced = box.classList.contains('options-forced');
+                btnZenToggle.setAttribute('aria-expanded', isForced ? 'true' : 'false');
+            }
+        });
+    }
+});

@@ -7,18 +7,23 @@
 .siri-glow-frame:has(#successFlow:not([hidden])),
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
-    max-width: 520px !important;
+    max-width: clamp(520px, 44vw, 780px) !important;
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
     width: 100% !important;
-    padding: 30px 28px 24px 28px !important;
+    padding: clamp(28px, 3.2vh, 42px) clamp(24px, 2.8vw, 44px) !important;
+    background: linear-gradient(180deg, rgba(26, 38, 58, 0.65) 0%, rgba(12, 19, 32, 0.82) 100%) !important;
+    backdrop-filter: blur(36px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     box-shadow: 
-        0 24px 70px -10px rgba(0, 0, 0, 0.85),
-        0 0 45px rgba(52, 211, 153, 0.14),
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
+        0 30px 80px -15px rgba(0, 0, 0, 0.78),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+    border-radius: clamp(24px, 2.2vw, 32px) !important;
 }
 
 /* Ukryj przełącznik trybów Chmura/Beam gdy plik jest już wrzucony (niepotrzebny clutter) */
@@ -34,7 +39,7 @@
 .success-flow {
     padding: 2px 0 0 0;
     width: 100%;
-    max-width: 480px;
+    max-width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
     animation: cleanSuccessIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -255,12 +260,12 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 13px;
+    gap: 14px;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
     transition: all 0.2s ease;
 }
 
@@ -407,11 +412,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
     box-sizing: border-box;
-    padding: 6px 6px 6px 10px;
-    border-radius: 16px;
+    padding: 8px 8px 8px 14px;
+    border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(15, 23, 42, 0.65);

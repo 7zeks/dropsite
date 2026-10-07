@@ -1,0 +1,883 @@
+/**
+ * ============================================================================
+ * DROPSITE CLOUD BRIDGE — GOOGLE DRIVE INTEGRATION (BYOS)
+ * Styling: Obsidian Glass, Cyber Mint, Neon Cyan & Tactile Micro-Animations
+ * Brand Guidelines: Pure inline SVGs, Zero Emojis, Anti-Pill Overload
+ * ============================================================================
+ */
+
+/* Kontener wyboru magazynu */
+.storage-target-container {
+    margin-bottom: 14px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md, 14px);
+    padding: 10px 12px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.storage-target-container:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.storage-target-container.is-gdrive-active {
+    border-color: rgba(56, 189, 248, 0.3);
+    background: rgba(15, 23, 42, 0.65);
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.08);
+}
+
+.storage-target-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.storage-target-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #94A3B8);
+}
+
+.btn-storage-byos-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: #38BDF8;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-storage-byos-info:hover {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7DD3FC;
+}
+
+/* Przyciski zakładek magazynu */
+.storage-target-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.storage-target-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #94A3B8;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: none;
+}
+
+.storage-target-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #F8FAFC;
+    transform: scale(1.01);
+}
+
+.storage-target-tab:active {
+    transform: scale(0.985);
+}
+
+.storage-target-tab.active {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(52, 211, 153, 0.45);
+    color: #34D399;
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.15);
+}
+
+.storage-target-tab[data-storage="gdrive"].active {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #38BDF8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+}
+
+.storage-target-sub {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 2px;
+}
+
+.storage-byos-tag {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+/* Panel statusu Google Drive */
+.gdrive-status-panel {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px dashed rgba(56, 189, 248, 0.25);
+    border-radius: 10px;
+    animation: fadeInSlideDown 0.25s ease-out;
+}
+
+@keyframes fadeInSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gdrive-unconnected-desc {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #94A3B8;
+    margin-bottom: 10px;
+}
+
+.gdrive-unconnected-desc svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.gdrive-unconnected-desc strong {
+    color: #E2E8F0;
+}
+
+.gdrive-unconnected-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-connect-gdrive {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, rgba(38, 132, 252, 0.2), rgba(0, 172, 71, 0.15));
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-connect-gdrive:hover {
+    background: linear-gradient(135deg, rgba(38, 132, 252, 0.3), rgba(0, 172, 71, 0.25));
+    border-color: rgba(56, 189, 248, 0.6);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+    transform: scale(1.01);
+}
+
+.btn-connect-gdrive:active {
+    transform: scale(0.985);
+}
+
+.btn-gdrive-config {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-gdrive-config:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #F8FAFC;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Stan Połączony */
+.gdrive-connected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.gdrive-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.gdrive-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0066da, #00ac47);
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(0, 172, 71, 0.3);
+    overflow: hidden;
+}
+
+.gdrive-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gdrive-user-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.gdrive-user-email {
+    font-size: 12px;
+    font-weight: 600;
+    color: #F8FAFC;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gdrive-folder-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    color: #34D399;
+}
+
+.gdrive-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #34D399;
+    box-shadow: 0 0 8px #34D399;
+    animation: gdrivePulse 2s infinite ease-in-out;
+}
+
+@keyframes gdrivePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.btn-gdrive-disconnect {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    color: #F87171;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-gdrive-disconnect:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #FCA5A5;
+}
+
+/* Informacja o braku limitu czasu na Dysku Google */
+.gdrive-retention-notice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    margin-top: 8px;
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 8px;
+    font-size: 11px;
+    color: #6EE7B7;
+}
+
+/* MODAL BYOS INFO & KONFIGURACJA */
+.byos-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.byos-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.byos-modal-card {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 20px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(56, 189, 248, 0.12);
+    padding: 24px;
+    position: relative;
+    transform: scale(0.96);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    color: #E2E8F0;
+}
+
+.byos-modal-overlay.active .byos-modal-card {
+    transform: scale(1);
+}
+
+.byos-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.byos-modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.byos-modal-title-group h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #F8FAFC;
+    letter-spacing: -0.01em;
+}
+
+.byos-modal-close {
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.byos-modal-close:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.byos-modal-features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.byos-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+}
+
+.byos-feature-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.byos-feature-icon.icon-safe {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.byos-feature-icon.icon-drive {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.byos-feature-icon.icon-rocket {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.byos-feature-text h4 {
+    margin: 0 0 3px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #F8FAFC;
+}
+
+.byos-feature-text p {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: #94A3B8;
+}
+
+/* Konfiguracja Client ID w modalu */
+.byos-client-id-box {
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.byos-client-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.byos-client-id-box label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #CBD5E1;
+    margin-bottom: 0;
+}
+
+.byos-get-id-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #38BDF8;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    transition: all 0.2s ease;
+}
+
+.byos-get-id-link:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+.byos-client-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.byos-client-input {
+    flex: 1;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.byos-client-input:focus {
+    border-color: #38BDF8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.btn-byos-save-client {
+    padding: 8px 14px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 8px;
+    color: #38BDF8;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-byos-save-client:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38BDF8;
+}
+
+/* Rozwijana instrukcja krok po kroku */
+.byos-guide-accordion {
+    margin-top: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.4);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.byos-guide-accordion:hover {
+    border-color: rgba(56, 189, 248, 0.25);
+}
+
+.byos-guide-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.byos-guide-trigger:hover {
+    color: #E2E8F0;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.byos-guide-trigger.is-open {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.06);
+}
+
+.byos-guide-trigger.is-open .byos-chevron-icon {
+    transform: rotate(180deg);
+}
+
+.byos-guide-trigger-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.byos-chevron-icon {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+}
+
+.byos-guide-content {
+    padding: 10px 12px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.25);
+    font-size: 11px;
+    color: #94A3B8;
+    line-height: 1.45;
+}
+
+.byos-steps-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.byos-steps-list li {
+    position: relative;
+    padding-left: 14px;
+}
+
+.byos-steps-list li::before {
+    content: '•';
+    position: absolute;
+    left: 2px;
+    color: #38BDF8;
+    font-weight: bold;
+}
+
+.byos-steps-list strong {
+    color: #E2E8F0;
+}
+
+.byos-inline-link {
+    color: #38BDF8;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.byos-inline-link:hover {
+    color: #7DD3FC;
+}
+
+.byos-origin-pill {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.byos-origin-pill code {
+    font-family: monospace;
+    font-size: 11px;
+    color: #38BDF8;
+    word-break: break-all;
+}
+
+.btn-copy-byos-origin {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 5px;
+    color: #38BDF8;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+}
+
+.btn-copy-byos-origin:hover {
+    background: rgba(56, 189, 248, 0.3);
+    border-color: #38BDF8;
+    color: #FFFFFF;
+}
+
+.byos-client-hint {
+    margin-top: 8px;
+    font-size: 10.5px;
+    color: #64748B;
+    line-height: 1.35;
+}
+
+/* Link pomocniczy w panelu dysku Google */
+.gdrive-unconnected-help {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-gdrive-help-link {
+    background: transparent;
+    border: none;
+    color: #64748B;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.btn-gdrive-help-link:hover {
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.08);
+}
+
+.byos-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-byos-primary {
+    flex: 1;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #10B981, #34D399);
+    border: none;
+    border-radius: 10px;
+    color: #064E3B;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-byos-primary:hover {
+    box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
+    transform: scale(1.01);
+}
+
+.btn-byos-primary:active {
+    transform: scale(0.985);
+}
+
+.btn-byos-demo {
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    color: #CBD5E1;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-byos-demo:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+}
+
+/* Odznaka BYOS na stronie pobierania */
+.dl-badge-byos {
+    background: rgba(56, 189, 248, 0.15) !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    color: #38BDF8 !important;
+}
+
+.dl-byos-owner-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 8px;
+    font-size: 11.5px;
+    color: #BAE6FD;
+    margin-top: 10px;
+}
+
+/* ==========================================================================
+   STYLING W ZAKŁADCE 'MAGAZYN' W PANELU OPCJI ZAAWANSOWANYCH
+   ========================================================================== */
+.adv-tab-pane .storage-target-container {
+    margin-bottom: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 2px 0 0 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+}
+
+.adv-tab-pane .storage-target-container:hover {
+    border-color: transparent;
+}
+
+.adv-tab-pane .storage-target-container.is-gdrive-active {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Informacyjna karta korzyści BYOS w zakładce */
+.storage-byos-info-card {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.storage-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #94A3B8;
+}
+
+.storage-info-row svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.storage-info-row strong {
+    color: #E2E8F0;
+}
+
+/* Sub-cyan badge color for active badge in adv trigger */
+.adv-sub-item.sub-cyan {
+    color: #38BDF8;
+}
+
+/* Elastyczna nawigacja mini-tabs na wypadek 4 zakładek */
+.adv-mini-tabs-nav {
+    display: flex;
+    gap: 12px !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.adv-mini-tabs-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.adv-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+

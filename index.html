@@ -2,6 +2,19 @@
 <html lang="en">
 
 <head>
+    <script>
+        (function() {
+            try {
+                var p = localStorage.getItem('dropsite_perf_mode');
+                var isWeak = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+                             (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+                             (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+                if (p === 'true' || (p === null && isWeak)) {
+                    document.documentElement.classList.add('eco-mode');
+                }
+            } catch(e) {}
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dropsite – Szybki Transfer Plików &amp; Darmowy Zestaw Narzędzi PDF, Kompresor Wideo, QR Studio w RAM</title>
@@ -192,13 +205,40 @@
     <link rel="stylesheet" href="css/media-grabber.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/pdf-studio-luxury.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/account-vault.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/cloud-bridge.css" media="print" onload="this.media='all'">
     <link rel="manifest" href="manifest.json">
     <script src="js/i18n.js" defer></script>
 
     <!-- Google AdSense Verification & Auto Ads -->
     <meta name="google-adsense-account" content="ca-pub-5653151226207684">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5653151226207684"
-        crossorigin="anonymous"></script>
+    <!-- Google AdSense - Inteligentne ładowanie po pierwszej interakcji użytkownika (Zero-Block LCP/INP) -->
+    <script>
+        (function() {
+            var adsLoaded = false;
+            function loadAdSense() {
+                if (adsLoaded) return;
+                adsLoaded = true;
+                window.removeEventListener('scroll', loadAdSense);
+                window.removeEventListener('mousemove', loadAdSense);
+                window.removeEventListener('touchstart', loadAdSense);
+                window.removeEventListener('keydown', loadAdSense);
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5653151226207684";
+                s.crossOrigin = "anonymous";
+                document.head.appendChild(s);
+            }
+            window.addEventListener('scroll', loadAdSense, { passive: true, once: true });
+            window.addEventListener('mousemove', loadAdSense, { passive: true, once: true });
+            window.addEventListener('touchstart', loadAdSense, { passive: true, once: true });
+            window.addEventListener('keydown', loadAdSense, { passive: true, once: true });
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(loadAdSense, { timeout: 4500 });
+            } else {
+                setTimeout(loadAdSense, 4000);
+            }
+        })();
+    </script>
 
     <!-- MyLead Traffic Source Verification -->
     <meta name="mylead-verification" content="d016a7722597c8750693e78967546071">
@@ -365,7 +405,7 @@
                         <div class="nav-dropdown-text">
                             <div class="nav-dropdown-title-row">
                                 <span class="nav-dropdown-title">Sejf Notatek &amp; Kodów</span>
-                                <span class="nav-dropdown-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">Autozapis</span>
+                                <span class="nav-dropdown-badge badge-amber">Autozapis</span>
                             </div>
                             <span class="nav-dropdown-desc">Hasła, PIN-y, tokeny i notatki w Twoim profilu</span>
                         </div>
@@ -373,7 +413,7 @@
 
                     <!-- 4. Kontakt -->
                     <a href="#" class="nav-dropdown-link" data-target="view-kontakt">
-                        <span class="nav-dropdown-icon icon-amber">
+                        <span class="nav-dropdown-icon icon-slate">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                                 <polyline points="22,6 12,13 2,6"></polyline>
@@ -407,9 +447,27 @@
                         </div>
                         <span class="badge-sound-state" id="dropdownSoundState" style="display: none;">ON</span>
                     </button>
+                    
+                    <!-- 6. Tryb Płynności / Wydajności (Eco Mode / Max FPS) -->
+                    <button type="button" class="nav-dropdown-link" id="navDropdownPerfBtn" onclick="if(window.togglePerformanceMode) window.togglePerformanceMode();">
+                        <span class="nav-dropdown-icon icon-cyan">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                        </span>
+                        <div class="nav-dropdown-text">
+                            <div class="nav-dropdown-title-row">
+                                <span class="nav-dropdown-title">Tryb Płynności (Eco)</span>
+                                <span class="nav-dropdown-badge badge-fps">60 FPS</span>
+                            </div>
+                            <span class="nav-dropdown-desc">Optymalizacja dla słabszych komputerów i laptopów</span>
+                        </div>
+                        <div class="sound-mini-switch" id="dropdownPerfSwitch">
+                            <div class="sound-switch-thumb"></div>
+                        </div>
+                    </button>
                 </div>
             </li>
-
             <li><a href="#" class="nav-btn" data-target="view-funkcje" data-i18n="nav_features">Features</a></li>
             <li><a href="#" class="nav-btn" data-target="view-cennik" data-i18n="nav_pricing">Pricing</a></li>
         </ul>
@@ -879,7 +937,31 @@
                                     </div>
                                 </div>
 
-                                <!-- OPCJONALNA WŁASNA NAZWA LINKU (Z DYMKIEM / POPOVEREM) -->
+                                <!-- ZEN STATE TOGGLE (Pozwala otworzyć opcje przed upuszczeniem pliku) -->
+                                <div class="zen-options-toggle-wrap" id="zenOptionsToggleWrap">
+                                    <button type="button" class="btn-zen-options" id="btnZenOptionsToggle"
+                                        aria-expanded="false" title="Więcej opcji transferu">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <path
+                                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                            </path>
+                                        </svg>
+                                        <span data-i18n="zen_options_peek">Opcje transferu (hasło, czas, alias)</span>
+                                        <svg class="zen-chevron" width="12" height="12" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- SEKCJA KONFIGURACYJNA (Rozwijana płynnie po dodaniu pliku lub kliknięciu) -->
+                                <div class="upload-options-collapsible" id="uploadOptionsCollapsible">
+                                    <div class="options-collapsible-inner">
+                                        <!-- OPCJONALNA WŁASNA NAZWA LINKU (Z DYMKIEM / POPOVEREM) -->
                                 <div class="custom-slug-wrap">
                                     <button type="button" class="slug-toggle-header" id="slugToggleBtn"
                                         aria-expanded="false" title="Własny adres linku">
@@ -1001,6 +1083,14 @@
                                                     </polygon>
                                                 </svg>
                                                 <span data-i18n="adv_tab_extras">Dodatki</span>
+                                            </button>
+                                            <button type="button" class="adv-tab-btn" data-tab="storage">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                    stroke-linejoin="round">
+                                                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                                                </svg>
+                                                <span data-i18n="adv_tab_storage">Magazyn</span>
                                             </button>
                                         </div>
 
@@ -1302,6 +1392,127 @@
                                                 </div>
                                             </div>
 
+                                            <!-- TAB 4: MAGAZYN DANYCH (STORAGE) -->
+                                            <div class="adv-tab-pane" data-tab-content="storage">
+                                                <div class="storage-target-container" id="storageTargetContainer">
+                                                    <div class="storage-target-header">
+                                                        <span class="storage-target-label" data-i18n="storage_target_label">Magazyn danych:</span>
+                                                        <button type="button" class="btn-storage-byos-info" id="btnByosInfo" title="Czym jest Bring Your Own Storage?">
+                                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <circle cx="12" cy="12" r="10"></circle>
+                                                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                                            </svg>
+                                                            <span data-i18n="byos_learn_more">Własny dysk</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="storage-target-tabs">
+                                                        <button type="button" class="storage-target-tab active" data-storage="dropsite" id="tabStorageDropsite">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                                                            </svg>
+                                                            <span data-i18n="storage_dropsite_label">Dropsite Cloud</span>
+                                                            <span class="storage-target-sub">Szybki transfer</span>
+                                                        </button>
+                                                        <button type="button" class="storage-target-tab" data-storage="gdrive" id="tabStorageGdrive">
+                                                            <svg width="14" height="14" viewBox="0 0 87.3 78">
+                                                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                                                            </svg>
+                                                            <span data-i18n="storage_gdrive_label">Dysk Google</span>
+                                                            <span class="storage-target-sub storage-byos-tag">BYOS</span>
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- PANEL STATUSU GOOGLE DRIVE -->
+                                                    <div class="gdrive-status-panel" id="gdriveStatusPanel" style="display: none;">
+                                                        <!-- Stan Niepołączony -->
+                                                        <div class="gdrive-unconnected" id="gdriveUnconnected">
+                                                            <div class="gdrive-unconnected-desc">
+                                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                                </svg>
+                                                                <span>Pliki trafią do Twojego prywatnego folderu <strong>Dropsite Transfers</strong> na Dysku Google. Zero zużycia serwera Dropsite.</span>
+                                                            </div>
+                                                            <div class="gdrive-unconnected-actions">
+                                                                <button type="button" class="btn-connect-gdrive" id="btnConnectGDrive">
+                                                                    <svg width="14" height="14" viewBox="0 0 87.3 78">
+                                                                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                                                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                                                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                                                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                                                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                                                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                                                                    </svg>
+                                                                    <span data-i18n="btn_connect_gdrive">Połącz z Google Drive</span>
+                                                                </button>
+                                                                <button type="button" class="btn-gdrive-config" id="btnGDriveConfig" title="Konfiguracja Client ID">
+                                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                            <div class="gdrive-unconnected-help">
+                                                                <button type="button" class="btn-gdrive-help-link" id="btnGDriveHelpLink">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <circle cx="12" cy="12" r="10"></circle>
+                                                                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                                                    </svg>
+                                                                    <span data-i18n="gdrive_how_to_get_id">Skąd wziąć Client ID? Instrukcja w 60s ↗</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Stan Połączony -->
+                                                        <div class="gdrive-connected" id="gdriveConnected" style="display: none;">
+                                                            <div class="gdrive-user-info">
+                                                                <div class="gdrive-user-avatar" id="gdriveUserAvatar">G</div>
+                                                                <div class="gdrive-user-meta">
+                                                                    <span class="gdrive-user-email" id="gdriveUserEmail">uzytkownik@gmail.com</span>
+                                                                    <span class="gdrive-folder-status">
+                                                                        <span class="gdrive-live-dot"></span>
+                                                                        <span data-i18n="gdrive_folder_label">Folder: Dropsite Transfers</span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="gdrive-connected-actions">
+                                                                <button type="button" class="btn-gdrive-disconnect" id="btnDisconnectGDrive" title="Rozłącz z Dyskiem Google">
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                    </svg>
+                                                                    <span data-i18n="btn_disconnect">Rozłącz</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- NOTKA O BEZPIECZEŃSTWIE I PRYWATNOŚCI BYOS -->
+                                                    <div class="storage-byos-info-card">
+                                                        <div class="storage-info-row">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                                            </svg>
+                                                            <span><strong>100% prywatności:</strong> Dropsite nigdy nie ma dostępu do innych plików na Twoim koncie.</span>
+                                                        </div>
+                                                        <div class="storage-info-row">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <circle cx="12" cy="12" r="10"></circle>
+                                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                                            </svg>
+                                                            <span><strong>Brak wygasania:</strong> Pliki na Twoim Dysku Google są aktywne tak długo, jak chcesz.</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <!-- FOOTER -->
                                             <div class="adv-mini-modal-footer" id="advApplyRow">
                                                 <div id="advSyncStatusBadge" class="adv-mini-sync-status">
@@ -1377,6 +1588,8 @@
                                         </svg>
                                     </span>
                                 </button>
+                                    </div>
+                                </div>
 
                                 <div id="status" class="status" aria-live="polite"></div>
 
@@ -4901,6 +5114,9 @@
                 <p class="footer-tagline" data-i18n="footer_tagline">Szybki i bezpieczny transfer plików do 10 GB oraz
                     bezpłatny zestaw profesjonalnych narzędzi PDF online bez rejestracji i limitów.</p>
                 <div class="footer-copy">&copy; 2026 Dropsite. All rights reserved.</div>
+                <button type="button" id="footerPerfToggle" class="footer-perf-pill" onclick="if(window.togglePerformanceMode) window.togglePerformanceMode();">
+                    ⚡ Tryb: Płynny (Eco)
+                </button>
             </div>
             <div class="footer-col">
                 <h4 data-i18n="footer_tools_title">Narzędzia PDF (RAM)</h4>
@@ -9378,6 +9594,148 @@
         </div>
     </div>
 
+    <!-- MODAL BYOS: GOOGLE DRIVE INFO I KONFIGURACJA -->
+    <div id="byosModalOverlay" class="byos-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="byosModalTitle">
+        <div class="byos-modal-card">
+            <div class="byos-modal-header">
+                <div class="byos-modal-title-group">
+                    <svg width="22" height="22" viewBox="0 0 87.3 78">
+                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                    </svg>
+                    <h3 id="byosModalTitle">Dysk Google (BYOS)</h3>
+                </div>
+                <button type="button" class="byos-modal-close" id="btnByosModalClose" title="Zamknij (Esc)">✕</button>
+            </div>
+
+            <div class="byos-modal-features">
+                <div class="byos-feature-item">
+                    <div class="byos-feature-icon icon-safe">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div class="byos-feature-text">
+                        <h4>100% Prywatności (Zero-Knowledge)</h4>
+                        <p>Dropsite prosi tylko o uprawnienie <code>drive.file</code>. Aplikacja ma dostęp <strong>wyłącznie</strong> do plików w folderze <em>Dropsite Transfers</em> — nie widzi Twoich zdjęć ani dokumentów.</p>
+                    </div>
+                </div>
+
+                <div class="byos-feature-item">
+                    <div class="byos-feature-icon icon-drive">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        </svg>
+                    </div>
+                    <div class="byos-feature-text">
+                        <h4>0 MB na serwerach Dropsite</h4>
+                        <p>Pliki trafiają bezpośrednio z Twojej przeglądarki na Twój dysk Google. Masz pełną kontrolę i pliki nigdy nie wygasają, dopóki sam ich nie usuniesz.</p>
+                    </div>
+                </div>
+
+                <div class="byos-feature-item">
+                    <div class="byos-feature-icon icon-rocket">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="byos-feature-text">
+                        <h4>Estetyczna strona dla odbiorcy</h4>
+                        <p>Odbiorca otrzymuje link Dropsite z podglądem wideo/audio, ochroną hasłem i natychmiastowym pobieraniem ze streamu Google.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Konfiguracja Google Cloud Client ID -->
+            <div class="byos-client-id-box">
+                <div class="byos-client-label-row">
+                    <label for="byosClientIdInput">Google Cloud Client ID:</label>
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="byos-get-id-link" title="Otwórz konsolę danych logowania Google Cloud">
+                        <span>Pobierz w Google Console</span>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+                <div class="byos-client-input-row">
+                    <input type="text" id="byosClientIdInput" class="byos-client-input" placeholder="np. 123456789-xyz.apps.googleusercontent.com">
+                    <button type="button" class="btn-byos-save-client" id="btnSaveByosClientId">Zapisz</button>
+                </div>
+
+                <!-- Instrukcja krok po kroku (rozwijana) -->
+                <div class="byos-guide-accordion">
+                    <button type="button" class="byos-guide-trigger" id="btnToggleByosGuide" aria-expanded="false">
+                        <div class="byos-guide-trigger-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Jak pobrać Client ID w 60 sekund? (Krok po kroku)</span>
+                        </div>
+                        <svg class="byos-chevron-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="byos-guide-content" id="byosGuideContent" style="display: none;">
+                        <ol class="byos-steps-list">
+                            <li>
+                                <strong>1. Otwórz konsolę:</strong> Wejdź na <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="byos-inline-link">Google Cloud Credentials ↗</a> i wybierz lub utwórz bezpłatny projekt.
+                            </li>
+                            <li>
+                                <strong>2. Nowy identyfikator:</strong> Kliknij u góry <strong>+ Utwórz dane logowania (+ Create Credentials)</strong> &rarr; <strong>Identyfikator klienta OAuth (OAuth client ID)</strong>.
+                            </li>
+                            <li>
+                                <strong>3. Typ aplikacji:</strong> Jako typ aplikacji wybierz <strong>Aplikacja internetowa (Web application)</strong>.
+                            </li>
+                            <li>
+                                <strong>4. Autoryzowane źródła JavaScript:</strong> W sekcji <em>Authorized JavaScript origins</em> kliknij <strong>+ Dodaj identyfikator URI</strong> i wklej swój adres:
+                                <div class="byos-origin-pill">
+                                    <code id="byosOriginCode">https://dropsite.pl</code>
+                                    <button type="button" class="btn-copy-byos-origin" id="btnCopyByosOrigin" title="Kopiuj adres URL">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                        <span>Kopiuj adres</span>
+                                    </button>
+                                </div>
+                            </li>
+                            <li>
+                                <strong>5. Gotowe:</strong> Kliknij <strong>Utwórz</strong>, skopiuj wygenerowany <strong>Client ID</strong> i wklej w polu powyżej!
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="byos-client-hint">Wymagane do bezpośredniej autoryzacji Google. Jeśli chcesz tylko sprawdzić działanie, kliknij poniżej „Tryb testowy (Demo)”.</div>
+            </div>
+
+            <div class="byos-modal-actions">
+                <button type="button" class="btn-byos-primary" id="btnByosAuthGoogle">
+                    <svg width="16" height="16" viewBox="0 0 87.3 78">
+                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                    </svg>
+                    <span>Autoryzuj przez Google</span>
+                </button>
+                <button type="button" class="btn-byos-demo" id="btnByosDemoMode">Tryb testowy (Demo)</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PŁYWAJĄCY PRZYCISK POWROTU DO STRONY GŁÓWNEJ NA MOBILE (POD KCIUKIEM) -->
     <button type="button" id="mobileHomeFab" class="mobile-home-fab" aria-label="Wróć do strony głównej"
         title="Strona główna">
@@ -9445,16 +9803,7 @@
             return _toolboxLoadingPromise;
         };
 
-        // Preload w tle po zakończeniu renderowania strony głównej (nie blokuje FCP/LCP)
-        if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(function () {
-                window.loadToolboxScripts();
-            }, { timeout: 3500 });
-        } else {
-            setTimeout(function () {
-                window.loadToolboxScripts();
-            }, 3000);
-        }
+        // Toolbox scripts ładowane na żądanie (on-demand przy interakcji z Narzędziami lub wejściu na trasę narzędzi)
 
         // Natychmiastowy prefetch przy najeździe na przycisk "Narzędzia", kliknięciu lub wejściu na trasę SEO
         document.addEventListener('DOMContentLoaded', function () {
@@ -9475,7 +9824,7 @@
     <script src="js/telemetry.js" defer></script>
     <script src="js/ram-engine.js" defer></script>
     <script src="js/beam.js" defer></script>
-    <script src="app.js?v=2.7.8" defer></script>
+    <script src="app.js?v=2.7.9" defer></script>
     <script src="js/concierge.js" defer></script>
     <script src="js/omni-dropzone.js" defer></script>
     <script src="js/drop-request.js" defer></script>
@@ -9487,7 +9836,7 @@
     <script src="js/video-compress.js" defer></script>
     <script src="js/command-palette.js" defer></script>
     <script src="js/radial-wheel.js" defer></script>
-    <script src="js/media-grabber.js" defer></script>
+        <script src="js/cloud-bridge.js" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

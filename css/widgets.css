@@ -17703,7 +17703,7 @@ body.studio-fullscreen-active {
 }
 
 #view-download .main-wrapper {
-    max-width: 520px;
+    max-width: clamp(540px, 46vw, 840px);
     width: 100%;
     margin: 0 auto !important;
     display: flex;
@@ -17717,25 +17717,19 @@ body.studio-fullscreen-active {
    ========================================================================= */
 
 .upload-container.download-card {
-    max-width: 600px !important;
+    max-width: clamp(540px, 46vw, 840px) !important;
     width: 100% !important;
     margin: 0 auto !important;
-    padding: 34px 34px 30px !important;
-    border-radius: 24px !important;
-    background: radial-gradient(130% 110% at 50% -15%, rgba(28, 40, 64, 0.9) 0%, rgba(14, 20, 34, 0.96) 50%, rgba(7, 11, 20, 0.99) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.24) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.65) !important;
-    box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.4),
-        0 16px 36px -4px rgba(0, 0, 0, 0.7),
-        0 45px 105px -16px rgba(0, 0, 0, 0.9),
-        0 0 75px -10px rgba(14, 165, 233, 0.15),
-        inset 0 1px 1px rgba(255, 255, 255, 0.24),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
-        inset 0 -2px 10px rgba(0, 0, 0, 0.45) !important;
-    backdrop-filter: blur(32px) !important;
-    -webkit-backdrop-filter: blur(32px) !important;
+    padding: clamp(32px, 3.5vh, 44px) clamp(26px, 3vw, 48px) !important;
+    border-radius: clamp(24px, 2.2vw, 32px) !important;
+    background: linear-gradient(180deg, rgba(26, 38, 58, 0.68) 0%, rgba(12, 19, 32, 0.84) 100%) !important;
+    backdrop-filter: blur(36px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 
+        0 30px 80px -15px rgba(0, 0, 0, 0.78),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
     box-sizing: border-box;
     transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s ease, box-shadow 0.35s ease;
     text-align: center;
@@ -17743,14 +17737,11 @@ body.studio-fullscreen-active {
 }
 
 .upload-container.download-card:hover {
-    box-shadow:
-        0 4px 8px rgba(0, 0, 0, 0.45),
-        0 20px 44px -4px rgba(0, 0, 0, 0.75),
-        0 55px 120px -16px rgba(0, 0, 0, 0.94),
-        0 0 90px -6px rgba(14, 165, 233, 0.22),
-        inset 0 1px 1px rgba(255, 255, 255, 0.3),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-        inset 0 -2px 10px rgba(0, 0, 0, 0.45) !important;
+    border-color: rgba(52, 211, 153, 0.35) !important;
+    box-shadow: 
+        0 35px 90px -15px rgba(0, 0, 0, 0.85),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+        0 0 45px -10px rgba(52, 211, 153, 0.16) !important;
 }
 
 #view-download .main-wrapper {
@@ -21212,4 +21203,138 @@ body.studio-fullscreen-active {
         padding: 10px 8px !important;
         font-size: 13px !important;
     }
+}
+
+/* ==========================================================================
+   DROPSITE HIGH-PERFORMANCE / ECO MODE (POTATO PC & WEAK HARDWARE SHIELD)
+   ========================================================================== */
+.eco-mode,
+.perf-mode {
+    --transition-smooth: all 0.15s ease !important;
+    --transition-bounce: all 0.15s ease !important;
+}
+
+/* Wyłączenie cząsteczek tła canvas na słabszym sprzęcie */
+.eco-mode .bg-canvas,
+.perf-mode .bg-canvas {
+    display: none !important;
+}
+
+/* Wyłączenie ruchomych i wielkich pseudoelementów tła */
+.eco-mode body::before,
+.eco-mode body::after,
+.perf-mode body::before,
+.perf-mode body::after {
+    display: none !important;
+}
+
+.eco-mode .studio-split-hero::before,
+.perf-mode .studio-split-hero::before {
+    display: none !important;
+}
+
+/* Wyłączenie rotujących wstęg świetlnych i bąbli plazmy */
+.eco-mode .siri-fluid-plasma,
+.eco-mode .siri-wave-stream,
+.eco-mode .siri-wave-ripple,
+.perf-mode .siri-fluid-plasma,
+.perf-mode .siri-wave-stream,
+.perf-mode .siri-wave-ripple {
+    display: none !important;
+}
+
+/* Wyłączenie kosztownych rozmyć tła GPU (Backdrop-Filter Bypass) */
+.eco-mode *,
+.perf-mode * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Solidne, eleganckie ciemne panele zastępujące przezroczyste szklane blury */
+.eco-mode .nav-bar,
+.perf-mode .nav-bar {
+    background: #0B0E14 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.eco-mode .upload-container,
+.perf-mode .upload-container {
+    background: #0F131D !important;
+    border: 1px solid rgba(52, 211, 153, 0.35) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
+}
+
+.eco-mode .bento-card,
+.perf-mode .bento-card {
+    background: #10141E !important;
+    box-shadow: none !important;
+}
+
+.eco-mode .mod-modal-content,
+.perf-mode .mod-modal-content,
+.eco-mode .modal-box,
+.perf-mode .modal-box {
+    background: #0C1017 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8) !important;
+}
+
+.eco-mode .nav-dropdown-menu,
+.perf-mode .nav-dropdown-menu {
+    background: #0D111A !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Wstrzymanie obciążających animacji tła i pulsu */
+.eco-mode [class*="pulse"],
+.perf-mode [class*="pulse"],
+.eco-mode .value-icon,
+.perf-mode .value-icon {
+    animation: none !important;
+}
+
+/* Przycisk przełączania trybu w stopce i nawigacji */
+.footer-perf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    margin-top: 10px;
+}
+.footer-perf-pill:hover {
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #34D399;
+}
+.eco-mode .footer-perf-pill {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #34D399;
+}
+
+/* Wyłączenie bąbli w sekcji Bento dla trybu Eco */
+.eco-mode .snake-story-panel::before,
+.eco-mode .bento-flow-panel::before,
+.eco-mode .bento-pigment-wash,
+.eco-mode .hud-showcase-card::before,
+.perf-mode .snake-story-panel::before,
+.perf-mode .bento-flow-panel::before,
+.perf-mode .bento-pigment-wash,
+.perf-mode .hud-showcase-card::before {
+    display: none !important;
+}
+
+/* Wyłączenie ciągłych animacji w przycisku technologii radialnych */
+.eco-mode .btn-radial-trigger *,
+.perf-mode .btn-radial-trigger * {
+    animation: none !important;
+    filter: none !important;
 }

@@ -155,7 +155,43 @@
             }
         },
 
-        // 3. NAWIGACJA
+        // 3. TRANSFER & CHMURA (BYOS)
+        {
+            id: 'byos-gdrive',
+            category: 'Transfer & Chmura',
+            title: 'Dysk Google (Własny Magazyn BYOS)',
+            desc: 'Przełącz magazyn plików na prywatny Dysk Google — 0 MB na serwerze',
+            tag: 'BYOS',
+            keywords: ['google drive', 'dysk', 'byos', 'chmura', 'wlasny dysk', 'gdrive', 'storage'],
+            action: () => {
+                if (window.DropsiteCloudBridge) {
+                    window.DropsiteCloudBridge.setStorageProvider('gdrive');
+                    const nav = document.querySelector('[data-target="view-glowna"]');
+                    if (nav) nav.click();
+                    const advBtn = document.getElementById('advToggleBtn');
+                    if (advBtn && !advBtn.classList.contains('active')) {
+                        advBtn.click();
+                    }
+                    const storageTabBtn = document.querySelector('.adv-tab-btn[data-tab="storage"]');
+                    if (storageTabBtn) storageTabBtn.click();
+                }
+            }
+        },
+        {
+            id: 'byos-config',
+            category: 'Transfer & Chmura',
+            title: 'Konfiguracja BYOS & Google Client ID',
+            desc: 'Otwórz panel zarządzania własnym magazynem w chmurze',
+            tag: 'Ustawienia',
+            keywords: ['byos', 'google client id', 'oauth', 'chmura wlasna', 'konfiguracja dysku'],
+            action: () => {
+                if (window.DropsiteCloudBridge) {
+                    window.DropsiteCloudBridge.openConfigModal();
+                }
+            }
+        },
+
+        // 4. NAWIGACJA
         {
             id: 'nav-home',
             category: 'Nawigacja',

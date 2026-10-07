@@ -21,56 +21,40 @@
     }
 }
 
-/* 2. Organiczne płynne fale plazmy (Metamorficzny ruch cieczy) */
+/* 2. Organiczne płynne fale plazmy (Optymalizacja GPU - transform 3D bez kosztownego repaintu border-radius) */
 @keyframes plasmaMorph1 {
     0%, 100% {
-        border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     }
-    33% {
-        border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%;
-        transform: translate3d(28px, -20px, 0) scale(1.22) rotate(120deg);
-    }
-    66% {
-        border-radius: 30% 70% 40% 60% / 65% 35% 65% 35%;
-        transform: translate3d(-24px, 18px, 0) scale(0.9) rotate(240deg);
+    50% {
+        transform: translate3d(24px, -18px, 0) scale(1.18) rotate(90deg);
     }
 }
 
 @keyframes plasmaMorph2 {
     0%, 100% {
-        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     }
-    33% {
-        border-radius: 35% 65% 60% 40% / 50% 45% 55% 50%;
-        transform: translate3d(-30px, 22px, 0) scale(1.18) rotate(-110deg);
-    }
-    66% {
-        border-radius: 50% 50% 35% 65% / 40% 65% 35% 60%;
-        transform: translate3d(20px, -24px, 0) scale(0.88) rotate(-220deg);
+    50% {
+        transform: translate3d(-24px, 18px, 0) scale(1.15) rotate(-90deg);
     }
 }
 
 @keyframes plasmaMorph3 {
     0%, 100% {
-        border-radius: 50% 50% 45% 55% / 55% 45% 55% 45%;
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     }
     50% {
-        border-radius: 65% 35% 60% 40% / 40% 60% 40% 60%;
-        transform: translate3d(24px, 18px, 0) scale(1.25) rotate(170deg);
+        transform: translate3d(18px, 14px, 0) scale(1.2) rotate(120deg);
     }
 }
 
 @keyframes plasmaMorph4 {
     0%, 100% {
-        border-radius: 40% 60% 55% 45% / 45% 55% 45% 55%;
         transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
     }
     50% {
-        border-radius: 55% 45% 40% 60% / 60% 40% 60% 40%;
-        transform: translate3d(-22px, -18px, 0) scale(1.2) rotate(-150deg);
+        transform: translate3d(-18px, -14px, 0) scale(1.16) rotate(-120deg);
     }
 }
 
@@ -96,13 +80,13 @@
     }
 }
 
-/* Główny kontener ramy świetlnej */
+/* Główny kontener ramy świetlnej — responsywny clamp pod 2K, 1080p i mobile */
 .siri-glow-frame {
     position: relative;
     width: 100%;
-    max-width: min(630px, 94vw);
+    max-width: 100%;
     margin: 0 auto;
-    border-radius: 28px;
+    border-radius: clamp(24px, 2.2vw, 32px);
     box-sizing: border-box;
     display: flex;
     justify-content: center;
@@ -112,22 +96,22 @@
 /* 1. Organiczne Chmury Płynnej Plazmy (Fluid Plasma Blobs - tło) */
 .siri-fluid-plasma {
     position: absolute;
-    inset: -28px;
+    inset: -10px;
     pointer-events: none;
     z-index: 0;
     overflow: visible;
-    filter: blur(32px);
-    opacity: 0.85;
-    transition: opacity 0.4s ease, filter 0.4s ease;
+    filter: blur(64px);
+    opacity: 0.18;
+    transition: opacity 0.5s ease, filter 0.5s ease;
 }
 
 .plasma-blob {
     position: absolute;
-    width: 60%;
-    height: 65%;
+    width: 55%;
+    height: 60%;
     border-radius: 50%;
-    mix-blend-mode: screen;
-    opacity: 0.85;
+    /* GPU friendly native alpha blending */
+    opacity: 0.65;
     pointer-events: none;
 }
 
@@ -159,126 +143,50 @@
     animation: plasmaMorph4 5.8s ease-in-out infinite alternate;
 }
 
-/* 2. Pulsująca Fala Rezonansowa (Ripple Halo) */
+/* 2. Pulsująca Fala Rezonansowa — usunięty ostry neon */
 .siri-wave-ripple {
-    position: absolute;
-    inset: -7px;
-    border-radius: 34px;
-    border: 1.8px solid rgba(0, 240, 255, 0.55);
-    pointer-events: none;
-    z-index: 1;
-    animation: siriWaveRipple 3.6s ease-in-out infinite;
+    display: none !important;
 }
 
-/* 3. Opływowa Wstęga Światła (Dual Fluid Stream Rim - obwód kapsułki) */
+/* 3. Opływowa Wstęga Światła — usunięty obracający się neon */
 .siri-wave-stream {
-    position: absolute;
-    inset: -3.5px;
-    border-radius: 30px;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 1;
-    box-shadow: 
-        0 0 28px rgba(0, 240, 255, 0.4),
-        0 0 50px rgba(52, 211, 153, 0.3);
+    display: none !important;
 }
 
-.stream-element {
-    position: absolute;
-    width: 250%;
-    height: 250%;
-    top: -75%;
-    left: -75%;
-    border-radius: 50%;
-    transform-origin: center center;
-}
-
-/* Szybka, jaskrawa fala zegarowa - neon cyan i cyber mint z białym jądrem świetlnym */
-.stream-cw {
-    background: conic-gradient(
-        from 0deg,
-        transparent 0deg,
-        rgba(0, 240, 255, 0.95) 35deg,
-        #FFFFFF 65deg,
-        rgba(52, 211, 153, 0.98) 95deg,
-        rgba(56, 189, 248, 0.75) 125deg,
-        transparent 160deg,
-        transparent 180deg,
-        rgba(56, 189, 248, 0.8) 215deg,
-        #FFFFFF 245deg,
-        rgba(52, 211, 153, 0.98) 275deg,
-        rgba(0, 240, 255, 0.9) 305deg,
-        transparent 340deg,
-        transparent 360deg
-    );
-    animation: siriStreamClockwise 3s linear infinite;
-    filter: drop-shadow(0 0 10px #00F0FF) drop-shadow(0 0 16px #34D399);
-}
-
-/* Przeciwbieżna fala harmoniczna - szmaragd i błękit oceaniczny */
-.stream-ccw {
-    background: conic-gradient(
-        from 90deg,
-        transparent 0deg,
-        rgba(52, 211, 153, 0.75) 50deg,
-        rgba(0, 240, 255, 0.85) 100deg,
-        transparent 150deg,
-        transparent 180deg,
-        rgba(16, 185, 129, 0.8) 230deg,
-        rgba(56, 189, 248, 0.8) 280deg,
-        transparent 330deg,
-        transparent 360deg
-    );
-    animation: siriStreamCounterClockwise 4.8s linear infinite;
-    mix-blend-mode: screen;
-    opacity: 0.85;
-}
-
-/* Interaktywny stan po najechaniu lub przeciąganiu plików */
 .siri-glow-frame:hover .siri-fluid-plasma,
-.siri-glow-frame:focus-within .siri-fluid-plasma {
-    opacity: 1;
-    filter: blur(26px);
+.siri-glow-frame:focus-within .siri-fluid-plasma,
+.siri-glow-frame:has(.upload-container.has-files) .siri-fluid-plasma,
+.siri-glow-frame:has(.upload-container.options-forced) .siri-fluid-plasma {
+    opacity: 0.35;
+    filter: blur(70px);
 }
 
-.siri-glow-frame:hover .stream-cw {
-    animation-duration: 1.8s;
-    filter: drop-shadow(0 0 14px #00F0FF) drop-shadow(0 0 24px #34D399);
-}
-
-.siri-glow-frame:hover .stream-ccw {
-    animation-duration: 2.8s;
-}
-
-.siri-glow-frame:hover .siri-wave-ripple {
-    animation-duration: 2s;
-    border-color: rgba(0, 240, 255, 0.85);
-    box-shadow: 0 0 50px rgba(0, 240, 255, 0.7), inset 0 0 24px rgba(52, 211, 153, 0.5);
-}
-
-/* --- Główny Panel Kapsułki (The Glass Capsule) --- */
+/* --- Główny Panel Kapsułki (True Liquid Frosted Glass) --- */
 .upload-container {
-    background: linear-gradient(175deg, rgba(14, 21, 33, 0.94) 0%, rgba(9, 13, 22, 0.98) 100%);
-    backdrop-filter: blur(36px);
-    -webkit-backdrop-filter: blur(36px);
-    border: 1px solid rgba(52, 211, 153, 0.25);
+    background: linear-gradient(180deg, rgba(26, 38, 58, 0.65) 0%, rgba(12, 19, 32, 0.82) 100%) !important;
+    backdrop-filter: blur(36px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     box-shadow: 
-        0 26px 70px -10px rgba(0, 0, 0, 0.82), 
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
-    border-radius: var(--radius-lg);
-    padding: clamp(26px, 3.4vh, 38px) clamp(18px, 2.5vw, 32px);
-    width: 100%;
-    box-sizing: border-box;
-    transition: var(--transition-smooth);
-    position: relative;
-    z-index: 2;
-    overflow: visible;
+        0 30px 80px -15px rgba(0, 0, 0, 0.78), 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+    border-radius: clamp(24px, 2.2vw, 32px) !important;
+    padding: clamp(28px, 3.2vh, 42px) clamp(24px, 2.8vw, 44px) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative !important;
+    z-index: 2 !important;
+    overflow: visible !important;
 }
 
 .upload-container:hover {
+    border-color: rgba(52, 211, 153, 0.35) !important;
     box-shadow: 
-        0 32px 85px -10px rgba(0, 0, 0, 0.88), 
-        inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
+        0 35px 90px -15px rgba(0, 0, 0, 0.85), 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+        0 0 40px -10px rgba(52, 211, 153, 0.18) !important;
 }
 
 /* --- Nagłówki --- */
@@ -297,7 +205,7 @@
     background: linear-gradient(135deg, #FFFFFF 0%, #B0B5C0 100%);
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: glow 2s ease-in-out infinite alternate;
+    text-shadow: 0 0 16px rgba(94, 234, 212, 0.35);
 }
 
 @keyframes glow {
@@ -1087,4 +995,88 @@ input[type='file'] {
         gap: 6px;
         font-size: 11.5px;
     }
+}
+
+/* --- Tryb Zen & Płynna Progresywna Konfiguracja --- */
+.zen-options-toggle-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 2px;
+    transition: opacity 0.3s ease, max-height 0.35s ease, margin 0.3s ease;
+}
+
+.upload-container.has-files .zen-options-toggle-wrap,
+.upload-container.options-forced .zen-options-toggle-wrap {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.btn-zen-options {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: var(--text-muted, #94A3B8);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.btn-zen-options:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.btn-zen-options .zen-chevron {
+    transition: transform 0.25s ease;
+}
+
+.btn-zen-options:hover .zen-chevron {
+    transform: translateY(1px);
+    color: #34D399;
+}
+
+/* Rozwijana sekcja opcji */
+.upload-options-collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition: grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.35s ease,
+                visibility 0.35s ease;
+}
+
+.upload-options-collapsible > .options-collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-container.has-files .upload-options-collapsible,
+.upload-container.options-forced .upload-options-collapsible {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+}
+
+.upload-container.has-files .upload-options-collapsible > .options-collapsible-inner,
+.upload-container.options-forced .upload-options-collapsible > .options-collapsible-inner {
+    overflow: visible;
 }

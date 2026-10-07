@@ -116,6 +116,7 @@ body {
         radial-gradient(rgba(52, 211, 153, 0.08) 2px, transparent 2px);
     background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 30px 30px, 80px 80px;
     background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+    background-attachment: fixed;
     
     color: var(--text-main);
     display: flex;
@@ -150,33 +151,20 @@ h1, h2, h3, .nav-logo, button, input, select, textarea {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
 }
 
-/* --- Aurora Background (Dynamiczne, ożywione zorze w tle) --- */
+/* --- Aurora Background (Czyste, ultra-płynne tło bez obciążenia GPU - 100% GPU VRAM Cache) --- */
 body::before, body::after {
     content: '';
     position: fixed;
-    top: -50%; left: -50%; width: 200%; height: 200%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1;
     pointer-events: none;
-    background-blend-mode: screen;
-    will-change: transform;
     transform: translateZ(0);
 }
 body::before {
-    background: radial-gradient(circle at 45% 40%, rgba(52, 211, 153, 0.16), transparent 45%);
-    animation: move-aurora-1 22s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 35% 30%, rgba(52, 211, 153, 0.12), transparent 55%);
 }
 body::after {
-    background: radial-gradient(circle at 60% 50%, rgba(56, 189, 248, 0.18), transparent 45%);
-    animation: move-aurora-2 28s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes move-aurora-1 {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(15%, 15%) scale(1.2); }
-}
-@keyframes move-aurora-2 {
-    0% { transform: translate(15%, 0) scale(1.2); }
-    100% { transform: translate(0, 15%) scale(1); }
+    background: radial-gradient(circle at 65% 45%, rgba(56, 189, 248, 0.13), transparent 55%);
 }
 
 /* Przywracamy zaznaczanie tekstu tylko w polach do wpisywania */
@@ -199,13 +187,9 @@ textarea,
    KURSORY NIESTANDARDOWE
    ============================================================ */
 
-/* 1. Domyślny kursor na wszystkich elementach */
-*, 
-html, 
-body, 
-canvas, 
-.container, 
-.content--canvas {
+/* 1. Domyślny kursor na poziomie html i body (brak spadków klatek myszy) */
+html,
+body {
     cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iNiIgd2lkdGg9IjEuNjg0MjEiIGhlaWdodD0iMjguNjMxNiIgZmlsbD0iYmxhY2siLz4KPHJlY3QgeD0iNy42ODQyIiB5PSIyNi45NDczIiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSI5LjM2ODQxIiB5PSIyNS4yNjMyIiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxMS4wNTI2IiB5PSIyMy41Nzg5IiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxMi43MzY4IiB5PSIyMS44OTQ4IiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxNC40MjEiIHk9IjIzLjU3ODkiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjMuMzY4NDIiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjE2LjEwNTIiIHk9IjI2Ljk0NzMiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjMuMzY4NDIiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjIxLjE1NzgiIHk9IjI2Ljk0NzMiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjMuMzY4NDIiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjE5LjQ3MzYiIHk9IjIzLjU3ODkiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjMuMzY4NDIiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjE3Ljc4OTQiIHk9IjIwLjIxMDQiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjMuMzY4NDIiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjE5LjQ3MzYiIHk9IjIwLjIxMDQiIHdpZHRoPSI2LjczNjg0IiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjI0LjUyNjQiIHk9IjE4LjUyNjQiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjEyLjczNjgiIHk9IjYuNzM2ODIiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjExLjA1MjYiIHk9IjUuMDUyNzMiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjkuMzY4NDEiIHk9IjMuMzY4NDEiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjcuNjg0MiIgeT0iMS42ODQzMyIgd2lkdGg9IjEuNjg0MjEiIGhlaWdodD0iMS42ODQyMSIgZmlsbD0iYmxhY2siLz4KPHJlY3QgeD0iMTQuNDIxIiB5PSI4LjQyMTE0IiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxNi4xMDUyIiB5PSIxMC4xMDUyIiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxNy43ODk0IiB5PSIxMS43ODk2IiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxOS40NzM2IiB5PSIxMy40NzM2IiB3aWR0aD0iMS42ODQyMSIgaGVpZ2h0PSIxLjY4NDIxIiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIyMS4xNTc4IiB5PSIxNS4xNTgiIHdpZHRoPSIxLjY4NDIxIiBoZWlnaHQ9IjEuNjg0MjEiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjIyLjg0MjIiIHk9IjE2Ljg0MiIgd2lkdGg9IjEuNjg0MjEiIGhlaWdodD0iMS42ODQyMSIgZmlsbD0iYmxhY2siLz4KPHJlY3QgeD0iMTcuNzg5NCIgeT0iMzAuMzE1NyIgd2lkdGg9IjMuMzY4NDIiIGhlaWdodD0iMS42ODQyMSIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTcuNjg0MiAyNi45NDc0VjMuMzY4NDFIOS4zNjg0MVY1LjA1MjYySDExLjA1MjZWNi43MzY4M0gxMi43MzY4VjguNDIxMDRIMTQuNDIxVjEwLjEwNTNIMTYuMTA1M1YxMS43ODk1SDE3Ljc4OTVWMTMuNDczN0gxOS40NzM3VjE1LjE1NzlIMjEuMTU3OVYxNi44NDIxSDIyLjg0MjFWMTguNTI2M0gyNC41MjYzVjIwLjIxMDVIMTcuNzg5NVYyMy41Nzg5SDE5LjQ3MzdWMjYuOTQ3NEgyMS4xNTc5VjMwLjMxNThIMTcuNzg5NVYyNi45NDc0SDE2LjEwNTNWMjMuNTc4OUgxNC40MjFWMjEuODk0N0gxMi43MzY4VjIzLjU3ODlIMTEuMDUyNlYyNS4yNjMxSDkuMzY4NDFWMjYuOTQ3NEg3LjY4NDJaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K") 6 0, default !important;
 }
 

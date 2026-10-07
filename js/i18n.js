@@ -5,11 +5,20 @@
 
 const translations = {
     "en": {
+        "zen_options_peek": "Transfer options (password, expiry, alias)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Dropsite Cloud",
         "mode_cloud_badge": "up to 10 GB",
         "mode_beam_label": "Beam P2P",
         "mode_beam_badge": "No limits",
+        "storage_target_label": "Storage destination:",
+        "storage_dropsite_label": "Dropsite Cloud",
+        "storage_gdrive_label": "Google Drive",
+        "byos_learn_more": "Own Storage",
+        "btn_connect_gdrive": "Connect Google Drive",
+        "gdrive_how_to_get_id": "Where to get Client ID? 60s guide ↗",
+        "gdrive_folder_label": "Folder: Dropsite Transfers",
+        "btn_disconnect": "Disconnect",
         "beam_hero_badge": "Direct Browser-to-Browser P2P Transfer",
         "beam_hero_title": "Dropsite Beam — Unlimited Direct Transfer",
         "beam_hero_desc": "Send 10 GB, 50 GB or entire folders directly between browsers. 0 intermediaries, 0 server limits, 100% full line/local speed.",
@@ -509,6 +518,7 @@ const translations = {
         "adv_tab_security": "Security",
         "adv_tab_limits": "Limits",
         "adv_tab_extras": "Extras",
+        "adv_tab_storage": "Storage",
         "unboxing_record_voice_btn": "Record voice note",
         "unboxing_record_video_btn": "Record webcam video",
         "unboxing_preview_btn": "Play",
@@ -823,11 +833,20 @@ const translations = {
         "myfiles_autoclean_disabled": "Auto-cleaning of expired files disabled"
     },
     "pl": {
+        "zen_options_peek": "Dostosuj transfer (hasło, czas, alias)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Chmura Dropsite",
         "mode_cloud_badge": "do 10 GB",
         "mode_beam_label": "Beam P2P",
         "mode_beam_badge": "Bez limitu",
+        "storage_target_label": "Magazyn danych:",
+        "storage_dropsite_label": "Chmura Dropsite",
+        "storage_gdrive_label": "Dysk Google",
+        "byos_learn_more": "Własny dysk",
+        "btn_connect_gdrive": "Połącz z Google Drive",
+        "gdrive_how_to_get_id": "Skąd wziąć Client ID? Instrukcja w 60s ↗",
+        "gdrive_folder_label": "Folder: Dropsite Transfers",
+        "btn_disconnect": "Rozłącz",
         "beam_hero_badge": "Bezpośredni Transfer P2P Przeglądarka-Przeglądarka",
         "beam_hero_title": "Dropsite Beam — Nielimitowany Transfer P2P",
         "beam_hero_desc": "Przesyłaj pliki 10 GB, 50 GB lub całe foldery bezpośrednio z przeglądarki do przeglądarki. 0 pośredników, 0 limitów serwera, 100% prędkości Twojej sieci.",
@@ -1330,6 +1349,7 @@ const translations = {
         "adv_tab_security": "Ochrona",
         "adv_tab_limits": "Limity",
         "adv_tab_extras": "Dodatki",
+        "adv_tab_storage": "Magazyn",
         "unboxing_record_voice_btn": "Nagraj głosówkę",
         "unboxing_record_video_btn": "Wideo z kamerki",
         "unboxing_preview_btn": "Odtwórz",
@@ -1644,6 +1664,7 @@ const translations = {
         "myfiles_autoclean_disabled": "Wyłączono automatyczne usuwanie wygasłych plików"
     },
     "de": {
+        "zen_options_peek": "Transferoptionen (Passwort, Ablauf, Alias)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Dropsite Cloud",
         "mode_cloud_badge": "bis 10 GB",
@@ -2148,6 +2169,7 @@ const translations = {
         "adv_tab_security": "Sicherheit",
         "adv_tab_limits": "Limits",
         "adv_tab_extras": "Extras",
+        "adv_tab_storage": "Speicher",
         "unboxing_record_voice_btn": "Sprachnachricht aufnehmen",
         "unboxing_record_video_btn": "Webcam-Video aufnehmen",
         "unboxing_preview_btn": "Abspielen",
@@ -2439,6 +2461,7 @@ const translations = {
         "showcase_banner_btn_buy": "★ PRO-Paket holen — Sofort"
     },
     "es": {
+        "zen_options_peek": "Opciones de transferencia (contraseña, expirar, alias)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Nube Dropsite",
         "mode_cloud_badge": "hasta 10 GB",
@@ -2941,6 +2964,7 @@ const translations = {
         "adv_tab_security": "Seguridad",
         "adv_tab_limits": "Límites",
         "adv_tab_extras": "Extras",
+        "adv_tab_storage": "Almacenamiento",
         "unboxing_record_voice_btn": "Grabar mensaje de voz",
         "unboxing_record_video_btn": "Grabar video con cámara",
         "unboxing_preview_btn": "Reproducir",
@@ -3232,6 +3256,7 @@ const translations = {
         "showcase_banner_btn_buy": "★ Obtener Paquete PRO — Al instante"
     },
     "fr": {
+        "zen_options_peek": "Options de transfert (mot de passe, expiration, alias)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Cloud Dropsite",
         "mode_cloud_badge": "jusqu'à 10 Go",
@@ -3734,6 +3759,7 @@ const translations = {
         "adv_tab_security": "Sécurité",
         "adv_tab_limits": "Limites",
         "adv_tab_extras": "Options",
+        "adv_tab_storage": "Stockage",
         "unboxing_record_voice_btn": "Enregistrer message vocal",
         "unboxing_record_video_btn": "Enregistrer vidéo webcam",
         "unboxing_preview_btn": "Lire",
@@ -4025,6 +4051,7 @@ const translations = {
         "showcase_banner_btn_buy": "★ Obtenir le Pack PRO — Immédiat"
     },
     "uk": {
+        "zen_options_peek": "Опції передачі (пароль, термін, аліас)",
         "nav_beam": "Beam P2P",
         "mode_cloud_label": "Хмара Dropsite",
         "mode_cloud_badge": "до 10 ГБ",
@@ -4527,6 +4554,7 @@ const translations = {
         "adv_tab_security": "Безпека",
         "adv_tab_limits": "Ліміти",
         "adv_tab_extras": "Додатки",
+        "adv_tab_storage": "Сховище",
         "unboxing_record_voice_btn": "Записати голосове",
         "unboxing_record_video_btn": "Відео з камери",
         "unboxing_preview_btn": "Відтворити",

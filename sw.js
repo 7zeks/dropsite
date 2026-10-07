@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.3.3';
+const CACHE_NAME = 'dropsite-studio-v3.3.6';
 
 const PRECACHE_ASSETS = [
     './',
@@ -11,7 +11,6 @@ const PRECACHE_ASSETS = [
     './manifest.json',
     './favicon.png?v=4',
     './dropsite-logo.png?v=4',
-    './dropsite-logo-8k.png',
     './blik.svg',
     // CSS Stylesheets (Wszystkie istniejące arkusze produkcyjne)
     './css/vars.css',
@@ -37,24 +36,18 @@ const PRECACHE_ASSETS = [
     './css/command-palette.css',
     './css/radial-wheel.css',
     './css/pdf-studio-luxury.css',
+    './css/cloud-bridge.css',
     // JS Scripts & RAM Engines
     './app.js',
     './js/i18n.js',
-    './js/pdf-lib.min.js',
-    './js/pdf.min.js',
-    './js/pdf.worker.min.js',
     './js/fflate.min.js',
     './js/qrious.min.js',
-    './js/toolbox.js',
     './js/ram-engine.js',
     './js/beam.js',
     './js/ads-engine.js',
     './js/telemetry.js',
     './js/concierge.js',
     './js/omni-dropzone.js',
-    './js/pdf-matrix.js',
-    './js/watermark-studio.js',
-    './js/rodo-guard.js',
     './js/drop-request.js',
     './js/audio-waveform.js',
     './js/code-viewer.js',
@@ -63,7 +56,8 @@ const PRECACHE_ASSETS = [
     './js/video-compress.js',
     './js/media-grabber.js',
     './js/command-palette.js',
-    './js/radial-wheel.js'
+    './js/radial-wheel.js',
+    './js/cloud-bridge.js'
 ];
 
 self.addEventListener('install', (event) => {
