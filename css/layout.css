@@ -1024,39 +1024,128 @@
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nav-dropdown-icon.icon-sky,
-.nav-dropdown-icon.icon-cyan,
-.nav-dropdown-icon.icon-mint,
-.nav-dropdown-icon.icon-emerald,
-.nav-dropdown-icon.icon-purple,
-.nav-dropdown-icon.icon-amber,
-.nav-dropdown-icon.icon-slate {
+/* Domyślny miętowy styl bazy */
+.nav-dropdown-icon {
     background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(168, 218, 191, 0.06) 100%);
-    color: #C4E7D4;
     border: 1px solid rgba(196, 231, 212, 0.22);
+    color: #C4E7D4;
     box-shadow: 0 2px 10px rgba(196, 231, 212, 0.08);
+}
+
+/* 1. Mięta PDF Studio (Narzędzia PDF) */
+.nav-dropdown-icon.icon-mint {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.13) 0%, rgba(168, 218, 191, 0.06) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.24);
+    color: #C4E7D4;
+    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.08);
+}
+
+/* 2. Jasny błękit / Ice Sky (Pobierz wideo HD) */
+.nav-dropdown-icon.icon-sky {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.13) 0%, rgba(125, 211, 252, 0.06) 100%);
+    border: 1px solid rgba(186, 230, 253, 0.24);
+    color: #BAE6FD;
+    box-shadow: 0 2px 10px rgba(186, 230, 253, 0.08);
+}
+
+/* 3. Jasna lawenda / Pastel Lavender (Historia transferów) */
+.nav-dropdown-icon.icon-purple {
+    background: linear-gradient(135deg, rgba(224, 219, 254, 0.13) 0%, rgba(196, 181, 253, 0.06) 100%);
+    border: 1px solid rgba(224, 219, 254, 0.24);
+    color: #DDD6FE;
+    box-shadow: 0 2px 10px rgba(224, 219, 254, 0.08);
+}
+
+/* 4. Ciepłe jasne złoto / Soft Amber-Gold (Sejf Notatek & Kodów) */
+.nav-dropdown-icon.icon-amber {
+    background: linear-gradient(135deg, rgba(254, 240, 199, 0.13) 0%, rgba(253, 230, 138, 0.06) 100%);
+    border: 1px solid rgba(254, 240, 199, 0.24);
+    color: #FDE68A;
+    box-shadow: 0 2px 10px rgba(254, 240, 199, 0.08);
+}
+
+/* 5. Jasny platynowy szron / Platinum Slate (Kontakt) */
+.nav-dropdown-icon.icon-slate {
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.12) 0%, rgba(203, 213, 225, 0.06) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.22);
+    color: #E2E8F0;
+    box-shadow: 0 2px 10px rgba(226, 232, 240, 0.08);
+}
+
+/* 6. Jasny pastelowy szmaragd / Soft Jade (Dźwięki) */
+.nav-dropdown-icon.icon-emerald {
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.13) 0%, rgba(110, 231, 183, 0.06) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.24);
+    color: #A7F3D0;
+    box-shadow: 0 2px 10px rgba(167, 243, 208, 0.08);
+}
+
+/* 7. Jasny pastelowy turkus / Aqua Breeze (Tryb Płynności) */
+.nav-dropdown-icon.icon-cyan {
+    background: linear-gradient(135deg, rgba(165, 243, 252, 0.13) 0%, rgba(103, 232, 249, 0.06) 100%);
+    border: 1px solid rgba(165, 243, 252, 0.24);
+    color: #A5F3FC;
+    box-shadow: 0 2px 10px rgba(165, 243, 252, 0.08);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon {
     transform: scale(1.06);
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.22) 0%, rgba(168, 218, 191, 0.14) 100%);
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-mint {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.24) 0%, rgba(168, 218, 191, 0.14) 100%);
     border-color: rgba(196, 231, 212, 0.45);
     color: #FFFFFF;
     box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
     filter: drop-shadow(0 0 6px rgba(196, 231, 212, 0.45));
 }
 
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-sky,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-cyan,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-mint,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-emerald,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-purple,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-amber,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-slate {
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.22) 0%, rgba(168, 218, 191, 0.14) 100%);
-    border-color: rgba(196, 231, 212, 0.45);
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-sky {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.24) 0%, rgba(125, 211, 252, 0.14) 100%);
+    border-color: rgba(186, 230, 253, 0.45);
     color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
+    box-shadow: 0 0 16px rgba(186, 230, 253, 0.35);
+    filter: drop-shadow(0 0 6px rgba(186, 230, 253, 0.45));
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-purple {
+    background: linear-gradient(135deg, rgba(224, 219, 254, 0.24) 0%, rgba(196, 181, 253, 0.14) 100%);
+    border-color: rgba(224, 219, 254, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(224, 219, 254, 0.35);
+    filter: drop-shadow(0 0 6px rgba(224, 219, 254, 0.45));
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-amber {
+    background: linear-gradient(135deg, rgba(254, 240, 199, 0.24) 0%, rgba(253, 230, 138, 0.14) 100%);
+    border-color: rgba(254, 240, 199, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(254, 240, 199, 0.35);
+    filter: drop-shadow(0 0 6px rgba(254, 240, 199, 0.45));
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-slate {
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.24) 0%, rgba(203, 213, 225, 0.14) 100%);
+    border-color: rgba(226, 232, 240, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(226, 232, 240, 0.3);
+    filter: drop-shadow(0 0 6px rgba(226, 232, 240, 0.4));
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-emerald {
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.24) 0%, rgba(110, 231, 183, 0.14) 100%);
+    border-color: rgba(167, 243, 208, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(167, 243, 208, 0.35);
+    filter: drop-shadow(0 0 6px rgba(167, 243, 208, 0.45));
+}
+
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-cyan {
+    background: linear-gradient(135deg, rgba(165, 243, 252, 0.24) 0%, rgba(103, 232, 249, 0.14) 100%);
+    border-color: rgba(165, 243, 252, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(165, 243, 252, 0.35);
+    filter: drop-shadow(0 0 6px rgba(165, 243, 252, 0.45));
 }
 
 /* DWULINIOWA STRUKTURA TEKSTU */
