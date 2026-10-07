@@ -880,7 +880,7 @@
 .nav-dropdown-item.is-open .nav-dropdown-arrow {
     transform: rotate(180deg);
     opacity: 1;
-    color: #38BDF8;
+    color: #C4E7D4;
 }
 
 .nav-dropdown-menu {
@@ -898,7 +898,7 @@
     min-width: 330px;
     width: 340px;
     box-shadow: 0 28px 70px -10px rgba(0, 0, 0, 0.75),
-                0 0 35px rgba(56, 189, 248, 0.08),
+                0 0 35px rgba(196, 231, 212, 0.08),
                 inset 0 1px 0 rgba(255, 255, 255, 0.15);
     z-index: 10000;
     display: flex;
@@ -912,7 +912,7 @@
                 visibility 0.22s ease 0.22s;
 }
 
-/* Górna subtelna smuga światła z czystym akcentem Brand Mint */
+/* Górna subtelna smuga światła z czystym akcentem Brand Mint (PDF Tools) */
 .nav-dropdown-menu::after {
     content: '';
     position: absolute;
@@ -921,8 +921,8 @@
     right: 20px;
     height: 1.5px;
     border-radius: 999px;
-    background: linear-gradient(90deg, transparent 0%, rgba(52, 211, 153, 0.7) 50%, transparent 100%);
-    box-shadow: 0 0 12px rgba(52, 211, 153, 0.45);
+    background: linear-gradient(90deg, transparent 0%, rgba(196, 231, 212, 0.8) 50%, transparent 100%);
+    box-shadow: 0 0 12px rgba(196, 231, 212, 0.45);
     pointer-events: none;
 }
 
@@ -956,8 +956,8 @@
     right: 7px;
     width: calc(100% - 14px);
     border-radius: 12px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(52, 211, 153, 0.07) 100%);
-    border: 1px solid rgba(52, 211, 153, 0.15);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(196, 231, 212, 0.08) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.18);
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     pointer-events: none;
     opacity: 0;
@@ -997,7 +997,7 @@
     color: #FFFFFF !important;
 }
 
-/* HARMONIJNE IKONY FROSTED GLASS Z SUBTELNYM TINTEM */
+/* HARMONIJNE IKONY FROSTED GLASS W AKCENCIE MIĘTOWYM Z PDF STUDIO */
 .nav-dropdown-icon {
     display: inline-flex;
     align-items: center;
@@ -1006,88 +1006,57 @@
     height: 36px;
     border-radius: 10px;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94A3B8;
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(168, 218, 191, 0.06) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.22);
+    color: #C4E7D4;
+    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.08);
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 0.22s ease,
                 background 0.22s ease,
                 border-color 0.22s ease,
-                color 0.22s ease;
+                color 0.22s ease,
+                filter 0.22s ease;
+}
+
+.nav-dropdown-icon svg {
+    color: inherit;
+    stroke: currentColor;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-dropdown-icon.icon-sky,
-.nav-dropdown-icon.icon-cyan {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.14) 0%, rgba(14, 165, 233, 0.06) 100%);
-    color: #38BDF8;
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    box-shadow: 0 2px 10px rgba(56, 189, 248, 0.1);
-}
-
+.nav-dropdown-icon.icon-cyan,
 .nav-dropdown-icon.icon-mint,
-.nav-dropdown-icon.icon-emerald {
-    background: linear-gradient(135deg, rgba(52, 211, 153, 0.14) 0%, rgba(16, 185, 129, 0.06) 100%);
-    color: #34D399;
-    border: 1px solid rgba(52, 211, 153, 0.25);
-    box-shadow: 0 2px 10px rgba(52, 211, 153, 0.1);
-}
-
-.nav-dropdown-icon.icon-purple {
-    background: linear-gradient(135deg, rgba(129, 140, 248, 0.14) 0%, rgba(99, 102, 241, 0.06) 100%);
-    color: #A5B4FC;
-    border: 1px solid rgba(129, 140, 248, 0.25);
-    box-shadow: 0 2px 10px rgba(129, 140, 248, 0.1);
-}
-
-.nav-dropdown-icon.icon-amber {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(217, 119, 6, 0.06) 100%);
-    color: #FBBF24;
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.1);
-}
-
+.nav-dropdown-icon.icon-emerald,
+.nav-dropdown-icon.icon-purple,
+.nav-dropdown-icon.icon-amber,
 .nav-dropdown-icon.icon-slate {
-    background: linear-gradient(135deg, rgba(148, 163, 184, 0.14) 0%, rgba(100, 116, 139, 0.06) 100%);
-    color: #94A3B8;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    box-shadow: 0 2px 10px rgba(148, 163, 184, 0.08);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(168, 218, 191, 0.06) 100%);
+    color: #C4E7D4;
+    border: 1px solid rgba(196, 231, 212, 0.22);
+    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.08);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon {
     transform: scale(1.06);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.22) 0%, rgba(168, 218, 191, 0.14) 100%);
+    border-color: rgba(196, 231, 212, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
+    filter: drop-shadow(0 0 6px rgba(196, 231, 212, 0.45));
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-sky,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-cyan {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.24) 0%, rgba(14, 165, 233, 0.12) 100%);
-    border-color: rgba(56, 189, 248, 0.45);
-    box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
-}
-
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-cyan,
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-mint,
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-emerald {
-    background: linear-gradient(135deg, rgba(52, 211, 153, 0.24) 0%, rgba(16, 185, 129, 0.12) 100%);
-    border-color: rgba(52, 211, 153, 0.45);
-    box-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
-}
-
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-purple {
-    background: linear-gradient(135deg, rgba(129, 140, 248, 0.24) 0%, rgba(99, 102, 241, 0.12) 100%);
-    border-color: rgba(129, 140, 248, 0.45);
-    box-shadow: 0 0 16px rgba(129, 140, 248, 0.35);
-}
-
-.nav-dropdown-link:hover .nav-dropdown-icon.icon-amber {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.24) 0%, rgba(217, 119, 6, 0.12) 100%);
-    border-color: rgba(245, 158, 11, 0.45);
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
-}
-
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-emerald,
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-purple,
+.nav-dropdown-link:hover .nav-dropdown-icon.icon-amber,
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-slate {
-    background: linear-gradient(135deg, rgba(148, 163, 184, 0.24) 0%, rgba(100, 116, 139, 0.12) 100%);
-    border-color: rgba(148, 163, 184, 0.45);
-    color: #E2E8F0;
-    box-shadow: 0 0 16px rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.22) 0%, rgba(168, 218, 191, 0.14) 100%);
+    border-color: rgba(196, 231, 212, 0.45);
+    color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
 }
 
 /* DWULINIOWA STRUKTURA TEKSTU */
@@ -1130,7 +1099,7 @@
     color: #CBD5E1;
 }
 
-/* ELEGANCKIE UJEDNOLICONE BADGE (SPÓJNY MIĘTOWY AKCENT MARKI) */
+/* ELEGANCKIE UJEDNOLICONE BADGE (SPÓJNY MIĘTOWY AKCENT Z PDF STUDIO) */
 .nav-dropdown-badge {
     font-size: 9.5px;
     font-weight: 700;
@@ -1141,10 +1110,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(52, 211, 153, 0.14);
-    color: #34D399;
-    border: 1px solid rgba(52, 211, 153, 0.3);
-    box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
+    background: rgba(196, 231, 212, 0.1);
+    color: #C4E7D4;
+    border: 1px solid rgba(196, 231, 212, 0.24);
+    box-shadow: 0 0 10px rgba(196, 231, 212, 0.12);
 }
 
 .badge-mint,
@@ -1154,10 +1123,10 @@
 .badge-fps,
 .badge-amber,
 .badge-cyan {
-    background: rgba(52, 211, 153, 0.14);
-    color: #34D399;
-    border: 1px solid rgba(52, 211, 153, 0.3);
-    box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
+    background: rgba(196, 231, 212, 0.1);
+    color: #C4E7D4;
+    border: 1px solid rgba(196, 231, 212, 0.24);
+    box-shadow: 0 0 10px rgba(196, 231, 212, 0.12);
 }
 
 .badge-soon {
@@ -1185,8 +1154,10 @@
                 background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Miętowy płynny gradient podkładowy pod aktywne suwaki */
-.sound-mini-switch::before {
+/* Miętowy płynny gradient podkładowy pod aktywne suwaki - odcień z PDF Studio */
+.sound-mini-switch::before,
+#dropdownSoundSwitch::before,
+#dropdownPerfSwitch::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -1195,12 +1166,7 @@
     pointer-events: none;
     transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 0;
-    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
-}
-
-#dropdownSoundSwitch::before,
-#dropdownPerfSwitch::before {
-    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+    background: linear-gradient(135deg, #4FA489 0%, #A8DABF 60%, #C4E7D4 100%);
 }
 
 .sound-mini-switch.is-active::before,
@@ -1216,7 +1182,7 @@
     height: 14px;
     border-radius: 50%;
     background: #FFFFFF;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
     z-index: 1;
     transform: translateX(0) translateZ(0);
@@ -1228,8 +1194,8 @@
 .sound-mini-switch.active,
 #dropdownPerfSwitch.is-active,
 #dropdownPerfSwitch.active {
-    border-color: rgba(52, 211, 153, 0.7);
-    box-shadow: 0 0 14px rgba(16, 185, 129, 0.45);
+    border-color: rgba(196, 231, 212, 0.7);
+    box-shadow: 0 0 14px rgba(196, 231, 212, 0.45);
 }
 
 .sound-mini-switch.is-active .sound-switch-thumb,
