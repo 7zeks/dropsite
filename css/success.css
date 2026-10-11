@@ -11,6 +11,11 @@
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+.siri-glow-frame:has(#successFlow:not([hidden])) .siri-fluid-plasma {
+    opacity: 0.15 !important;
+    filter: blur(64px) !important;
+}
+
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
     width: 100% !important;
@@ -363,15 +368,15 @@
     gap: 4px;
     font-size: 11px;
     font-weight: 500;
-    color: #34D399;
+    color: #C4E7D4;
 }
 
 .sfc-live-pulse {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: #34D399;
-    box-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+    background: #C4E7D4;
+    box-shadow: 0 0 6px rgba(196, 231, 212, 0.8);
     animation: liveDotPulse 2s infinite ease-in-out;
 }
 
@@ -545,7 +550,7 @@
         transparent 0%,
         rgba(255, 255, 255, 0.1) 25%,
         rgba(255, 255, 255, 0.45) 50%,
-        rgba(52, 211, 153, 0.35) 75%,
+        rgba(196, 231, 212, 0.35) 75%,
         transparent 100%
     );
     transform: skewX(-20deg);
@@ -766,8 +771,8 @@
 }
 
 .clean-security-caption svg {
-    color: #10B981;
-    opacity: 0.75;
+    color: #C4E7D4;
+    opacity: 0.85;
 }
 
 /* --- Responsywność dla Telefonów (<= 600px) --- */

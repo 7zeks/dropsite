@@ -359,8 +359,8 @@
                         </div>
                     </a>
 
-                    <!-- 2. Pobierz wideo HD (Wkrótce) -->
-                    <a href="#" class="nav-dropdown-link dropdown-grabber" data-target="view-pobieracz" data-status="soon" title="Funkcja w procesie tworzenia">
+                    <!-- 2. Pobierz wideo HD -->
+                    <a href="#" class="nav-dropdown-link dropdown-grabber" data-target="view-pobieracz" title="Pobieraj wideo HD z TikTok, X, Reels, Shorts">
                         <span class="nav-dropdown-icon icon-sky">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -371,9 +371,9 @@
                         <div class="nav-dropdown-text">
                             <div class="nav-dropdown-title-row">
                                 <span class="nav-dropdown-title" data-i18n="nav_grabber">Pobierz wideo HD</span>
-                                <span class="nav-dropdown-badge badge-soon" data-i18n="nav_badge_soon">Wkrótce</span>
+                                <span class="nav-dropdown-badge badge-sky" data-i18n="nav_badge_hd">HD • MP4</span>
                             </div>
-                            <span class="nav-dropdown-desc" data-i18n="nav_grabber_sub">TikTok, X (Twitter) • YT & IG wkrótce</span>
+                            <span class="nav-dropdown-desc" data-i18n="nav_grabber_sub">TikTok, X (Twitter) • czyste wideo i audio</span>
                         </div>
                     </a>
 
@@ -549,15 +549,15 @@
                 </svg>
                 <span data-i18n="nav_tools">Tools</span>
             </a>
-            <a href="#" class="mobile-drawer-link" data-target="view-pobieracz" data-status="soon" title="Funkcja w procesie tworzenia">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"
+            <a href="#" class="mobile-drawer-link" data-target="view-pobieracz" title="Pobieraj wideo HD z TikTok, X, Reels, Shorts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 <span data-i18n="nav_grabber">Pobierz Wideo</span>
-                <span class="mobile-hud-badge" style="color:#94A3B8; border-color:rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); font-size:0.65rem;">Wkrótce</span>
+                <span class="mobile-hud-badge" style="color:#BAE6FD; border-color:rgba(186,230,253,0.3); background:rgba(186,230,253,0.1); font-size:0.65rem;">HD</span>
             </a>
             <button type="button" class="mobile-drawer-link mobile-drawer-radial-btn btn-open-radial-wheel"
                 id="mobileRadialBtn">
@@ -9805,9 +9805,9 @@
 
         // Toolbox scripts ładowane na żądanie (on-demand przy interakcji z Narzędziami lub wejściu na trasę narzędzi)
 
-        // Natychmiastowy prefetch przy najeździe na przycisk "Narzędzia", kliknięciu lub wejściu na trasę SEO
+        // Natychmiastowy prefetch przy najeździe na przycisk "Narzędzia" lub "Pobierz Wideo", kliknięciu lub wejściu na trasę SEO
         document.addEventListener('DOMContentLoaded', function () {
-            const toolNavBtns = document.querySelectorAll('.nav-btn[data-target="view-narzedzia"], .mobile-drawer-link[data-target="view-narzedzia"]');
+            const toolNavBtns = document.querySelectorAll('.nav-btn[data-target="view-narzedzia"], .mobile-drawer-link[data-target="view-narzedzia"], [data-target="view-pobieracz"]');
             toolNavBtns.forEach(function (btn) {
                 btn.addEventListener('mouseenter', function () { window.loadToolboxScripts(); }, { passive: true, once: true });
                 btn.addEventListener('click', function () { window.loadToolboxScripts(); });
@@ -9824,7 +9824,7 @@
     <script src="js/telemetry.js" defer></script>
     <script src="js/ram-engine.js" defer></script>
     <script src="js/beam.js" defer></script>
-    <script src="app.js?v=2.8.5" defer></script>
+    <script src="app.js?v=2.8.6" defer></script>
     <script src="js/concierge.js" defer></script>
     <script src="js/omni-dropzone.js" defer></script>
     <script src="js/drop-request.js" defer></script>

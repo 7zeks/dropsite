@@ -7196,11 +7196,11 @@ function initAdminGarbageCollector() {
 }
 
 // =========================================================================
-// ZARZĄDZANIE DOSTĘPEM DO MODUŁÓW (FEATURE FLAGS: POBIERZ WIDEO HD)
+// ZARZĄDZANIE DOSTĘPEM DO MODUŁÓW (POBIERZ WIDEO HD)
 // =========================================================================
-window.isMediaGrabberUnlocked = localStorage.getItem('dropsite_media_grabber_unlocked') === 'true';
+window.isMediaGrabberUnlocked = true;
 
-function updateMediaGrabberUI(isUnlocked) {
+function updateMediaGrabberUI(isUnlocked = true) {
     window.isMediaGrabberUnlocked = !!isUnlocked;
     localStorage.setItem('dropsite_media_grabber_unlocked', isUnlocked ? 'true' : 'false');
 
@@ -7208,20 +7208,14 @@ function updateMediaGrabberUI(isUnlocked) {
     const dropdownLink = document.querySelector('.dropdown-grabber');
     if (dropdownLink) {
         dropdownLink.setAttribute('data-status', isUnlocked ? 'active' : 'soon');
-        dropdownLink.setAttribute('title', isUnlocked ? 'Pobieraj wideo z TikToka, YouTube, IG i X' : 'Funkcja w procesie tworzenia');
+        dropdownLink.setAttribute('title', isUnlocked ? 'Pobieraj wideo HD z TikTok, X, Reels, Shorts' : 'Funkcja w procesie tworzenia');
         const badge = dropdownLink.querySelector('.nav-dropdown-badge');
         if (badge) {
-            badge.textContent = isUnlocked ? 'HD' : 'Wkrótce';
-            badge.className = `nav-dropdown-badge ${isUnlocked ? 'badge-pdf' : 'badge-soon'}`;
-            if (isUnlocked) {
-                badge.style.background = 'rgba(16, 185, 129, 0.2)';
-                badge.style.color = '#34D399';
-                badge.style.borderColor = 'rgba(52, 211, 153, 0.4)';
-            } else {
-                badge.style.background = '';
-                badge.style.color = '';
-                badge.style.borderColor = '';
-            }
+            badge.textContent = isUnlocked ? 'HD • MP4' : 'Wkrótce';
+            badge.className = `nav-dropdown-badge ${isUnlocked ? 'badge-sky' : 'badge-soon'}`;
+            badge.style.background = '';
+            badge.style.color = '';
+            badge.style.borderColor = '';
         }
     }
 
@@ -7232,9 +7226,9 @@ function updateMediaGrabberUI(isUnlocked) {
         const mobileBadge = drawerLink.querySelector('.mobile-hud-badge');
         if (mobileBadge) {
             mobileBadge.textContent = isUnlocked ? 'HD' : 'Wkrótce';
-            mobileBadge.style.color = isUnlocked ? '#34D399' : '#94A3B8';
-            mobileBadge.style.borderColor = isUnlocked ? 'rgba(52, 211, 153, 0.4)' : 'rgba(255,255,255,0.15)';
-            mobileBadge.style.background = isUnlocked ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.06)';
+            mobileBadge.style.color = isUnlocked ? '#BAE6FD' : '#94A3B8';
+            mobileBadge.style.borderColor = isUnlocked ? 'rgba(186, 230, 253, 0.3)' : 'rgba(255,255,255,0.15)';
+            mobileBadge.style.background = isUnlocked ? 'rgba(186, 230, 253, 0.1)' : 'rgba(255,255,255,0.06)';
         }
     }
 
@@ -10913,14 +10907,6 @@ document.addEventListener('DOMContentLoaded', () => {
         stopAllMediaPlayback();
 
         if (targetId === 'view-pobieracz') {
-            const isAdmin = isCurrentUserAdminRole();
-            const isUnlocked = !!window.isMediaGrabberUnlocked;
-            if (!isAdmin && !isUnlocked) {
-                if (typeof window.showToast === 'function') {
-                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
-                }
-                return;
-            }
             if (window.loadToolboxScripts) {
                 window.loadToolboxScripts().then(() => {
                     if (window.DropsiteMediaGrabber && window.DropsiteMediaGrabber.init) {
@@ -10976,9 +10962,7 @@ document.addEventListener('DOMContentLoaded', () => {
     allNavClickables.forEach(link => {
         link.addEventListener('click', (e) => {
             const isPobieracz = link.getAttribute('data-target') === 'view-pobieracz' || link.getAttribute('data-action') === 'media-grabber';
-            const isAdmin = isCurrentUserAdminRole();
-            const isUnlocked = !!window.isMediaGrabberUnlocked;
-            const isBlockedPobieracz = isPobieracz && !isAdmin && !isUnlocked;
+            const isBlockedPobieracz = false;
             const isOtherSoon = link.getAttribute('data-status') === 'soon' && !isPobieracz;
 
             if (isBlockedPobieracz || isOtherSoon) {
