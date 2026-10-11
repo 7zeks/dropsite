@@ -4067,30 +4067,37 @@
    CRITICAL ANTI-FOUC BASE STYLES FOR DEFERRED MODALS & HUDS
    Eliminates visual flashing on page reload caused by asynchronous CSS loading
    ========================================================================== */
-.radial-hud-backdrop,
-.cmd-palette-backdrop,
-.drop-req-modal-wrap,
-.dead-drop-modal-wrap,
-.rodo-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    z-index: 100090;
+.radial-hud-backdrop:not(.open),
+.cmd-palette-backdrop:not(.open),
+.drop-req-modal-wrap:not(.open),
+.dead-drop-modal-wrap:not(.open),
+.rodo-modal-backdrop:not(.active),
+.byos-modal-overlay:not(.active),
+.concierge-modal-wrap:not(.is-active) {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -99999 !important;
 }
 
 .radial-hud-backdrop.open,
 .cmd-palette-backdrop.open,
 .drop-req-modal-wrap.open,
 .dead-drop-modal-wrap.open {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
 }
 
-.rodo-modal-backdrop.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+.rodo-modal-backdrop.active,
+.byos-modal-overlay.active,
+.concierge-modal-wrap.is-active {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
 }
