@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.4.4';
+const CACHE_NAME = 'dropsite-studio-v3.4.5';
 
 const PRECACHE_ASSETS = [
     './',
@@ -18,6 +18,7 @@ const PRECACHE_ASSETS = [
     './css/upload.css',
     './css/success.css',
     './css/widgets.css',
+    './css/motion.css',
     './css/my-files.css',
     './css/telemetry.css',
     './css/bento-showcase.css',
@@ -39,6 +40,7 @@ const PRECACHE_ASSETS = [
     './css/cloud-bridge.css',
     // JS Scripts & RAM Engines
     './app.js',
+    './js/motion-engine.js',
     './js/i18n.js',
     './js/fflate.min.js',
     './js/qrious.min.js',

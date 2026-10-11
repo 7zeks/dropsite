@@ -22,11 +22,11 @@
 /app.js
   Cache-Control: public, max-age=0, must-revalidate
 
-# CSS & JS Directories
+# CSS & JS Directories (Revalidate immediately so updates are always fresh)
 /css/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=0, must-revalidate
 /js/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=0, must-revalidate
 
 # Static Third-Party Vendor Libraries in /js/ (Immutable, 1 year cache)
 /js/pdf.min.js

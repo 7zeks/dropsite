@@ -1,0 +1,352 @@
+/**
+ * ============================================================================
+ * DROPSITE ULTRA-LEAN MOTION DESIGN ENGINE (Apple Pro & Linear Aesthetic)
+ * ============================================================================
+ * 100% GPU-accelerated (Compositor Thread: transform3d & opacity only)
+ * Zero external libraries • 60/120 FPS guaranteed • Eco-Mode aware
+ * ============================================================================
+ */
+
+/* -------------------------------------------------------------------------
+   1. SPATIAL VIEW TRANSITIONS (Płynne, przestrzenne wejścia widoków SPA)
+   ------------------------------------------------------------------------- */
+.view-section.active {
+    animation: spatialViewEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
+}
+
+@keyframes spatialViewEnter {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 16px, 0) scale(0.988);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+/* Kaskadowe (staggered) pojawianie się kafelków na aktywnym widoku */
+.view-section.active .bento-card,
+.view-section.active .toolbox-tool-card,
+.view-section.active .grabber-stage-wrapper,
+.view-section.active .hud-showcase-card,
+.view-section.active .feature-card {
+    animation: spatialCardStagger 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.view-section.active .bento-card:nth-child(1),
+.view-section.active .toolbox-tool-card:nth-child(1) { animation-delay: 0.04s; }
+
+.view-section.active .bento-card:nth-child(2),
+.view-section.active .toolbox-tool-card:nth-child(2) { animation-delay: 0.08s; }
+
+.view-section.active .bento-card:nth-child(3),
+.view-section.active .toolbox-tool-card:nth-child(3) { animation-delay: 0.12s; }
+
+.view-section.active .bento-card:nth-child(4),
+.view-section.active .toolbox-tool-card:nth-child(4) { animation-delay: 0.16s; }
+
+.view-section.active .bento-card:nth-child(n+5),
+.view-section.active .toolbox-tool-card:nth-child(n+5) { animation-delay: 0.2s; }
+
+@keyframes spatialCardStagger {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0) scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+/* -------------------------------------------------------------------------
+   2. APPLE PRO HAPTIC SPRING PHYSICS (Sprężysta reakcja przycisków i kart)
+   ------------------------------------------------------------------------- */
+.btn-primary,
+.cta-btn,
+.clean-copy-btn,
+.dl-btn-large,
+.btn-cinematic-start,
+.grabber-btn-submit,
+.grabber-btn-paste,
+.nav-dropdown-link,
+.toolbox-tool-card,
+.role-pill-btn,
+.mobile-drawer-link,
+.btn-open-radial-wheel,
+.btn-storage-byos-info,
+.creator-brand-banner,
+.btn-attached-preview {
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.2s ease,
+                background 0.2s ease !important;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+}
+
+/* Hover: wyczuwalne unoszenie i rozświetlenie */
+.btn-primary:hover:not(:disabled),
+.clean-copy-btn:hover,
+.dl-btn-large:hover,
+.btn-cinematic-start:hover,
+.grabber-btn-submit:hover:not(:disabled),
+.grabber-btn-paste:hover,
+.btn-open-radial-wheel:hover {
+    transform: translate3d(0, -2.5px, 0) scale(1.014) !important;
+}
+
+/* Active / Kliknięcie: sprężysty docisk w głąb tafli szkła */
+.btn-primary:active:not(:disabled),
+.clean-copy-btn:active,
+.dl-btn-large:active,
+.btn-cinematic-start:active,
+.grabber-btn-submit:active:not(:disabled),
+.grabber-btn-paste:active,
+.nav-dropdown-link:active,
+.toolbox-tool-card:active,
+.role-pill-btn:active,
+.btn-open-radial-wheel:active {
+    transform: translate3d(0, 1.5px, 0) scale(0.962) !important;
+    transition-duration: 0.08s !important;
+}
+
+/* -------------------------------------------------------------------------
+   3. INTERACTIVE AMBIENT SPOTLIGHT (Kursorowe światło szafirowe na szkle)
+   ------------------------------------------------------------------------- */
+.upload-container,
+.bento-card,
+.toolbox-tool-card,
+.grabber-stage-wrapper,
+.hud-showcase-card,
+.cinematic-hero-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-container::after,
+.bento-card::after,
+.toolbox-tool-card::after,
+.hud-showcase-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(
+        520px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+        rgba(196, 231, 212, 0.09) 0%,
+        rgba(196, 231, 212, 0.02) 40%,
+        transparent 75%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    z-index: 1;
+}
+
+.upload-container:hover::after,
+.bento-card:hover::after,
+.toolbox-tool-card:hover::after,
+.hud-showcase-card:hover::after {
+    opacity: 1;
+}
+
+/* Karty Bento: unoszenie 3D z głębią cienia */
+.bento-card {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s ease !important;
+}
+
+.bento-card:hover {
+    transform: translate3d(0, -4px, 0) scale(1.006) !important;
+    border-color: rgba(196, 231, 212, 0.28) !important;
+    box-shadow: 0 24px 60px -10px rgba(0, 0, 0, 0.8),
+                0 0 30px rgba(196, 231, 212, 0.1) !important;
+}
+
+/* -------------------------------------------------------------------------
+   4. MAGNETIC DROPZONE & DRAG-OVER PULSE (Reaktywna tafla uploadera)
+   ------------------------------------------------------------------------- */
+.upload-container {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s ease !important;
+}
+
+.upload-container:hover {
+    border-color: rgba(196, 231, 212, 0.25) !important;
+    box-shadow: 0 32px 85px -15px rgba(0, 0, 0, 0.82),
+                0 0 40px -10px rgba(196, 231, 212, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+/* Stan przeciągania pliku nad całym oknem */
+body.is-dragging .upload-container,
+.upload-container.drag-over,
+#dropZone.drag-over {
+    transform: translate3d(0, -6px, 0) scale(1.022) !important;
+    border-color: rgba(196, 231, 212, 0.75) !important;
+    box-shadow: 0 40px 110px -10px rgba(0, 0, 0, 0.9),
+                0 0 65px -5px rgba(196, 231, 212, 0.45),
+                inset 0 0 35px rgba(196, 231, 212, 0.2) !important;
+    animation: dropzoneBreathePulse 2.4s ease-in-out infinite alternate !important;
+}
+
+@keyframes dropzoneBreathePulse {
+    0% {
+        box-shadow: 0 40px 110px -10px rgba(0, 0, 0, 0.9),
+                    0 0 45px -5px rgba(196, 231, 212, 0.3),
+                    inset 0 0 25px rgba(196, 231, 212, 0.15);
+    }
+    100% {
+        box-shadow: 0 45px 120px -10px rgba(0, 0, 0, 0.95),
+                    0 0 75px 0px rgba(196, 231, 212, 0.55),
+                    inset 0 0 45px rgba(196, 231, 212, 0.25);
+    }
+}
+
+/* Ulepszona nakładka globalna z płynnym rozszerzeniem */
+.global-drag-overlay {
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    background: rgba(8, 12, 20, 0.88) !important;
+    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.32s ease !important;
+}
+
+.global-drag-overlay.active .drag-content {
+    animation: dragContentSpringIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+    border-color: #C4E7D4 !important;
+    background: linear-gradient(180deg, rgba(26, 38, 58, 0.85) 0%, rgba(12, 19, 32, 0.95) 100%) !important;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85),
+                0 0 60px rgba(196, 231, 212, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+@keyframes dragContentSpringIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.drag-icon {
+    color: #C4E7D4 !important;
+    filter: drop-shadow(0 0 16px rgba(196, 231, 212, 0.6));
+    animation: dragIconLevitate 2.8s ease-in-out infinite !important;
+}
+
+@keyframes dragIconLevitate {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* -------------------------------------------------------------------------
+   5. RADAR & LASER SCANNER MOTION (Pobieracz Wideo & Pasek Narzędzi)
+   ------------------------------------------------------------------------- */
+.grabber-input-wrapper {
+    position: relative;
+    transition: box-shadow 0.28s ease, border-color 0.28s ease, transform 0.28s ease !important;
+}
+
+.grabber-input-wrapper:focus-within {
+    transform: translateY(-1.5px) !important;
+    border-color: rgba(196, 231, 212, 0.5) !important;
+    box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.6),
+                0 0 30px rgba(196, 231, 212, 0.18) !important;
+}
+
+/* Laserowy promyczek skanujący wzdłuż paska */
+.grabber-input-wrapper::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -100%;
+    width: 60%;
+    height: calc(100% + 2px);
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(196, 231, 212, 0.2) 40%,
+        rgba(186, 230, 253, 0.45) 50%,
+        rgba(196, 231, 212, 0.2) 60%,
+        transparent 100%
+    );
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.grabber-input-wrapper:focus-within::after,
+.grabber-input-wrapper.is-scanning::after {
+    opacity: 1;
+    animation: grabberRadarSweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes grabberRadarSweep {
+    0% { left: -80%; }
+    100% { left: 160%; }
+}
+
+/* -------------------------------------------------------------------------
+   6. SUBTELNY PROMIeŃ SZAFIROWY PRZYCISKU (Shimmer Sheen)
+   ------------------------------------------------------------------------- */
+.btn-primary-sheen {
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 30%,
+        rgba(196, 231, 212, 0.45) 50%,
+        transparent 100%
+    );
+    transform: skewX(-20deg);
+    pointer-events: none;
+    z-index: 1;
+    animation: buttonSheenSweep 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes buttonSheenSweep {
+    0%, 40% { left: -120%; }
+    75%, 100% { left: 220%; }
+}
+
+/* -------------------------------------------------------------------------
+   7. TRYB WYDAJNOŚCI / ECO-MODE SAFEGUARDS (Zerowe obciążenie)
+   ------------------------------------------------------------------------- */
+.eco-mode .view-section.active,
+@media (prefers-reduced-motion: reduce) {
+    .view-section.active {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .bento-card,
+    .toolbox-tool-card,
+    .upload-container,
+    .btn-primary,
+    .clean-copy-btn,
+    .dl-btn-large {
+        transition: none !important;
+        transform: none !important;
+    }
+
+    .upload-container::after,
+    .bento-card::after,
+    .grabber-input-wrapper::after,
+    .btn-primary-sheen {
+        display: none !important;
+    }
+}
