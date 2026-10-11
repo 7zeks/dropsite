@@ -86,6 +86,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
+    // 0. Na localhost i 127.0.0.1 ZAWSZE pomijaj cache (natychmiastowy live-reload deweloperski!)
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        return;
+    }
+
     // Nie cache'uj zapytań API, uploadu chunks, zewnętrznych reklam i CDN r2.dev
     if (
         event.request.method !== 'GET' ||

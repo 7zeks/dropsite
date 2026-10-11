@@ -179,13 +179,13 @@
         rel="stylesheet">
 
     <!-- Równoległe ładowanie stylów CSS (eliminacja blokującego @import waterfall) -->
-    <link rel="stylesheet" href="css/vars.css">
-    <link rel="stylesheet" href="css/layout.css">
-    <link rel="stylesheet" href="css/upload.css">
-    <link rel="stylesheet" href="css/success.css">
-    <link rel="stylesheet" href="css/widgets.css">
-    <link rel="stylesheet" href="css/omni-dropzone.css">
-    <link rel="stylesheet" href="css/bento-showcase.css">
+    <link rel="stylesheet" href="css/vars.css?v=2.8.7">
+    <link rel="stylesheet" href="css/layout.css?v=2.8.7">
+    <link rel="stylesheet" href="css/upload.css?v=2.8.7">
+    <link rel="stylesheet" href="css/success.css?v=2.8.7">
+    <link rel="stylesheet" href="css/widgets.css?v=2.8.7">
+    <link rel="stylesheet" href="css/omni-dropzone.css?v=2.8.7">
+    <link rel="stylesheet" href="css/bento-showcase.css?v=2.8.7">
 
     <!-- Style asynchroniczne / modalne (Zero-Block First Contentful Paint) -->
     <link rel="stylesheet" href="css/my-files.css" media="print" onload="this.media='all'">
@@ -9837,34 +9837,48 @@
         <script src="js/cloud-bridge.js" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then((reg) => {
-                    // Wymuś sprawdzenie aktualizacji w tle przy każdym załadowaniu strony
-                    reg.update();
-
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        if (newWorker) {
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    console.log('[Dropsite PWA] Nowa wersja zainstalowana, odświeżam stronę...');
-                                    window.location.reload();
-                                }
-                            });
-                        }
-                    });
-                }).catch((err) => {
-                    console.warn('[Dropsite PWA] Błąd rejestracji SW:', err);
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (isLocal) {
+                // Na localhoście wyrejestruj Service Worker, by zmiany były natychmiast widoczne bez blokady cache
+                navigator.serviceWorker.getRegistrations().then((regs) => {
+                    for (const reg of regs) {
+                        reg.unregister();
+                        console.log('[Dropsite Dev] Wyrejestrowano SW na localhost');
+                    }
                 });
-            });
-
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    window.location.reload();
+                if ('caches' in window) {
+                    caches.keys().then((keys) => {
+                        for (const k of keys) caches.delete(k);
+                    });
                 }
-            });
+            } else {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').then((reg) => {
+                        reg.update();
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('[Dropsite PWA] Nowa wersja zainstalowana, odświeżam stronę...');
+                                        window.location.reload();
+                                    }
+                                });
+                            }
+                        });
+                    }).catch((err) => {
+                        console.warn('[Dropsite PWA] Błąd rejestracji SW:', err);
+                    });
+                });
+
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
+                    }
+                });
+            }
         }
     </script>
 </body>
