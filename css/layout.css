@@ -877,6 +877,7 @@
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
+.nav-dropdown-item:hover .nav-dropdown-arrow,
 .nav-dropdown-item.is-open .nav-dropdown-arrow {
     transform: rotate(180deg);
     opacity: 1;
@@ -939,6 +940,7 @@
     z-index: 10001;
 }
 
+.nav-dropdown-item:hover .nav-dropdown-menu,
 .nav-dropdown-item:focus-within .nav-dropdown-menu,
 .nav-dropdown-item.is-open .nav-dropdown-menu {
     opacity: 1;
