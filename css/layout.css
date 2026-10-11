@@ -4062,3 +4062,35 @@
 .ad-slot-home {
     margin-top: clamp(36px, 4.5vh, 60px) !important;
 }
+
+/* ==========================================================================
+   CRITICAL ANTI-FOUC BASE STYLES FOR DEFERRED MODALS & HUDS
+   Eliminates visual flashing on page reload caused by asynchronous CSS loading
+   ========================================================================== */
+.radial-hud-backdrop,
+.cmd-palette-backdrop,
+.drop-req-modal-wrap,
+.dead-drop-modal-wrap,
+.rodo-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 100090;
+}
+
+.radial-hud-backdrop.open,
+.cmd-palette-backdrop.open,
+.drop-req-modal-wrap.open,
+.dead-drop-modal-wrap.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.rodo-modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}

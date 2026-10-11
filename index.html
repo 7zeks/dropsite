@@ -179,14 +179,43 @@
         rel="stylesheet">
 
     <!-- Równoległe ładowanie stylów CSS (eliminacja blokującego @import waterfall) -->
-    <link rel="stylesheet" href="css/vars.css?v=2.8.8">
-    <link rel="stylesheet" href="css/layout.css?v=2.8.8">
-    <link rel="stylesheet" href="css/upload.css?v=2.8.8">
-    <link rel="stylesheet" href="css/success.css?v=2.8.8">
-    <link rel="stylesheet" href="css/widgets.css?v=2.8.8">
-    <link rel="stylesheet" href="css/motion.css?v=2.8.8">
-    <link rel="stylesheet" href="css/omni-dropzone.css?v=2.8.8">
-    <link rel="stylesheet" href="css/bento-showcase.css?v=2.8.8">
+    <link rel="stylesheet" href="css/vars.css?v=2.8.9">
+    <link rel="stylesheet" href="css/layout.css?v=2.8.9">
+    <link rel="stylesheet" href="css/upload.css?v=2.8.9">
+    <link rel="stylesheet" href="css/success.css?v=2.8.9">
+    <link rel="stylesheet" href="css/widgets.css?v=2.8.9">
+    <link rel="stylesheet" href="css/motion.css?v=2.8.9">
+    <link rel="stylesheet" href="css/omni-dropzone.css?v=2.8.9">
+    <link rel="stylesheet" href="css/bento-showcase.css?v=2.8.9">
+
+    <!-- Krytyczne style Zero-FOUC: Natychmiastowe ukrycie asynchronicznych modali i HUDów przed załadowaniem ich CSS -->
+    <style>
+        .radial-hud-backdrop,
+        .cmd-palette-backdrop,
+        .drop-req-modal-wrap,
+        .dead-drop-modal-wrap,
+        .rodo-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 100090;
+        }
+        .radial-hud-backdrop.open,
+        .cmd-palette-backdrop.open,
+        .drop-req-modal-wrap.open,
+        .dead-drop-modal-wrap.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .rodo-modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+    </style>
 
     <!-- Style asynchroniczne / modalne (Zero-Block First Contentful Paint) -->
     <link rel="stylesheet" href="css/my-files.css" media="print" onload="this.media='all'">
@@ -201,8 +230,8 @@
     <link rel="stylesheet" href="css/dead-drop.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/qr-studio.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/video-compress.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="css/command-palette.css" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="css/radial-wheel.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/command-palette.css?v=2.8.9" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/radial-wheel.css?v=2.8.9" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/media-grabber.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/pdf-studio-luxury.css" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="css/account-vault.css" media="print" onload="this.media='all'">
@@ -9823,7 +9852,7 @@
     <script src="js/telemetry.js" defer></script>
     <script src="js/ram-engine.js" defer></script>
     <script src="js/beam.js" defer></script>
-    <script src="app.js?v=2.8.8" defer></script>
+    <script src="app.js?v=2.8.9" defer></script>
     <script src="js/motion-engine.js" defer></script>
     <script src="js/concierge.js" defer></script>
     <script src="js/omni-dropzone.js" defer></script>
