@@ -94,7 +94,43 @@
     </url>
     <url>
         <loc>https://dropsite.pages.dev/skrzynka-wrzutowa</loc>
-        <lastmod>2026-09-24</lastmod>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/rentgen</loc>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/stego</loc>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/diff</loc>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/ocr</loc>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/audio-mask</loc>
+        <lastmod>2026-10-14</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://dropsite.pages.dev/hash</loc>
+        <lastmod>2026-10-14</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
     </url>

@@ -9,8 +9,8 @@ const PRECACHE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './favicon.png?v=4',
-    './dropsite-logo.png?v=4',
+    './favicon.png',
+    './dropsite-logo.png',
     './blik.svg',
     // CSS Stylesheets (Wszystkie istniejące arkusze produkcyjne)
     './css/vars.css',
@@ -137,14 +137,17 @@ self.addEventListener('fetch', (event) => {
                     }
                     return networkResponse;
                 })
-                .catch(() => caches.match(event.request))
+                .catch(() => 
+                    caches.match(event.request, { ignoreSearch: true })
+                        .then((res) => res || caches.match('./index.html') || caches.match('/index.html'))
+                )
         );
         return;
     }
 
     // 2. DLA ASSETÓW STATYCZNYCH: Stale-While-Revalidate
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
+        caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
             const fetchPromise = fetch(event.request).then((networkResponse) => {
                 if (networkResponse && networkResponse.status === 200) {
                     const responseToCache = networkResponse.clone();

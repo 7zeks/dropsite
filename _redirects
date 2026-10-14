@@ -56,4 +56,9 @@
 /polityka-prywatnosci   /index.html 200
 /faq                    /index.html 200
 /trust                  /index.html 200
+/f/*                    /index.html 200
+/v/*                    /index.html 200
+/b/*                    /index.html 200
+/d/*                    /index.html 200
+/*                      /index.html 200
 
