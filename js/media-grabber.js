@@ -62,7 +62,7 @@
                         if (text && /^https?:\/\//i.test(text.trim())) {
                             this.input.value = text.trim();
                             this.updatePlatformHighlight(text.trim());
-                            this.showToast('📋 Wklejono link ze schowka', 'info');
+                            this.showToast('Wklejono link ze schowka', 'info');
                             this.handleGrab();
                         } else {
                             this.showToast('Schowek nie zawiera prawidłowego adresu URL.', 'warning');
@@ -85,13 +85,13 @@
                 if (chip) {
                     const plat = chip.getAttribute('data-platform');
                     if (plat === 'youtube') {
-                        this.showToast('ℹ️ YouTube: pobieranie jeszcze nie działa (w trakcie prac technicznych).', 'warning');
+                        this.showToast('YouTube: pobieranie w trakcie prac integracyjnych.', 'warning');
                     } else if (plat === 'instagram') {
-                        this.showToast('ℹ️ Instagram: pobieranie jeszcze nie działa (w trakcie prac technicznych).', 'warning');
+                        this.showToast('Instagram: pobieranie w trakcie prac integracyjnych.', 'warning');
                     } else if (plat === 'tiktok') {
-                        this.showToast('✅ TikTok: pobieranie HD bez znaku wodnego w pełni aktywne!', 'success');
+                        this.showToast('TikTok: pobieranie HD bez znaku wodnego w pełni aktywne.', 'success');
                     } else if (plat === 'twitter') {
-                        this.showToast('✅ X / Twitter: pobieranie wideo i zdjęć w pełni aktywne!', 'success');
+                        this.showToast('X / Twitter: pobieranie wideo i zdjęć w pełni aktywne.', 'success');
                     }
                 }
             });
@@ -191,14 +191,14 @@
 
             // Informacja o platformach w trakcie integracji (YouTube & Instagram)
             if (/youtu\.be|youtube\.com/i.test(targetUrl)) {
-                this.showToast('ℹ️ Pobieranie z YouTube nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
+                this.showToast('Pobieranie z YouTube nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
                 if (this.resultsWrap) {
                     this.resultsWrap.innerHTML = `
                         <div class="grabber-error-box" style="padding:24px 20px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28); border-radius:16px; text-align:center; color:#FDE68A; backdrop-filter:blur(14px);">
                             <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.15); margin-bottom:12px; color:#FBBF24;">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                             </div>
-                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa YouTube jeszcze nie działa</div>
+                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa YouTube w trakcie integracji</div>
                             <div style="font-size:0.875rem; color:#CBD5E1; max-width:480px; margin:0 auto; line-height:1.55;">
                                 Silnik pobierania z YouTube jest obecnie w trakcie prac integracyjnych i zostanie uruchomiony wkrótce.<br><br>
                                 W tej chwili możesz pobierać wideo bez znaku wodnego z <strong style="color:#34D399;">TikToka HD</strong> oraz <strong style="color:#38BDF8;">X (Twittera)</strong>.
@@ -210,14 +210,14 @@
             }
 
             if (/instagram\.com/i.test(targetUrl)) {
-                this.showToast('ℹ️ Pobieranie z Instagrama nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
+                this.showToast('Pobieranie z Instagrama nie jest jeszcze aktywne. Działa TikTok i X!', 'warning');
                 if (this.resultsWrap) {
                     this.resultsWrap.innerHTML = `
                         <div class="grabber-error-box" style="padding:24px 20px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.28); border-radius:16px; text-align:center; color:#FDE68A; backdrop-filter:blur(14px);">
                             <div style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:rgba(245,158,11,0.15); margin-bottom:12px; color:#FBBF24;">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                             </div>
-                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa Instagrama jeszcze nie działa</div>
+                            <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px; color:#FBBF24;">Obsługa Instagrama w trakcie integracji</div>
                             <div style="font-size:0.875rem; color:#CBD5E1; max-width:480px; margin:0 auto; line-height:1.55;">
                                 Silnik pobierania rolek i postów z Instagrama jest w trakcie dopracowywania i będzie dostępny wkrótce.<br><br>
                                 W tej chwili stabilnie działa pobieranie wideo z <strong style="color:#34D399;">TikToka HD</strong> oraz <strong style="color:#38BDF8;">X (Twittera)</strong>.
@@ -254,14 +254,14 @@
 
                 this.currentData = data;
                 this.renderResults(data);
-                this.showToast('✅ Multimedia pomyślnie zdekodowane!', 'success');
+                this.showToast('Multimedia pomyślnie zdekodowane!', 'success');
             } catch (err) {
                 console.error('Grab error:', err);
                 this.showToast(err.message || 'Wystąpił błąd podczas analizy linku.', 'error');
                 if (this.resultsWrap) {
                     this.resultsWrap.innerHTML = `
                         <div class="grabber-error-box" style="padding:20px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:14px; text-align:center; color:#FCA5A5;">
-                            <div style="font-weight:700; margin-bottom:6px;">⚠️ Nie udało się pobrać wideo</div>
+                            <div style="font-weight:700; margin-bottom:6px;">Nie udało się pobrać wideo</div>
                             <div style="font-size:0.85rem; color:#CBD5E1;">${this.escapeHtml(err.message || 'Upewnij się, że post/wideo jest publiczne i dostępne bez logowania.')}</div>
                         </div>
                     `;
@@ -395,7 +395,8 @@
                 photosSectionHtml = `
                     <div style="margin-top:10px;">
                         <div style="font-size:0.85rem; font-weight:700; color:#E2E8F0; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                            <span>📸 Galeria zdjęć (${photoList.length})</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span>Galeria zdjęć (${photoList.length})</span>
                         </div>
                         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px;">
                             ${photoList.map((p, idx) => `
@@ -508,13 +509,13 @@
                                 await navigator.clipboard.writeText(shareInput.value);
                                 copyBtn.textContent = 'Skopiowano!';
                                 setTimeout(() => { copyBtn.textContent = 'Kopiuj link'; }, 2500);
-                                this.showToast('🔗 Skopiowano link do schowka!', 'success');
+                                this.showToast('Skopiowano link do schowka!', 'success');
                             } catch (_) {}
                         });
                     }
                 }
 
-                this.showToast('☁️ Plik zapisany na Dropsite R2!', 'success');
+                this.showToast('Plik zapisany na Dropsite R2!', 'success');
             } catch (err) {
                 this.showToast(err.message || 'Błąd zapisu do chmury.', 'error');
             } finally {
@@ -528,15 +529,29 @@
             const filename = btn.getAttribute('data-filename') || 'video.mp4';
             const originalHtml = btn.innerHTML;
 
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
             btn.disabled = true;
             btn.innerHTML = `<span class="grabber-mini-spin"></span> Pobieranie do RAM...`;
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+
             try {
                 // Pobieramy plik przez stream proxy do RAM-u
-                const res = await fetch(`${this.apiBase}/api/grab-media/stream?url=${encodeURIComponent(streamUrl)}&filename=${encodeURIComponent(filename)}`);
+                const res = await fetch(`${this.apiBase}/api/grab-media/stream?url=${encodeURIComponent(streamUrl)}&filename=${encodeURIComponent(filename)}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
                 if (!res.ok) throw new Error('Nie udało się pobrać strumienia wideo.');
                 
                 const blob = await res.blob();
+
+                if (isMobile && blob.size > 150 * 1024 * 1024) {
+                    const proceed = confirm(`Pobrane wideo ma ${Math.round(blob.size / 1024 / 1024)} MB. Kompresja tak dużego pliku w przeglądarce mobilnej może przekroczyć limit RAM. Czy chcesz kontynuować?`);
+                    if (!proceed) return;
+                }
+
                 const file = new File([blob], filename, { type: blob.type || 'video/mp4' });
 
                 // Przełącz na narzędzie Video Compressor
@@ -548,7 +563,7 @@
                 setTimeout(() => {
                     if (window.DropsiteCompressor && typeof window.DropsiteCompressor.loadVideoFile === 'function') {
                         window.DropsiteCompressor.loadVideoFile(file);
-                        this.showToast('🚀 Załadowano wideo do kompresora!', 'success');
+                        this.showToast('Załadowano wideo do kompresora!', 'success');
                     } else {
                         // Fallback: symulacja upuszczenia do inputu kompresora
                         const compInput = document.getElementById('compressorFileInput') || document.getElementById('videoCompressFileInput');
@@ -557,13 +572,15 @@
                             dataTransfer.items.add(file);
                             compInput.files = dataTransfer.files;
                             compInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            this.showToast('🚀 Załadowano wideo do kompresora!', 'success');
+                            this.showToast('Załadowano wideo do kompresora!', 'success');
                         }
                     }
                 }, 300);
 
             } catch (err) {
-                this.showToast(err.message || 'Błąd transferu do kompresora.', 'error');
+                clearTimeout(timeoutId);
+                const errMsg = err.name === 'AbortError' ? 'Przekroczono limit czasu pobierania.' : (err.message || 'Błąd transferu do kompresora.');
+                this.showToast(errMsg, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

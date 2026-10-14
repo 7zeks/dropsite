@@ -23,6 +23,23 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
+// Inteligentny Lazy-Loader dla Confetti (oszczędność round-tripu i czasu parsowania JS na mobile)
+function triggerConfetti(opts) {
+    if (typeof confetti === 'function') {
+        try { confetti(opts); } catch (_) {}
+    } else {
+        const s = document.createElement('script');
+        s.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js";
+        s.onload = () => {
+            if (typeof confetti === 'function') {
+                try { confetti(opts); } catch (_) {}
+            }
+        };
+        document.head.appendChild(s);
+    }
+}
+window.triggerConfetti = triggerConfetti;
+
 // =========================================================================
 // =========================================================================
 // ULTRA-SMOOTH MODAL TRANSITIONS (APPLE / MODERN WEB SPEC)
@@ -989,13 +1006,13 @@ document.addEventListener('keydown', (e) => {
                     adminBar.classList.remove('is-hidden-toggle');
                     localStorage.setItem('dropsite_admin_bar_hidden', '0');
                     if (typeof showNotification === 'function') {
-                        showNotification('👑 Pasek ról Admina: WIDOCZNY (2x ➔ aby ukryć)', 'info');
+                        showNotification('Pasek ról Admina: WIDOCZNY (2x ➔ aby ukryć)', 'info');
                     }
                 } else {
                     adminBar.classList.add('is-hidden-toggle');
                     localStorage.setItem('dropsite_admin_bar_hidden', '1');
                     if (typeof showNotification === 'function') {
-                        showNotification('👑 Pasek ról Admina: UKRYTY (kliknij 2x ➔ aby przywrócić)', 'info');
+                        showNotification('Pasek ról Admina: UKRYTY (kliknij 2x ➔ aby przywrócić)', 'info');
                     }
                 }
             }
@@ -1369,13 +1386,11 @@ function initBlikModalListeners() {
                 } catch (e) {}
 
                 updateProUI();
-                if (typeof confetti === 'function') {
-                    confetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
-                }
+                triggerConfetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
                 if (typeof playSound === 'function') playSound('success');
 
                 if (typeof showNotification === 'function') {
-                    showNotification(`🎉 Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
+                    showNotification(`Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
                 }
 
                 setTimeout(() => {
@@ -1738,12 +1753,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateProUI();
         window.openProModal();
 
-        if (typeof confetti === 'function') {
-            confetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
-        }
+        triggerConfetti({ particleCount: 160, spread: 90, origin: { y: 0.5 } });
         playSound('success');
         if (typeof showNotification === 'function') {
-            showNotification(`🎉 Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
+            showNotification(`Płatność BLIK zaakceptowana! Twoje konto Dropsite PRO zostało odblokowane na 30 dni. Klucz: ${blikProKey}`, 'success');
         }
         history.replaceState(null, '', window.location.pathname);
     }
@@ -1771,6 +1784,45 @@ function formatBytes(bytes) {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     const index = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
+}
+
+function getFileEmoji(filename) {
+    if (!filename) return '📄';
+    const ext = filename.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'pdf': return '📕';
+        case 'doc':
+        case 'docx': return '📘';
+        case 'xls':
+        case 'xlsx':
+        case 'csv': return '📊';
+        case 'ppt':
+        case 'pptx': return '📙';
+        case 'zip':
+        case 'rar':
+        case '7z':
+        case 'tar':
+        case 'gz': return '📦';
+        case 'mp3':
+        case 'wav':
+        case 'flac':
+        case 'm4a':
+        case 'ogg': return '🎵';
+        case 'mp4':
+        case 'webm':
+        case 'mov':
+        case 'mkv':
+        case 'avi': return '🎬';
+        case 'txt':
+        case 'md': return '📝';
+        case 'js':
+        case 'ts':
+        case 'html':
+        case 'css':
+        case 'json':
+        case 'py': return '💻';
+        default: return '📄';
+    }
 }
 
 // === SYSTEM DŹWIĘKÓW INTERFEJSU (WEB AUDIO API) ===
@@ -1854,6 +1906,7 @@ function updateSoundButtonUI() {
         soundToggleBtn.setAttribute('aria-label', soundEnabled ? 'Wycisz dźwięki interfejsu' : 'Włącz dźwięki interfejsu');
     }
     if (navDropdownSoundBtn) {
+        navDropdownSoundBtn.classList.toggle('is-active', soundEnabled);
         const iconOn = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-on');
         const iconOff = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-off');
         const soundSwitch = document.getElementById('dropdownSoundSwitch');
@@ -1863,9 +1916,13 @@ function updateSoundButtonUI() {
             soundSwitch.classList.toggle('is-active', soundEnabled);
         }
         if (dropdownSoundState) {
-            dropdownSoundState.textContent = soundEnabled ? 'ON' : 'OFF';
-            dropdownSoundState.style.color = soundEnabled ? '#34D399' : '#EF4444';
-            dropdownSoundState.style.background = soundEnabled ? 'rgba(52,211,153,0.12)' : 'rgba(239,68,68,0.12)';
+            dropdownSoundState.textContent = soundEnabled ? 'Włączone' : 'Wyciszone';
+            dropdownSoundState.style.color = soundEnabled ? '#C4E7D4' : '#94A3B8';
+            dropdownSoundState.style.background = 'transparent';
+        }
+        const soundLed = document.getElementById('dropdownSoundLed');
+        if (soundLed) {
+            soundLed.classList.toggle('is-active', soundEnabled);
         }
     }
 }
@@ -2394,7 +2451,7 @@ if (spyModeCheckbox) {
             }
             playSound('copy');
             if (typeof showNotification === 'function') {
-                showNotification('🕵️‍♂️ Włączono Tryb Szpiegowski (007) — plik ulegnie samozniszczeniu po odsłonięciu!', 'warning');
+                showNotification('Włączono Tryb Szpiegowski (007) — plik ulegnie samozniszczeniu po odsłonięciu!', 'warning');
             }
         }
     });
@@ -2523,7 +2580,7 @@ document.querySelectorAll('input[name="duration"]').forEach(radio => {
         if (val === 'burn') {
             triggerBurnFireAnimation(e.target);
             if (typeof showNotification === 'function') {
-                showNotification(typeof t === 'function' ? t('notify_burn_active') : '🔥 Tryb samozniszczenia: Plik zostanie trwale usunięty z serwera zaraz po pobraniu!', 'info');
+                showNotification(typeof t === 'function' ? t('notify_burn_active') : 'Tryb samozniszczenia: Plik zostanie trwale usunięty z serwera zaraz po pobraniu!', 'info');
             }
         } else if ((val === '30d' || val === 'permanent') && !isProUser()) {
             if (typeof showNotification === 'function') {
@@ -2908,7 +2965,7 @@ function renderMultiFileDropzone(filesList, mode) {
             : `Gotowe do utworzenia: ${filesList.length} plików (${formatBytes(totalRawSize)})`;
 
         uploadBtn.disabled = false;
-        uploadBtn.classList.remove('loading');
+        uploadBtn.classList.remove('loading', 'empty-state');
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) {
             btnTextSpan.textContent = isEng ? `Create Collection (${filesList.length} files)` : `🎬 Stwórz Kolekcję (${filesList.length} plików)`;
@@ -3131,44 +3188,81 @@ async function uploadSingleFileMultipartRaw(file, duration, pwd, brand, onProgre
         if (typeof onProgress === 'function') onProgress(currentTotal);
     };
 
+    let progPending = false;
+    const scheduleProg = () => {
+        if (progPending) return;
+        progPending = true;
+        requestAnimationFrame(() => {
+            progPending = false;
+            updateProg();
+        });
+    };
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
     for (let i = 0; i < totalChunks; i++) {
         const partNumber = i + 1;
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunk = file.slice(start, end);
 
-        const chunkData = await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener("progress", (event) => {
-                if (event.lengthComputable) {
-                    chunkLoadedBytes[i] = event.loaded;
-                    updateProg();
-                }
-            });
-            xhr.addEventListener("load", () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const parsed = JSON.parse(xhr.responseText);
-                        if (parsed.success) {
-                            chunkLoadedBytes[i] = chunk.size;
-                            updateProg();
-                            resolve(parsed);
-                        } else {
-                            reject(new Error(parsed.message || `Serwer odrzucił chunk #${partNumber}`));
+        let chunkData = null;
+        let lastErr = null;
+        const MAX_RETRIES = 3;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                chunkData = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", (event) => {
+                        if (event.lengthComputable) {
+                            chunkLoadedBytes[i] = event.loaded;
+                            scheduleProg();
                         }
-                    } catch (e) {
-                        reject(new Error(`Niepoprawna odpowiedź dla chunk #${partNumber}`));
-                    }
-                } else {
-                    reject(new Error(`Błąd HTTP ${xhr.status} dla chunk #${partNumber}`));
+                    });
+                    xhr.addEventListener("load", () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const parsed = JSON.parse(xhr.responseText);
+                                if (parsed.success) {
+                                    chunkLoadedBytes[i] = chunk.size;
+                                    updateProg();
+                                    resolve(parsed);
+                                } else {
+                                    reject(new Error(parsed.message || `Serwer odrzucił chunk #${partNumber}`));
+                                }
+                            } catch (e) {
+                                reject(new Error(`Niepoprawna odpowiedź dla chunk #${partNumber}`));
+                            }
+                        } else {
+                            reject(new Error(`Błąd HTTP ${xhr.status} dla chunk #${partNumber}`));
+                        }
+                    });
+                    xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
+                    xhr.addEventListener("timeout", () => reject(new Error(`Przekroczono limit czasu (timeout) chunk #${partNumber}`)));
+                    xhr.timeout = isMobile ? 120000 : 75000;
+
+                    xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
+                    if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
+                    if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
+                    xhr.send(chunk);
+                });
+                break; // Sukces
+            } catch (err) {
+                lastErr = err;
+                console.warn(`[Dropsite Collection] Chunk #${partNumber} niepowodzenie (próba ${attempt}/${MAX_RETRIES}):`, err.message);
+                if (attempt < MAX_RETRIES) {
+                    chunkLoadedBytes[i] = 0;
+                    updateProg();
+                    await new Promise(r => setTimeout(r, attempt * 1200));
                 }
-            });
-            xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
-            xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
-            if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
-            if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
-            xhr.send(chunk);
-        });
+            }
+        }
+
+        if (!chunkData) {
+            throw lastErr || new Error(`Nie udało się przesłać chunk #${partNumber}`);
+        }
+
         parts.push({ partNumber: chunkData.partNumber, etag: chunkData.etag });
     }
 
@@ -3194,6 +3288,12 @@ async function uploadSingleFileMultipartRaw(file, duration, pwd, brand, onProgre
 async function uploadCollectionMultiFiles(filesList) {
     if (!filesList || filesList.length === 0) return;
     
+    const uploadBtnEl = document.getElementById('uploadBtn');
+    if (uploadBtnEl) {
+        if (typeof triggerButtonLightSplash === 'function') triggerButtonLightSplash(uploadBtnEl);
+        if (typeof playSound === 'function') playSound('click');
+    }
+
     let totalRawSize = 0;
     for (let f of filesList) totalRawSize += (f.size || 0);
 
@@ -3234,8 +3334,15 @@ async function uploadCollectionMultiFiles(filesList) {
     const collectionTitle = (titleInput?.value || '').trim() || defaultTitle;
     window._collectionCustomTitle = collectionTitle;
 
+    window._isUploadingActive = true;
+    await requestScreenWakeLock();
+    window.dispatchEvent(new CustomEvent('dropsite:upload-state-changed', { detail: { isUploading: true } }));
+
     uploadBtn.disabled = true;
     uploadBtn.classList.add('loading');
+    if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
+        window.DropsiteOmniDropzone.hide();
+    }
     const btnTextSpan = uploadBtn.querySelector('.btn-text');
     if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie kolekcji... (0/${filesList.length})`;
 
@@ -3244,6 +3351,10 @@ async function uploadCollectionMultiFiles(filesList) {
     fsProgressBar.style.width = '0%';
     fsSizeOrProgress.innerText = `0% - 0 B z ${formatBytes(totalRawSize)}`;
     statusDiv.innerText = '';
+
+    triggerHapticFeedback(15);
+    requestUploadNotificationPermission();
+    setUploadTabProgress(0);
 
     const fsTelemetry = document.getElementById('fsTelemetry');
     if (fsTelemetry) {
@@ -3265,6 +3376,7 @@ async function uploadCollectionMultiFiles(filesList) {
         const percent = Math.min(99, Math.round((currentTotalLoaded / totalRawSize) * 100));
         fsProgressBar.style.width = percent + '%';
         fsSizeOrProgress.innerText = `Plik ${fileIndex + 1}/${filesList.length} (${percent}%) • ${formatBytes(currentTotalLoaded)} z ${formatBytes(totalRawSize)}`;
+        setUploadTabProgress(percent);
 
         if (elapsedSec > 0.1 && currentTotalLoaded > 0) {
             const speedBytes = currentTotalLoaded / elapsedSec;
@@ -3322,8 +3434,10 @@ async function uploadCollectionMultiFiles(filesList) {
                     });
                     xhr.addEventListener("error", () => reject(new Error('Błąd połączenia sieciowego.')));
                     xhr.addEventListener("abort", () => reject(new Error('Wgrywanie przerwane.')));
-                    xhr.open("POST", urlReq, true);
+                    xhr.open("PUT", urlReq, true);
                     xhr.setRequestHeader("Content-Type", curFile.type || "application/octet-stream");
+                    if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
+                    if (currentEmail) xhr.setRequestHeader("X-User-Email", currentEmail);
                     xhr.send(curFile);
                 });
             } else {
@@ -3366,7 +3480,7 @@ async function uploadCollectionMultiFiles(filesList) {
         showSuccessScreen(albumUrl, createData.albumId, duration);
 
         if (typeof showNotification === 'function') {
-            showNotification(`🎬 Kolekcja "${collectionTitle}" (${filesList.length} plików) została pomyślnie utworzona!`, 'success');
+            showNotification(`Kolekcja "${collectionTitle}" (${filesList.length} plików) została pomyślnie utworzona!`, 'success');
         }
 
     } catch (err) {
@@ -3377,6 +3491,17 @@ async function uploadCollectionMultiFiles(filesList) {
         if (btnTextSpan) btnTextSpan.textContent = 'Spróbuj ponownie';
     } finally {
         window._isUploadingActive = false;
+        if (typeof releaseScreenWakeLock === 'function') releaseScreenWakeLock();
+        window.dispatchEvent(new CustomEvent('dropsite:upload-state-changed', { detail: { isUploading: false } }));
+    }
+}
+
+// Zarządzanie pamięcią podglądów (czyszczenie Blob URL po zmianie pliku)
+let _lastPreviewObjectUrl = null;
+function revokePreviousPreviewUrl() {
+    if (_lastPreviewObjectUrl) {
+        try { URL.revokeObjectURL(_lastPreviewObjectUrl); } catch (_) {}
+        _lastPreviewObjectUrl = null;
     }
 }
 
@@ -3400,6 +3525,7 @@ async function updateSelectedFile(filesList) {
 
     // Jeśli upuszczono wiele plików lub folder
     if (filesList.length > 1 || filesList[0]?.fullRelativePath?.includes('/')) {
+        revokePreviousPreviewUrl();
         setupImageCompression(null);
         window._rawMultiFiles = Array.from(filesList);
 
@@ -3426,6 +3552,7 @@ async function updateSelectedFile(filesList) {
         return;
     } else {
         // Pojedynczy plik
+        revokePreviousPreviewUrl();
         window._rawMultiFiles = null;
         window._multiUploadMode = null;
         window._collectionCustomTitle = null;
@@ -3456,7 +3583,7 @@ async function updateSelectedFile(filesList) {
         }
         
         uploadBtn.disabled = false;
-        uploadBtn.classList.remove('loading');
+        uploadBtn.classList.remove('loading', 'empty-state');
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) {
             btnTextSpan.textContent = typeof t === 'function' ? (t('btn_upload') || 'Upload') : 'Upload';
@@ -3466,27 +3593,153 @@ async function updateSelectedFile(filesList) {
         const isImgType = (file.type && file.type.startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(file.name);
         const isVidType = (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
 
+        if (dropzone) dropzone.classList.add('has-media-loaded');
+        const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+        if (uploadBoxEl) uploadBoxEl.classList.add('has-files');
+
         if (isImgType) {
-            const imgUrl = URL.createObjectURL(file);
-            dropzone.innerHTML = `<img src="${imgUrl}" style="max-width: 100%; max-height: 250px; border-radius: 8px; object-fit: contain;">`;
-            dropzone.style.padding = "10px";
+            const isLargeImg = file.size > 25 * 1024 * 1024; // > 25 MB
+            if (isLargeImg) {
+                dropzone.innerHTML = `
+                    <div class="media-showcase-card image-showcase large-video-cockpit" style="padding: 24px 18px; text-align: center;">
+                        <div class="showcase-video-badge" style="width: 58px; height: 58px; margin: 0 auto 12px; border-radius: 16px; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(52, 211, 153, 0.15);">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                        </div>
+                        <strong style="display: block; color: #FFFFFF; font-size: 15px; max-width: 280px; margin: 0 auto 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</strong>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span class="showcase-badge-pill" style="position: static; font-weight: 700;">${formatBytes(file.size)}</span>
+                            <span style="font-size: 11.5px; color: #34D399; font-weight: 600; background: rgba(52, 211, 153, 0.12); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(52, 211, 153, 0.25);">Grafika Ultra-HD</span>
+                        </div>
+                        <div class="showcase-floating-badge">
+                            <button type="button" class="btn-showcase-remove" id="btnShowcaseRemoveFile" title="Zmień plik na inny">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Zmień</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const imgUrl = URL.createObjectURL(file);
+                _lastPreviewObjectUrl = imgUrl;
+                dropzone.innerHTML = `
+                    <div class="media-showcase-card image-showcase">
+                        <div class="showcase-img-wrap">
+                            <img src="${imgUrl}" alt="${file.name}" class="showcase-img">
+                        </div>
+                        <div class="showcase-floating-badge">
+                            <span class="showcase-badge-pill">${formatBytes(file.size)}</span>
+                            <button type="button" class="btn-showcase-remove" id="btnShowcaseRemoveFile" title="Zmień plik na inny">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Zmień</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            dropzone.style.padding = "0px";
+            const btnRemove = dropzone.querySelector('#btnShowcaseRemoveFile');
+            if (btnRemove) {
+                btnRemove.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof resetUploadFlow === 'function') resetUploadFlow();
+                    else if (typeof resetUpload === 'function') resetUpload();
+                });
+            }
             const renderedImg = dropzone.querySelector('img');
             if (renderedImg) {
                 renderedImg.onload = () => scrollByCapsuleDelta(initialHeight);
             }
         } else if (isVidType) {
-            const vidUrl = URL.createObjectURL(file);
-            dropzone.innerHTML = `<video src="${vidUrl}" controls autoplay muted loop playsinline controlslist="nodownload" style="max-width: 100%; max-height: 280px; object-fit: contain; width: 100%; border-radius: 8px; background: #000; display: block; outline: none; box-shadow: 0 4px 16px rgba(0,0,0,0.5);"></video>`;
-            dropzone.style.padding = "10px";
+            const isLargeVideo = file.size > 40 * 1024 * 1024; // > 40 MB
+            
+            if (isLargeVideo) {
+                // Dla filmów >40 MB (szczególnie ~2 GB na telefonie):
+                // Zastępujemy katujący baterię i dekoder 4K autoplay loop lekką i nowoczesną kartą podglądu!
+                dropzone.innerHTML = `
+                    <div class="media-showcase-card video-showcase large-video-cockpit" style="padding: 24px 18px; text-align: center;">
+                        <div class="showcase-video-badge" style="width: 58px; height: 58px; margin: 0 auto 12px; border-radius: 16px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                            </svg>
+                        </div>
+                        <strong style="display: block; color: #FFFFFF; font-size: 15px; max-width: 280px; margin: 0 auto 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</strong>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <span class="showcase-badge-pill" style="position: static; font-weight: 700;">${formatBytes(file.size)}</span>
+                            <span style="font-size: 11.5px; color: #34D399; font-weight: 600; background: rgba(52, 211, 153, 0.12); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(52, 211, 153, 0.25);">Strumień 4K Gotowy</span>
+                        </div>
+                        <div class="showcase-floating-badge">
+                            <button type="button" class="btn-showcase-remove" id="btnShowcaseRemoveFile" title="Zmień plik na inny">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Zmień</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const vidUrl = URL.createObjectURL(file);
+                _lastPreviewObjectUrl = vidUrl;
+                dropzone.innerHTML = `
+                    <div class="media-showcase-card video-showcase">
+                        <div class="showcase-img-wrap">
+                            <video src="${vidUrl}" controls muted playsinline preload="metadata" class="showcase-video"></video>
+                        </div>
+                        <div class="showcase-floating-badge">
+                            <span class="showcase-badge-pill">${formatBytes(file.size)}</span>
+                            <button type="button" class="btn-showcase-remove" id="btnShowcaseRemoveFile" title="Zmień plik na inny">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Zmień</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            dropzone.style.padding = "0px";
+            const btnRemove = dropzone.querySelector('#btnShowcaseRemoveFile');
+            if (btnRemove) {
+                btnRemove.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof resetUploadFlow === 'function') resetUploadFlow();
+                    else if (typeof resetUpload === 'function') resetUpload();
+                });
+            }
         } else {
             dropzone.innerHTML = `
-                <div style="padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
-                    <div style="font-size: 32px;">${getFileEmoji(file.name)}</div>
-                    <strong style="color: #FFFFFF; font-size: 14px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</strong>
-                    <span style="color: var(--text-muted); font-size: 12px;">${formatBytes(file.size)}</span>
+                <div class="media-showcase-card doc-showcase" style="padding: 24px 16px;">
+                    <div style="font-size: 38px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">${getFileEmoji(file.name)}</div>
+                    <strong style="color: #FFFFFF; font-size: 15px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px;">${file.name}</strong>
+                    <span style="color: var(--text-muted); font-size: 12.5px; margin-top: 2px;">${formatBytes(file.size)}</span>
+                    <div class="showcase-floating-badge">
+                        <button type="button" class="btn-showcase-remove" id="btnShowcaseRemoveFile" title="Zmień plik na inny">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <span>Zmień</span>
+                        </button>
+                    </div>
                 </div>
             `;
-            dropzone.style.padding = "10px";
+            dropzone.style.padding = "0px";
+            const btnRemove = dropzone.querySelector('#btnShowcaseRemoveFile');
+            if (btnRemove) {
+                btnRemove.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (typeof resetUploadFlow === 'function') resetUploadFlow();
+                    else if (typeof resetUpload === 'function') resetUpload();
+                });
+            }
         }
         scrollByCapsuleDelta(initialHeight);
     }
@@ -3724,7 +3977,7 @@ window.addEventListener('paste', (e) => {
                 window.DropsiteOmniDropzone.showForUrl(text);
                 if (typeof playSound === 'function') playSound('click');
                 if (window.showToast) {
-                    window.showToast('📥 Wykryto link do wideo! Sprawdź opcje pobierania.', 'info');
+                    window.showToast('Wykryto link do wideo! Sprawdź opcje pobierania.', 'info');
                 }
             }
         }
@@ -3813,6 +4066,209 @@ window.addEventListener('beforeunload', (e) => {
     }
 });
 
+// === DROPSITE MOBILE & DESKTOP KEEP-ALIVE ENGINE ===
+// Zapobiega usypianiu procesu, wygaszaniu ekranu oraz zrywaniu połączeń TCP na iOS Safari & Android
+const DropsiteKeepAlive = {
+    _wakeLockSentinel: null,
+    _silentAudio: null,
+    _badgeEl: null,
+
+    getBadge() {
+        if (!this._badgeEl) {
+            this._badgeEl = document.getElementById('fsKeepAliveBadge');
+        }
+        return this._badgeEl;
+    },
+
+    async start() {
+        // 1. Screen Wake Lock (jeśli wspierany)
+        if ('wakeLock' in navigator && !this._wakeLockSentinel) {
+            try {
+                this._wakeLockSentinel = await navigator.wakeLock.request('screen');
+                this._wakeLockSentinel.addEventListener('release', () => {
+                    this._wakeLockSentinel = null;
+                });
+                console.log('[Dropsite Keep-Alive] Screen Wake Lock aktywny – ekran telefonu nie wygaśnie podczas uploadu.');
+            } catch (wlErr) {
+                console.warn('[Dropsite Keep-Alive] Screen Wake Lock niedostępny:', wlErr.message);
+            }
+        }
+
+        // 2. Silent Media Keep-Alive dla iOS Safari & Android Background Execution
+        // Wymusza utrzymanie aktywnej sesji multimediów w systemie operacyjnym, zapobiegając uśpieniu karty w tle
+        try {
+            if (!this._silentAudio) {
+                this._silentAudio = new Audio();
+                // 1-sekundowy, całkowicie niesłyszalny bufor WAV (zero amplitude)
+                this._silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                this._silentAudio.loop = true;
+                this._silentAudio.volume = 0.001;
+            }
+            const playPromise = this._silentAudio.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => {
+                    // Audio context restrictions (np. brak gestu) — ignoruj bezpiecznie
+                });
+            }
+        } catch (_) {}
+
+        // 3. Wizualny wskaźnik statusu w interfejsie
+        const badge = this.getBadge();
+        if (badge) {
+            badge.hidden = false;
+            badge.classList.remove('is-hidden');
+        }
+    },
+
+    stop() {
+        if (this._wakeLockSentinel) {
+            try {
+                this._wakeLockSentinel.release();
+            } catch (_) {}
+            this._wakeLockSentinel = null;
+        }
+
+        if (this._silentAudio) {
+            try {
+                this._silentAudio.pause();
+                this._silentAudio.currentTime = 0;
+            } catch (_) {}
+        }
+
+        const badge = this.getBadge();
+        if (badge) {
+            badge.classList.add('is-hidden');
+            badge.hidden = true;
+        }
+        console.log('[Dropsite Keep-Alive] Keep-Alive zwolniony.');
+    }
+};
+
+window.DropsiteKeepAlive = DropsiteKeepAlive;
+
+async function requestScreenWakeLock() {
+    await DropsiteKeepAlive.start();
+}
+
+function releaseScreenWakeLock() {
+    DropsiteKeepAlive.stop();
+}
+
+// Obsługa powrotu do karty (jeśli użytkownik zminimalizował kartę i wrócił, a upload trwa)
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && window._isUploadingActive) {
+        await DropsiteKeepAlive.start();
+    }
+});
+
+// ============================================================================
+// DYNAMICZNY POSTĘP W KARCIE, POWIADOMIENIA W TLE I HAPTYKA (QoL ENGINE)
+// ============================================================================
+const ORIGINAL_DOCUMENT_TITLE = document.title || 'Dropsite - Bezpieczne i szybkie przesyłanie plików';
+let _tabProgressRestoreScheduled = false;
+
+function setUploadTabProgress(percent, isSuccess = false, isError = false) {
+    try {
+        if (isSuccess) {
+            document.title = '✓ Przesłano pomyślnie! • Dropsite';
+            _tabProgressRestoreScheduled = true;
+            return;
+        }
+        if (isError) {
+            document.title = '✕ Błąd przesyłania • Dropsite';
+            _tabProgressRestoreScheduled = true;
+            return;
+        }
+        if (typeof percent === 'number' && !isNaN(percent) && percent >= 0) {
+            _tabProgressRestoreScheduled = false;
+            const pct = Math.min(100, Math.round(percent));
+            document.title = `[${pct}%] Wgrywanie... • Dropsite`;
+        } else {
+            restoreOriginalDocumentTitle();
+        }
+    } catch (e) {
+        console.warn('Tab progress error:', e);
+    }
+}
+
+function restoreOriginalDocumentTitle() {
+    _tabProgressRestoreScheduled = false;
+    document.title = ORIGINAL_DOCUMENT_TITLE;
+}
+
+window.addEventListener('focus', () => {
+    if (_tabProgressRestoreScheduled) {
+        setTimeout(restoreOriginalDocumentTitle, 2500);
+    }
+});
+window.addEventListener('click', () => {
+    if (_tabProgressRestoreScheduled) {
+        restoreOriginalDocumentTitle();
+    }
+});
+
+function triggerHapticFeedback(pattern = [20]) {
+    if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+        try {
+            navigator.vibrate(pattern);
+        } catch (e) {}
+    }
+}
+
+function requestUploadNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        try {
+            Notification.requestPermission().catch(() => {});
+        } catch (e) {}
+    }
+}
+
+function triggerBackgroundNotification(fileName, targetUrl) {
+    try {
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+            const notifTitle = 'Plik przesłany pomyślnie!';
+            const notifBody = `${fileName || 'Twój plik'} jest gotowy do odbioru. Kliknij, aby przejść do linku.`;
+            const notif = new Notification(notifTitle, {
+                body: notifBody,
+                icon: '/icons/icon-192.png',
+                badge: '/icons/icon-192.png',
+                tag: 'dropsite-upload-complete'
+            });
+            notif.onclick = () => {
+                window.focus();
+                if (targetUrl && navigator.clipboard) {
+                    navigator.clipboard.writeText(targetUrl).then(() => {
+                        if (typeof showNotification === 'function') {
+                            showNotification('Link skopiowany do schowka!', 'success');
+                        }
+                    }).catch(() => {});
+                }
+                notif.close();
+            };
+        }
+    } catch (e) {
+        console.warn('Background notification error:', e);
+    }
+}
+
+// Skrót klawiszowy na ekranie sukcesu: Ctrl+C / Enter kopiuje link do schowka
+window.addEventListener('keydown', (e) => {
+    const successFlow = document.getElementById('successFlow');
+    if (!successFlow || successFlow.hidden || successFlow.classList.contains('is-exiting')) return;
+
+    // Nie przechwytuj jeśli użytkownik pisze w polach tekstowych
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+
+    const isCopyCombo = (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C');
+    const hasSelection = Boolean(window.getSelection() && window.getSelection().toString().trim().length > 0);
+
+    if (e.key === 'Enter' || (isCopyCombo && !hasSelection)) {
+        e.preventDefault();
+        window.copyToClipboard(e);
+    }
+});
+
 // === NOWY SYSTEM WGRYWANIA (Z OBSŁUGĄ PRO, MULTIPART I TELEMETRII) ===
 async function uploadFile() {
     // 0. Obsługa trybu kolekcji wielu plików (Zero-ZIP, Instant Multimedia Showcase)
@@ -3820,7 +4276,16 @@ async function uploadFile() {
         return uploadCollectionMultiFiles(window._rawMultiFiles);
     }
 
-    if (!selectedFile) return;
+    if (!selectedFile) {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.click();
+        return;
+    }
+
+    if (uploadBtn) {
+        if (typeof triggerButtonLightSplash === 'function') triggerButtonLightSplash(uploadBtn);
+        if (typeof playSound === 'function') playSound('click');
+    }
 
     // WERYFIKACJA BEZPIECZEŃSTWA: Blokada niebezpiecznych rozszerzeń
     const dangerousExtensions = ['.exe', '.bat', '.cmd', '.sh', '.vbs', '.js', '.scr', '.msi', '.ps1'];
@@ -3914,7 +4379,7 @@ async function uploadFile() {
             selectedFile = file;
             if (originalImageFile) originalImageFile = file;
             if (typeof showNotification === 'function') {
-                showNotification('✓ Usunięto metadane EXIF i tagi GPS w 100% w pamięci RAM!', 'success');
+                showNotification('Usunięto metadane EXIF i tagi GPS w 100% w pamięci RAM!', 'success');
             }
         } catch (exifErr) {
             console.warn('RAM EXIF clean failed, proceeding:', exifErr);
@@ -3923,6 +4388,13 @@ async function uploadFile() {
 
     // Szyfrowanie pliku w pamięci RAM przed uploadem (Zero-Knowledge)
     if (isPro && isZeroKnowledgeEncrypted) {
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        if (isMobileDevice && file.size > 150 * 1024 * 1024) {
+            showError(`Szyfrowanie AES-256 w RAM dla plików powyżej 150 MB (${formatBytes(file.size)}) wymaga komputera PC/Mac. Mobilne przeglądarki posiadają rygorystyczny limit pamięci operacyjnej.`);
+            uploadBtn.disabled = false;
+            return;
+        }
+
         uploadBtn.disabled = true;
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) btnTextSpan.textContent = 'Szyfrowanie AES-256 w RAM...';
@@ -3957,9 +4429,16 @@ async function uploadFile() {
 
     uploadBtn.disabled = true;
     uploadBtn.classList.add('loading');
+    if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
+        window.DropsiteOmniDropzone.hide();
+    }
     const btnTextSpan = uploadBtn.querySelector('.btn-text');
     if (btnTextSpan) btnTextSpan.textContent = 'Przygotowywanie...';
     
+    triggerHapticFeedback(15);
+    requestUploadNotificationPermission();
+    setUploadTabProgress(0);
+
     fsTrack.hidden = false;
     fsProgressBar.style.width = '0%';
     fsSizeOrProgress.innerText = `0% - 0 B z ${formatBytes(file.size)}`;
@@ -3976,25 +4455,28 @@ async function uploadFile() {
     if (elEta) elEta.textContent = 'Szacowanie...';
 
     const uploadStartTime = Date.now();
+    let lastTelemetryUpdate = 0;
 
-    const updateTelemetry = (uploadedBytes) => {
-        const elapsedSec = (Date.now() - uploadStartTime) / 1000;
+    const updateTelemetry = (uploadedBytes, force = false) => {
+        const now = Date.now();
+        if (!force && now - lastTelemetryUpdate < 200) return;
+        lastTelemetryUpdate = now;
+
+        const elapsedSec = (now - uploadStartTime) / 1000;
         if (elapsedSec > 0.1 && uploadedBytes > 0) {
             const speedBytes = uploadedBytes / elapsedSec;
             const speedMB = (speedBytes / (1024 * 1024)).toFixed(1);
             const remainingBytes = Math.max(0, file.size - uploadedBytes);
             const remainingSec = speedBytes > 0 ? Math.max(0, Math.round(remainingBytes / speedBytes)) : 0;
             
-            const curSpeed = document.getElementById('fsSpeed');
-            const curEta = document.getElementById('fsEta');
-            if (curSpeed) curSpeed.textContent = `${speedMB} MB/s`;
-            if (curEta) {
+            if (elSpeed) elSpeed.textContent = `${speedMB} MB/s`;
+            if (elEta) {
                 if (uploadedBytes >= file.size) {
-                    curEta.textContent = 'Finalizowanie...';
+                    elEta.textContent = 'Finalizowanie...';
                 } else if (remainingSec > 60) {
-                    curEta.textContent = `Pozostało: ~${Math.ceil(remainingSec / 60)} min`;
+                    elEta.textContent = `Pozostało: ~${Math.ceil(remainingSec / 60)} min`;
                 } else {
-                    curEta.textContent = `Pozostało: ~${remainingSec}s`;
+                    elEta.textContent = `Pozostało: ~${remainingSec}s`;
                 }
             }
         }
@@ -4023,6 +4505,8 @@ async function uploadFile() {
         }
 
         window._isUploadingActive = true;
+        await requestScreenWakeLock();
+        window.dispatchEvent(new CustomEvent('dropsite:upload-state-changed', { detail: { isUploading: true } }));
 
         // BYOS: OBSŁUGA TRANSFERU BEZPOŚREDNIO DO DYSKU GOOGLE (0 MB NA R2)
         if (window.DropsiteCloudBridge && window.DropsiteCloudBridge.isGoogleDriveActive()) {
@@ -4034,13 +4518,14 @@ async function uploadFile() {
                 }, (loaded, total, percent) => {
                     fsProgressBar.style.width = percent + '%';
                     fsSizeOrProgress.innerText = `${percent}% - ${formatBytes(loaded)} z ${formatBytes(total)}`;
+                    setUploadTabProgress(percent);
                     updateTelemetry(loaded);
                 });
 
                 if (bridgeRes && bridgeRes.success) {
                     showSuccessScreen(bridgeRes.finalUrl, bridgeRes.key, 'permanent');
                     if (typeof showNotification === 'function') {
-                        showNotification('✓ Plik bezpiecznie przesłany na Twój Dysk Google!', 'success');
+                        showNotification('Plik bezpiecznie przesłany na Twój Dysk Google!', 'success');
                     }
                 }
                 return;
@@ -4059,17 +4544,10 @@ async function uploadFile() {
         showError(error.message);
     } finally {
         window._isUploadingActive = false;
+        releaseScreenWakeLock();
+        window.dispatchEvent(new CustomEvent('dropsite:upload-state-changed', { detail: { isUploading: false } }));
     }
 }
-
-// Blokada przypadkowego wyjścia / zamknięcia karty podczas wysyłania pliku
-window.addEventListener('beforeunload', (e) => {
-    if (window._isUploadingActive) {
-        e.preventDefault();
-        e.returnValue = 'Trwa przesyłanie pliku. Czy na pewno chcesz opuścić stronę i przerwać transfer?';
-        return e.returnValue;
-    }
-});
 
 // === UPLOAD TRADYCYJNY DLA MAŁYCH PLIKÓW ===
 async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
@@ -4097,18 +4575,24 @@ async function uploadFileStandard(file, duration, customSlug, pwd, note, maxdl, 
             const percentComplete = (event.loaded / event.total) * 100;
             fsProgressBar.style.width = percentComplete + '%';
             fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(event.loaded)} z ${formatBytes(event.total)}`;
+            setUploadTabProgress(percentComplete);
             if (typeof onProgressUpdate === 'function') onProgressUpdate(event.loaded);
         }
     });
 
     xhr.addEventListener("load", () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-            const data = JSON.parse(xhr.responseText);
-            if (data.success) {
-                showSuccessScreen(data.finalUrl, data.key, duration);
-            } else {
-                if (data.code === 'PRO_REQUIRED') window.openProModal();
-                showError(data.message || 'Błąd serwera.');
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    showSuccessScreen(data.finalUrl, data.key, duration);
+                } else {
+                    if (data.code === 'PRO_REQUIRED') window.openProModal();
+                    showError(data.message || 'Błąd serwera.');
+                }
+            } catch (err) {
+                console.error('Błąd parsowania odpowiedzi serwera:', err);
+                showError('Błąd odpowiedzi serwera.');
             }
         } else {
             try {
@@ -4164,17 +4648,67 @@ function saveMultipartSession(file, data) {
     } catch (_) {}
 }
 
-function clearMultipartSession(file) {
+function clearMultipartSession(file, abortOnServer = false) {
     const sKey = getMultipartSessionKey(file);
     if (sKey) {
-        try { localStorage.removeItem(sKey); } catch (_) {}
+        try {
+            if (abortOnServer) {
+                const raw = localStorage.getItem(sKey);
+                if (raw) {
+                    const session = JSON.parse(raw);
+                    if (session && session.key && session.uploadId) {
+                        const abortUrl = `${WORKER_URL}/multipart/abort?key=${encodeURIComponent(session.key)}&uploadId=${encodeURIComponent(session.uploadId)}`;
+                        if (navigator.sendBeacon) {
+                            navigator.sendBeacon(abortUrl);
+                        } else {
+                            fetch(abortUrl, { method: 'POST', mode: 'cors', keepalive: true }).catch(() => {});
+                        }
+                    }
+                }
+            }
+            localStorage.removeItem(sKey);
+        } catch (_) {}
     }
 }
 
-// === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Concurrency = 3, Auto-Retry, Resumable Upload) ===
+// Okresowe czyszczenie porzuconych sesji multipart z R2 (ochrona przed kosztami zalegających chunków)
+function cleanupOrphanedMultipartSessions() {
+    try {
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000;
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('ds_multipart_')) {
+                try {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        const s = JSON.parse(raw);
+                        if (s && s.timestamp && (now - s.timestamp > maxAge)) {
+                            if (s.key && s.uploadId) {
+                                const abortUrl = `${WORKER_URL}/multipart/abort?key=${encodeURIComponent(s.key)}&uploadId=${encodeURIComponent(s.uploadId)}`;
+                                fetch(abortUrl, { method: 'POST', mode: 'cors', keepalive: true }).catch(() => {});
+                            }
+                            localStorage.removeItem(k);
+                        }
+                    }
+                } catch (_) {}
+            }
+        }
+    } catch (_) {}
+}
+if (typeof window !== 'undefined') {
+    window.cleanupOrphanedMultipartSessions = cleanupOrphanedMultipartSessions;
+    setTimeout(cleanupOrphanedMultipartSessions, 3000);
+}
+
+// === UPLOAD MULTIPART DLA DUŻYCH PLIKÓW (Concurrency = 3 / Mobile = 2, Auto-Retry, Resumable Upload) ===
 async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl, creatorBrand, isSpy, isCinematic, cinematicTrack, timelock, timehint, btnTextSpan, onProgressUpdate) {
     const proKey = getProKey();
     const currentEmail = getCurrentUserEmail();
+
+    // Detekcja urządzeń mobilnych (dla adaptacyjnej optymalizacji pasma radiowego i zapobiegania bufferbloat)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     (window.innerWidth <= 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 
     const CHUNK_SIZE = 10 * 1024 * 1024; 
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -4249,6 +4783,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
         }
     }
 
+    let progressPending = false;
     const updateAggregatedProgress = () => {
         const currentTotalUploaded = chunkLoadedBytes.reduce((a, b) => a + b, 0);
         const percentComplete = Math.min(99.9, (currentTotalUploaded / file.size) * 100);
@@ -4256,8 +4791,18 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
         if (fsSizeOrProgress) {
             fsSizeOrProgress.innerText = `${Math.round(percentComplete)}% - ${formatBytes(currentTotalUploaded)} z ${formatBytes(file.size)}`;
         }
+        setUploadTabProgress(percentComplete);
         if (typeof onProgressUpdate === 'function') onProgressUpdate(currentTotalUploaded);
         if (btnTextSpan) btnTextSpan.textContent = `Wgrywanie (${Math.round(percentComplete)}%)...`;
+    };
+
+    const scheduleAggregatedProgress = () => {
+        if (progressPending) return;
+        progressPending = true;
+        requestAnimationFrame(() => {
+            progressPending = false;
+            updateAggregatedProgress();
+        });
     };
 
     updateAggregatedProgress();
@@ -4268,7 +4813,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
             xhr.upload.addEventListener("progress", (event) => {
                 if (event.lengthComputable) {
                     chunkLoadedBytes[chunkIndex] = event.loaded;
-                    updateAggregatedProgress();
+                    scheduleAggregatedProgress();
                 }
             });
 
@@ -4281,19 +4826,27 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
                             updateAggregatedProgress();
                             resolve(parsed);
                         } else {
+                            if (parsed.message && (parsed.message.includes('NoSuchUpload') || parsed.message.includes('uploadId') || parsed.message.includes('not found'))) {
+                                clearMultipartSession(file);
+                            }
                             reject(new Error(parsed.message || `Serwer odrzucił chunk #${partNumber}`));
                         }
                     } catch (parseErr) {
                         reject(new Error(`Niepoprawna odpowiedź serwera dla chunk #${partNumber}`));
                     }
                 } else {
+                    if (xhr.status === 400 || xhr.status === 404) {
+                        // Unieważnij martwą sesję w localStorage, aby nie blokować kolejnych prób!
+                        clearMultipartSession(file);
+                    }
                     reject(new Error(`Błąd HTTP ${xhr.status} dla chunk #${partNumber}`));
                 }
             });
 
             xhr.addEventListener("error", () => reject(new Error(`Błąd sieciowy chunk #${partNumber}`)));
             xhr.addEventListener("timeout", () => reject(new Error(`Przekroczono limit czasu (timeout) chunk #${partNumber}`)));
-            xhr.timeout = 75000; // 75s na pojedynczy chunk
+            // Dynamiczny limit czasu: 120s na urządzeniach mobilnych (ze względu na zmienny zasięg), 75s na desktopie
+            xhr.timeout = isMobile ? 120000 : 75000;
 
             xhr.open("PUT", `${WORKER_URL}/multipart/upload?key=${encodeURIComponent(key)}&uploadId=${uploadId}&partNumber=${partNumber}`, true);
             if (proKey) xhr.setRequestHeader("X-Pro-Key", proKey);
@@ -4331,8 +4884,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
         }
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-        queue.push({ chunk, partNumber, chunkIndex: i });
+        queue.push({ start, end, partNumber, chunkIndex: i });
     }
 
     let hasWorkerFailed = false;
@@ -4345,7 +4897,9 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
             if (!task) break;
 
             try {
-                const chunkData = await uploadChunkWithRetry(task.partNumber, task.chunk, task.chunkIndex);
+                // Lazy slicing na żądanie: wycinamy z pliku tylko aktualnie wysyłany fragment, zwalniając pamięć RAM natychmiast po wysłaniu
+                const chunk = file.slice(task.start, task.end);
+                const chunkData = await uploadChunkWithRetry(task.partNumber, chunk, task.chunkIndex);
                 parts.push({ partNumber: chunkData.partNumber, etag: chunkData.etag });
                 // Zapisz stan po każdym pomyślnie wgranym chunku (dla niezawodnego wznawiania)
                 saveMultipartSession(file, { uploadId, key, finalUrl, parts });
@@ -4357,7 +4911,9 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
         }
     }
 
-    const CONCURRENCY = Math.min(3, Math.max(1, queue.length));
+    // Adaptacyjna współbieżność: na telefonach max 2 połączenia równoległe (zapobiega dławieniu łącza i bufferbloat)
+    const MAX_CONCURRENT = isMobile ? 2 : 3;
+    const CONCURRENCY = Math.min(MAX_CONCURRENT, Math.max(1, queue.length));
     const workerPromises = [];
     for (let w = 0; w < CONCURRENCY; w++) {
         workerPromises.push(queueWorker());
@@ -4366,7 +4922,9 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
     try {
         await Promise.all(workerPromises);
     } catch (poolErr) {
-        // Nie wywołujemy natychmiast abort(), aby umożliwić użytkownikowi wznowienie tego samego pliku!
+        if (workerFailureError && (workerFailureError.message.includes('400') || workerFailureError.message.includes('404') || workerFailureError.message.includes('NoSuchUpload'))) {
+            clearMultipartSession(file);
+        }
         throw new Error(`Wgrywanie przerwane: ${workerFailureError?.message || poolErr.message}. Możesz ponowić plik, aby dokończyć transfer.`);
     }
 
@@ -4386,6 +4944,7 @@ async function uploadFileMultipart(file, duration, customSlug, pwd, note, maxdl,
     const completeData = await completeRes.json();
 
     if (!completeData.success) {
+        clearMultipartSession(file, true);
         throw new Error(completeData.message || "Błąd podczas łączenia pliku.");
     }
 
@@ -4416,9 +4975,7 @@ window.debouncedUpdateTransferSettings = debouncedUpdateTransferSettings;
 
 function buildTransferUrls(fileKey) {
     if (!fileKey) return null;
-    let cleanKeyPath = fileKey.split('/').map(segment => encodeURIComponent(segment)).join('/');
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseOrigin = isLocal ? window.location.origin : (PUBLIC_APP_URL || 'https://dropsite.pages.dev');
+    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
     let pageUrl = `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
     let localPageUrl = `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(fileKey)}`;
     // Główny link do udostępniania prowadzi bezpośrednio do estetycznej strony odbioru Dropsite
@@ -4451,7 +5008,7 @@ function buildTransferUrls(fileKey) {
     }
     
     // Album zdjęć
-    if (window._isUploadingAlbum || (cleanKeyPath && cleanKeyPath.includes('Album_'))) {
+    if (window._isUploadingAlbum || (fileKey && fileKey.includes('Album_'))) {
         params.set('album', '1');
     }
     
@@ -4815,6 +5372,8 @@ document.addEventListener('DOMContentLoaded', initAdvancedTransferListeners);
 function showSuccessScreen(finalUrlStr, fileKey, duration) {
     uploadBtn.classList.remove('loading');
     window._lastUploadedFileKey = fileKey;
+    setUploadTabProgress(100, true);
+    triggerHapticFeedback([30, 60, 30]);
     const finalLink = document.getElementById('finalLink');
     
     // Odtwórz dźwięk sukcesu!
@@ -4822,8 +5381,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
 
     // Generuj adresy transferu (domyślnie publiczne https://dropsite.pages.dev lub lokalne przy testach)
     const isAlbumTransfer = typeof fileKey === 'string' && fileKey.startsWith('alb_');
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const baseOrigin = isLocal ? window.location.origin : (PUBLIC_APP_URL || 'https://dropsite.pages.dev');
+    const baseOrigin = PUBLIC_APP_URL || 'https://dropsite.pages.dev';
     let pageUrl = isAlbumTransfer ? `${baseOrigin}/?album=${encodeURIComponent(fileKey)}` : `${baseOrigin}/?f=${encodeURIComponent(fileKey)}`;
     let smartShareUrl = pageUrl;
     
@@ -4854,6 +5412,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
     }
 
     let shareableUrl = smartShareUrl;
+    triggerBackgroundNotification(selectedFile ? selectedFile.name : (fileKey ? fileKey.split('/').pop() : 'Twój plik'), shareableUrl);
 
     if (finalLink) {
         finalLink.href = pageUrl;
@@ -4885,7 +5444,7 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
                 navigator.clipboard.writeText(finalUrlStr).then(() => {
                     playSound('click');
                     if (typeof showNotification === 'function') {
-                        showNotification('🎬 Skopiowano bezpośredni link do odtwarzania wideo/audio (Direct Stream)!', 'success');
+                        showNotification('Skopiowano bezpośredni link do odtwarzania wideo/audio (Direct Stream)!', 'success');
                     }
                 }).catch(() => {
                     prompt('Skopiuj Direct Stream URL:', finalUrlStr);
@@ -4987,7 +5546,15 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         }));
     } catch (e) {}
 
+    const uploadBoxContainer = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+    if (uploadBoxContainer) {
+        uploadBoxContainer.classList.add('transition-to-success');
+    }
+
     setTimeout(() => {
+        if (uploadBoxContainer) {
+            uploadBoxContainer.classList.remove('transition-to-success');
+        }
         dropzone.hidden = true;
         if (optionsContainer) optionsContainer.hidden = true;
         if (imageCompressPanel) imageCompressPanel.hidden = true;
@@ -4997,6 +5564,17 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         if (uploadHeader) uploadHeader.hidden = true;
         const customAdvWrap = document.querySelector('.custom-adv-wrap');
         if (customAdvWrap) customAdvWrap.hidden = true;
+
+        // Wygaszenie wszystkich dymków kontekstowych i paneli bocznych
+        if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
+            window.DropsiteOmniDropzone.hide();
+        }
+        const omniCard = document.getElementById('omniContextCard');
+        if (omniCard) omniCard.style.display = 'none';
+        const compressFlyout = document.getElementById('imageCompressFlyout');
+        if (compressFlyout) { compressFlyout.hidden = true; compressFlyout.style.display = 'none'; }
+        const advFlyout = document.getElementById('advFlyoutCard');
+        if (advFlyout) { advFlyout.hidden = true; advFlyout.style.display = 'none'; }
 
         uploadBtn.hidden = true;
         fileStatusBox.classList.remove('visible');
@@ -5103,18 +5681,18 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         }
 
         successFlow.hidden = false;
-        successFlow.style.animation = 'successFadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+        successFlow.style.animation = '';
+        successFlow.classList.remove('is-exiting');
+        successFlow.classList.add('is-revealing');
         if (window.initDropsiteAds) window.initDropsiteAds();
         
-        if (typeof confetti === 'function') {
-            confetti({
-                particleCount: 120,
-                spread: 80,
-                origin: { y: 0.6 },
-                colors: ['#34D399', '#38BDF8', '#FFFFFF']
-            });
-        }
-    }, 500);
+        triggerConfetti({
+            particleCount: 90,
+            spread: 75,
+            origin: { y: 0.6 },
+            colors: ['#34D399', '#38BDF8', '#FFFFFF']
+        });
+    }, 280);
     
     fetchDiskStats();
 }
@@ -5122,6 +5700,8 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
 function showError(msg) {
     uploadBtn.classList.remove('loading');
     uploadBtn.disabled = false;
+    setUploadTabProgress(null, false, true);
+    triggerHapticFeedback([60, 50, 60, 50, 60]);
     const btnTextSpan = uploadBtn.querySelector('.btn-text');
     if (btnTextSpan) btnTextSpan.textContent = typeof t === 'function' ? (t('btn_retry') || 'Spróbuj ponownie') : 'Spróbuj ponownie';
     statusDiv.style.color = "#FF4439";
@@ -5492,7 +6072,7 @@ if (modModal && myfilesDropOverlay) {
                 window.smoothCloseModal(modModal);
                 if (window.navigateToHome) window.navigateToHome();
                 updateSelectedFile(scannedFiles);
-                showNotification('Dodano pliki do wysyłki! 🚀', 'success');
+                showNotification('Dodano pliki do wysyłki!', 'success');
             }
         }
     });
@@ -7049,7 +7629,7 @@ function initAdminQuotaControls() {
 
                 if (res.ok) {
                     if (window.showNotification) {
-                        showNotification(`✓ Pojemność serwera w chmurze R2 zaktualizowana do: ${labels[quota]}!`, 'success');
+                        showNotification(`Pojemność serwera w chmurze R2 zaktualizowana do: ${labels[quota]}!`, 'success');
                     }
                 } else {
                     if (window.showNotification) {
@@ -7211,11 +7791,7 @@ function updateMediaGrabberUI(isUnlocked = true) {
         dropdownLink.setAttribute('title', isUnlocked ? 'Pobieraj wideo HD z TikTok, X, Reels, Shorts' : 'Funkcja w procesie tworzenia');
         const badge = dropdownLink.querySelector('.nav-dropdown-badge');
         if (badge) {
-            badge.textContent = isUnlocked ? 'HD • MP4' : 'Wkrótce';
-            badge.className = `nav-dropdown-badge ${isUnlocked ? 'badge-sky' : 'badge-soon'}`;
-            badge.style.background = '';
-            badge.style.color = '';
-            badge.style.borderColor = '';
+            badge.style.display = 'none';
         }
     }
 
@@ -8820,7 +9396,10 @@ function shareLink() {
 }
 
 function resetUpload() {
-    successFlow.style.animation = 'slideOutDown 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+    if (typeof resetUploadFlow === 'function') {
+        resetUploadFlow();
+        return;
+    }
     const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
     if (uploadBoxEl) {
         uploadBoxEl.classList.remove('has-files');
@@ -8861,9 +9440,11 @@ function resetUpload() {
             finalLink.textContent = 'https://link...';
         }
 
-        uploadBtn.disabled = true;
+        uploadBtn.disabled = false;
+        uploadBtn.classList.remove('loading');
+        uploadBtn.classList.add('empty-state');
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
-        if (btnTextSpan) btnTextSpan.textContent = 'Upload';
+        if (btnTextSpan) btnTextSpan.textContent = typeof t === 'function' ? (t('btn_upload') || 'Prześlij plik') : 'Prześlij plik';
         
     }, 300);
 }
@@ -9518,7 +10099,7 @@ function initCinematicDeliverySender() {
                 
                 const trackName = CinematicAudioEngine.getTrackName(trackKey);
                 if (typeof showNotification === 'function') {
-                    showNotification('🎵 ' + (typeof t === 'function' ? t('cinematic_preview_playing') : 'Odtwarzanie podglądu:') + ' ' + trackName, 'info');
+                    showNotification((typeof t === 'function' ? t('cinematic_preview_playing') : 'Odtwarzanie podglądu:') + ' ' + trackName, 'info');
                 }
 
                 await CinematicAudioEngine.previewTrack(trackKey, (active) => {
@@ -9608,7 +10189,7 @@ function selectCinematicTrack(trackKey) {
     renderCinematicTrackDropdownList();
 
     if (typeof showNotification === 'function') {
-        showNotification('🎵 ' + (typeof t === 'function' ? t('cinematic_playing_track') : 'Muzyka:') + ' ' + CinematicAudioEngine.getTrackName(trackKey), 'info');
+        showNotification((typeof t === 'function' ? t('cinematic_playing_track') : 'Muzyka:') + ' ' + CinematicAudioEngine.getTrackName(trackKey), 'info');
     }
 }
 
@@ -10617,7 +11198,7 @@ function initDigitalUnboxingRecorder() {
 
             playSound('success');
             if (typeof showNotification === 'function') {
-                showNotification('🎬 Powitanie zostało dołączone do transferu!', 'success');
+                showNotification('Powitanie zostało dołączone do transferu!', 'success');
             }
         });
     }
@@ -10718,11 +11299,31 @@ function stopAllMediaPlayback() {
 window.stopAllMediaPlayback = stopAllMediaPlayback;
 
 function resetUploadFlow() {
+    const successFlow = document.getElementById('successFlow');
+    if (successFlow && !successFlow.hidden && !successFlow.classList.contains('is-exiting')) {
+        successFlow.classList.add('is-exiting');
+        setTimeout(() => {
+            _executeResetUploadFlow();
+        }, 210);
+        return;
+    }
+    _executeResetUploadFlow();
+}
+
+function _executeResetUploadFlow() {
+    restoreOriginalDocumentTitle();
+    revokePreviousPreviewUrl();
     selectedFile = null;
     const uploadBoxEl = document.getElementById('uploadBox') || document.querySelector('.upload-container');
     if (uploadBoxEl) {
         uploadBoxEl.classList.remove('has-files');
         uploadBoxEl.classList.remove('options-forced');
+        uploadBoxEl.classList.remove('options-expanded');
+        uploadBoxEl.classList.remove('transition-to-success');
+    }
+    const dropzoneEl = document.getElementById('dropzone');
+    if (dropzoneEl) {
+        dropzoneEl.classList.remove('has-media-loaded');
     }
     originalImageFile = null;
     currentCompressionQuality = 0.82;
@@ -10742,6 +11343,7 @@ function resetUploadFlow() {
         dropzone.innerHTML = window._initialDropzoneHTML;
         dropzone.style.padding = '';
         dropzone.hidden = false;
+        dropzone.style.animation = 'dropzoneFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
         if (typeof applyLanguage === 'function') {
             const currentLang = localStorage.getItem('dropsite_lang') || 'en';
             applyLanguage(currentLang);
@@ -10762,12 +11364,13 @@ function resetUploadFlow() {
 
     const uploadBtn = document.getElementById('uploadBtn');
     if (uploadBtn) {
-        uploadBtn.disabled = true;
+        uploadBtn.disabled = false;
         uploadBtn.hidden = false;
         uploadBtn.classList.remove('loading');
+        uploadBtn.classList.add('empty-state');
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) {
-            btnTextSpan.textContent = typeof t === 'function' ? t('btn_upload') : 'Upload';
+            btnTextSpan.textContent = typeof t === 'function' ? t('btn_upload') : 'Prześlij plik';
         }
     }
 
@@ -10799,6 +11402,7 @@ function resetUploadFlow() {
     if (successFlow) {
         successFlow.hidden = true;
         successFlow.style.animation = '';
+        successFlow.classList.remove('is-exiting', 'is-revealing');
     }
 
     if (typeof clearAttachedUnboxing === 'function') {
@@ -10968,7 +11572,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isBlockedPobieracz || isOtherSoon) {
                 e.preventDefault();
                 if (typeof window.showToast === 'function') {
-                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                    window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                 }
                 const dropdown = document.getElementById('navToolsDropdown');
                 if (dropdown) dropdown.classList.remove('is-open');
@@ -11176,50 +11780,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window._navLinks = navLinks;
     })();
 
-    // === AMBIENT BODY GLOW ON NAV HOVER ===
-    (function initAmbientGlow() {
-        const ambientColors = {
-            'view-glowna':    'rgba(52, 211, 153, 0.07)',
-            'view-narzedzia': 'rgba(56, 189, 248, 0.07)',
-            'view-funkcje':   'rgba(167, 139, 250, 0.07)',
-            'view-cennik':    'rgba(255, 210, 76, 0.06)',
-        };
+    // Czyszczenie starego, niepłynnego ambient glow na całym tle
+    const oldAmbientDiv = document.getElementById('nav-ambient-bg');
+    if (oldAmbientDiv) oldAmbientDiv.remove();
 
-        let ambientDiv = document.getElementById('nav-ambient-bg');
-        if (!ambientDiv) {
-            ambientDiv = document.createElement('div');
-            ambientDiv.id = 'nav-ambient-bg';
-            ambientDiv.style.cssText = `
-                position: fixed; inset: 0; pointer-events: none; z-index: 0;
-                transition: background 1.1s ease;
-                background: transparent;
-            `;
-            document.body.prepend(ambientDiv);
-        }
-
-        // Glow zmienia kolor przy wejściu na link,
-        // ale kasuje się dopiero gdy mysz opuszcza całą nawigację (nie migota między linkami)
-        const navContainer = document.querySelector('.nav-links-center');
-        let clearTimer = null;
-
-        document.querySelectorAll('a.nav-btn[data-target]').forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; }
-                const target = link.getAttribute('data-target');
-                const color = ambientColors[target] || 'transparent';
-                ambientDiv.style.background = `radial-gradient(ellipse 60% 40% at 50% 0%, ${color}, transparent 70%)`;
-            });
-        });
-
-        if (navContainer) {
-            navContainer.addEventListener('mouseleave', () => {
-                clearTimer = setTimeout(() => {
-                    ambientDiv.style.background = 'transparent';
-                    clearTimer = null;
-                }, 300);
-            });
-        }
-    })();
     const mobileHomeFab = document.getElementById('mobileHomeFab') || document.getElementById('scrollToTopBtn');
 
     function updateMobileHomeFabVisibility() {
@@ -11589,9 +12153,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (window.switchView) window.switchView('view-glowna');
                     if (typeof window.showToast === 'function') {
-                        window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                        window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                     }
                 }
+                return;
+            }
+
+            // 12d. Cyber Rentgen & Anonimizator (X-Ray & Sanitizer)
+            if (path === '/rentgen' || path === '/xray' || path === '/cyber-rentgen' ||
+                hash.includes('rentgen') || hash.includes('xray') || toolParam === 'xray') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Cyber Rentgen & Anonimizator Plików — 100% RAM | Dropsite', 'Prześwietl dowolny plik w pamięci RAM. Wykryj fałszowane rozszerzenia, ukryte tagi GPS, metadane autorów i usuń ślady cyfrowe jednym kliknięciem.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('xray');
+                    else if (window.switchToolTab) window.switchToolTab('xray');
+                }, 150);
+                return;
+            }
+
+            // 12e. Steganografia & Cyfrowy Kamuflaż
+            if (path === '/stego' || path === '/kamuflaz' || path === '/steganografia' ||
+                hash.includes('stego') || hash.includes('kamuflaz') || toolParam === 'stego') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Cyfrowy Kamuflaż & Steganografia Plików w Obrazach LSB — 100% RAM | Dropsite', 'Ukryj dowolny plik w strukturze pikseli obrazu (LSB) z szyfrowaniem AES-256-GCM. 100% lokalnie w pamięci RAM, bez śladów w chmurze.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('stego');
+                    else if (window.switchToolTab) window.switchToolTab('stego');
+                }, 150);
+                return;
+            }
+
+            // 12f. Document Diff Radar
+            if (path === '/diff' || path === '/porownaj' || path === '/porownywarka' ||
+                hash.includes('diff') || hash.includes('porownaj') || toolParam === 'diff') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Document Diff Radar — Wizualna Porównywarka PDF & Dokumentów | Dropsite', 'Porównuj dwie wersje dokumentów PDF, obrazów i tekstów z suwakiem kurtynowym, heatmapą zmian i algorytmem LCS. 100% RAM.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('diff');
+                    else if (window.switchToolTab) window.switchToolTab('diff');
+                }, 150);
+                return;
+            }
+
+            // 12g. Smart OCR & Text Extractor
+            if (path === '/ocr' || path === '/rozpoznaj-tekst' || path === '/skan-tekst' ||
+                hash.includes('ocr') || hash.includes('rozpoznaj') || toolParam === 'ocr') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Smart OCR & Text Extractor w RAM — Rozpoznawanie Tekstu & RODO | Dropsite', 'Ekstrakcja tekstu ze skanów i plików PDF w pamięci RAM. Wykrywanie PESEL, NIP, IBAN i automatyczne maskowanie danych osobowych.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('ocr');
+                    else if (window.switchToolTab) window.switchToolTab('ocr');
+                }, 150);
+                return;
+            }
+
+            // 12h. Audio Sanitizer & Voice Masker
+            if (path === '/audio-mask' || path === '/anonimizator-audio' || path === '/glos-audio' ||
+                hash.includes('audio-mask') || hash.includes('anonimizator-audio') || toolParam === 'audio-mask' || toolParam === 'audio') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Audio Sanitizer & Voice Masker — Anonimizacja Głosu w RAM | Dropsite', 'Zmieniaj wysokość głosu, maskuj formanty świadka, usuwaj metadane audio i eksportuj czysty plik WAV za pomocą Web Audio API.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('audio-mask');
+                    else if (window.switchToolTab) window.switchToolTab('audio-mask');
+                }, 150);
+                return;
+            }
+
+            // 12i. Hash Radar & Checksum Studio
+            if (path === '/hash' || path === '/checksum' || path === '/integralnosc' || path === '/sha256' ||
+                hash.includes('hash') || hash.includes('checksum') || hash.includes('sha256') || toolParam === 'hash') {
+                if (window.switchView) window.switchView('view-narzedzia');
+                setSeoMeta('Hash Radar & Sumy Kontrolne — Weryfikator Integralności Plików w RAM | Dropsite', 'Obliczaj sumy kontrolne SHA-256, SHA-512, SHA-1 i MD5 w pamięci RAM. Weryfikuj autentyczność pobranych plików i porównuj skróty bez wysyłania danych do sieci.');
+                setTimeout(() => {
+                    if (window.openToolTab) window.openToolTab('hash');
+                    else if (window.switchToolTab) window.switchToolTab('hash');
+                }, 150);
                 return;
             }
 
@@ -11672,38 +12308,29 @@ let _isTogglingPerf = false;
 window.setPerformanceMode = function(enable, notify) {
     const root = document.documentElement;
     
-    // 1. Zaktualizuj suwak natychmiast, aby animacja ruszyła w klatce 0 bez opóźnień
-    const switchEl = document.getElementById('dropdownPerfSwitch');
-    if (switchEl) {
-        switchEl.classList.toggle('active', enable);
-        switchEl.classList.toggle('is-active', enable);
-    }
-    const footerBtn = document.getElementById('footerPerfToggle');
-    if (footerBtn) {
-        footerBtn.textContent = enable ? '⚡ Tryb: Płynny (Eco)' : '✨ Tryb: Efekty (Full)';
-        footerBtn.title = enable ? 'Kliknij, aby włączyć pełne efekty wizualne' : 'Kliknij, aby włączyć Tryb Wydajności (Eco 60 FPS)';
-    }
+    // 1. Zaktualizuj UI kafelków i przycisków w klatce 0 bez opóźnień
+    updatePerformanceModeUI(enable);
 
     // 2. Operacje na drzewie DOM (wyłączenie canvasu, klasa na <html>) wykonaj w kolejnej klatce (requestAnimationFrame),
     // aby wątek kompozytora nie przyciął płynnej animacji suwaka (pełne 60/120 FPS)
     requestAnimationFrame(() => {
         if (enable) {
             root.classList.add('eco-mode');
-            try { localStorage.setItem('dropsite_perf_mode', 'true'); } catch(_) {}
+            try { localStorage.setItem('dropsite_eco_manual', 'true'); } catch(_) {}
             const canvas = document.getElementById('bgCanvas');
             if (canvas) canvas.style.display = 'none';
             if (notify && typeof window.showToast === 'function') {
-                window.showToast('⚡ Aktywowano Tryb Wydajności – pełna płynność 60 FPS', 'info');
+                window.showToast('Aktywowano Tryb Wydajności (Eco)', 'info');
             }
         } else {
             root.classList.remove('eco-mode');
-            try { localStorage.setItem('dropsite_perf_mode', 'false'); } catch(_) {}
+            try { localStorage.setItem('dropsite_eco_manual', 'false'); } catch(_) {}
             const canvas = document.getElementById('bgCanvas');
             if (canvas && window.innerWidth > 768) {
                 canvas.style.display = 'block';
             }
             if (notify && typeof window.showToast === 'function') {
-                window.showToast('✨ Włączono pełne efekty wizualne', 'info');
+                window.showToast('Włączono pełne efekty wizualne', 'info');
             }
         }
     });
@@ -11718,12 +12345,25 @@ window.togglePerformanceMode = function() {
     window.setPerformanceMode(!isEco, true);
 };
 
-function updatePerformanceModeUI() {
-    const isEco = document.documentElement.classList.contains('eco-mode');
+function updatePerformanceModeUI(overrideIsEco) {
+    const isEco = typeof overrideIsEco === 'boolean' ? overrideIsEco : document.documentElement.classList.contains('eco-mode');
     const switchEl = document.getElementById('dropdownPerfSwitch');
     if (switchEl) {
         switchEl.classList.toggle('active', isEco);
         switchEl.classList.toggle('is-active', isEco);
+    }
+    const perfBtn = document.getElementById('navDropdownPerfBtn');
+    if (perfBtn) {
+        perfBtn.classList.toggle('is-active', isEco);
+    }
+    const perfState = document.getElementById('dropdownPerfState');
+    if (perfState) {
+        perfState.textContent = isEco ? 'Aktywny' : 'Wyłączony';
+        perfState.style.color = isEco ? '#BAE6FD' : '#94A3B8';
+    }
+    const perfLed = document.getElementById('dropdownPerfLed');
+    if (perfLed) {
+        perfLed.classList.toggle('is-active', isEco);
     }
     const footerBtn = document.getElementById('footerPerfToggle');
     if (footerBtn) {
@@ -11741,14 +12381,8 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
     const canvas = document.getElementById('bgCanvas');
     if (!canvas) return;
 
-    // Detekcja słabszego sprzętu lub aktywnego trybu Eco
-    const isWeakHardware = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
-                           (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
-                           (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
-                           document.documentElement.classList.contains('eco-mode');
-
-    // Na słabych maszynach, telefonach i małych ekranach wyłączamy canvas natychmiast:
-    if (isWeakHardware || window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 1024)) {
+    // Canvas wyłączamy wyłącznie gdy użytkownik ręcznie włączył tryb Eco lub na ekranach mobilnych (<= 768px):
+    if (document.documentElement.classList.contains('eco-mode') || window.innerWidth <= 768) {
         canvas.style.display = 'none';
         return;
     }
@@ -11872,32 +12506,12 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
         }
     }
 
-    // AUTO FPS MONITOR
-    const frameTimes = [];
-    let fpsChecked = false;
-
-    function animate(timestamp) {
+    function animate() {
         const modM = document.getElementById('modModal');
         const isModOpen = modM && !modM.hidden && modM.style.display !== 'none';
         if (!isRunning || isScrolling || !isHeroVisible || isModOpen || document.documentElement.classList.contains('eco-mode')) {
             animId = null;
             return;
-        }
-
-        // Monitoring FPS w pierwszych klatkach
-        if (!fpsChecked && timestamp) {
-            frameTimes.push(timestamp);
-            if (frameTimes.length >= 40) {
-                fpsChecked = true;
-                const duration = frameTimes[frameTimes.length - 1] - frameTimes[0];
-                const avgFps = ((frameTimes.length - 1) * 1000) / duration;
-                if (avgFps < 38) {
-                    console.warn('[Dropsite Perf] Słaba wydajność GPU/CPU (' + Math.round(avgFps) + ' FPS). Włączam automatycznie Tryb Eco.');
-                    window.setPerformanceMode(true, true);
-                    animId = null;
-                    return;
-                }
-            }
         }
 
         ctx.clearRect(0, 0, width, height);
@@ -11965,37 +12579,7 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
     resetIdleTimer();
 })();
 
-// ============================================================================
-// 2. BŁYSKAWICZNY UPLOAD ZE SCHOWKA (CTRL + V)
-// ============================================================================
-window.addEventListener('paste', (e) => {
-    // Nie przechwytuj, jeśli użytkownik wpisuje tekst w formularzu (np. logowanie lub szukajka)
-    if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
-    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    const files = [];
-
-    for (let index in items) {
-        const item = items[index];
-        if (item.kind === 'file') {
-            const blob = item.getAsFile();
-            if (blob) {
-                // Jeśli to zrzut ekranu bez nazwy, nadaj mu czytelną nazwę
-                const filename = blob.name === 'image.png' ? `Zrzut_ekranu_${new Date().toISOString().slice(0,10)}_${Date.now().toString().slice(-4)}.png` : blob.name;
-                const file = new File([blob], filename, { type: blob.type });
-                files.push(file);
-            }
-        }
-    }
-
-    if (files.length > 0) {
-        showNotification(`Wklejono ${files.length} plik(ów) ze schowka!`, 'success');
-        updateSelectedFile(files);
-        // Przełącz na główny widok, jeśli użytkownik był w innej zakładce
-        const mainNav = document.querySelector('[data-target="view-glowna"]');
-        if (mainNav) mainNav.click();
-    }
-});
 
 // ============================================================================
 // 3. GENEROWANIE KODÓW QR (DO POBRANIA NA TELEFONIE)
@@ -13561,7 +14145,7 @@ async function initDownloadRouter() {
 
         navigator.clipboard.writeText(report).then(() => {
             if (typeof showNotification === 'function') {
-                showNotification(typeof t === 'function' ? t('proofing_copied_toast') : '📋 Lista poprawek skopiowana do schowka!', 'success');
+                showNotification(typeof t === 'function' ? t('proofing_copied_toast') : 'Lista poprawek skopiowana do schowka!', 'success');
             }
             if (typeof playSound === 'function') playSound('copy');
         }).catch(() => {
@@ -13818,9 +14402,9 @@ async function initDownloadRouter() {
                                 <div class="video-error-icon">🎬</div>
                                 <div class="video-error-title">Format wideo wymaga pobrania na dysk</div>
                                 <div class="video-error-desc">Twoja przeglądarka nie posiada dekodera dla tego kodeka (np. MKV, ProRes lub Apple HEVC). Plik jest w 100% nienaruszony i możesz go pobrać poniżej.</div>
-                                <a href="${directUrl}" download="${cleanName}" class="btn-primary btn-error-fallback" style="margin-top: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <button type="button" onclick="const b=document.getElementById('dlDownloadBtn'); if(b) b.click();" class="btn-primary btn-error-fallback" style="margin-top: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                                     Pobierz oryginalne wideo
-                                </a>
+                                </button>
                             </div>
                         `;
                     }
@@ -13953,7 +14537,7 @@ async function initDownloadRouter() {
                         if (navigator.clipboard) {
                             navigator.clipboard.writeText(directUrl).then(() => {
                                 if (typeof showNotification === 'function') {
-                                    showNotification('🎬 Skopiowano bezpośredni link Direct Stream do schowka!', 'success');
+                                    showNotification('Skopiowano bezpośredni link Direct Stream do schowka!', 'success');
                                 }
                             }).catch(() => {
                                 prompt('Direct Stream URL:', directUrl);
@@ -13998,10 +14582,10 @@ async function initDownloadRouter() {
                                 <div class="video-error-icon">🎬</div>
                                 <div class="video-error-title">Podgląd wideo niedostępny w oknie przeglądarki</div>
                                 <div class="video-error-desc">Kodek tego materiału może nie być natywnie wspierany przez wbudowany silnik przeglądarki lub wystąpił błąd odtwarzacza.</div>
-                                <a href="${directUrl}" download="${cleanName}" class="btn-primary btn-error-fallback" style="margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+                                <button type="button" onclick="const b=document.getElementById('dlDownloadBtn'); if(b) b.click();" class="btn-primary btn-error-fallback" style="margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer;">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                     <span>Pobierz plik wideo</span>
-                                </a>
+                                </button>
                             </div>
                         `;
                     }
@@ -14729,7 +15313,7 @@ function exportSideProofingList() {
 
     navigator.clipboard.writeText(report).then(() => {
         if (typeof showNotification === 'function') {
-            showNotification('📋 Lista poprawek skopiowana do schowka!', 'success');
+            showNotification('Lista poprawek skopiowana do schowka!', 'success');
         }
         if (typeof playSound === 'function') playSound('copy');
     }).catch(() => {
@@ -15257,9 +15841,9 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             <div class="video-error-icon">🔒</div>
                             <div class="video-error-title">Błąd odszyfrowania podglądu (Zero-Knowledge)</div>
                             <div class="video-error-desc">Klucz deszyfrujący w linku (#enc=...) jest nieprawidłowy lub plik został uszkodzony.</div>
-                            <a href="${directUrl}" download="${cleanName}" class="btn-primary btn-error-fallback" style="margin-top: 14px; text-decoration: none;">
+                            <button type="button" onclick="const b=document.getElementById('dlDownloadBtn'); if(b) b.click();" class="btn-primary btn-error-fallback" style="margin-top: 14px; text-decoration: none; cursor: pointer;">
                                 Pobierz zaszyfrowany plik
-                            </a>
+                            </button>
                         </div>
                     `;
                     return;
@@ -15409,7 +15993,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             <div class="proofing-drawer-header">
                                 <div class="proofing-drawer-title-row">
                                     <div class="proofing-drawer-title">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                         <span data-i18n="proofing_drawer_title">${typeof t === 'function' ? t('proofing_drawer_title', 'Lista uwag i poprawek') : 'Lista uwag i poprawek'}</span>
                                     </div>
                                     <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0</span>
@@ -15505,7 +16089,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         <div class="proofing-drawer-header">
                             <div class="proofing-drawer-title-row">
                                 <div class="proofing-drawer-title">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4E7D4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                     <span>Lista uwag i poprawek</span>
                                 </div>
                                 <span class="proofing-progress-pill" id="proofingDrawerProgress">0/0 wykonane</span>
@@ -16059,7 +16643,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             // Jeśli paczka ma > 100 MB i nie dało się odczytać spisu przez Worker (np. zaszyfrowana end-to-end),
             // chronimy kartę przeglądarki przed Out Of Memory.
             if (archiveSize > 100 * 1024 * 1024) {
-                const targetDlUrl = directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${targetFileKey || fileKey}`;
+                const targetDlUrl = `${WORKER_URL}/download?key=${encodeURIComponent(targetFileKey || fileKey)}&name=${encodeURIComponent(cleanName)}`;
                 dlPreviewContainer.innerHTML = `
                     <div class="archive-explorer-box archive-large-direct-card" style="padding: 24px 20px; text-align: center; border-radius: 14px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(236, 72, 153, 0.35); box-shadow: 0 8px 32px rgba(0,0,0,0.35);">
                         <div style="width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 14px; background: rgba(236, 72, 153, 0.15); display: flex; align-items: center; justify-content: center; color: #F472B6;">
@@ -16309,7 +16893,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
         if (data.isAlbum || cleanName.startsWith('Album_') || urlParams.get('album') === '1') {
             const matchCount = cleanName.match(/Album_(\d+)_zdjec/);
             const countStr = matchCount ? ` (${matchCount[1]} zdjęć)` : '';
-            dlFileName.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 8px; color: #38BDF8; display: inline-block;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Album fotograficzny${countStr}`;
+            dlFileName.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 8px; color: #C4E7D4; display: inline-block;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Album fotograficzny${countStr}`;
         } else {
             dlFileName.innerText = cleanName;
         }
@@ -17069,7 +17653,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         if (dlContentWrap) dlContentWrap.hidden = false;
                         const downloadUrl = data.isBurn 
                             ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
-                            : data.directUrl;
+                            : `${WORKER_URL}/download?key=${encodeURIComponent(data.key || fileKey)}&name=${encodeURIComponent(cleanName)}`;
                         if (dlDownloadBtn) {
                             dlDownloadBtn.href = downloadUrl;
                             if (!data.isBurn) dlDownloadBtn.setAttribute('download', cleanName);
@@ -17104,7 +17688,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             
                             const downloadUrl = data.isBurn 
                                 ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
-                                : (data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`);
+                                : `${WORKER_URL}/download?key=${encodeURIComponent(data.key || fileKey)}&name=${encodeURIComponent(cleanName)}`;
                             if (dlDownloadBtn) {
                                 dlDownloadBtn.href = downloadUrl;
                                 if (!data.isBurn) dlDownloadBtn.setAttribute('download', cleanName);
@@ -17134,8 +17718,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             if (data.isBurn) {
                 dlDownloadBtn.href = `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}`;
             } else {
-                const directDlUrl = data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`;
-                dlDownloadBtn.href = directDlUrl;
+                dlDownloadBtn.href = `${WORKER_URL}/download?key=${encodeURIComponent(data.key || fileKey)}&name=${encodeURIComponent(cleanName)}`;
                 dlDownloadBtn.setAttribute('download', cleanName);
             }
 
@@ -17162,7 +17745,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             dlCopyStreamBtn.style.borderColor = '';
                             dlCopyStreamBtn.style.color = '';
                         }, 2200);
-                        if (typeof showNotification === 'function') showNotification('🎬 Skopiowano Direct Stream URL!', 'success');
+                        if (typeof showNotification === 'function') showNotification('Skopiowano Direct Stream URL!', 'success');
                     }).catch(() => {
                         prompt('Skopiuj Direct Stream URL:', data.directUrl);
                     });
@@ -17203,7 +17786,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     saveBlobToDisk(window._activeDecryptedBlob.blob, cleanName);
                     playSound('drop');
                     if (typeof showNotification === 'function') {
-                        showNotification('🛡️ Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
+                        showNotification('Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
                     }
                     fetch(`${WORKER_URL}/track-stat?key=${encodeURIComponent(fileKey)}&type=download`, { method: 'POST' }).catch(()=>{});
                     if (dlDownloadCount) {
@@ -17236,7 +17819,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
 
                     playSound('drop');
                     if (typeof showNotification === 'function') {
-                        showNotification('🛡️ Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
+                        showNotification('Plik został pomyślnie odszyfrowany (AES-256) i pobrany!', 'success');
                     }
                     if (textSpan) textSpan.textContent = origText;
                     
@@ -17261,27 +17844,53 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
             }
 
             // 2. Jeśli plik jest standardowy (niezaszyfrowany) lub Jednorazowy / Burn
-            const streamFetchUrl = `${WORKER_URL}/stream?key=${encodeURIComponent(data.key || fileKey)}`;
-            const directFileUrl = data.directUrl || `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${data.key || fileKey}`;
             const workerDownloadUrl = data.isBurn 
                 ? `${WORKER_URL}/burn-download?key=${encodeURIComponent(data.key || fileKey)}` 
                 : `${WORKER_URL}/download?key=${encodeURIComponent(data.key || fileKey)}&name=${encodeURIComponent(cleanName)}`;
 
-            // Sprawdź czy mamy już aktywny odszyfrowany/wczytany blob w pamięci
+            // Sprawdź czy mamy już aktywny odszyfrowany/wczytany blob w pamięci (np. z podglądu pliku)
             if (window._activeDecryptedBlob && window._activeDecryptedBlob.blob && 
                 (window._activeDecryptedBlob.fileKey === fileKey || window._activeDecryptedBlob.fileKey === (data.key || ''))) {
                 saveBlobToDisk(window._activeDecryptedBlob.blob, cleanName);
             } else if (!data.isBurn) {
-                // Bezpośrednie, natywne pobieranie strumieniowe przez przeglądarkę (Zero zużycia RAM w karcie - idealne dla 1GB+)
-                const directDlTarget = directFileUrl || workerDownloadUrl;
-                const tempLink = document.createElement('a');
-                tempLink.href = directDlTarget;
-                tempLink.download = cleanName;
-                tempLink.target = '_blank';
-                tempLink.rel = 'noopener noreferrer';
-                document.body.appendChild(tempLink);
-                tempLink.click();
-                setTimeout(() => { if (tempLink.parentNode) tempLink.parentNode.removeChild(tempLink); }, 1000);
+                // Bezpieczne, natywne pobieranie pliku na dysk:
+                // Krok 1: Dla plików do 150 MB pobieramy przez fetch -> Blob.
+                // Użycie lokalnego blob: URL ze specyfikacją HTML5 gwarantuje 100% pewny zapis na dysku
+                // z zachowaniem dokładnej nazwy pliku i BEZ otwierania direct linku ani nowej karty.
+                const fileSize = Number(data.size) || 0;
+                let downloadedViaBlob = false;
+
+                if (fileSize > 0 && fileSize <= 150 * 1024 * 1024) {
+                    if (textSpan) textSpan.textContent = 'Pobieranie...';
+                    dlDownloadBtn.style.pointerEvents = 'none';
+
+                    try {
+                        const response = await fetch(workerDownloadUrl);
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            saveBlobToDisk(blob, cleanName);
+                            downloadedViaBlob = true;
+                        }
+                    } catch (fetchErr) {
+                        console.warn('Pobieranie fetch-blob nie powiodło się, przełączam na stream:', fetchErr);
+                    } finally {
+                        if (textSpan) textSpan.textContent = origText;
+                        dlDownloadBtn.style.pointerEvents = 'auto';
+                    }
+                }
+
+                // Krok 2: Dla plików powyżej 150 MB (lub w razie błędu fetch):
+                // Wymuszamy pobranie przez ukryty iframe do endpointu /download z nagłówkiem Content-Disposition: attachment.
+                // Nigdy nie używamy surowego adresu R2 ani target="_blank", co zapobiega otwieraniu pliku w nowej karcie.
+                if (!downloadedViaBlob) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = workerDownloadUrl;
+                    document.body.appendChild(iframe);
+                    setTimeout(() => {
+                        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                    }, 30000);
+                }
             } else {
                 if (textSpan) textSpan.textContent = 'Pobieranie...';
                 dlDownloadBtn.style.pointerEvents = 'none';
@@ -18477,7 +19086,7 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
                                     <span>${formatBytes(file.size || 0)}</span>
                                 </div>
                                 <div class="album-item-actions">
-                                    <a href="${file.directUrl}" download="${escapeHtml(file.name)}" class="album-item-btn" title="Pobierz plik">
+                                    <a href="${WORKER_URL}/download?key=${encodeURIComponent(file.key)}&name=${encodeURIComponent(file.name)}" download="${escapeHtml(file.name)}" class="album-item-btn" title="Pobierz plik">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                         <span>Pobierz</span>
                                     </a>
@@ -18779,9 +19388,9 @@ function initDropsiteBeamUI() {
             },
             onComplete: ({ fileName }) => {
                 const statusMsg = document.getElementById('beamSendStatusMsg');
-                if (statusMsg) statusMsg.textContent = typeof t === 'function' ? t('beam_completed') : '✨ Transfer ukończony!';
+                if (statusMsg) statusMsg.textContent = typeof t === 'function' ? t('beam_completed') : 'Transfer ukończony!';
                 if (typeof showNotification === 'function') {
-                    showNotification(`✓ Plik "${fileName}" został pomyślnie przesłany przez Beam P2P!`, 'success');
+                    showNotification(`Plik "${fileName}" został pomyślnie przesłany przez Beam P2P!`, 'success');
                 }
             },
             onError: (err) => {
@@ -18860,7 +19469,7 @@ function initDropsiteBeamUI() {
                         btnDownloadReady.setAttribute('download', fileName);
                     }
                     if (typeof showNotification === 'function') {
-                        showNotification(`✓ Plik "${fileName}" został odebrany przez Beam P2P!`, 'success');
+                        showNotification(`Plik "${fileName}" został odebrany przez Beam P2P!`, 'success');
                     }
                     btnConnectReceive.disabled = false;
                 },
@@ -18925,18 +19534,56 @@ document.addEventListener('dropsite_language_changed', () => {
 
 
 
-// Obsługa przycisku Zen Options Toggle (dla wcześniejszego otwarcia opcji)
+// Obsługa Focus Mode (automatyczne chowanie Hero przy plikach oraz rozwijaniu opcji)
 document.addEventListener('DOMContentLoaded', () => {
     const btnZenToggle = document.getElementById('btnZenOptionsToggle');
+    const heroEl = document.querySelector('.studio-split-hero');
+    const box = document.getElementById('uploadBox') || document.querySelector('.upload-container');
+
+    function syncFocusState() {
+        if (!box) return;
+        const hasFiles = box.classList.contains('has-files');
+        const isForced = box.classList.contains('options-forced');
+        const isExpanded = box.classList.contains('options-expanded');
+        if (heroEl) {
+            heroEl.classList.toggle('focus-mode', hasFiles || isForced || isExpanded);
+        }
+    }
+
     if (btnZenToggle) {
         btnZenToggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            const box = document.getElementById('uploadBox') || document.querySelector('.upload-container');
             if (box) {
                 box.classList.toggle('options-forced');
                 const isForced = box.classList.contains('options-forced');
                 btnZenToggle.setAttribute('aria-expanded', isForced ? 'true' : 'false');
+                syncFocusState();
             }
         });
+    }
+
+    ['slugToggleBtn', 'advToggleBtn'].forEach(id => {
+        const trigger = document.getElementById(id);
+        if (trigger) {
+            trigger.addEventListener('click', () => {
+                if (box) {
+                    // Jeśli któreś z opcji jest rozwinięte, dodaj options-expanded
+                    setTimeout(() => {
+                        const slugBox = document.getElementById('customSlugBox');
+                        const advBox = document.getElementById('customAdvBox');
+                        const isAnyOpen = (slugBox && !slugBox.hidden && slugBox.style.display !== 'none') ||
+                                          (advBox && advBox.classList.contains('active'));
+                        box.classList.toggle('options-expanded', Boolean(isAnyOpen));
+                        syncFocusState();
+                    }, 50);
+                }
+            });
+        }
+    });
+
+    // Observer na wypadek zmian klas na uploadBox
+    if (box && window.MutationObserver) {
+        const obs = new MutationObserver(() => syncFocusState());
+        obs.observe(box, { attributes: true, attributeFilter: ['class'] });
     }
 });

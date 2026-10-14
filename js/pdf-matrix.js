@@ -18,6 +18,8 @@
         pages: [] // { id, originalIndex, rotation: 0, deleted: false, canvas: null }
     };
 
+    const thumbCache = new Map(); // originalIndex -> { width, height, dataUrl }
+    let renderQueuePromise = Promise.resolve();
     let draggedPageId = null;
 
     function formatBytes(bytes) {
@@ -136,6 +138,16 @@
 
         if (!file) return;
 
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        if (isMobile && file.size > 60 * 1024 * 1024) {
+            const proceed = confirm(
+                `Plik PDF ma rozmiar ${formatBytes(file.size)}. Wizualne renderowanie kafelków dla bardzo dużych dokumentów na telefonie może obciążyć pamięć RAM. Czy chcesz kontynuować?`
+            );
+            if (!proceed) return;
+        }
+
+        thumbCache.clear();
+
         if (typeof window.playSound === 'function') window.playSound('drop');
         if (window.showNotification) {
             window.showNotification('Wczytywanie dokumentu PDF do pamięci RAM...', 'info');
@@ -206,6 +218,7 @@
         const workspace = document.getElementById('organizeWorkspace');
         const grid = document.getElementById('organizePagesGrid');
 
+        thumbCache.clear();
         state = {
             file: null,
             arrayBuffer: null,
@@ -441,24 +454,54 @@
         pill.querySelector('span').textContent = `#${pageItem.deleted ? '—' : currentNum}`;
     }
 
-    // Renderowanie miniatury strony za pomocą pdf.js
+    // Renderowanie miniatury strony za pomocą pdf.js z buforowaniem i kolejkowaniem
     async function renderPageThumbnail(pageNum, canvas) {
         if (!state.pdfJsDoc || !canvas) return;
-        try {
-            const page = await state.pdfJsDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 0.35 });
+
+        const origIdx = pageNum - 1;
+        const cached = thumbCache.get(origIdx);
+        if (cached) {
+            canvas.width = cached.width;
+            canvas.height = cached.height;
             const ctx = canvas.getContext('2d');
-
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            await page.render({
-                canvasContext: ctx,
-                viewport: viewport
-            }).promise;
-        } catch (e) {
-            console.warn(`[PDF Matrix] Błąd miniatury str. ${pageNum}:`, e);
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = cached.dataUrl;
+            return;
         }
+
+        renderQueuePromise = renderQueuePromise.then(async () => {
+            if (!state.pdfJsDoc || !canvas.isConnected) return;
+            try {
+                const page = await state.pdfJsDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 0.35 });
+                const ctx = canvas.getContext('2d');
+
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+
+                try {
+                    thumbCache.set(origIdx, {
+                        width: canvas.width,
+                        height: canvas.height,
+                        dataUrl: canvas.toDataURL('image/jpeg', 0.8)
+                    });
+                } catch (_) {}
+
+                if (typeof page.cleanup === 'function') {
+                    page.cleanup();
+                }
+            } catch (e) {
+                console.warn(`[PDF Matrix] Błąd miniatury str. ${pageNum}:`, e);
+            }
+        });
     }
 
     function toggleDeletePage(pageItem, card) {
@@ -573,6 +616,13 @@
 
         if (!state.arrayBuffer) return;
 
+        let wakeLock = null;
+        try {
+            if ('wakeLock' in navigator && typeof navigator.wakeLock.request === 'function') {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (_) {}
+
         if (btnExport) {
             btnExport.classList.add('loading');
             btnExport.textContent = 'Generowanie PDF w RAM...';
@@ -641,6 +691,9 @@
                 window.showNotification('Błąd zapisu PDF: ' + (err.message || 'Nieznany błąd'), 'error');
             }
         } finally {
+            if (wakeLock) {
+                try { await wakeLock.release(); } catch (_) {}
+            }
             if (btnExport) {
                 btnExport.classList.remove('loading');
                 btnExport.innerHTML = `

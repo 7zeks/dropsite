@@ -49,8 +49,8 @@
             const hash = window.location.hash.toLowerCase();
 
             if (toolParam && toolParam.toLowerCase() === 'grabber') {
-                if (window.showToast) window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
-            } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'convert', 'compress'].includes(toolParam.toLowerCase())) {
+                if (window.showToast) window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+            } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'watermark', 'xray', 'convert', 'compress', 'stego', 'diff', 'ocr', 'audio-mask', 'audio'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -68,10 +68,15 @@
     // === GLOBALNA FUNKCJA PRZEŁĄCZANIA NARZĘDZI (DEEP-LINKING & MARKETING) ===
     window.switchToolTab = function(toolName, doScroll = true) {
         if (!toolName) return;
-        const normalized = toolName.toLowerCase().trim();
+        let normalized = toolName.toLowerCase().trim();
+        if (normalized === 'audio' || normalized === 'anonimizator-audio' || normalized === 'voice') normalized = 'audio-mask';
+        if (normalized === 'kamuflaz' || normalized === 'steganografia') normalized = 'stego';
+        if (normalized === 'porownaj' || normalized === 'porownywarka') normalized = 'diff';
+        if (normalized === 'rozpoznaj-tekst' || normalized === 'skan') normalized = 'ocr';
+        if (normalized === 'checksum' || normalized === 'integralnosc' || normalized === 'sha256' || normalized === 'sumy-kontrolne') normalized = 'hash';
 
         if (normalized === 'grabber') {
-            if (window.showToast) window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+            if (window.showToast) window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
             return;
         }
 
@@ -105,8 +110,15 @@
         'organize': 'organize',
         'edit': 'security',
         'watermark': 'security',
+        'xray': 'security',
+        'stego': 'security',
+        'diff': 'security',
+        'hash': 'security',
         'compress': 'convert',
-        'convert': 'convert'
+        'convert': 'convert',
+        'ocr': 'convert',
+        'audio-mask': 'convert',
+        'audio': 'convert'
     };
 
     const TOOL_DECK_INFO = {
@@ -115,6 +127,13 @@
         'organize': { title: 'Układ stron & Obrót (Matrix)', badge: 'Wizualna Siatka 360° • RAM' },
         'edit': { title: 'Podpis eIDAS & Edytor Dokumentów', badge: 'Podpis Cyfrowy & RODO • RAM' },
         'watermark': { title: 'Znak Wodny & Oznaczenia POUFNE', badge: 'Wektorowe Oznaczenia • RAM' },
+        'xray': { title: 'Cyber Rentgen & Anonimizator', badge: 'Anti-Spoofing & Metadata Sanitizer • RAM' },
+        'stego': { title: 'Steganografia & Cyfrowy Kamuflaż', badge: 'LSB Stego • AES-256-GCM • RAM' },
+        'diff': { title: 'Document Diff Radar & Porównywarka', badge: 'Wizualny Suwak • Heatmapa • LCS Diff • RAM' },
+        'hash': { title: 'Hash Radar & Weryfikator Integralności', badge: 'SHA-256 • SHA-512 • MD5 • 100% RAM' },
+        'ocr': { title: 'Smart OCR & Text Extractor', badge: 'Lokalny Silnik • Maskowanie RODO • RAM' },
+        'audio-mask': { title: 'Audio Sanitizer & Voice Masker', badge: 'Pitch & Formant Shift • Metadata Clean • RAM' },
+        'audio': { title: 'Audio Sanitizer & Voice Masker', badge: 'Pitch & Formant Shift • Metadata Clean • RAM' },
         'compress': { title: 'Kompresor PDF w RAM', badge: 'Redukcja wagi bezstratna • RAM' },
         'convert': { title: 'Konwerter Obrazów & PDF', badge: 'PNG / JPG / WebP / PDF • RAM' }
     };
@@ -319,6 +338,14 @@
         if (pdfs.length === 0) {
             if (window.showNotification) window.showNotification('Wybierz pliki w formacie PDF!', 'error');
             return;
+        }
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        const totalMergeSize = mergeFiles.reduce((acc, f) => acc + f.size, 0) + pdfs.reduce((acc, f) => acc + f.size, 0);
+        if (isMobile && totalMergeSize > 90 * 1024 * 1024) {
+            if (window.showNotification) {
+                window.showNotification('Uwaga: Łączna waga plików PDF (>90 MB) może przeciążyć pamięć RAM telefonu podczas łączenia.', 'warning');
+            }
         }
 
         pdfs.forEach(f => mergeFiles.push(f));
@@ -570,6 +597,13 @@
         if (!file || (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf'))) {
             if (window.showNotification) window.showNotification('Wybierz poprawny plik w formacie PDF.', 'error');
             return;
+        }
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile && file.size > 70 * 1024 * 1024) {
+            if (window.showNotification) {
+                window.showNotification('Uwaga: Plik PDF powyżej 70 MB może przekroczyć limit pamięci RAM telefonu podczas dzielenia stron.', 'warning');
+            }
         }
 
         splitFile = file;
@@ -1575,6 +1609,13 @@
         if (!file.name.toLowerCase().endsWith('.pdf')) {
             if (window.showNotification) window.showNotification('Wybierz plik w formacie PDF!', 'error');
             return;
+        }
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile && file.size > 70 * 1024 * 1024) {
+            if (window.showNotification) {
+                window.showNotification('Uwaga: Plik PDF powyżej 70 MB może przekroczyć pamięć RAM telefonu podczas renderowania w PDF Studio.', 'warning');
+            }
         }
 
         if (typeof pdfjsLib === 'undefined' || typeof PDFLib === 'undefined') {
@@ -4795,6 +4836,14 @@
             return;
         }
 
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        const totalSize = convertFiles.reduce((acc, f) => acc + f.size, 0) + validImages.reduce((acc, f) => acc + f.size, 0);
+        if (isMobile && totalSize > 80 * 1024 * 1024) {
+            if (window.showNotification) {
+                window.showNotification('Uwaga: Łączna waga obrazów (>80 MB) może przeciążyć pamięć RAM telefonu podczas konwersji.', 'warning');
+            }
+        }
+
         validImages.forEach(f => convertFiles.push(f));
         convertFile = convertFiles[0] || null;
         renderConvertMultiList();
@@ -5044,7 +5093,7 @@
                 if (typeof pdfjsLib === 'undefined') throw new Error('Biblioteka PDF.js nie została załadowana.');
 
                 const dpiInput = document.querySelector('input[name="convertDpi"]:checked');
-                const scale = dpiInput ? (parseFloat(dpiInput.value) || 2.0) : 2.0;
+                let scale = dpiInput ? (parseFloat(dpiInput.value) || 2.0) : 2.0;
 
                 const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
                 const outMime = validMimes.includes(targetFormat) ? targetFormat : 'image/png';
@@ -5056,6 +5105,18 @@
                 const pdfjsDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
                 const totalPages = pdfjsDoc.numPages;
                 const baseName = convertFile.name.replace(/\.pdf$/i, '');
+
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                if (isMobile && scale > 1.5 && totalPages > 12) {
+                    scale = 1.5; // Zapobiega Jetsam OOM na telefonie przy wielu stronach
+                }
+
+                let wakeLock = null;
+                try {
+                    if ('wakeLock' in navigator && typeof navigator.wakeLock.request === 'function') {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                } catch (_) {}
 
                 const renderedPages = [];
                 const zipFiles = {};
@@ -5078,6 +5139,12 @@
                         canvas.toBlob((blob) => resolve(blob), outMime, qualityVal);
                     });
 
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    if (typeof page.cleanup === 'function') {
+                        page.cleanup();
+                    }
+
                     const pageThumbUrl = URL.createObjectURL(pageBlob);
                     convertRenderedUrls.push(pageThumbUrl);
 
@@ -5091,10 +5158,18 @@
                         fileName: pageFileName,
                         blob: pageBlob,
                         thumbUrl: pageThumbUrl,
-                        width: canvas.width,
-                        height: canvas.height,
+                        width: Math.floor(viewport.width),
+                        height: Math.floor(viewport.height),
                         size: pageBlob.size
                     });
+
+                    if (p % 3 === 0) {
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+
+                if (wakeLock) {
+                    try { await wakeLock.release(); } catch (_) {}
                 }
 
                 const dpiLabels = { '1.5': '150 DPI', '2': '200 DPI', '2.0': '200 DPI', '3': '300 DPI', '3.0': '300 DPI' };
@@ -5266,6 +5341,14 @@
             if (window.showNotification) window.showNotification('Wybierz plik w formacie PDF do kompresji!', 'error');
             return;
         }
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile && file.size > 80 * 1024 * 1024) {
+            if (window.showNotification) {
+                window.showNotification('Uwaga: Plik PDF powyżej 80 MB może przekroczyć zasoby pamięci RAM telefonu podczas kompresji.', 'warning');
+            }
+        }
+
         compressFile = file;
         const infoEl = document.getElementById('compressFileInfo');
         const nameEl = document.getElementById('compressFileName');
@@ -5305,6 +5388,13 @@
 
     async function executePdfCompress() {
         if (!compressFile) return;
+
+        let wakeLock = null;
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (_) {}
+        }
 
         const profile = document.querySelector('input[name="compressProfile"]:checked')?.value || 'medium';
         const btnAction = document.getElementById('btnExecuteCompress');
@@ -5418,6 +5508,10 @@
                 : ('Błąd kompresji PDF: ' + err.message);
             if (window.showNotification) window.showNotification(userMsg, 'error');
         } finally {
+            if (wakeLock) {
+                try { await wakeLock.release(); } catch (_) {}
+                wakeLock = null;
+            }
             if (textSpan) textSpan.textContent = origText;
             btnAction.disabled = false;
             if (progressWrap) {
@@ -5509,23 +5603,33 @@
     function convertImageViaCanvas(file, mimeType, quality) {
         return new Promise((resolve, reject) => {
             const img = new Image();
+            const blobUrl = URL.createObjectURL(file);
             img.onload = () => {
+                URL.revokeObjectURL(blobUrl);
                 const canvas = document.createElement('canvas');
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-                resolve(canvas.toDataURL(mimeType, quality));
+                const res = canvas.toDataURL(mimeType, quality);
+                canvas.width = 0;
+                canvas.height = 0;
+                resolve(res);
             };
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
+            img.onerror = (e) => {
+                URL.revokeObjectURL(blobUrl);
+                reject(e);
+            };
+            img.src = blobUrl;
         });
     }
 
     function convertImageToBlobViaCanvas(file, mimeType, quality) {
         return new Promise((resolve, reject) => {
             const img = new Image();
+            const blobUrl = URL.createObjectURL(file);
             img.onload = () => {
+                URL.revokeObjectURL(blobUrl);
                 const canvas = document.createElement('canvas');
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
@@ -5537,12 +5641,17 @@
                 }
                 ctx.drawImage(img, 0, 0);
                 canvas.toBlob((blob) => {
+                    canvas.width = 0;
+                    canvas.height = 0;
                     if (blob) resolve(blob);
                     else reject(new Error('Błąd generowania obrazu Canvas'));
                 }, mimeType, quality);
             };
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
+            img.onerror = (e) => {
+                URL.revokeObjectURL(blobUrl);
+                reject(e);
+            };
+            img.src = blobUrl;
         });
     }
 

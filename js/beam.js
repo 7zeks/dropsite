@@ -21,12 +21,32 @@ class DropsiteBeamEngine {
         this.isTransferring = false;
         this.chunkSize = 64 * 1024; // 64 KB na pakiet WebRTC
         this.bufferedThreshold = 4 * 1024 * 1024; // 4 MB flow control
+        this.wakeLock = null;
+    }
+
+    async acquireWakeLock() {
+        if ('wakeLock' in navigator && !this.wakeLock) {
+            try {
+                this.wakeLock = await navigator.wakeLock.request('screen');
+                this.wakeLock.addEventListener('release', () => {
+                    this.wakeLock = null;
+                });
+            } catch (_) {}
+        }
+    }
+
+    releaseWakeLock() {
+        if (this.wakeLock) {
+            try { this.wakeLock.release(); } catch (_) {}
+            this.wakeLock = null;
+        }
     }
 
     /**
      * Zamyka i czyści wszystkie aktywne połączenia i interwały
      */
     reset() {
+        this.releaseWakeLock();
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
             this.pollInterval = null;
@@ -53,6 +73,13 @@ class DropsiteBeamEngine {
     async startSender(file, callbacks = {}) {
         this.reset();
         this.activeRole = 'sender';
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile && file.size > 500 * 1024 * 1024) {
+            if (window.showToast) {
+                window.showToast('Wskazówka: Przy przesyłaniu dużego pliku P2P z telefonu nie wyłączaj ekranu ani karty.', 'info');
+            }
+        }
 
         const onStatus = callbacks.onStatus || (() => {});
         const onProgress = callbacks.onProgress || (() => {});
@@ -100,6 +127,7 @@ class DropsiteBeamEngine {
             this.pc.oniceconnectionstatechange = () => {
                 const state = this.pc.iceConnectionState;
                 if (state === 'disconnected' || state === 'failed') {
+                    this.releaseWakeLock();
                     onError('Połączenie P2P zostało przerwane.');
                 }
             };
@@ -116,6 +144,7 @@ class DropsiteBeamEngine {
             };
 
             this.dataChannel.onerror = (err) => {
+                this.releaseWakeLock();
                 onError('Błąd kanału danych: ' + (err.message || 'DataChannel error'));
             };
 
@@ -176,6 +205,7 @@ class DropsiteBeamEngine {
      */
     async sendFileStream(file, onProgress, onComplete, onError) {
         this.isTransferring = true;
+        await this.acquireWakeLock();
         const totalSize = file.size;
         let offset = 0;
         let lastSpeedCheck = Date.now();
@@ -200,6 +230,7 @@ class DropsiteBeamEngine {
                 // Koniec pliku — wyślij znacznik ukończenia
                 this.dataChannel.send(JSON.stringify({ type: 'BEAM_DONE' }));
                 this.isTransferring = false;
+                this.releaseWakeLock();
                 onComplete({ fileName: file.name, fileSize: totalSize });
                 return;
             }
@@ -246,6 +277,7 @@ class DropsiteBeamEngine {
         };
 
         reader.onerror = (err) => {
+            this.releaseWakeLock();
             onError('Błąd odczytu pliku z dysku: ' + err);
         };
 
@@ -298,6 +330,14 @@ class DropsiteBeamEngine {
                 }
             };
 
+            this.pc.oniceconnectionstatechange = () => {
+                const state = this.pc.iceConnectionState;
+                if (state === 'disconnected' || state === 'failed') {
+                    this.releaseWakeLock();
+                    onError('Połączenie P2P zostało przerwane.');
+                }
+            };
+
             let fileMeta = null;
             let receivedChunks = [];
             let receivedBytes = 0;
@@ -310,7 +350,8 @@ class DropsiteBeamEngine {
                 this.dataChannel = event.channel;
                 this.dataChannel.binaryType = 'arraybuffer';
 
-                this.dataChannel.onopen = () => {
+                this.dataChannel.onopen = async () => {
+                    await this.acquireWakeLock();
                     onStatus('transferring', 'Rozpoczęto bezpośrednią transmisję strumieniową...');
                     if (typeof playSound === 'function') playSound('success');
                 };
@@ -323,8 +364,17 @@ class DropsiteBeamEngine {
                                 fileMeta = msg;
                                 receivedChunks = [];
                                 receivedBytes = 0;
+
+                                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+                                if (isMobile && fileMeta.size > 500 * 1024 * 1024) {
+                                    if (window.showToast) {
+                                        window.showToast('Uwaga: Transfer P2P pliku >500 MB buforuje dane w pamięci RAM telefonu. Nie zamykaj karty.', 'warning');
+                                    }
+                                }
+
                                 if (callbacks.onFileHeader) callbacks.onFileHeader(fileMeta);
                             } else if (msg.type === 'BEAM_DONE') {
+                                this.releaseWakeLock();
                                 // Zakończenie transmisji — złożenie pliku z pamięci RAM
                                 const blob = new Blob(receivedChunks, { type: fileMeta?.mime || 'application/octet-stream' });
                                 const downloadUrl = URL.createObjectURL(blob);
@@ -367,6 +417,7 @@ class DropsiteBeamEngine {
                 };
 
                 this.dataChannel.onerror = (err) => {
+                    this.releaseWakeLock();
                     onError('Błąd kanału danych odbiorcy: ' + (err.message || 'DataChannel error'));
                 };
             };
@@ -399,6 +450,7 @@ class DropsiteBeamEngine {
             });
 
         } catch (err) {
+            this.releaseWakeLock();
             onError(err.message || 'Nie udało się połączyć z nadawcą.');
         }
     }

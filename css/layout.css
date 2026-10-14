@@ -64,6 +64,10 @@
     z-index: 10;
 }
 
+:root {
+    interpolate-size: allow-keywords;
+}
+
 /* Hero Section: Centered vertical layout shifted slightly higher for balanced composition */
 .studio-split-hero {
     display: flex;
@@ -75,6 +79,7 @@
     width: 100%;
     box-sizing: border-box;
     position: relative;
+    transition: gap 0.55s cubic-bezier(0.16, 1, 0.3, 1), padding 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Ambient Luminous Aura: Expands on 2K / 27" screens, scales dynamically on laptops */
@@ -105,6 +110,39 @@
     animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     z-index: 1;
+    max-height: min(340px, 45vh);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transform-origin: top center;
+    transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.35s ease,
+                transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                margin 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                gap 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: visible;
+}
+
+/* --- FOCUS MODE (Płynne zwijanie Hero, gdy użytkownik dostosowuje transfer lub dodał plik) --- */
+.studio-split-hero.focus-mode,
+.studio-split-hero:has(.upload-container.has-files),
+.studio-split-hero:has(.upload-container.options-forced),
+.studio-split-hero:has(.upload-container.options-expanded) {
+    gap: 0 !important;
+    padding-top: clamp(6px, 1vh, 16px);
+}
+
+.studio-split-hero.focus-mode .studio-hero-left,
+.studio-split-hero:has(.upload-container.has-files) .studio-hero-left,
+.studio-split-hero:has(.upload-container.options-forced) .studio-hero-left,
+.studio-split-hero:has(.upload-container.options-expanded) .studio-hero-left {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    transform: translateY(-20px) scale(0.97) !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
 }
 
 .studio-hero-copy {
@@ -578,7 +616,6 @@
     50% {
         transform: scale(1.15);
         opacity: 0.85;
-        filter: blur(10px);
     }
 }
 
@@ -819,22 +856,23 @@
     position: relative;
 }
 
-/* Liquid glow indicator — płynna smuga światła pod aktywnym linkiem */
+/* Liquid glow indicator — płynna, aksamitna smuga światła Brand Mint pod aktywnym / najechaniem linkiem */
 .nav-links::before {
     content: '';
     position: absolute;
     bottom: -2px;
     height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #5EEAD4, #38BDF8, #5EEAD4, transparent);
-    box-shadow: 0 0 12px #5EEAD4, 0 0 24px rgba(94, 234, 212, 0.4);
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent 0%, rgba(196, 231, 212, 0.85) 25%, #C4E7D4 50%, rgba(196, 231, 212, 0.85) 75%, transparent 100%);
+    box-shadow: 0 0 10px rgba(196, 231, 212, 0.55), 0 0 20px rgba(196, 231, 212, 0.22);
     width: var(--glow-w, 60px);
     left: var(--glow-x, 0px);
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.25s ease;
+    transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.22s ease;
     opacity: var(--glow-opacity, 1);
     pointer-events: none;
+    will-change: left, width, opacity;
 }
 
 .nav-links a {
@@ -842,16 +880,20 @@
     text-decoration: none;
     font-size: 15.5px;
     font-weight: 600;
-    transition: color 0.3s ease;
+    transition: color 0.22s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.22s ease;
     position: relative;
     padding: 6px 0;
     display: inline-flex;
     align-items: center;
 }
 
-.nav-links a:hover,
+.nav-links a:hover {
+    color: #FFFFFF;
+    text-shadow: 0 0 12px rgba(196, 231, 212, 0.3);
+}
+
 .nav-links a.active {
-    color: var(--text-main);
+    color: #FFFFFF;
 }
 
 /* Usuwamy stary statyczny ::after indicator — zastąpiony przez liquid glow */
@@ -1298,6 +1340,499 @@
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 30%, rgba(255, 255, 255, 0.12) 70%, transparent 100%);
     margin: 5px 6px;
+}
+
+/* ==========================================================================
+   MACOS CONTROL CENTER - KOKPIT NARZĘDZI (POMYSŁ 2)
+   Obsidian Glass + Akcent Brand Mint (#C4E7D4)
+   ========================================================================== */
+.nav-dropdown-menu.cc-dropdown-cockpit {
+    min-width: 410px;
+    width: 410px;
+    padding: 12px;
+    gap: 0;
+    border-radius: 22px;
+    background: linear-gradient(165deg, rgba(13, 20, 36, 0.94) 0%, rgba(8, 12, 22, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 32px 80px -12px rgba(0, 0, 0, 0.85),
+                0 0 35px rgba(196, 231, 212, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(36px) saturate(190%);
+    -webkit-backdrop-filter: blur(36px) saturate(190%);
+}
+
+@media (max-width: 480px) {
+    .nav-dropdown-menu.cc-dropdown-cockpit {
+        min-width: calc(100vw - 24px);
+        width: calc(100vw - 24px);
+        max-width: 410px;
+        left: 50%;
+        transform: translateX(-50%) translateY(8px) scale(0.96);
+    }
+    .nav-dropdown-item:hover .nav-dropdown-menu.cc-dropdown-cockpit,
+    .nav-dropdown-item:focus-within .nav-dropdown-menu.cc-dropdown-cockpit,
+    .nav-dropdown-item.is-open .nav-dropdown-menu.cc-dropdown-cockpit {
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+/* 1. SEKCJE I NAGŁÓWKI */
+.cc-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 6px 8px 6px;
+    user-select: none;
+}
+
+.cc-section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #64748B;
+}
+
+.cc-section-tag {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #C4E7D4;
+    background: rgba(196, 231, 212, 0.08);
+    border: 1px solid rgba(196, 231, 212, 0.2);
+    padding: 1.5px 7px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+}
+
+.cc-header-secondary {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* 2. GŁÓWNE KARTY NARZĘDZI (FEATURED APPS) */
+.cc-apps-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.cc-app-card {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 11px !important;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #F8FAFC !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    box-sizing: border-box;
+    position: relative;
+    transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cc-app-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(196, 231, 212, 0.26);
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+                0 0 16px rgba(196, 231, 212, 0.08);
+}
+
+.cc-app-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.22s ease,
+                filter 0.22s ease;
+}
+
+.cc-app-card:hover .cc-app-icon {
+    transform: scale(1.08);
+}
+
+.cc-app-icon.icon-mint {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.16) 0%, rgba(168, 218, 191, 0.06) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.28);
+    color: #C4E7D4;
+    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.1);
+}
+.cc-app-card:hover .cc-app-icon.icon-mint {
+    border-color: rgba(196, 231, 212, 0.45);
+    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
+}
+
+.cc-app-icon.icon-sky {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.16) 0%, rgba(125, 211, 252, 0.06) 100%);
+    border: 1px solid rgba(186, 230, 253, 0.28);
+    color: #BAE6FD;
+    box-shadow: 0 2px 10px rgba(186, 230, 253, 0.1);
+}
+.cc-app-card:hover .cc-app-icon.icon-sky {
+    border-color: rgba(186, 230, 253, 0.45);
+    box-shadow: 0 0 16px rgba(186, 230, 253, 0.35);
+}
+
+.cc-app-icon.icon-amber {
+    background: linear-gradient(135deg, rgba(254, 240, 199, 0.16) 0%, rgba(253, 230, 138, 0.06) 100%);
+    border: 1px solid rgba(254, 240, 199, 0.28);
+    color: #FDE68A;
+    box-shadow: 0 2px 10px rgba(254, 240, 199, 0.1);
+}
+.cc-app-card:hover .cc-app-icon.icon-amber {
+    border-color: rgba(254, 240, 199, 0.45);
+    box-shadow: 0 0 16px rgba(254, 240, 199, 0.35);
+}
+
+.cc-app-icon.icon-purple {
+    background: linear-gradient(135deg, rgba(224, 219, 254, 0.16) 0%, rgba(196, 181, 253, 0.06) 100%);
+    border: 1px solid rgba(224, 219, 254, 0.28);
+    color: #DDD6FE;
+    box-shadow: 0 2px 10px rgba(224, 219, 254, 0.1);
+}
+.cc-app-card:hover .cc-app-icon.icon-purple {
+    border-color: rgba(224, 219, 254, 0.45);
+    box-shadow: 0 0 16px rgba(224, 219, 254, 0.35);
+}
+
+.cc-app-icon.icon-emerald {
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.16) 0%, rgba(110, 231, 183, 0.06) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.28);
+    color: #A7F3D0;
+    box-shadow: 0 2px 10px rgba(167, 243, 208, 0.1);
+}
+.cc-app-card:hover .cc-app-icon.icon-emerald {
+    border-color: rgba(167, 243, 208, 0.45);
+    box-shadow: 0 0 16px rgba(167, 243, 208, 0.35);
+}
+
+.cc-app-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5px;
+    text-align: left;
+}
+
+.cc-app-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.cc-app-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #F8FAFC;
+    letter-spacing: -0.15px;
+}
+
+.cc-app-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 6.5px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.badge-mint {
+    background: rgba(196, 231, 212, 0.12);
+    color: #C4E7D4;
+    border: 1px solid rgba(196, 231, 212, 0.26);
+    box-shadow: 0 0 10px rgba(196, 231, 212, 0.12);
+}
+
+.badge-sky {
+    background: rgba(186, 230, 253, 0.12);
+    color: #BAE6FD;
+    border: 1px solid rgba(186, 230, 253, 0.26);
+    box-shadow: 0 0 10px rgba(186, 230, 253, 0.12);
+}
+
+.badge-amber {
+    background: rgba(254, 240, 199, 0.12);
+    color: #FDE68A;
+    border: 1px solid rgba(254, 240, 199, 0.26);
+    box-shadow: 0 0 10px rgba(254, 240, 199, 0.12);
+}
+
+.badge-purple {
+    background: rgba(224, 219, 254, 0.12);
+    color: #DDD6FE;
+    border: 1px solid rgba(224, 219, 254, 0.26);
+    box-shadow: 0 0 10px rgba(224, 219, 254, 0.12);
+}
+
+.badge-emerald {
+    background: rgba(167, 243, 208, 0.12);
+    color: #A7F3D0;
+    border: 1px solid rgba(167, 243, 208, 0.26);
+    box-shadow: 0 0 10px rgba(167, 243, 208, 0.12);
+}
+
+.cc-app-desc {
+    font-size: 11.5px;
+    color: #94A3B8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.18s ease;
+}
+.cc-app-card:hover .cc-app-desc {
+    color: #CBD5E1;
+}
+
+.cc-app-arrow {
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, transform 0.2s;
+    flex-shrink: 0;
+}
+.cc-app-card:hover .cc-app-arrow {
+    color: #C4E7D4;
+    transform: translateX(2px);
+}
+
+/* 3. CENTRUM STEROWANIA (QUICK TILES) */
+.cc-toggles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.cc-quick-tile {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px !important;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #F1F5F9 !important;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cc-quick-tile:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+/* KAFELEK DŹWIĘKÓW - AKTYWNY (BRAND MINT #C4E7D4) */
+#navDropdownSoundBtn.is-active {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(79, 164, 137, 0.06) 100%);
+    border-color: rgba(196, 231, 212, 0.36);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3),
+                0 0 18px rgba(196, 231, 212, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+#navDropdownSoundBtn.is-active .cc-tile-icon-box {
+    background: #C4E7D4;
+    color: #0B141E;
+    border-color: #C4E7D4;
+    box-shadow: 0 0 12px rgba(196, 231, 212, 0.45);
+}
+
+#navDropdownSoundBtn.is-active .cc-tile-led {
+    background: #C4E7D4;
+    box-shadow: 0 0 8px #C4E7D4;
+}
+
+#navDropdownSoundBtn.is-active .cc-tile-val {
+    color: #C4E7D4;
+}
+
+/* KAFELEK TRYBU ECO - AKTYWNY (ICE SKY #BAE6FD) */
+#navDropdownPerfBtn.is-active {
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.12) 0%, rgba(56, 189, 248, 0.06) 100%);
+    border-color: rgba(186, 230, 253, 0.36);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3),
+                0 0 18px rgba(186, 230, 253, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+#navDropdownPerfBtn.is-active .cc-tile-icon-box {
+    background: #BAE6FD;
+    color: #0B141E;
+    border-color: #BAE6FD;
+    box-shadow: 0 0 12px rgba(186, 230, 253, 0.45);
+}
+
+#navDropdownPerfBtn.is-active .cc-tile-led {
+    background: #BAE6FD;
+    box-shadow: 0 0 8px #BAE6FD;
+}
+
+#navDropdownPerfBtn.is-active .cc-tile-val {
+    color: #BAE6FD;
+}
+
+.cc-tile-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cc-tile-icon-box svg {
+    stroke: currentColor;
+}
+
+.cc-tile-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.cc-tile-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #F1F5F9;
+    line-height: 1.2;
+}
+
+.cc-tile-status-row {
+    display: flex;
+    align-items: center;
+    gap: 5.5px;
+}
+
+.cc-tile-led {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #475569;
+    display: inline-block;
+    transition: all 0.25s ease;
+}
+
+.cc-tile-val {
+    font-size: 10.5px;
+    font-weight: 550;
+    color: #94A3B8;
+    transition: color 0.2s ease;
+    line-height: 1;
+}
+
+/* 4. DOLNY DOCK: HISTORIA I KONTAKT */
+.cc-dock-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.cc-dock-pill {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px !important;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #CBD5E1 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    box-sizing: border-box;
+    width: 100%;
+    transition: background 0.18s ease,
+                border-color 0.18s ease,
+                transform 0.18s ease,
+                color 0.18s ease !important;
+}
+
+.cc-dock-pill:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+}
+
+.cc-dock-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+.cc-dock-pill:hover .cc-dock-icon {
+    transform: scale(1.08);
+}
+
+.cc-dock-icon.icon-purple {
+    background: linear-gradient(135deg, rgba(224, 219, 254, 0.15) 0%, rgba(196, 181, 253, 0.06) 100%);
+    border: 1px solid rgba(224, 219, 254, 0.26);
+    color: #DDD6FE;
+}
+
+.cc-dock-icon.icon-slate {
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.14) 0%, rgba(203, 213, 225, 0.06) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.24);
+    color: #E2E8F0;
+}
+
+.cc-dock-label {
+    font-size: 11.5px;
+    font-weight: 550;
+    color: #CBD5E1;
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cc-dock-pill:hover .cc-dock-label {
+    color: #FFFFFF;
+}
+
+.cc-dock-chevron {
+    color: #475569;
+    flex-shrink: 0;
+    transition: color 0.2s, transform 0.2s;
+}
+.cc-dock-pill:hover .cc-dock-chevron {
+    color: #C4E7D4;
+    transform: translateX(2px);
 }
 
 /* ==========================================================================
@@ -3194,23 +3729,25 @@
     right: 0;
     height: 2.5px;
     background: linear-gradient(90deg, transparent 0%, #00F0FF 20%, #34D399 50%, #38BDF8 80%, transparent 100%);
+    filter: drop-shadow(0 0 8px #34D399);
+    will-change: transform, opacity;
     animation: advHeaderBeam 3.5s ease-in-out infinite alternate;
 }
 
 @keyframes advHeaderBeam {
     0% {
-        filter: drop-shadow(0 0 6px #00F0FF);
-        opacity: 0.7;
+        opacity: 0.6;
+        transform: scaleX(0.96);
     }
 
     50% {
-        filter: drop-shadow(0 0 12px #34D399);
         opacity: 1;
+        transform: scaleX(1);
     }
 
     100% {
-        filter: drop-shadow(0 0 6px #00F0FF);
-        opacity: 0.7;
+        opacity: 0.6;
+        transform: scaleX(0.96);
     }
 }
 
@@ -4101,3 +4638,23 @@
     visibility: visible !important;
     pointer-events: auto !important;
 }
+
+/* ==========================================================================
+   MOBILE HARDWARE COMPOSITOR SAFEGUARDS
+   Clamp excessive backdrop-filter blurs on small screens to eliminate GPU thermal throttling
+   ========================================================================== */
+@media (max-width: 768px) {
+    .site-footer,
+    .upload-container,
+    .mod-modal,
+    .dl-lightbox-backdrop,
+    .signature-modal-backdrop,
+    .radial-hud-backdrop,
+    .cmd-palette-backdrop,
+    .byos-modal-overlay,
+    .concierge-modal-wrap {
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+    }
+}
+

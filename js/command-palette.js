@@ -72,6 +72,60 @@
             keywords: ['rodo', 'pesel', 'nip', 'cenzura', 'anonimizacja', 'blackout'],
             action: () => { if (window.switchToolTab) window.switchToolTab('rodo'); }
         },
+        {
+            id: 'cyber-xray',
+            category: 'Bezpieczeństwo & Audyt',
+            title: 'Cyber Rentgen & Anonimizator (X-Ray)',
+            desc: 'Prześwietl plik w RAM: wykryj fałszowane formaty, GPS, ukryte metadane i oczyść ślady',
+            tag: 'Bezpieczeństwo',
+            keywords: ['rentgen', 'xray', 'x-ray', 'metadane', 'gps', 'exif', 'bezpieczenstwo', 'anonimizacja', 'sanitize', 'anty-wirus', 'spoofing'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('xray'); }
+        },
+        {
+            id: 'stego-camou',
+            category: 'Bezpieczeństwo & Audyt',
+            title: 'Cyfrowy Kamuflaż Plików (Stego LSB)',
+            desc: 'Wtapiaj tajne dokumenty w piksele zdjęć z szyfrowaniem AES-256-GCM',
+            tag: 'Kryptografia',
+            keywords: ['stego', 'steganografia', 'kamuflaz', 'kamuflowanie', 'ukryj plik', 'lsb', 'piksele', 'obraz', 'tajny plik'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('stego'); }
+        },
+        {
+            id: 'doc-diff',
+            category: 'Narzędzia Dokumentów',
+            title: 'Diff Radar & Porównywarka Dokumentów',
+            desc: 'Wizualne porównywanie PDF, grafik i tekstów z suwakiem kurtynowym i heatmapą zmian',
+            tag: 'Studio',
+            keywords: ['diff', 'porownaj', 'porownywarka', 'roznice', 'lcs', 'wersje', 'curtain', 'heatmapa'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('diff'); }
+        },
+        {
+            id: 'smart-ocr',
+            category: 'Konwersja & Tekst',
+            title: 'Smart OCR & Text Extractor (RODO)',
+            desc: 'Lokalne rozpoznawanie tekstu ze skanów i PDF w RAM z maskowaniem PESEL/NIP',
+            tag: 'OCR',
+            keywords: ['ocr', 'skan', 'rozpoznaj tekst', 'tess', 'tekst', 'ekstrakcja', 'pesel', 'nip', 'iban'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('ocr'); }
+        },
+        {
+            id: 'audio-masker',
+            category: 'Media & Dźwięk',
+            title: 'Anonimizator Audio & Voice Masker',
+            desc: 'Zmiana wysokości głosu, formanty świadka i czyszczenie metadanych nagrań w RAM',
+            tag: 'Audio',
+            keywords: ['audio', 'glos', 'voice', 'maskowanie', 'pitch', 'formant', 'nagranie', 'wav', 'dyktafon'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('audio-mask'); }
+        },
+        {
+            id: 'hash-radar',
+            category: 'Bezpieczeństwo & Audyt',
+            title: 'Hash Radar & Sumy Kontrolne (SHA-256 / SHA-512)',
+            desc: 'Weryfikacja integralności i autentyczności plików w RAM z porównywarką skrótów',
+            tag: 'Integralność',
+            keywords: ['hash', 'checksum', 'suma kontrolna', 'sha256', 'sha512', 'sha1', 'md5', 'crc32', 'integralność', 'autentyczność', 'weryfikacja pliku'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('hash'); }
+        },
 
         // 2. PRYWATNOŚĆ & TRANSFER B2B
         {
@@ -150,7 +204,7 @@
                         window.DropsiteMediaGrabber.init();
                     }
                 } else if (window.showToast) {
-                    window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                    window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                 }
             }
         },

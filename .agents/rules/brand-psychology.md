@@ -9,7 +9,10 @@ alwaysApply: true
 Podczas tworzenia, edycji lub refaktoryzacji kodu projektu Dropsite, ZAWSZE przestrzegaj poniższych wytycznych:
 
 ## 1. Wygląd i Vibe Platformy
-- **Pozytywny, luksusowy i lekki vibe**: Strona nie może być ponura, smutna ani przeładowana. Używamy głębokiego kosmicznego tła z czystymi gwiazdami i organicznymi, miękkimi neonowymi poświatami (`#34D399` mięta/szmaragd, `#38BDF8` cyjan, `#C4B5FD` fiolet w gradientach).
+- **Pozytywny, luksusowy i lekki vibe**: Strona nie może być ponura, smutna ani przeładowana. Używamy głębokiego kosmicznego tła z czystymi gwiazdami i organicznymi, miękkimi poświatami.
+- **KOLOR MIĘTOWY (BRAND MINT) TO WYŁĄCZNIE `#C4E7D4` (oraz `#A8DABF`, `#E2F5EC`, `rgba(196, 231, 212, ...)`):**
+  - **KATEGORYCZNY ZAKAZ** stosowania odcieni `#34D399`, `#10B981`, `#059669` pod nazwą „miętowy”. Dla użytkownika to jest kolor ZIELONY, a nie miętowy!
+  - Wszędzie, gdzie mowa o akcencie miętowym lub hoverze miętowym, używamy **`#C4E7D4`** (lub `rgba(196, 231, 212)` / `var(--accent-mint)`).
 - **ZAKAZ sztucznych belek na pełną szerokość**: Nigdy nie dodawaj ciemnych, ciężkich pasków nawigacji ani obramowań przecinających ekran w poprzek. Tło ma płynnie oddychać.
 - **Nawigacja narożna**: Logo w lewym górnym rogu (`top: 32-35px; left: 40px`), menu po prawej stronie. Nie wolno zwężać nawigacji do małego centrowanego pudełka na środku ekranu.
 - **Smart Auto-Hide**: Elementy stałe nawigacji przy scrollu w dół płynnie wysuwają się poza ekran (`translateY(-130%)`), zapobiegając kolizjom z treścią. Przy scrollu w górę natychmiast wracają.

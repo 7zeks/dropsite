@@ -161,6 +161,60 @@
             title: 'Konwerter Obrazów do PDF',
             descKey: 'radial_tool_convert_detail',
             desc: 'Błyskawiczna zmiana formatów między PNG, JPG, WebP oraz łączenie zdjęć w wielostronicowy plik PDF.'
+        },
+        'xray': {
+            badgeKey: 'radial_tool_xray_badge',
+            badge: 'ZERO-KNOWLEDGE RAM',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>`,
+            titleKey: 'radial_tool_xray_name',
+            title: 'Cyber Rentgen & Anonimizator',
+            descKey: 'radial_tool_xray_detail',
+            desc: 'Głęboki skan magic bytes, inspekcja metadanych EXIF/GPS, wykrywanie makr i czyszczenie w RAM.'
+        },
+        'stego': {
+            badgeKey: 'radial_tool_stego_badge',
+            badge: 'LSB & AES-256',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg>`,
+            titleKey: 'radial_tool_stego_name',
+            title: 'Cyfrowy Kamuflaż (Stego)',
+            descKey: 'radial_tool_stego_detail',
+            desc: 'Wtapiaj tajne pliki w strukturę pikseli obrazów LSB z kryptograficzną ochroną AES w RAM.'
+        },
+        'diff': {
+            badgeKey: 'radial_tool_diff_badge',
+            badge: 'PORÓWNYWARKA',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"></line><polyline points="8 8 12 4 16 8"></polyline><polyline points="8 16 12 20 16 16"></polyline></svg>`,
+            titleKey: 'radial_tool_diff_name',
+            title: 'Diff Radar Dokumentów',
+            descKey: 'radial_tool_diff_detail',
+            desc: 'Wizualne porównywanie PDF, obrazów i tekstów z suwakiem kurtynowym, heatmapą i LCS w RAM.'
+        },
+        'ocr': {
+            badgeKey: 'radial_tool_ocr_badge',
+            badge: 'SMART OCR RAM',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>`,
+            titleKey: 'radial_tool_ocr_name',
+            title: 'Smart OCR & Text Extractor',
+            descKey: 'radial_tool_ocr_detail',
+            desc: 'Lokalne rozpoznawanie tekstu ze skanów w pamięci RAM z 1-klikowym maskowaniem RODO (PESEL, NIP, IBAN).'
+        },
+        'audio-mask': {
+            badgeKey: 'radial_tool_audio_badge',
+            badge: 'WEB AUDIO API',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg>`,
+            titleKey: 'radial_tool_audio_name',
+            title: 'Anonimizator Audio',
+            descKey: 'radial_tool_audio_detail',
+            desc: 'Maskowanie barwy głosu (Pitch/Formant), oczyszczanie metadanych audio i eksport czystego WAV w RAM.'
+        },
+        'hash': {
+            badgeKey: 'radial_tool_hash_badge',
+            badge: 'INTEGRALNOŚĆ RAM',
+            icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`,
+            titleKey: 'radial_tool_hash_name',
+            title: 'Sumy Kontrolne & Hash',
+            descKey: 'radial_tool_hash_detail',
+            desc: 'Błyskawiczne obliczanie SHA-256, SHA-512, MD5 i weryfikacja autentyczności plików w pamięci RAM.'
         }
     };
 
@@ -402,7 +456,9 @@
             'media-grabber': '/pobierz-wideo',
             'grabber': '/pobierz-wideo',
             'qr-studio': '/qr-studio',
-            'video-compress': '/kompresor-wideo'
+            'video-compress': '/kompresor-wideo',
+            'xray': '/rentgen',
+            'cyber-xray': '/rentgen'
         }[action];
 
         if (route && window.history && window.history.pushState) {
@@ -421,17 +477,46 @@
             case 'drop-request':
                 if (window.openDropRequestCreator) window.openDropRequestCreator();
                 break;
+            case 'xray':
+            case 'cyber-xray':
+                if (window.openToolTab) window.openToolTab('xray');
+                else if (window.switchToolTab) window.switchToolTab('xray');
+                break;
+            case 'stego':
+            case 'kamuflaz':
+                if (window.openToolTab) window.openToolTab('stego');
+                else if (window.switchToolTab) window.switchToolTab('stego');
+                break;
+            case 'diff':
+            case 'porownaj':
+                if (window.openToolTab) window.openToolTab('diff');
+                else if (window.switchToolTab) window.switchToolTab('diff');
+                break;
+            case 'ocr':
+            case 'rozpoznaj-tekst':
+                if (window.openToolTab) window.openToolTab('ocr');
+                else if (window.switchToolTab) window.switchToolTab('ocr');
+                break;
+            case 'audio-mask':
+            case 'audio':
+                if (window.openToolTab) window.openToolTab('audio-mask');
+                else if (window.switchToolTab) window.switchToolTab('audio-mask');
+                break;
             case 'pdf-edit':
-                if (window.switchToolTab) window.switchToolTab('edit');
+                if (window.openToolTab) window.openToolTab('edit');
+                else if (window.switchToolTab) window.switchToolTab('edit');
                 break;
             case 'pdf-rodo':
-                if (window.switchToolTab) window.switchToolTab('rodo');
+                if (window.openToolTab) window.openToolTab('rodo');
+                else if (window.switchToolTab) window.switchToolTab('rodo');
                 break;
             case 'pdf-matrix':
-                if (window.switchToolTab) window.switchToolTab('matrix');
+                if (window.openToolTab) window.openToolTab('matrix');
+                else if (window.switchToolTab) window.switchToolTab('matrix');
                 break;
             case 'pdf-watermark':
-                if (window.switchToolTab) window.switchToolTab('watermark');
+                if (window.openToolTab) window.openToolTab('watermark');
+                else if (window.switchToolTab) window.switchToolTab('watermark');
                 break;
             case 'qr-studio':
                 const qrModal = document.getElementById('qrStudioModal');
@@ -463,7 +548,7 @@
                     }
                 } else {
                     if (window.showToast) {
-                        window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                        window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
                     }
                 }
                 break;

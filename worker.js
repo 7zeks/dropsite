@@ -1308,7 +1308,7 @@ export default {
     }
 
     // 1. BEZPOŚREDNI UPLOAD DLA MAŁYCH PLIKÓW (Bez presigned URLs i kluczy)
-    if (url.pathname === "/upload-small" && request.method === "PUT") {
+    if (url.pathname === "/upload-small" && (request.method === "PUT" || request.method === "POST")) {
       try {
         const filename = url.searchParams.get("file") || "plik";
         const expiry = url.searchParams.get("expiry") || "1d";
@@ -1646,6 +1646,9 @@ export default {
         const uploadId = url.searchParams.get("uploadId");
         const data = await request.json();
         const parts = data.parts;
+        if (Array.isArray(parts)) {
+          parts.sort((a, b) => a.partNumber - b.partNumber);
+        }
         const headerEmail = (request.headers.get("X-User-Email") || url.searchParams.get("userEmail") || "").toLowerCase().trim();
 
         const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
@@ -1689,16 +1692,28 @@ export default {
       }
     }
 
-    // KROK 4: Anulowanie uploadu
-    if (url.pathname === "/multipart/abort" && request.method === "DELETE") {
+    // KROK 4: Anulowanie uploadu (ochrona przed kosztami zalegających chunków w Cloudflare R2)
+    if (url.pathname === "/multipart/abort" && (request.method === "DELETE" || request.method === "POST")) {
       try {
-        const key = url.searchParams.get("key");
-        const uploadId = url.searchParams.get("uploadId");
+        let key = url.searchParams.get("key");
+        let uploadId = url.searchParams.get("uploadId");
+
+        if ((!key || !uploadId) && request.method === "POST") {
+          try {
+            const body = await request.json();
+            key = key || body?.key;
+            uploadId = uploadId || body?.uploadId;
+          } catch (_) {}
+        }
+
+        if (!key || !uploadId) {
+          return new Response(JSON.stringify({ success: false, message: "Brak parametrów key lub uploadId" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
 
         const multipartUpload = env.BUCKET.resumeMultipartUpload(key, uploadId);
         await multipartUpload.abort();
 
-        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ success: true, message: "Sesja multipart pomyślnie anulowana w R2" }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }

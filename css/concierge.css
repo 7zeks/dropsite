@@ -80,11 +80,11 @@
 @keyframes conciergeBreath {
     0%, 100% {
         transform: scale(1);
-        filter: drop-shadow(0 0 5px rgba(196, 231, 212, 0.45));
+        opacity: 0.8;
     }
     50% {
         transform: scale(1.15);
-        filter: drop-shadow(0 0 10px rgba(196, 231, 212, 0.85));
+        opacity: 1;
     }
 }
 

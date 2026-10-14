@@ -75,6 +75,13 @@
             return;
         }
 
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        if (isMobile && file.size > 200 * 1024 * 1024) {
+            if (window.showToast) {
+                window.showToast('Uwaga: Plik wideo powyżej 200 MB może przeciążyć pamięć RAM telefonu podczas renderowania.', 'warning');
+            }
+        }
+
         currentFile = file;
 
         const activeState = document.getElementById('videoCompressActiveState');
@@ -102,6 +109,7 @@
     }
 
     async function startCompression() {
+        if (!currentFile || isCompressing) return;
         isCompressing = true;
         const startBtn = document.getElementById('btnStartVideoCompress');
         const progressBox = document.getElementById('videoProgressBox');
@@ -113,124 +121,166 @@
         if (progressBox) progressBox.classList.add('visible');
         if (resultBox) resultBox.classList.remove('visible');
 
-        const video = document.createElement('video');
-        video.preload = 'auto';
-        video.muted = true;
-        video.playsInline = true;
-        video.src = URL.createObjectURL(currentFile);
-
-        await new Promise(resolve => {
-            video.onloadedmetadata = resolve;
-        });
-
-        const duration = video.duration || 10;
-        const origWidth = video.videoWidth || 1280;
-        const origHeight = video.videoHeight || 720;
-
-        // Oblicz docelową rozdzielczość i bitrate
-        let targetWidth = origWidth;
-        let targetHeight = origHeight;
-        let targetBitrate = 1500000; // 1.5 Mbps default
-
-        if (selectedPreset === 'email') {
-            // Pod limit 24 MB
-            const targetBytes = 23.5 * 1024 * 1024;
-            targetBitrate = Math.min(2200000, Math.floor((targetBytes * 8) / duration));
-            if (targetWidth > 1280) {
-                targetWidth = 1280;
-                targetHeight = Math.round((origHeight * (1280 / origWidth)));
-            }
-        } else if (selectedPreset === 'save70') {
-            targetBitrate = 1200000;
-            if (targetWidth > 1280) {
-                targetWidth = 1280;
-                targetHeight = Math.round((origHeight * (1280 / origWidth)));
-            }
-        } else if (selectedPreset === 'fast') {
-            targetBitrate = 800000;
-            if (targetWidth > 960) {
-                targetWidth = 960;
-                targetHeight = Math.round((origHeight * (960 / origWidth)));
-            }
+        let wakeLock = null;
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (_) {}
         }
 
-        // Upewnij się, że wymiary są parzyste
-        targetWidth = Math.floor(targetWidth / 2) * 2;
-        targetHeight = Math.floor(targetHeight / 2) * 2;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-
-        const stream = canvas.captureStream(25);
-
-        // Wybór kodeka
-        let mimeType = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = 'video/webm';
-        }
-
-        let mediaRecorder;
+        let videoUrl = null;
         try {
-            mediaRecorder = new MediaRecorder(stream, {
-                mimeType: mimeType,
-                videoBitsPerSecond: targetBitrate
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.muted = true;
+            video.playsInline = true;
+            videoUrl = URL.createObjectURL(currentFile);
+            video.src = videoUrl;
+
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = resolve;
+                video.onerror = () => reject(new Error('Nie udało się załadować wideo do kompresji.'));
             });
-        } catch (e) {
-            mediaRecorder = new MediaRecorder(stream);
-        }
 
-        const chunks = [];
-        mediaRecorder.ondataavailable = e => {
-            if (e.data && e.data.size > 0) chunks.push(e.data);
-        };
+            const duration = video.duration || 10;
+            const origWidth = video.videoWidth || 1280;
+            const origHeight = video.videoHeight || 720;
 
-        const compressionFinished = new Promise(resolve => {
-            mediaRecorder.onstop = () => {
-                const compressedBlob = new Blob(chunks, { type: 'video/webm' });
-                resolve(compressedBlob);
+            // Oblicz docelową rozdzielczość i bitrate
+            let targetWidth = origWidth;
+            let targetHeight = origHeight;
+            let targetBitrate = 1500000; // 1.5 Mbps default
+
+            if (selectedPreset === 'email') {
+                // Pod limit 24 MB
+                const targetBytes = 23.5 * 1024 * 1024;
+                targetBitrate = Math.min(2200000, Math.floor((targetBytes * 8) / duration));
+                if (targetWidth > 1280) {
+                    targetWidth = 1280;
+                    targetHeight = Math.round((origHeight * (1280 / origWidth)));
+                }
+            } else if (selectedPreset === 'save70') {
+                targetBitrate = 1200000;
+                if (targetWidth > 1280) {
+                    targetWidth = 1280;
+                    targetHeight = Math.round((origHeight * (1280 / origWidth)));
+                }
+            } else if (selectedPreset === 'fast') {
+                targetBitrate = 800000;
+                if (targetWidth > 960) {
+                    targetWidth = 960;
+                    targetHeight = Math.round((origHeight * (960 / origWidth)));
+                }
+            }
+
+            // Upewnij się, że wymiary są parzyste
+            targetWidth = Math.floor(targetWidth / 2) * 2;
+            targetHeight = Math.floor(targetHeight / 2) * 2;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            if (typeof canvas.captureStream !== 'function') {
+                throw new Error('Przeglądarka nie obsługuje strumieniowania canvas (captureStream).');
+            }
+
+            const stream = canvas.captureStream(25);
+
+            // Wybór kodeka - z pełnym wsparciem dla iOS Safari (gdzie WebM nie jest obsługiwany, a MP4 tak)
+            let mimeType = 'video/webm;codecs=vp8,opus';
+            let outputExt = 'webm';
+
+            if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+                    mimeType = 'video/webm;codecs=vp8,opus';
+                    outputExt = 'webm';
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm';
+                    outputExt = 'webm';
+                } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+                    mimeType = 'video/mp4;codecs=avc1';
+                    outputExt = 'mp4';
+                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    mimeType = 'video/mp4';
+                    outputExt = 'mp4';
+                }
+            }
+
+            let mediaRecorder;
+            try {
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: targetBitrate
+                });
+            } catch (e) {
+                mediaRecorder = new MediaRecorder(stream);
+            }
+
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => {
+                if (e.data && e.data.size > 0) chunks.push(e.data);
             };
-        });
 
-        mediaRecorder.start(250);
-        video.playbackRate = 1.5; // Przyspieszone renderowanie klatek
-        video.play();
+            const compressionFinished = new Promise(resolve => {
+                mediaRecorder.onstop = () => {
+                    const pureMime = (mimeType.split(';')[0]) || (outputExt === 'mp4' ? 'video/mp4' : 'video/webm');
+                    const compressedBlob = new Blob(chunks, { type: pureMime });
+                    resolve({ blob: compressedBlob, extension: outputExt });
+                };
+            });
 
-        function drawFrame() {
-            if (video.paused || video.ended) return;
-            ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+            mediaRecorder.start(250);
+            video.playbackRate = 1.5; // Przyspieszone renderowanie klatek
+            video.play();
 
-            const progress = Math.min(99, Math.round((video.currentTime / duration) * 100));
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (progressPercent) progressPercent.textContent = `${progress}%`;
+            function drawFrame() {
+                if (video.paused || video.ended) return;
+                ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
 
-            requestAnimationFrame(drawFrame);
+                const progress = Math.min(99, Math.round((video.currentTime / duration) * 100));
+                if (progressBar) progressBar.style.width = `${progress}%`;
+                if (progressPercent) progressPercent.textContent = `${progress}%`;
+
+                requestAnimationFrame(drawFrame);
+            }
+
+            drawFrame();
+
+            await new Promise(resolve => {
+                video.onended = resolve;
+            });
+
+            mediaRecorder.stop();
+            video.pause();
+
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressPercent) progressPercent.textContent = '100%';
+
+            const resultData = await compressionFinished;
+
+            // Pokaż wynik
+            showCompressionResult(resultData.blob, resultData.extension);
+        } catch (err) {
+            console.error('[VideoCompress] Error during compression:', err);
+            if (window.showToast) {
+                window.showToast(err.message || 'Wystąpił błąd podczas kompresji wideo.', 'error');
+            }
+        } finally {
+            if (videoUrl) {
+                URL.revokeObjectURL(videoUrl);
+            }
+            if (wakeLock) {
+                try { await wakeLock.release(); } catch (_) {}
+                wakeLock = null;
+            }
+            isCompressing = false;
+            if (startBtn) startBtn.disabled = false;
         }
-
-        drawFrame();
-
-        await new Promise(resolve => {
-            video.onended = resolve;
-        });
-
-        mediaRecorder.stop();
-        video.pause();
-        URL.revokeObjectURL(video.src);
-
-        if (progressBar) progressBar.style.width = '100%';
-        if (progressPercent) progressPercent.textContent = '100%';
-
-        const resultBlob = await compressionFinished;
-
-        isCompressing = false;
-        if (startBtn) startBtn.disabled = false;
-
-        // Pokaż wynik
-        showCompressionResult(resultBlob);
     }
 
-    function showCompressionResult(blob) {
+    function showCompressionResult(blob, ext = 'webm') {
         const resultBox = document.getElementById('videoResultBox');
         const savedText = document.getElementById('videoResultSavedText');
         const detailsText = document.getElementById('videoResultDetails');
@@ -256,7 +306,7 @@
             downloadBtn.onclick = () => {
                 const link = document.createElement('a');
                 const baseName = (currentFile ? currentFile.name : 'wideo').replace(/\.[^/.]+$/, '');
-                link.download = `${baseName}_kompresja_dropsite.webm`;
+                link.download = `${baseName}_kompresja_dropsite.${ext || 'webm'}`;
                 link.href = URL.createObjectURL(blob);
                 link.click();
                 if (window.showToast) window.showToast('Pobrano skompresowany plik wideo', 'success');
@@ -272,6 +322,12 @@
             modal.classList.add('open');
             document.body.style.overflow = 'hidden';
             if (file) handleSelectedVideo(file);
+        }
+    };
+
+    window.DropsiteCompressor = {
+        loadVideoFile: function (file) {
+            window.openVideoCompressor(file);
         }
     };
 

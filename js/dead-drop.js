@@ -42,6 +42,32 @@
         return bytes.buffer;
     }
 
+    function utf8ToBase64(str) {
+        const bytes = new TextEncoder().encode(str);
+        let bin = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            bin += String.fromCharCode(bytes[i]);
+        }
+        return btoa(bin);
+    }
+
+    function base64ToUtf8(b64) {
+        try {
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                bytes[i] = bin.charCodeAt(i);
+            }
+            return new TextDecoder().decode(bytes);
+        } catch (_) {
+            try {
+                return decodeURIComponent(escape(atob(b64)));
+            } catch (e) {
+                return '';
+            }
+        }
+    }
+
     // 1. SZYFROWANIE NOTATKI (AES-256-GCM)
     async function encryptSecret(plainText) {
         const key = await window.crypto.subtle.generateKey(
@@ -182,7 +208,7 @@
                         e: expiryTimestamp,
                         b: expiryHours === 'read'
                     };
-                    const payloadB64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+                    const payloadB64 = utf8ToBase64(JSON.stringify(payload));
 
                     const fullUrl = `${window.location.origin}${window.location.pathname}?note=${noteId}#secret=${payloadB64}`;
 
@@ -302,7 +328,7 @@
         if (hash && hash.includes('#secret=')) {
             try {
                 const b64 = hash.split('#secret=')[1];
-                const raw = JSON.parse(decodeURIComponent(escape(atob(b64))));
+                const raw = JSON.parse(base64ToUtf8(b64));
                 payload = {
                     id: raw.id,
                     cipher: raw.c,

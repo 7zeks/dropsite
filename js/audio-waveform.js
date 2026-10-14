@@ -127,11 +127,17 @@
         // Audio HTML element dla odtwarzania
         const audio = new Audio();
         let audioUrl = '';
+        if (targetEl._lastAudioUrl) {
+            try { URL.revokeObjectURL(targetEl._lastAudioUrl); } catch (_) {}
+            targetEl._lastAudioUrl = null;
+        }
+
         if (typeof source === 'string') {
             audioUrl = source;
             audio.src = source;
         } else if (source instanceof Blob || source instanceof File) {
             audioUrl = URL.createObjectURL(source);
+            targetEl._lastAudioUrl = audioUrl;
             audio.src = audioUrl;
         }
 
@@ -142,6 +148,12 @@
         // Pobranie bufora danych do analizy fali
         async function loadAndDecode() {
             try {
+                if ((source instanceof Blob || source instanceof File) && source.size > 40 * 1024 * 1024) {
+                    // Dla plików audio >40 MB pomijamy pełne dekodowanie PCM w Web Audio API, chroniąc pamięć RAM
+                    fallbackPeaks();
+                    return;
+                }
+
                 let arrayBuf;
                 if (source instanceof ArrayBuffer) {
                     arrayBuf = source;

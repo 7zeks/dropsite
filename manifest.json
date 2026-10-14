@@ -9,7 +9,13 @@
   "icons": [
     {
       "src": "favicon.png",
-      "sizes": "653x653",
+      "sizes": "192x192 653x653",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "dropsite_symbol_512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }

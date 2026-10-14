@@ -18,15 +18,15 @@
 
 # Core Root Stylesheets & Scripts
 /style.css
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
 /app.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
 
-# CSS & JS Directories (Revalidate immediately so updates are always fresh)
+# CSS & JS Directories (Instant cache with background revalidation)
 /css/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
 /js/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
 
 # Static Third-Party Vendor Libraries in /js/ (Immutable, 1 year cache)
 /js/pdf.min.js

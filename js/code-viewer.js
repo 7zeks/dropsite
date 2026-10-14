@@ -92,11 +92,24 @@
         const lines = (rawCode || '').split('\n');
         const linesCount = lines.length;
 
+        // Ochrona pamięci i wątku głównego: limit 1200 linii podglądu dla dużych plików/logów
+        const MAX_PREVIEW_LINES = 1200;
+        let previewCode = rawCode || '';
+        let isTruncated = false;
+        if (lines.length > MAX_PREVIEW_LINES) {
+            previewCode = lines.slice(0, MAX_PREVIEW_LINES).join('\n') + `\n\n// ... [Podgląd ograniczony: plik zawiera łącznie ${linesCount} linii. Pełna treść zostanie zachowana w transferze]`;
+            isTruncated = true;
+        } else if (previewCode.length > 300000) {
+            previewCode = previewCode.slice(0, 300000) + `\n\n// ... [Podgląd ograniczony: rozmiar tekstu przekracza 300 KB]`;
+            isTruncated = true;
+        }
+
+        const previewLines = previewCode.split('\n');
         // Generowanie numerów linii
-        const lineNumsHtml = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
+        const lineNumsHtml = previewLines.map((_, i) => `<div>${i + 1}</div>`).join('');
 
         // Escapowanie i podświetlanie
-        const escapedRaw = escapeHtml(rawCode);
+        const escapedRaw = escapeHtml(previewCode);
         const highlightedHtml = highlightCode(escapedRaw, ext);
 
         targetEl.innerHTML = `

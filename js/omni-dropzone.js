@@ -64,7 +64,17 @@
             return 'image';
         }
 
-        // 4. Archiwum / Kod
+        // 4. Audio
+        if (/\.(mp3|wav|m4a|ogg|aac|flac|wma)$/i.test(name)) {
+            return 'audio';
+        }
+
+        // 5. Instalatory / Obrazy dysków / Pakiety binarne
+        if (/\.(iso|exe|dmg|bin|pkg|apk|msi|deb|rpm)$/i.test(name)) {
+            return 'binary';
+        }
+
+        // 6. Archiwum / Kod
         if (/\.(zip|rar|7z|tar|gz|json|js|py|sql|csv|xlsx|docx)$/i.test(name)) {
             return 'archive';
         }
@@ -104,7 +114,7 @@
             actions = [
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
-                    label: en ? 'Create Video Showcase (No ZIP)' : '🎬 Kolekcja Wideo (Player Online)',
+                    label: en ? 'Create Video Showcase (No ZIP)' : 'Kolekcja Wideo (Player Online)',
                     highlight: true,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
@@ -112,7 +122,7 @@
                 },
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
-                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    label: en ? 'Bundle into 1 ZIP' : 'Spakuj w ZIP',
                     highlight: false,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
@@ -120,7 +130,7 @@
                 },
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
-                    label: en ? 'Beam P2P (Unlimited)' : '⚡ Beam P2P',
+                    label: en ? 'Beam P2P (Unlimited)' : 'Beam P2P',
                     highlight: false,
                     onClick: () => {
                         const beamBtn = document.querySelector('.nav-btn[data-target="view-beam"]') || document.querySelector('[data-target="view-beam"]');
@@ -142,7 +152,7 @@
             actions = [
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M7 7h10v10H7z"></path></svg>`,
-                    label: en ? 'Create Online Album (Cinematic)' : '🖼️ Galeria / Album (Cinematic)',
+                    label: en ? 'Create Online Album (Cinematic)' : 'Galeria / Album (Cinematic)',
                     highlight: true,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
@@ -150,7 +160,7 @@
                 },
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
-                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    label: en ? 'Bundle into 1 ZIP' : 'Spakuj w ZIP',
                     highlight: false,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
@@ -158,7 +168,7 @@
                 },
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
-                    label: en ? 'Strip GPS & EXIF' : '🛡️ Wyczyść GPS / EXIF',
+                    label: en ? 'Strip GPS & EXIF' : 'Wyczyść GPS / EXIF',
                     highlight: false,
                     onClick: () => {
                         const exifCheckbox = document.getElementById('stripExifCheckbox');
@@ -183,7 +193,7 @@
             actions = [
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>`,
-                    label: en ? 'Bundle into 1 ZIP' : '📦 Spakuj w ZIP',
+                    label: en ? 'Bundle into 1 ZIP' : 'Spakuj w ZIP',
                     highlight: true,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('zip');
@@ -191,7 +201,7 @@
                 },
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,
-                    label: en ? 'Create Online Collection' : '🎬 Kolekcja Online (Bez ZIP)',
+                    label: en ? 'Create Online Collection' : 'Kolekcja Online (Bez ZIP)',
                     highlight: false,
                     onClick: () => {
                         if (typeof window.setMultiUploadMode === 'function') window.setMultiUploadMode('collection');
@@ -258,6 +268,27 @@
                             }
                         }
                     }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>`,
+                    label: en ? 'Extract Text / OCR' : 'Rozpoznaj tekst (OCR)',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') window.switchToolTab('ocr', false);
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`,
+                    label: en ? 'Verify SHA-256' : 'Suma SHA-256',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') {
+                            window.switchToolTab('hash', false);
+                            if (filesList && filesList[0] && typeof window.processHashFile === 'function') {
+                                setTimeout(() => window.processHashFile(filesList[0]), 250);
+                            }
+                        }
+                    }
                 }
             ];
         } else if (category === 'video') {
@@ -287,24 +318,34 @@
                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                 <polyline points="21 15 16 10 5 21"></polyline>
             </svg>`;
-            title = en ? 'Images Detected' : 'Wykryto pliki graficzne';
-            badge = en ? 'Privacy Protection' : 'Ochrona RODO';
+            title = en ? 'Image File Detected' : 'Wykryto plik graficzny';
+            badge = en ? 'Privacy & Stego' : 'Ochrona & Kamuflaż';
             desc = en
-                ? 'Protect your privacy by stripping GPS coordinates or convert multiple images to a single PDF:'
-                : 'Zadbaj o prywatność usuwając współrzędne GPS lub przekształć zdjęcia w jeden plik PDF:';
+                ? 'Choose a privacy action: camouflage a secret file inside pixels, strip GPS tracking or extract text:'
+                : 'Wybierz akcję prywatności: ukryj tajny plik w pikselach, usuń śledzenie GPS lub odczytaj tekst:';
             actions = [
                 {
-                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
-                    label: en ? 'Strip GPS / EXIF' : 'Wyczyść GPS / EXIF',
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg>`,
+                    label: en ? 'Hide File (Stego LSB)' : 'Kamuflaż Stego (Ukryj plik)',
                     highlight: true,
                     onClick: () => {
-                        const exifCheckbox = document.getElementById('stripExifCheckbox');
-                        if (exifCheckbox) {
-                            exifCheckbox.checked = true;
-                            if (typeof window.showNotification === 'function') {
-                                window.showNotification(en ? 'EXIF & GPS metadata scrubbing enabled!' : 'Włączono czyszczenie danych EXIF i GPS!', 'success');
-                            }
-                        }
+                        if (typeof window.switchToolTab === 'function') window.switchToolTab('stego', false);
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>`,
+                    label: en ? 'Cyber X-Ray (GPS/EXIF)' : 'Cyber Rentgen & GPS',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') window.switchToolTab('xray', false);
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>`,
+                    label: en ? 'Extract Text (OCR)' : 'Odczytaj tekst (OCR)',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') window.switchToolTab('ocr', false);
                     }
                 },
                 {
@@ -316,6 +357,77 @@
                     }
                 }
             ];
+        } else if (category === 'audio') {
+            iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>`;
+            title = en ? 'Audio File / Voice Note' : 'Wykryto plik audio / notatkę głosową';
+            badge = en ? 'Web Audio API' : 'Czyszczenie Audio';
+            desc = en
+                ? 'Protect your identity by masking voice pitch and formants, strip recorder metadata or check integrity:'
+                : 'Chcesz zabezpieczyć tożsamość? Zanonimizuj barwę głosu świadka, usuń metadane nagrania lub sprawdź sumę:';
+            actions = [
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg>`,
+                    label: en ? 'Mask Voice & Sanitize' : 'Anonimizuj barwę głosu (WAV)',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') window.switchToolTab('audio-mask', false);
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`,
+                    label: en ? 'Check SHA-256' : 'Suma SHA-256',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') {
+                            window.switchToolTab('hash', false);
+                            if (filesList && filesList[0] && typeof window.processHashFile === 'function') {
+                                setTimeout(() => window.processHashFile(filesList[0]), 250);
+                            }
+                        }
+                    }
+                }
+            ];
+        } else if (category === 'binary') {
+            iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="9" x2="20" y2="9"></line>
+                <line x1="4" y1="15" x2="20" y2="15"></line>
+                <line x1="10" y1="3" x2="8" y2="21"></line>
+                <line x1="16" y1="3" x2="14" y2="21"></line>
+            </svg>`;
+            title = en ? 'Executable / Disk Image Detected' : 'Wykryto plik instalacyjny / binarny';
+            badge = en ? 'Integrity Radar' : 'Autentyczność Pliku';
+            desc = en
+                ? 'Downloaded software or OS disk image? Instantly verify cryptographic integrity before installation:'
+                : 'Pobrany instalator lub obraz ISO? Błyskawicznie sprawdź autentyczność i sumę kontrolną SHA-256:';
+            actions = [
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+                    label: en ? 'Verify SHA-256 (Hash Radar)' : 'Weryfikuj SHA-256 (Hash Radar)',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') {
+                            window.switchToolTab('hash', false);
+                            if (filesList && filesList[0] && typeof window.processHashFile === 'function') {
+                                setTimeout(() => window.processHashFile(filesList[0]), 250);
+                            }
+                        }
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+                    label: en ? 'Beam P2P (No limits)' : 'Beam P2P (Bez limitu)',
+                    highlight: false,
+                    onClick: () => {
+                        const beamBtn = document.querySelector('.nav-btn[data-target="view-beam"]') || document.querySelector('[data-target="view-beam"]');
+                        if (beamBtn) beamBtn.click();
+                    }
+                }
+            ];
         } else if (category === 'archive') {
             iconSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFBC39" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -324,8 +436,8 @@
             title = en ? 'Archive / Project Files' : 'Paczka plików / Kod źródłowy';
             badge = en ? 'Security Vault' : 'Szwajcarski Sejf';
             desc = en
-                ? 'Sharing confidential materials? Secure this transfer with a password or self-destruct trigger:'
-                : 'Wysyłasz poufne materiały? Zabezpiecz transfer hasłem lub włącz tryb jednorazowego zniszczenia:';
+                ? 'Sharing confidential materials? Secure this transfer with a password, self-destruct trigger or verify checksum:'
+                : 'Wysyłasz poufne materiały? Zabezpiecz transfer hasłem, włącz samozniszczenie lub sprawdź sumę:';
             actions = [
                 {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
@@ -339,6 +451,19 @@
                             pwdInput.focus();
                             pwdInput.style.outline = '2px solid #34D399';
                             setTimeout(() => pwdInput.style.outline = 'none', 1500);
+                        }
+                    }
+                },
+                {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>`,
+                    label: en ? 'Verify SHA-256' : 'Suma SHA-256',
+                    highlight: false,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') {
+                            window.switchToolTab('hash', false);
+                            if (filesList && filesList[0] && typeof window.processHashFile === 'function') {
+                                setTimeout(() => window.processHashFile(filesList[0]), 250);
+                            }
                         }
                     }
                 },
@@ -431,8 +556,8 @@
                 highlight: true,
                 onClick: () => {
                     hide();
-                    if (window.showToast) {
-                        window.showToast('🛠️ Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
+                    if (window.DropsiteMediaGrabber && typeof window.DropsiteMediaGrabber.grabFromUrl === 'function') {
+                        window.DropsiteMediaGrabber.grabFromUrl(url);
                     }
                 }
             },

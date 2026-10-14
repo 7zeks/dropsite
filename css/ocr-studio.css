@@ -1,0 +1,323 @@
+/**
+ * ============================================================================
+ * DROPSITE SMART OCR & TEXT EXTRACTOR CSS
+ * ============================================================================
+ * 100% Client-Side OCR in RAM • Zero Server Leakage
+ * Obsidian Glass, Cyber Mint (#34D399), Electric Sky (#38BDF8)
+ * Strict Zero Emoji Compliance
+ * ============================================================================
+ */
+
+.ocr-container {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Dropzone OCR */
+.ocr-dropzone {
+    background: rgba(13, 20, 36, 0.7);
+    border: 1.5px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ocr-dropzone:hover,
+.ocr-dropzone.drag-over {
+    border-color: #34D399;
+    background: rgba(52, 211, 153, 0.05);
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.12);
+}
+
+.ocr-drop-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease;
+}
+
+.ocr-dropzone:hover .ocr-drop-icon {
+    transform: scale(1.06);
+}
+
+.ocr-drop-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 4px;
+}
+
+.ocr-drop-sub {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    max-width: 380px;
+}
+
+/* Wskaźnik Postępu Skanowania */
+.ocr-progress-card {
+    display: none;
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 14px;
+    padding: 14px 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    animation: ocrFadeIn 0.25s ease;
+}
+
+.ocr-progress-card.active {
+    display: flex;
+}
+
+@keyframes ocrFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ocr-prog-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    color: #F8FAFC;
+    font-weight: 600;
+}
+
+.ocr-prog-val {
+    font-family: 'JetBrains Mono', monospace;
+    color: #34D399;
+    font-weight: 700;
+}
+
+/* Główny Układ Wyników: Podgląd Skany + Tekst OCR */
+.ocr-workspace-grid {
+    display: none;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 20px;
+    animation: ocrFadeIn 0.3s ease;
+}
+
+.ocr-workspace-grid.active {
+    display: grid;
+}
+
+@media (max-width: 860px) {
+    .ocr-workspace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Lewa Kolumna: Podgląd Skanu z Filtrami */
+.ocr-preview-card {
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ocr-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #94A3B8;
+}
+
+.ocr-preview-box {
+    width: 100%;
+    height: 380px;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ocr-preview-box canvas,
+.ocr-preview-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.ocr-filter-toggles {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ocr-filter-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.ocr-filter-btn:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.ocr-filter-btn.active {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+/* Prawa Kolumna: Edytor Rozpoznanego Tekstu */
+.ocr-text-card {
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ocr-text-area {
+    width: 100%;
+    height: 340px;
+    background: rgba(9, 14, 23, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px;
+    color: #F8FAFC;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.ocr-text-area:focus {
+    border-color: #34D399;
+    box-shadow: 0 0 14px rgba(52, 211, 153, 0.18);
+}
+
+/* Wykryte Encje Biznesowe (NIP, PESEL, IBAN, Kwoty) */
+.ocr-entities-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.ocr-entity-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.tag-nip { background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38BDF8; }
+.tag-pesel { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #F59E0B; }
+.tag-iban { background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.35); color: #34D399; }
+.tag-email { background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); color: #C084FC; }
+
+/* Przyciski Akcji Tekstowych */
+.ocr-actions-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ocr-btn-primary {
+    flex: 1 1 180px;
+    padding: 11px 18px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    color: #090E17;
+    border: none;
+    font-family: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.2s ease;
+}
+
+.ocr-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.3);
+}
+
+.ocr-btn-ghost {
+    flex: 1 1 140px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #F8FAFC;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: all 0.2s ease;
+}
+
+.ocr-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 640px) {
+    .ocr-preview-box {
+        height: 250px;
+    }
+    .ocr-preview-card,
+    .ocr-result-card {
+        padding: 14px;
+    }
+    .ocr-actions-bar {
+        flex-direction: column;
+    }
+    .ocr-btn-action,
+    .ocr-btn-ghost {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+}

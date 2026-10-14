@@ -37,7 +37,9 @@
             } else {
                 this.onDomReady();
             }
-            this.loadGoogleIdentityScript();
+            if (this.storageProvider === 'gdrive' || this.googleClientId) {
+                this.loadGoogleIdentityScript();
+            }
         }
 
         onDomReady() {
@@ -129,7 +131,7 @@
                             document.execCommand('copy');
                             document.body.removeChild(ta);
                         }
-                        this.showToast('✓ Skopiowano adres URL autoryzacji do schowka!', 'success');
+                        this.showToast('Skopiowano adres URL autoryzacji do schowka!', 'success');
                     } catch (e) {
                         this.showToast('Błąd kopiowania: ' + text, 'info');
                     }
@@ -224,7 +226,7 @@
                             localStorage.setItem('dropsite_gdrive_token_exp', this.tokenExpiry.toString());
                             localStorage.removeItem('dropsite_gdrive_demo');
 
-                            this.showToast('✓ Autoryzowano Dysk Google!', 'success');
+                            this.showToast('Autoryzowano Dysk Google!', 'success');
                             await this.fetchUserProfile();
                             await this.ensureDropsiteFolder();
                             this.updateUI();
@@ -246,6 +248,9 @@
         setStorageProvider(provider) {
             this.storageProvider = provider;
             localStorage.setItem('dropsite_storage_provider', provider);
+            if (provider === 'gdrive') {
+                this.loadGoogleIdentityScript();
+            }
             this.updateUI();
 
             if (provider === 'gdrive' && !this.isConnected()) {
@@ -308,7 +313,7 @@
             localStorage.setItem('dropsite_gdrive_folder_id', this.folderId);
 
             this.updateUI();
-            this.showToast('🚀 Aktywowano tryb testowy Dysku Google (BYOS)!', 'success');
+            this.showToast('Aktywowano tryb testowy Dysku Google (BYOS)!', 'success');
         }
 
         disconnectGoogleDrive() {
@@ -636,6 +641,7 @@
         }
 
         openConfigModal(expandGuide = false) {
+            this.loadGoogleIdentityScript();
             if (!this.modal) return;
             if (this.clientInput) {
                 this.clientInput.value = this.googleClientId || '';

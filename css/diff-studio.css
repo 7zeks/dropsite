@@ -1,0 +1,429 @@
+/**
+ * ============================================================================
+ * DROPSITE DIFF RADAR STUDIO CSS
+ * ============================================================================
+ * Visual & Textual Document Comparison in RAM
+ * Obsidian Glass, Cyber Mint (#34D399), Electric Sky (#38BDF8), Neon Coral (#FF4439)
+ * Strict Zero Emoji Compliance
+ * ============================================================================
+ */
+
+.diff-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Upload Grid: Plik A (Oryginał) vs Plik B (Zmieniony) */
+.diff-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .diff-upload-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.diff-drop-card {
+    background: rgba(13, 20, 36, 0.7);
+    border: 1.5px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    min-height: 200px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.diff-drop-card:hover,
+.diff-drop-card.drag-over {
+    border-color: #38BDF8;
+    background: rgba(56, 189, 248, 0.05);
+}
+
+.diff-drop-card.is-loaded {
+    border-style: solid;
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(13, 20, 36, 0.88);
+}
+
+.diff-card-badge {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+}
+
+.badge-orig {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+}
+
+.badge-mod {
+    background: rgba(52, 211, 153, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+.diff-drop-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+    margin-bottom: 12px;
+    margin-top: 10px;
+}
+
+.diff-drop-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 4px;
+}
+
+.diff-drop-sub {
+    font-size: 0.76rem;
+    color: #94A3B8;
+}
+
+.diff-loaded-meta {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.diff-drop-card.is-loaded .diff-default-meta {
+    display: none;
+}
+
+.diff-drop-card.is-loaded .diff-loaded-meta {
+    display: flex;
+}
+
+.diff-loaded-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.diff-loaded-size {
+    font-size: 0.74rem;
+    color: #94A3B8;
+}
+
+/* Pasek Trybów Porównania */
+.diff-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 12px 20px;
+    flex-wrap: wrap;
+}
+
+.diff-view-modes {
+    display: flex;
+    gap: 6px;
+}
+
+.diff-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.diff-mode-btn:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.diff-mode-btn.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+}
+
+.diff-metrics-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.82rem;
+}
+
+.diff-metric-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.diff-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.diff-dot.added { background: #34D399; }
+.diff-dot.removed { background: #FF4439; }
+.diff-dot.match { background: #38BDF8; }
+
+.diff-metric-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #F8FAFC;
+}
+
+/* Wizualny Obszar Porównania (Curtain & Side-by-side) */
+.diff-stage-wrap {
+    background: rgba(9, 14, 23, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 20px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 1. Suwak Kurtynowy (Curtain Slider) */
+.diff-curtain-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 540px;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #000;
+    user-select: none;
+}
+
+.diff-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.diff-layer canvas,
+.diff-layer img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.diff-layer-b {
+    clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+    transition: none;
+}
+
+.diff-curtain-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 3px;
+    background: #38BDF8;
+    box-shadow: 0 0 12px #38BDF8, 0 0 24px rgba(56, 189, 248, 0.5);
+    cursor: ew-resize;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+.diff-curtain-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #090E17;
+    border: 2px solid #38BDF8;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #38BDF8;
+}
+
+/* 2. Widok Side-by-Side */
+.diff-side-by-side-grid {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    height: 540px;
+}
+
+.diff-side-box {
+    background: #000;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diff-side-box canvas,
+.diff-side-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* 3. Widok Rentgena / Heatmap */
+.diff-heatmap-view {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    height: 540px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #000;
+}
+
+.diff-heatmap-view canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* 4. Widok Tekstowy (Text Unified Diff) */
+.diff-text-view {
+    display: none;
+    width: 100%;
+    max-height: 540px;
+    overflow-y: auto;
+    background: rgba(9, 14, 23, 0.98);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 12px;
+}
+
+.diff-line {
+    display: flex;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.diff-line.added {
+    background: rgba(52, 211, 153, 0.12);
+    color: #34D399;
+}
+
+.diff-line.removed {
+    background: rgba(255, 68, 57, 0.12);
+    color: #FF4439;
+}
+
+.diff-line.unchanged {
+    color: #94A3B8;
+}
+
+.diff-line-no {
+    width: 44px;
+    flex-shrink: 0;
+    user-select: none;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.72rem;
+}
+
+.diff-line-prefix {
+    width: 20px;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+
+.diff-line-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+@media (max-width: 768px) {
+    .diff-side-by-side-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    .diff-side-box {
+        height: 280px;
+    }
+    .diff-curtain-view,
+    .diff-heatmap-view {
+        height: 360px;
+    }
+    .diff-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+    .diff-view-modes {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+    .diff-mode-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+    }
+    .diff-metrics-row {
+        justify-content: space-between;
+        width: 100%;
+    }
+}

@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.4.7';
+const CACHE_NAME = 'dropsite-studio-v3.5.1';
 
 const PRECACHE_ASSETS = [
     './',
@@ -19,6 +19,7 @@ const PRECACHE_ASSETS = [
     './css/success.css',
     './css/widgets.css',
     './css/motion.css',
+    './css/motion-premium.css',
     './css/my-files.css',
     './css/telemetry.css',
     './css/bento-showcase.css',
@@ -38,9 +39,16 @@ const PRECACHE_ASSETS = [
     './css/radial-wheel.css',
     './css/pdf-studio-luxury.css',
     './css/cloud-bridge.css',
+    './css/xray-studio.css',
+    './css/stego-studio.css',
+    './css/diff-studio.css',
+    './css/ocr-studio.css',
+    './css/audio-masker.css',
+    './css/hash-studio.css',
     // JS Scripts & RAM Engines
     './app.js',
     './js/motion-engine.js',
+    './js/motion-premium.js',
     './js/i18n.js',
     './js/fflate.min.js',
     './js/qrious.min.js',
@@ -59,7 +67,15 @@ const PRECACHE_ASSETS = [
     './js/media-grabber.js',
     './js/command-palette.js',
     './js/radial-wheel.js',
-    './js/cloud-bridge.js'
+    './js/cloud-bridge.js',
+    './js/toolbox.js',
+    './js/account-vault.js',
+    './js/xray-studio.js',
+    './js/stego-studio.js',
+    './js/diff-studio.js',
+    './js/ocr-studio.js',
+    './js/audio-masker.js',
+    './js/hash-studio.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -93,14 +109,19 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Nie cache'uj zapytań API, uploadu chunks, zewnętrznych reklam i CDN r2.dev
+    // Nie cache'uj zapytań API, uploadu chunks, zewnętrznych reklam i CDN r2.dev oraz Cloudflare Workers
     if (
         event.request.method !== 'GET' ||
         url.hostname.includes('r2.dev') ||
+        url.hostname.includes('workers.dev') ||
         url.hostname.includes('google') ||
         url.hostname.includes('googlesyndication') ||
         url.pathname.startsWith('/api/') ||
-        url.pathname.startsWith('/upload')
+        url.pathname.startsWith('/upload') ||
+        url.pathname.startsWith('/multipart') ||
+        url.pathname.startsWith('/verify-pro') ||
+        url.pathname.startsWith('/download-metadata') ||
+        url.pathname.startsWith('/server-status')
     ) {
         return;
     }

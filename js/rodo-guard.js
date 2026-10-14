@@ -111,8 +111,13 @@
             const overlayLayer = document.getElementById('pdfOverlayLayer');
             const targetOverlayW = overlayLayer ? overlayLayer.clientWidth : 595;
             const targetOverlayH = overlayLayer ? overlayLayer.clientHeight : 842;
+            const scanTextEl = document.querySelector('.rodo-scanning-text');
 
             for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                if (scanTextEl) {
+                    scanTextEl.textContent = `Skanowanie tekstu PDF (strona ${pageNum} z ${numPages})...`;
+                }
+
                 // Pomiń strony usunięte w edytorze
                 if (window.studioDeletedPages && window.studioDeletedPages.has(pageNum)) {
                     continue;
@@ -127,7 +132,10 @@
                 const textContent = await page.getTextContent({ normalizeWhitespace: true });
 
                 const items = textContent.items || [];
-                if (items.length === 0) continue;
+                if (items.length === 0) {
+                    if (typeof page.cleanup === 'function') page.cleanup();
+                    continue;
+                }
 
                 // Skala przeliczeniowa z przestrzeni bazowej viewport do bieżącej warstwy overlay
                 const scaleX = targetOverlayW / viewport.width;
@@ -303,6 +311,15 @@
                             pageOverlayH: targetOverlayH
                         });
                     }
+                }
+
+                if (typeof page.cleanup === 'function') {
+                    page.cleanup();
+                }
+
+                // Zwolnij wątek główny co 4 strony, aby UI było responsywne
+                if (pageNum % 4 === 0) {
+                    await new Promise(r => setTimeout(r, 0));
                 }
             }
 

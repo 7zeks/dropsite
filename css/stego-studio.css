@@ -1,0 +1,471 @@
+/**
+ * ============================================================================
+ * DROPSITE STEGO STUDIO & CAMOUFLAGE CSS
+ * ============================================================================
+ * Obsidian Glass, Cyber Mint (#34D399), Electric Sky (#38BDF8)
+ * Strict Zero Emoji Compliance • Crisp Micro-Interactions
+ * ============================================================================
+ */
+
+.stego-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Przełącznik Główny: Zakryj (Ukryj) vs Odkryj (Wydobądź) */
+.stego-mode-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(10, 15, 26, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 4px;
+    backdrop-filter: blur(12px);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.stego-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stego-tab-btn:hover {
+    color: #F8FAFC;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.stego-tab-btn.active {
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #FFFFFF;
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.15);
+}
+
+.stego-tab-btn.active svg {
+    color: #34D399;
+}
+
+/* Widoki Trybów (Encode vs Decode) */
+.stego-pane {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    animation: stegoFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stego-pane.active {
+    display: flex;
+}
+
+@keyframes stegoFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dwukolumnowy Układ dla Encode */
+.stego-dual-drop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+@media (max-width: 768px) {
+    .stego-dual-drop-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stego-drop-box {
+    background: rgba(13, 20, 36, 0.65);
+    border: 1.5px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 220px;
+    position: relative;
+    overflow: hidden;
+}
+
+.stego-drop-box:hover,
+.stego-drop-box.drag-over {
+    border-color: #34D399;
+    background: rgba(52, 211, 153, 0.05);
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.12);
+}
+
+.stego-drop-box.is-loaded {
+    border-style: solid;
+    border-color: rgba(52, 211, 153, 0.4);
+    background: rgba(13, 20, 36, 0.85);
+}
+
+.stego-box-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.stego-drop-box:hover .stego-box-icon {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #34D399;
+    transform: scale(1.05);
+}
+
+.stego-box-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 4px;
+}
+
+.stego-box-sub {
+    font-size: 0.78rem;
+    color: #94A3B8;
+    max-width: 280px;
+    line-height: 1.4;
+}
+
+/* Informacja o załadowanym pliku */
+.stego-loaded-preview {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.stego-drop-box.is-loaded .stego-default-prompt {
+    display: none;
+}
+
+.stego-drop-box.is-loaded .stego-loaded-preview {
+    display: flex;
+}
+
+.stego-thumb-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    background: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stego-thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stego-loaded-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #34D399;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stego-loaded-meta {
+    font-size: 0.75rem;
+    color: #94A3B8;
+}
+
+/* Pasek Pojemności (Capacity Gauge) */
+.stego-capacity-card {
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stego-cap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+}
+
+.stego-cap-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #94A3B8;
+    font-weight: 600;
+}
+
+.stego-cap-val {
+    color: #F8FAFC;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+}
+
+.stego-progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.stego-progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #34D399, #38BDF8);
+    border-radius: 999px;
+    transition: width 0.3s ease, background 0.3s ease;
+}
+
+.stego-progress-bar-fill.warning {
+    background: linear-gradient(90deg, #F59E0B, #FF4439);
+}
+
+.stego-progress-bar-fill.danger {
+    background: #FF4439;
+}
+
+/* Opcje Szyfrowania Hasłem */
+.stego-security-card {
+    background: rgba(13, 20, 36, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.stego-sec-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stego-sec-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #34D399;
+}
+
+.stego-sec-text h4 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #F8FAFC;
+}
+
+.stego-sec-text p {
+    margin: 2px 0 0 0;
+    font-size: 0.74rem;
+    color: #94A3B8;
+}
+
+.stego-password-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 260px;
+    position: relative;
+}
+
+.stego-password-input {
+    width: 100%;
+    background: rgba(9, 14, 23, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 0.86rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.stego-password-input:focus {
+    border-color: #34D399;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.2);
+}
+
+/* Przycisk Akcji Głównej */
+.stego-action-btn {
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    color: #090E17;
+    border: none;
+    font-family: inherit;
+    font-size: 0.96rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.28);
+}
+
+.stego-action-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 26px rgba(52, 211, 153, 0.4);
+}
+
+.stego-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Karta Wynikowa / Gotowy Kamuflaż */
+.stego-result-card {
+    display: none;
+    background: rgba(13, 20, 36, 0.95);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    border-radius: 18px;
+    padding: 24px;
+    flex-direction: column;
+    gap: 18px;
+    animation: stegoFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stego-result-card.active {
+    display: flex;
+}
+
+.stego-res-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stego-badge-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(52, 211, 153, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.stego-res-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stego-btn-download {
+    flex: 1 1 200px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    color: #090E17;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.stego-btn-secondary {
+    flex: 1 1 180px;
+    padding: 12px 18px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #F8FAFC;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.stego-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+@media (max-width: 640px) {
+    .stego-mode-nav {
+        width: 100%;
+        max-width: 100%;
+    }
+    .stego-tab-btn {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+    .stego-options-card,
+    .stego-result-card,
+    .stego-capacity-card {
+        padding: 16px;
+    }
+    .stego-res-actions {
+        flex-direction: column;
+    }
+    .stego-btn-download,
+    .stego-btn-secondary {
+        width: 100%;
+        flex: 1 1 100%;
+    }
+}

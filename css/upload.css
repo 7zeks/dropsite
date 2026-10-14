@@ -64,19 +64,19 @@
         opacity: 0.8;
         transform: scale(0.985);
         border-color: rgba(0, 240, 255, 0.7);
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(52, 211, 153, 0.35);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(196, 231, 212, 0.35);
     }
     50% {
         opacity: 0.45;
         transform: scale(1.04);
-        border-color: rgba(52, 211, 153, 0.5);
-        box-shadow: 0 0 45px rgba(52, 211, 153, 0.55), inset 0 0 20px rgba(0, 240, 255, 0.25);
+        border-color: rgba(196, 231, 212, 0.5);
+        box-shadow: 0 0 45px rgba(196, 231, 212, 0.45), inset 0 0 20px rgba(0, 240, 255, 0.25);
     }
     100% {
         opacity: 0.8;
         transform: scale(0.985);
         border-color: rgba(0, 240, 255, 0.7);
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(52, 211, 153, 0.35);
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.45), inset 0 0 12px rgba(196, 231, 212, 0.35);
     }
 }
 
@@ -118,7 +118,7 @@
 .blob-mint {
     top: -12%;
     left: -10%;
-    background: radial-gradient(circle, #34D399 0%, rgba(52, 211, 153, 0.5) 45%, transparent 75%);
+    background: radial-gradient(circle, #C4E7D4 0%, rgba(196, 231, 212, 0.45) 45%, transparent 75%);
     animation: plasmaMorph1 5.2s ease-in-out infinite alternate;
 }
 
@@ -132,7 +132,7 @@
 .blob-emerald {
     bottom: -16%;
     right: 2%;
-    background: radial-gradient(circle, #10B981 0%, rgba(16, 185, 129, 0.55) 45%, transparent 75%);
+    background: radial-gradient(circle, #C4E7D4 0%, rgba(196, 231, 212, 0.45) 45%, transparent 75%);
     animation: plasmaMorph3 6.8s ease-in-out infinite alternate;
 }
 
@@ -182,11 +182,11 @@
 }
 
 .upload-container:hover {
-    border-color: rgba(52, 211, 153, 0.35) !important;
+    border-color: rgba(196, 231, 212, 0.4) !important;
     box-shadow: 
         0 35px 90px -15px rgba(0, 0, 0, 0.85), 
         inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
-        0 0 40px -10px rgba(52, 211, 153, 0.18) !important;
+        0 0 40px -10px rgba(196, 231, 212, 0.22) !important;
 }
 
 /* --- Nagłówki --- */
@@ -282,13 +282,13 @@
     margin: 0;
 }
 
-/* --- Dropzone (Interactive Tactile Glass) --- */
+/* --- Dropzone (Interactive Tactile Glass - PDF Studio Mint Palette) --- */
 .dropzone {
     position: relative;
-    border: 2px dashed rgba(52, 211, 153, 0.45);
+    border: 2px dashed rgba(196, 231, 212, 0.4);
     border-radius: 18px;
     padding: clamp(26px, 3vh, 36px) 20px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(52, 211, 153, 0.05) 50%, rgba(56, 189, 248, 0.04) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(196, 231, 212, 0.06) 50%, rgba(168, 218, 191, 0.04) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -302,15 +302,143 @@
     box-shadow: inset 0 1px 6px rgba(255, 255, 255, 0.08), 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
+/* Stan załadowanego pliku — znika przerywana linia, wchodzi zwarta szklana rama */
+.upload-container.has-files .dropzone,
+.dropzone.has-media-loaded {
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 18px !important;
+    background: rgba(8, 12, 20, 0.75) !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    cursor: default !important;
+    box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    margin-bottom: 8px !important;
+}
+
+.upload-container.has-files .upload-header {
+    margin-bottom: 14px !important;
+}
+
+.upload-container.has-files .upload-header p {
+    display: none !important;
+}
+
+/* --- Media Showcase (Luksusowa prezentacja wybranego zdjęcia/wideo bez pustego boiska) --- */
+.media-showcase-card {
+    position: relative;
+    width: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.45) 0%, rgba(9, 14, 23, 0.85) 100%);
+}
+
+.showcase-img-wrap {
+    position: relative;
+    width: 100%;
+    max-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.showcase-img {
+    max-height: 196px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.65), 0 0 16px rgba(196, 231, 212, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.showcase-video {
+    width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #000;
+    display: block;
+    outline: none;
+}
+
+.showcase-floating-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 5;
+}
+
+.showcase-badge-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(16, 24, 39, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #E2E8F0;
+    letter-spacing: 0.2px;
+}
+
+.btn-showcase-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 5.5px;
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(16, 24, 39, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #CBD5E1;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-showcase-remove svg {
+    color: inherit;
+    stroke: currentColor;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-showcase-remove:hover {
+    background: rgba(196, 231, 212, 0.16) !important;
+    border-color: rgba(196, 231, 212, 0.55) !important;
+    color: #C4E7D4 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 16px rgba(196, 231, 212, 0.25) !important;
+}
+
+.btn-showcase-remove:hover svg {
+    color: #C4E7D4 !important;
+    stroke: #C4E7D4 !important;
+    transform: rotate(45deg);
+}
+
+.btn-showcase-remove:active {
+    transform: translateY(0) scale(0.97);
+}
+
 .dropzone::before {
     display: none;
 }
 
 .dropzone:hover, .dropzone.active {
-    border-color: #34D399;
-    background: linear-gradient(180deg, rgba(52, 211, 153, 0.12) 0%, rgba(56, 189, 248, 0.09) 100%);
+    border-color: #C4E7D4;
+    background: linear-gradient(180deg, rgba(196, 231, 212, 0.13) 0%, rgba(168, 218, 191, 0.08) 100%);
     transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(52, 211, 153, 0.25), inset 0 1px 10px rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 32px rgba(196, 231, 212, 0.28), inset 0 1px 10px rgba(255, 255, 255, 0.2);
 }
 
 .dropzone.active { animation: dropPulse 0.6s ease-in-out; }
@@ -326,12 +454,12 @@
     width: 60px;
     height: 60px;
     border-radius: 18px;
-    background: linear-gradient(135deg, rgba(52, 211, 153, 0.22) 0%, rgba(56, 189, 248, 0.2) 100%);
-    border: 1px solid rgba(110, 231, 183, 0.45);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.2) 0%, rgba(168, 218, 191, 0.12) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 24px rgba(52, 211, 153, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(196, 231, 212, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.5);
     margin-bottom: 4px;
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -339,20 +467,20 @@
 .dropzone:hover .upload-icon-bubble,
 .dropzone.active .upload-icon-bubble {
     transform: translateY(-3px) scale(1.08);
-    background: linear-gradient(135deg, rgba(52, 211, 153, 0.35) 0%, rgba(56, 189, 248, 0.3) 100%);
-    border-color: #34D399;
-    box-shadow: 0 10px 32px rgba(52, 211, 153, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.32) 0%, rgba(168, 218, 191, 0.2) 100%);
+    border-color: #C4E7D4;
+    box-shadow: 0 10px 32px rgba(196, 231, 212, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.7);
 }
 
 .upload-icon {
-    color: #34D399;
+    color: #C4E7D4;
     transition: var(--transition-smooth);
-    filter: drop-shadow(0 0 10px rgba(52, 211, 153, 0.5));
+    filter: drop-shadow(0 0 10px rgba(196, 231, 212, 0.55));
 }
 
 .dropzone:hover .upload-icon, .dropzone.active .upload-icon {
     color: #FFFFFF;
-    filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.85));
+    filter: drop-shadow(0 0 16px rgba(196, 231, 212, 0.85));
 }
 
 .drop-text { 
@@ -372,9 +500,9 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: linear-gradient(135deg, #34D399 0%, #38BDF8 100%);
-    color: #04160E;
-    border: none;
+    background: linear-gradient(135deg, #A8DABF 0%, #C4E7D4 100%);
+    color: #071E17;
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 999px;
     padding: 8px 22px;
     font-size: 13px;
@@ -383,19 +511,22 @@
     font-family: inherit;
     cursor: pointer;
     margin-top: 6px;
-    box-shadow: 0 4px 18px rgba(52, 211, 153, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 18px rgba(196, 231, 212, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none; /* Kliknięcie w przycisk jest jednolicie obsługiwane przez kontener dropzone */
 }
 
 .dropzone:hover .btn-select,
 .dropzone.active .btn-select {
-    box-shadow: 0 6px 24px rgba(52, 211, 153, 0.65), 0 0 30px rgba(56, 189, 248, 0.4);
+    background: linear-gradient(135deg, #C4E7D4 0%, #E2F5EC 100%);
+    box-shadow: 0 6px 26px rgba(196, 231, 212, 0.65), 0 0 32px rgba(196, 231, 212, 0.35);
     transform: scale(1.04);
 }
 
 .btn-select svg {
     margin-right: 2px;
+    color: #071E17;
+    stroke: #071E17;
 }
 
 input[type='file'] {
@@ -440,7 +571,7 @@ input[type='file'] {
     border: none;
     box-shadow: none;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.45));
+    filter: drop-shadow(0 0 6px rgba(196, 231, 212, 0.5));
 }
 
 .fs-content {
@@ -664,9 +795,9 @@ input[type='file'] {
 }
 
 @keyframes flameFlicker {
-    0% { transform: scale(1) rotate(-3deg); filter: drop-shadow(0 0 6px rgba(255, 68, 57, 0.7)); }
-    50% { transform: scale(1.12) rotate(3deg); filter: drop-shadow(0 0 14px rgba(255, 120, 0, 1)); }
-    100% { transform: scale(1.02) rotate(-1.5deg); filter: drop-shadow(0 0 9px rgba(255, 68, 57, 0.8)); }
+    0% { transform: scale(1) rotate(-3deg); opacity: 0.85; }
+    50% { transform: scale(1.12) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1.02) rotate(-1.5deg); opacity: 0.9; }
 }
 
 .option-item-burn.ignite-anim > span {
@@ -720,10 +851,12 @@ input[type='file'] {
 @media (max-width: 600px) {
     .options-radios {
         grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
     }
     .option-item > span {
-        font-size: 11.5px;
-        padding: 8px 4px;
+        font-size: 12px;
+        padding: 10px 6px;
+        min-height: 40px;
     }
 }
 
@@ -828,21 +961,38 @@ input[type='file'] {
     display: none;
 }
 
+/* Aktywny Przycisk Główny (Oryginalne Szlachetne Szkło Mrożone Cyber-Glass) */
+.btn-primary:not(:disabled) {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.42) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4) !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    box-shadow: 
+        0 8px 24px -4px rgba(0, 0, 0, 0.55),
+        0 0 20px rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2) !important;
+    cursor: pointer;
+}
+
 /* Hover na aktywnym przycisku: rozświetlenie szkła */
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px) !important;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
-    border-color: rgba(255, 255, 255, 0.3);
-    border-top-color: rgba(255, 255, 255, 0.6);
-    color: #FFFFFF;
+    transform: translateY(-1.5px) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.19) 0%, rgba(255, 255, 255, 0.09) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.32) !important;
+    border-top-color: rgba(255, 255, 255, 0.7) !important;
+    color: #FFFFFF !important;
     box-shadow: 
-        0 12px 32px -4px rgba(0, 0, 0, 0.6),
-        0 0 24px rgba(255, 255, 255, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        0 14px 34px -4px rgba(0, 0, 0, 0.65),
+        0 0 28px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 .btn-primary:hover:not(:disabled) .btn-upload-icon {
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+    transform: translateY(-2px);
 }
 
 .btn-primary:hover:not(:disabled) .btn-sparkle-icon {
@@ -851,16 +1001,55 @@ input[type='file'] {
     transform: scale(1.15) rotate(90deg);
 }
 
-/* Kliknięcie / Active - sprężysty neutralny docisk */
+/* Kliknięcie / Active - sprężysty, kinetyczny docisk */
 .btn-primary:active:not(:disabled) {
-    transform: scale(0.985) translateY(0) !important;
-    background: rgba(255, 255, 255, 0.09) !important;
+    transform: scale(0.975) translateY(1px) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
     box-shadow: 
-        0 4px 14px rgba(0, 0, 0, 0.45),
-        inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        0 4px 14px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Stan Zablokowany (Disabled - gdy brak wybranego pliku) */
+/* Stan Oczekujący / Pusty (Gdy brak wybranego pliku - klikalny, otwiera okno wyboru pliku) */
+.btn-primary.empty-state {
+    cursor: pointer !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important;
+    color: rgba(255, 255, 255, 0.82) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.btn-primary.empty-state:hover {
+    cursor: pointer !important;
+    transform: translateY(-1.5px) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.07) 100%) !important;
+    border-color: rgba(196, 231, 212, 0.35) !important;
+    border-top-color: rgba(196, 231, 212, 0.6) !important;
+    color: #FFFFFF !important;
+    box-shadow: 
+        0 10px 28px -4px rgba(0, 0, 0, 0.55),
+        0 0 22px rgba(196, 231, 212, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+.btn-primary.empty-state:hover .btn-upload-icon {
+    transform: translateY(-2px);
+    color: #C4E7D4;
+    filter: drop-shadow(0 0 8px rgba(196, 231, 212, 0.6));
+}
+
+.btn-primary.empty-state:hover .btn-sparkle-icon {
+    opacity: 1;
+    color: #C4E7D4;
+}
+
+.btn-primary.empty-state:active {
+    transform: scale(0.975) translateY(1px) !important;
+}
+
+/* Stan Zablokowany (Disabled - podczas transferu) */
 .btn-primary:disabled {
     cursor: not-allowed;
     background: rgba(255, 255, 255, 0.03);
@@ -884,45 +1073,99 @@ input[type='file'] {
     display: none;
 }
 
-/* Stan Wgrywania (Loading - Translucent Sleek Glass) */
+/* Stan Wgrywania (Kinetic Rocket Launch & Cyber Laser Sweep) */
 .btn-primary.loading {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-    border-top-color: rgba(255, 255, 255, 0.6) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border-color: rgba(196, 231, 212, 0.45) !important;
+    border-top-color: rgba(255, 255, 255, 0.7) !important;
     color: #FFFFFF !important;
     cursor: wait !important;
     box-shadow: 
-        0 8px 24px -4px rgba(0, 0, 0, 0.5),
-        0 0 24px rgba(255, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-    animation: uploadNeutralLoadingGlow 2.2s ease-in-out infinite alternate !important;
+        0 10px 32px -4px rgba(0, 0, 0, 0.7),
+        0 0 25px rgba(196, 231, 212, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    animation: uploadCyberPulse 2.2s ease-in-out infinite alternate !important;
 }
 
-.btn-primary.loading .btn-upload-icon {
-    animation: uploadSpinMinimal 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)) !important;
+/* Laser sweep sweepujący po powierzchni szkła */
+.btn-primary.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 25%,
+        rgba(196, 231, 212, 0.3) 50%,
+        rgba(56, 189, 248, 0.22) 75%,
+        transparent 100%
+    );
+    animation: cyberLaserSweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    pointer-events: none;
+    z-index: 1;
 }
 
-@keyframes uploadNeutralLoadingGlow {
+@keyframes cyberLaserSweep {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes uploadCyberPulse {
     0% {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
-        box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.7), 0 0 20px rgba(196, 231, 212, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        border-color: rgba(196, 231, 212, 0.4);
     }
     100% {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.09) 100%);
-        box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.6), 0 0 28px rgba(255, 255, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.8), 0 0 32px rgba(56, 189, 248, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        border-color: rgba(56, 189, 248, 0.6);
     }
 }
 
-@keyframes uploadSpinMinimal {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+/* Wystrzał strzałki w kosmos przy uruchomieniu uploadu */
+.btn-primary.loading .btn-upload-icon {
+    animation: uploadArrowRocketLaunch 1.4s cubic-bezier(0.16, 1, 0.3, 1) infinite !important;
+    filter: drop-shadow(0 0 10px rgba(196, 231, 212, 0.85)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.5)) !important;
+    color: #C4E7D4 !important;
+}
+
+@keyframes uploadArrowRocketLaunch {
+    0% {
+        transform: translateY(12px) scale(0.7);
+        opacity: 0;
+    }
+    30% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    75% {
+        transform: translateY(-8px) scale(1.08);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-24px) scale(0.85);
+        opacity: 0;
+    }
+}
+
+.btn-primary.loading .btn-sparkle-icon {
+    animation: sparkleTwinkleLoading 1.2s ease-in-out infinite alternate !important;
+    color: #38BDF8 !important;
+    filter: drop-shadow(0 0 6px #38BDF8);
+    will-change: transform, opacity;
+}
+
+@keyframes sparkleTwinkleLoading {
+    0% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+    100% { opacity: 1; transform: scale(1.25) rotate(180deg); }
 }
 
 .btn-ripple {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(52, 211, 153, 0.08) 50%, transparent 80%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(196, 231, 212, 0.12) 50%, transparent 80%);
     transform: scale(0);
     animation: delicateSheen 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     pointer-events: none;
@@ -1036,7 +1279,7 @@ input[type='file'] {
 
 .btn-zen-options:hover {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(52, 211, 153, 0.35);
+    border-color: rgba(196, 231, 212, 0.4);
     color: #FFFFFF;
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
@@ -1048,10 +1291,10 @@ input[type='file'] {
 
 .btn-zen-options:hover .zen-chevron {
     transform: translateY(1px);
-    color: #34D399;
+    color: #C4E7D4;
 }
 
-/* Rozwijana sekcja opcji */
+/* Rozwijana sekcja opcji — płynny grid i kaskadowy wjazd */
 .upload-options-collapsible {
     display: grid;
     grid-template-rows: 0fr;
@@ -1067,16 +1310,23 @@ input[type='file'] {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
 }
 
 .upload-container.has-files .upload-options-collapsible,
-.upload-container.options-forced .upload-options-collapsible {
+.upload-container.options-forced .upload-options-collapsible,
+.upload-container.options-expanded .upload-options-collapsible {
     grid-template-rows: 1fr;
     opacity: 1;
     visibility: visible;
 }
 
 .upload-container.has-files .upload-options-collapsible > .options-collapsible-inner,
-.upload-container.options-forced .upload-options-collapsible > .options-collapsible-inner {
+.upload-container.options-forced .upload-options-collapsible > .options-collapsible-inner,
+.upload-container.options-expanded .upload-options-collapsible > .options-collapsible-inner {
     overflow: visible;
+    transform: translateY(0);
+    opacity: 1;
 }

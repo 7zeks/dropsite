@@ -255,6 +255,8 @@
                 link.download = `dropsite_qr_4k_${Date.now()}.png`;
                 link.href = exportCanvas.toDataURL('image/png');
                 link.click();
+                exportCanvas.width = 0;
+                exportCanvas.height = 0;
 
                 if (window.showToast) {
                     const msg = typeof window.t === 'function' ? window.t('qr_toast_download_png') : 'Pobrano kod QR w jakości Ultra HD 4K (2048x2048)';

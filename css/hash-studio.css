@@ -1,0 +1,566 @@
+/**
+ * ============================================================================
+ * DROPSITE HASH RADAR & CHECKSUM STUDIO CSS
+ * ============================================================================
+ * Obsidian Glass, Emerald Mint (#34D399), Ice Cyan (#38BDF8), Electric Violet (#C084FC)
+ * Strict Zero Emoji Compliance • Ultra-Crisp Monospace Micro-Interactions
+ * ============================================================================
+ */
+
+.hash-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Strefa Upuszczania Pliku */
+.hash-drop-zone {
+    background: rgba(13, 20, 36, 0.65);
+    border: 1.5px dashed rgba(52, 211, 153, 0.35);
+    border-radius: 20px;
+    padding: 44px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+}
+
+.hash-drop-zone:hover,
+.hash-drop-zone.dragover {
+    border-color: #34D399;
+    background: rgba(52, 211, 153, 0.07);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(52, 211, 153, 0.12),
+                inset 0 0 24px rgba(52, 211, 153, 0.05);
+}
+
+.hash-drop-icon-wrap {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.15) 0%, rgba(56, 189, 248, 0.08) 100%);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: #34D399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 20px rgba(52, 211, 153, 0.15);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hash-drop-zone:hover .hash-drop-icon-wrap {
+    transform: scale(1.08);
+    box-shadow: 0 0 24px rgba(52, 211, 153, 0.35);
+}
+
+.hash-drop-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+}
+
+.hash-drop-desc {
+    font-size: 0.88rem;
+    color: #94A3B8;
+    max-width: 520px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.hash-drop-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.hash-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 6px;
+    letter-spacing: 0.4px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94A3B8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hash-pill.pill-mint {
+    background: rgba(52, 211, 153, 0.12);
+    color: #34D399;
+    border-color: rgba(52, 211, 153, 0.28);
+}
+
+.hash-pill.pill-cyan {
+    background: rgba(56, 189, 248, 0.12);
+    color: #38BDF8;
+    border-color: rgba(56, 189, 248, 0.28);
+}
+
+.hash-pill.pill-purple {
+    background: rgba(192, 132, 252, 0.12);
+    color: #DDD6FE;
+    border-color: rgba(192, 132, 252, 0.28);
+}
+
+/* Karta Aktywnego Pliku */
+.hash-file-card {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.hash-file-card.active {
+    display: flex;
+}
+
+.hash-file-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1;
+}
+
+.hash-file-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    color: #34D399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hash-file-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.hash-file-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hash-file-meta {
+    font-size: 0.76rem;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hash-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-hash-reset {
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #FCA5A5;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-hash-reset:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #FFFFFF;
+}
+
+/* Pasek Postępu Obliczeń dla Dużych Plików */
+.hash-progress-card {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 20px;
+    background: rgba(13, 20, 36, 0.8);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    border-radius: 14px;
+}
+
+.hash-progress-card.active {
+    display: flex;
+}
+
+.hash-prog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #CBD5E1;
+}
+
+.hash-prog-track {
+    width: 100%;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.hash-prog-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #34D399 0%, #38BDF8 100%);
+    border-radius: 999px;
+    transition: width 0.15s ease-out;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+}
+
+/* Sekcja Porównania Sumy Kontrolnej (Live Comparator) */
+.hash-compare-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px 24px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+}
+
+.hash-compare-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.hash-compare-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hash-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(8, 14, 26, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 4px 6px 4px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hash-input-group:focus-within {
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+}
+
+.hash-compare-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #F8FAFC;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.86rem;
+    padding: 8px 0;
+}
+
+.hash-compare-input::placeholder {
+    color: #64748B;
+    font-family: inherit;
+}
+
+.btn-hash-paste {
+    padding: 8px 14px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #E2E8F0;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-hash-paste:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+/* Baner Wyniku Weryfikacji */
+.hash-match-status {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    animation: hashFadeIn 0.25s ease;
+}
+
+.hash-match-status.active {
+    display: flex;
+}
+
+.hash-match-status.match {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34D399;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.hash-match-status.mismatch {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #F87171;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
+.hash-match-status.neutral {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94A3B8;
+}
+
+.hash-match-icon {
+    flex-shrink: 0;
+}
+
+/* Siatka Wyników Sum Kontrolnych */
+.hash-results-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hash-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.22s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.hash-card:hover {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.hash-card.highlight-sha256 {
+    border-color: rgba(52, 211, 153, 0.3);
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.05) 0%, rgba(15, 23, 42, 0.7) 100%);
+}
+
+.hash-card.highlight-sha256:hover {
+    border-color: rgba(52, 211, 153, 0.45);
+    box-shadow: 0 4px 20px rgba(52, 211, 153, 0.12);
+}
+
+.hash-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hash-algo-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hash-algo-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94A3B8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hash-val-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(8, 14, 26, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.hash-value-text {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.84rem;
+    color: #E2E8F0;
+    word-break: break-all;
+    letter-spacing: 0.4px;
+    line-height: 1.4;
+    user-select: all;
+}
+
+.hash-value-text.empty {
+    color: #475569;
+    font-style: italic;
+    font-size: 0.8rem;
+}
+
+.btn-hash-copy {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.btn-hash-copy:hover {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+.btn-hash-copy.copied {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #34D399;
+    color: #34D399;
+}
+
+/* Dolny Pasek Akcji Eksportu */
+.hash-export-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding-top: 8px;
+}
+
+.btn-hash-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+}
+
+.btn-hash-primary {
+    background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+    color: #0B141E;
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.25);
+}
+
+.btn-hash-primary:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 22px rgba(52, 211, 153, 0.4);
+}
+
+.btn-hash-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #E2E8F0;
+}
+
+.btn-hash-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+@keyframes hashFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    .hash-val-box {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .btn-hash-copy {
+        width: 100%;
+        justify-content: center;
+    }
+    .hash-file-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .hash-file-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .hash-export-bar {
+        flex-direction: column;
+    }
+    .btn-hash-action {
+        width: 100%;
+        justify-content: center;
+    }
+}

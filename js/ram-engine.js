@@ -159,7 +159,10 @@
                 });
 
                 if (modified) {
-                    const cleanBytes = new TextEncoder().encode(text);
+                    const cleanBytes = new Uint8Array(text.length);
+                    for (let i = 0; i < text.length; i++) {
+                        cleanBytes[i] = text.charCodeAt(i) & 0xFF;
+                    }
                     return new File([cleanBytes], file.name, {
                         type: 'application/pdf',
                         lastModified: Date.now()
@@ -192,6 +195,8 @@
                         const quality = outputType === 'image/jpeg' ? 0.94 : (outputType === 'image/webp' ? 0.92 : undefined);
 
                         canvas.toBlob((cleanBlob) => {
+                            canvas.width = 0;
+                            canvas.height = 0;
                             if (!cleanBlob) {
                                 resolve(file);
                                 return;
@@ -313,6 +318,8 @@
                         ctx.restore();
 
                         canvas.toBlob((cleanBlob) => {
+                            canvas.width = 0;
+                            canvas.height = 0;
                             if (!cleanBlob) return resolve(file);
                             resolve(new File([cleanBlob], file.name, { type: file.type, lastModified: Date.now() }));
                         }, file.type, 0.92);

@@ -271,12 +271,13 @@
     filter: drop-shadow(0 0 14px #34D399);
     border-radius: 0 0 10px 10px;
     pointer-events: none;
+    will-change: transform, opacity;
     animation: grabberLensFlow 6s ease-in-out infinite alternate;
 }
 
 @keyframes grabberLensFlow {
-    0% { filter: drop-shadow(0 0 10px #34D399); opacity: 0.7; }
-    100% { filter: drop-shadow(0 0 22px #38BDF8); opacity: 1; }
+    0% { transform: scaleX(0.96); opacity: 0.65; }
+    100% { transform: scaleX(1.02); opacity: 1; }
 }
 
 .grabber-input-card {
