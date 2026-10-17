@@ -1,0 +1,8 @@
+# Cloudflare Pages Ignore Rules
+scratch/
+node_modules/
+.git/
+.github/
+.agents/
+.wrangler/
+*.log
