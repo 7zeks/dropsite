@@ -255,6 +255,7 @@
 
     async function sendTelemetryPing(reason = 'heartbeat') {
         if (isSendingPing) return;
+        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
         isSendingPing = true;
 
         try {

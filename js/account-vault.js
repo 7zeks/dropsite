@@ -307,6 +307,7 @@
             const delBtns = document.querySelectorAll('#vaultToolDeleteBtn');
             delBtns.forEach(btn => {
                 btn.classList.remove('confirming-delete');
+                btn.setAttribute('aria-label', 'Usu? t? notatk?');
                 btn.title = 'Usuń tę notatkę';
                 btn.innerHTML = `
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -328,6 +329,7 @@
                 const delBtns = document.querySelectorAll('#vaultToolDeleteBtn');
                 delBtns.forEach(btn => {
                     btn.classList.add('confirming-delete');
+                    btn.setAttribute('aria-label', 'Potwierd? usuni?cie notatki');
                     btn.title = 'Kliknij ponownie, aby bezpowrotnie usunąć tę notatkę';
                     btn.innerHTML = `
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

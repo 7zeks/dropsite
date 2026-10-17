@@ -349,6 +349,19 @@
                     }
                 },
                 {
+                    iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>`,
+                    label: en ? 'Upscale 4K (Super-Res)' : 'Powiększ 4K (Super-Res)',
+                    highlight: true,
+                    onClick: () => {
+                        if (typeof window.switchToolTab === 'function') {
+                            window.switchToolTab('upscale', false);
+                            if (file && window.DropsiteUpscaler && window.DropsiteUpscaler.loadSourceFile) {
+                                window.DropsiteUpscaler.loadSourceFile(file);
+                            }
+                        }
+                    }
+                },
+                {
                     iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`,
                     label: en ? 'Convert to PDF' : 'Konwertuj do PDF',
                     highlight: false,

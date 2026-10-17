@@ -304,6 +304,18 @@
         }
     }
 
+    window.openQRStudio = function () {
+        if (window.switchToolTab) {
+            window.switchToolTab('qr-studio');
+        } else if (window.openToolTab) {
+            window.openToolTab('qr-studio');
+        } else {
+            const btn = document.getElementById('btnSidebarQRStudio');
+            if (btn) btn.click();
+        }
+        setTimeout(updateQR, 60);
+    };
+
     window.initQRStudio = initQRStudio;
 
     document.addEventListener('DOMContentLoaded', () => {

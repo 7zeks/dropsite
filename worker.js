@@ -2964,12 +2964,25 @@ export default {
       }
       try {
         const body = await request.json();
-        const { title, description, fileKeys, theme, password } = body;
+        const { title, description, fileKeys, theme, password, files } = body;
         if (!title || !Array.isArray(fileKeys) || fileKeys.length === 0) {
           return new Response(JSON.stringify({ success: false, message: "Podaj tytuł oraz wybierz co najmniej 1 plik do albumu." }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
         }
 
         const albumId = `alb_${generateNanoId(8)}`;
+        let normalizedFiles = Array.isArray(files) && files.length > 0 ? files : (fileKeys || []).map(key => {
+          const rawName = key.split('/').pop() || key;
+          const mime = typeof getMimeType === 'function' ? getMimeType(rawName) : 'application/octet-stream';
+          return {
+            key: key,
+            name: rawName,
+            size: 0,
+            mime: mime,
+            directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+            pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
+          };
+        });
+
         const albumData = {
           id: albumId,
           title: title.trim(),
@@ -2977,6 +2990,7 @@ export default {
           ownerEmail: userEmail,
           created: new Date().toISOString(),
           fileKeys: fileKeys,
+          files: normalizedFiles,
           theme: theme || 'gallery', // 'gallery' | 'cinematic' | 'list'
           hasPassword: Boolean(password && password.trim()),
           password: password ? password.trim() : ""
@@ -2986,7 +3000,7 @@ export default {
           httpMetadata: { contentType: "application/json" }
         });
 
-        // Dodaj do listy albumów użytkownika
+        // Dodaj do listy albumów użytkownika z podglądem 4 pierwszych elementów
         const safeEmail = userEmail.replace(/[^a-zA-Z0-9_.-]/g, '_');
         const userAlbumsKey = `_user_albums/${safeEmail}.json`;
         let userAlbums = [];
@@ -3002,7 +3016,8 @@ export default {
           created: albumData.created,
           itemCount: fileKeys.length,
           theme: albumData.theme,
-          hasPassword: albumData.hasPassword
+          hasPassword: albumData.hasPassword,
+          previewFiles: normalizedFiles.slice(0, 4)
         });
         await env.BUCKET.put(userAlbumsKey, JSON.stringify(userAlbums.slice(0, 200)), {
           httpMetadata: { contentType: "application/json" }
@@ -3066,23 +3081,41 @@ export default {
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
-      const filesInfo = [];
-      for (const key of (albumData.fileKeys || [])) {
-        try {
-          const fHead = await env.BUCKET.head(key);
-          if (fHead) {
-            const rawName = fHead.customMetadata?.originalName || key;
-            const mime = fHead.httpMetadata?.contentType || getMimeType(rawName);
+      // Bezpośredni zwrot zapisanych danych plików lub fallback przez fileKeys
+      let filesInfo = Array.isArray(albumData.files) && albumData.files.length > 0 ? albumData.files : [];
+      if (filesInfo.length === 0) {
+        for (const key of (albumData.fileKeys || [])) {
+          let resolved = false;
+          try {
+            const fHead = await env.BUCKET.head(key);
+            if (fHead) {
+              const rawName = fHead.customMetadata?.originalName || key.split('/').pop() || key;
+              const mime = fHead.httpMetadata?.contentType || (typeof getMimeType === 'function' ? getMimeType(rawName) : 'application/octet-stream');
+              filesInfo.push({
+                key: key,
+                name: rawName,
+                size: fHead.size,
+                mime: mime,
+                directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
+                pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
+              });
+              resolved = true;
+            }
+          } catch (_) { }
+
+          if (!resolved) {
+            const rawName = key.split('/').pop() || key;
+            const mime = typeof getMimeType === 'function' ? getMimeType(rawName) : 'application/octet-stream';
             filesInfo.push({
               key: key,
               name: rawName,
-              size: fHead.size,
+              size: 0,
               mime: mime,
               directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`,
               pageUrl: `https://dropsite.pages.dev/?f=${encodeURIComponent(key)}`
             });
           }
-        } catch (_) { }
+        }
       }
 
       return new Response(JSON.stringify({

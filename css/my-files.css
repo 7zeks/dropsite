@@ -915,9 +915,7 @@ input[type="checkbox"].file-select-checkbox {
     position: relative;
     overflow: hidden;
     animation: none !important;
-    transform: translate3d(0, 0, 0);
-    will-change: transform, border-color;
-    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 @keyframes cardEnter {
@@ -1373,18 +1371,29 @@ input[type="checkbox"].file-select-checkbox {
     .mod-modal:not(.is-admin-dashboard) .mod-container {
         width: 96% !important;
         max-width: 96% !important;
-        padding: 16px 14px !important;
+        padding: 16px 14px max(24px, env(safe-area-inset-bottom)) 14px !important;
         border-radius: 18px !important;
-        margin: 12px auto !important;
-        max-height: 92vh !important;
+        margin: 8px auto !important;
+        max-height: 94dvh !important;
+        height: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
+    /* Przyklejony nagłówek z przyciskiem zamykania */
     .mod-modal:not(.is-admin-dashboard) .mod-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 50 !important;
+        background: rgba(12, 16, 26, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-between !important;
         gap: 8px !important;
-        margin-bottom: 14px !important;
+        margin: -16px -14px 14px -14px !important;
+        padding: max(12px, env(safe-area-inset-top)) 14px 12px 14px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
     .mod-modal:not(.is-admin-dashboard) .mod-header-left {
@@ -1403,6 +1412,29 @@ input[type="checkbox"].file-select-checkbox {
 
     .mod-modal:not(.is-admin-dashboard) .mod-panel-subtitle {
         font-size: 11px !important;
+    }
+
+    /* Wygodny przycisk zamykania na telefonie */
+    .mod-modal:not(.is-admin-dashboard) .mod-close {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0 !important;
+        border-radius: 10px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        color: #F8FAFC !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+        transition: transform 0.15s ease, background 0.15s ease !important;
+    }
+
+    .mod-modal:not(.is-admin-dashboard) .mod-close:active {
+        transform: scale(0.92) !important;
+        background: rgba(255, 255, 255, 0.16) !important;
     }
 
     /* Pasek pojemności */
@@ -1436,24 +1468,35 @@ input[type="checkbox"].file-select-checkbox {
         font-size: 11.5px !important;
     }
 
-    /* Pod-zakładki (Segmented Subtabs) */
+    /* Pod-zakładki (Segmented Subtabs) - płynne h-scroll na telefonach */
     .user-panel-subtabs {
-        gap: 4px !important;
-        padding: 3px !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 6px !important;
+        padding: 4px !important;
         margin-bottom: 12px !important;
         border-radius: 12px !important;
     }
 
+    .user-panel-subtabs::-webkit-scrollbar {
+        display: none !important;
+    }
+
     .user-panel-subtabs .subtab-btn {
-        padding: 7px 6px !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        padding: 8px 12px !important;
         font-size: 11.5px !important;
-        gap: 5px !important;
+        gap: 6px !important;
         border-radius: 9px !important;
     }
 
     .user-panel-subtabs .subtab-btn svg {
-        width: 13px !important;
-        height: 13px !important;
+        width: 14px !important;
+        height: 14px !important;
     }
 
     .user-panel-subtabs .subtab-count {
@@ -1476,8 +1519,8 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .mod-search-input {
-        height: 36px !important;
-        font-size: 12px !important;
+        height: 38px !important;
+        font-size: 13px !important;
     }
 
     .mod-toolbar-actions {
@@ -1491,13 +1534,13 @@ input[type="checkbox"].file-select-checkbox {
 
     .custom-select-trigger {
         flex: 1 1 auto !important;
-        height: 36px !important;
+        height: 38px !important;
         padding: 0 10px !important;
-        font-size: 11.5px !important;
+        font-size: 12px !important;
     }
 
     .myfiles-autoclean-toggle {
-        height: 36px !important;
+        height: 38px !important;
         padding: 0 8px !important;
         gap: 6px !important;
     }
@@ -1507,19 +1550,19 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .mod-clean-expired-btn {
-        height: 36px !important;
-        padding: 0 9px !important;
+        height: 38px !important;
+        padding: 0 10px !important;
         font-size: 11.5px !important;
         gap: 5px !important;
     }
 
     .myfiles-view-toggle {
-        height: 36px !important;
-        padding: 2px !important;
+        height: 38px !important;
+        padding: 3px !important;
     }
 
     .view-toggle-btn {
-        height: 30px !important;
+        height: 32px !important;
         padding: 0 8px !important;
     }
 
@@ -1528,8 +1571,8 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .mod-refresh-icon-btn {
-        width: 36px !important;
-        height: 36px !important;
+        width: 38px !important;
+        height: 38px !important;
     }
 
     /* Pigułki kategorii (Category pills) - h-scroll na telefonach */
@@ -1548,10 +1591,17 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .mod-pill {
-        flex-shrink: 0 !important;
-        padding: 5px 10px !important;
-        font-size: 11.5px !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        padding: 6px 12px !important;
+        font-size: 12px !important;
         gap: 5px !important;
+        border-radius: 9px !important;
+    }
+
+    /* Wspólne dolne dopełnienie dla list i siatki na telefonie */
+    .mod-file-list {
+        padding-bottom: max(44px, env(safe-area-inset-bottom)) !important;
     }
 
     /* Widok Listy (List View) na telefonie */
@@ -1574,13 +1624,13 @@ input[type="checkbox"].file-select-checkbox {
 
     .mod-preview-img,
     .mod-preview-icon {
-        width: 40px !important;
-        height: 40px !important;
+        width: 44px !important;
+        height: 44px !important;
         border-radius: 8px !important;
     }
 
     .mod-file-name {
-        font-size: 13px !important;
+        font-size: 13.5px !important;
         max-width: 100% !important;
     }
 
@@ -1601,10 +1651,11 @@ input[type="checkbox"].file-select-checkbox {
 
     .btn-mod-action {
         flex: 1 !important;
-        height: 32px !important;
+        height: 34px !important;
         padding: 0 6px !important;
         font-size: 11px !important;
         justify-content: center !important;
+        border-radius: 8px !important;
     }
 
     .btn-mod-action span {
@@ -1614,9 +1665,9 @@ input[type="checkbox"].file-select-checkbox {
 
     /* Widok Kafelkowy (Grid View) na telefonie */
     .mod-file-list.is-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 10px !important;
-        padding-bottom: 40px !important;
+        padding-bottom: max(44px, env(safe-area-inset-bottom)) !important;
     }
 
     .mod-file-card {
@@ -1626,21 +1677,22 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .card-preview-area {
-        height: 100px !important;
+        height: 110px !important;
         border-radius: 10px !important;
     }
 
     .card-file-name {
-        font-size: 12px !important;
+        font-size: 12.5px !important;
     }
 
     .card-action-dock {
-        gap: 4px !important;
+        gap: 5px !important;
         padding-top: 6px !important;
     }
 
     .card-action-btn {
-        height: 28px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
     }
 }
 
@@ -1648,13 +1700,19 @@ input[type="checkbox"].file-select-checkbox {
     .mod-modal:not(.is-admin-dashboard) .mod-container {
         width: 98% !important;
         max-width: 98% !important;
-        padding: 12px 10px !important;
-        border-radius: 14px !important;
-        margin: 6px auto !important;
+        padding: 12px 10px max(24px, env(safe-area-inset-bottom)) 10px !important;
+        border-radius: 16px !important;
+        margin: 4px auto !important;
+        max-height: 94dvh !important;
+    }
+
+    .mod-modal:not(.is-admin-dashboard) .mod-header {
+        margin: -12px -10px 12px -10px !important;
+        padding: max(10px, env(safe-area-inset-top)) 12px 10px 12px !important;
     }
 
     .user-panel-subtabs .subtab-btn span[data-i18n] {
-        font-size: 10.5px !important;
+        font-size: 11px !important;
     }
 
     .myfiles-autoclean-toggle .autoclean-label {
@@ -1675,12 +1733,12 @@ input[type="checkbox"].file-select-checkbox {
     }
 
     .mod-file-list.is-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 8px !important;
     }
 
     .card-preview-area {
-        height: 90px !important;
+        height: 100px !important;
     }
 }
 
@@ -2131,35 +2189,147 @@ input[type="checkbox"].file-select-checkbox {
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5), 0 0 24px rgba(94, 234, 212, 0.12) !important;
 }
 
-/* Banner tematyczny na szczycie karty albumu */
+/* Banner z podglądem zdjęć (Collage & Cover) na szczycie karty albumu */
+.album-card {
+    cursor: pointer;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.album-card:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(94, 234, 212, 0.45) !important;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 28px rgba(94, 234, 212, 0.14) !important;
+}
+
 .album-card-banner {
-    height: 60px;
-    padding: 12px 14px;
+    height: 120px;
+    padding: 10px 12px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(20, 184, 166, 0.12) 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: #090e18;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.album-card.theme-gallery .album-card-banner {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%);
-    border-bottom: 1px solid rgba(94, 234, 212, 0.15);
+.album-card-banner-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(8, 12, 22, 0.45) 0%, rgba(8, 12, 22, 0.20) 45%, rgba(8, 12, 22, 0.85) 100%);
+    pointer-events: none;
 }
 
-.album-card.theme-cinematic .album-card-banner {
-    background: linear-gradient(135deg, rgba(147, 51, 234, 0.25) 0%, rgba(79, 70, 229, 0.18) 100%);
-    border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+/* Kolarz miniatur w bannerze */
+.album-preview-collage {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-.album-card.theme-list .album-card-banner {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.22) 0%, rgba(37, 99, 235, 0.15) 100%);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+.album-preview-collage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.album-card:hover .album-preview-collage img {
+    transform: scale(1.06);
+}
+
+.album-preview-collage.collage-1 img {
+    width: 100%;
+    height: 100%;
+}
+
+.album-preview-collage.collage-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+}
+
+.album-preview-collage.collage-3 {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 2px;
+}
+
+.album-preview-collage.collage-3 .collage-sub-col {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+}
+
+.album-preview-collage.collage-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+}
+
+/* Fallback dla plików innych niż zdjęcia */
+.album-preview-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+    background: radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.15) 0%, rgba(8, 14, 26, 0.95) 100%);
+}
+
+.album-preview-fallback-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 10.5px;
+}
+
+.album-preview-fallback-pill .ext-badge {
+    font-weight: 800;
+    color: #5EEAD4;
+    font-size: 9.5px;
+}
+
+.album-preview-fallback-pill .file-name {
+    color: #CBD5E1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
+}
+
+/* Abstrakcyjny cyber gradient dla starszych albumów */
+.album-preview-abstract {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(94, 234, 212, 0.2) 0%, rgba(6, 182, 212, 0.1) 50%, rgba(8, 12, 22, 0.95) 100%);
+}
+
+.album-preview-abstract.theme-cinematic {
+    background: radial-gradient(circle at 30% 30%, rgba(168, 85, 247, 0.25) 0%, rgba(79, 70, 229, 0.15) 50%, rgba(8, 12, 22, 0.95) 100%);
+}
+
+.album-preview-abstract.theme-list {
+    background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.25) 0%, rgba(37, 99, 235, 0.15) 50%, rgba(8, 12, 22, 0.95) 100%);
 }
 
 .album-card-banner-badges {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2168,16 +2338,29 @@ input[type="checkbox"].file-select-checkbox {
 .album-banner-theme-tag {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     padding: 3px 8px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: none;
+    background: rgba(8, 12, 22, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     font-size: 11px;
     font-weight: 700;
     color: #F8FAFC;
     letter-spacing: -0.01em;
+}
+
+.album-banner-theme-tag svg {
+    color: #5EEAD4;
+}
+
+.album-card.theme-cinematic .album-banner-theme-tag svg {
+    color: #C084FC;
+}
+
+.album-card.theme-list .album-banner-theme-tag svg {
+    color: #38BDF8;
 }
 
 .album-banner-lock-tag {
@@ -2193,14 +2376,20 @@ input[type="checkbox"].file-select-checkbox {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .album-banner-count {
+    position: relative;
+    z-index: 2;
     font-size: 11px;
     font-weight: 700;
     color: #E2E8F0;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(8, 12, 22, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 3px 9px;
     border-radius: 12px;
 }

@@ -519,15 +519,18 @@
                 else if (window.switchToolTab) window.switchToolTab('watermark');
                 break;
             case 'qr-studio':
-                const qrModal = document.getElementById('qrStudioModal');
-                if (qrModal) {
-                    qrModal.classList.add('open');
-                    document.body.style.overflow = 'hidden';
-                    if (window.initQRStudio) window.initQRStudio();
-                }
+                if (window.openQRStudio) window.openQRStudio();
+                else if (window.switchToolTab) window.switchToolTab('qr-studio');
                 break;
             case 'video-compress':
                 if (window.openVideoCompressor) window.openVideoCompressor();
+                else if (window.switchToolTab) window.switchToolTab('video-compress');
+                break;
+            case 'upscale':
+            case 'upscaler':
+            case 'super-resolution':
+                if (window.openToolTab) window.openToolTab('upscale');
+                else if (window.switchToolTab) window.switchToolTab('upscale');
                 break;
             case 'media-grabber':
             case 'grabber':

@@ -1,0 +1,89 @@
+/* Open gallery: blue ice and lavender light, no enclosing capsule. */
+body:has(#view-download:not([hidden])) { background-image:radial-gradient(ellipse at 20% 14%,#7ebaff13,transparent 48%),radial-gradient(ellipse at 83% 45%,#af92e914,transparent 55%),linear-gradient(135deg,#131e2d,#0b111c); }
+#view-download { --gallery-accent:#b5d5ff; --gallery-lavender:#cbb9ef; padding:32px 24px 56px; }
+#view-download > .main-wrapper,#view-download > .main-wrapper.has-proofing-video { max-width:980px !important; }
+#view-download .dl-siri-glow-frame { padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+#view-download .dl-siri-glow-frame::before,#view-download .dl-siri-glow-frame::after { display:none !important; }
+#view-download .upload-container.download-card { padding:0 !important; border:0 !important; border-radius:0 !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; box-shadow:none !important; }
+#view-download .dl-header-unified { position:relative; padding-right:230px !important; min-height:90px; margin-bottom:25px !important; }
+#view-download .delivery-eyebrow { color:#9ebde4; }
+#view-download .delivery-eyebrow > span { background:#abcdf6; }
+#view-download #dlFileName { font-size:clamp(23px,3vw,32px) !important; font-weight:550 !important; letter-spacing:-.9px !important; }
+.delivery-header-actions { position:absolute; right:0; top:26px; }
+#view-download .delivery-header-actions #dlDownloadBtn { width:auto !important; min-width:195px; background:linear-gradient(135deg,#a2caff12,#a2caff04) !important; border-color:#a2caff4a !important; color:#c5dfff !important; box-shadow:inset 0 1px #ffffff0b,0 4px 20px #0002 !important; }
+#view-download .delivery-header-actions #dlDownloadBtn :is(svg,.btn-text) { color:#c5dfff !important; }
+#view-download .delivery-header-actions #dlDownloadBtn:hover { background:#a2caff1c !important; border-color:#a2caff75 !important; }
+#view-download .dl-showcase-stage { position:relative; isolation:isolate; }
+#view-download .dl-showcase-stage::before { content:''; position:absolute; z-index:-1; inset:0 -35px 16%; background:radial-gradient(ellipse at 20% 30%,#8fbfff13,transparent 60%),radial-gradient(ellipse at 80% 45%,#b198e91a,transparent 60%); pointer-events:none; }
+#view-download .dl-showcase-stage::before {
+    inset:-70px -70px -45px; border-radius:50%;
+    background:radial-gradient(ellipse at center,#9ebcff12 0%,#b198e90c 35%,transparent 70%);
+    mask-image:radial-gradient(ellipse at center,#000 25%,transparent 72%);
+    -webkit-mask-image:radial-gradient(ellipse at center,#000 25%,transparent 72%);
+}
+#view-download :is(.archive-media-showcase-card,.archive-video-showcase-card) { border:1px solid #bed4ff22 !important; border-radius:17px !important; background:#111c2a90 !important; box-shadow:0 18px 50px #0003 !important; }
+#view-download #archiveMediaShowcaseCard > div:first-child { background:#b5d5ff05 !important; padding:12px 16px !important; }
+#view-download #archiveStageMediaContainer { height:clamp(220px,36dvh,380px); max-height:380px !important; }
+#view-download #archiveStageMediaContainer :is(video,img) { max-height:380px !important; }
+#view-download .proofing-media-container:not(:fullscreen):not(.is-fullscreen) .proofing-video-frame-box { max-height:380px !important; }
+#view-download :is(#archiveActiveIconBox,.archive-icon-box) { color:#b5d5ff !important; background:#b5d5ff08 !important; border-color:#b5d5ff27 !important; }
+#view-download #archiveActiveBadge { color:#bdc7ed !important; background:#cbb9ef07 !important; border-color:#cbb9ef22 !important; }
+#view-download .archive-explorer-box { margin-top:24px; padding:0 !important; background:transparent !important; border:0 !important; border-radius:0 !important; }
+#view-download .archive-explorer-header { display:flex; align-items:center; flex-wrap:wrap; gap:12px; border:0; padding-bottom:12px; }
+#view-download .archive-title-box { flex:1; min-width:150px; }
+.delivery-view-switch { display:inline-flex; gap:3px; padding:3px; border:1px solid #b5d5ff1d; border-radius:9px; background:#b5d5ff04; }
+.delivery-view-switch button { padding:7px 12px; border:1px solid transparent; border-radius:6px; background:transparent; color:#8fa6c1; font:inherit; font-size:10px; cursor:pointer; }
+.delivery-view-switch button[aria-pressed="true"] { color:#cee1fc; border-color:#b5d5ff26; background:#b5d5ff0d; }
+#view-download .archive-search-wrap { margin-bottom:14px; }
+#view-download .delivery-filmstrip .archive-file-list:not(.album-gallery-grid) { display:flex !important; flex-direction:row; gap:12px; max-height:none !important; overflow-x:auto; overflow-y:hidden; padding:4px 2px 14px; scroll-snap-type:x proximity; }
+#view-download .delivery-filmstrip .archive-file-row { display:flex; flex-direction:column; align-items:stretch; justify-content:space-between; flex:0 0 158px; min-width:0; min-height:170px; padding:7px !important; gap:8px; border:1px solid #b5d5ff14 !important; border-radius:12px !important; background:#b5d5ff03 !important; scroll-snap-align:start; cursor:pointer; }
+#view-download .delivery-filmstrip .archive-file-list { scrollbar-width:none; }
+#view-download .delivery-filmstrip .archive-file-list::-webkit-scrollbar { display:none; }
+#view-download .delivery-filmstrip .archive-file-list.strip-fade-right { mask-image:linear-gradient(to right,#000 0%,#000 calc(100% - 38px),transparent); -webkit-mask-image:linear-gradient(to right,#000 0%,#000 calc(100% - 38px),transparent); }
+#view-download .delivery-filmstrip .archive-file-list.strip-fade-left { mask-image:linear-gradient(to right,transparent,#000 38px,#000); -webkit-mask-image:linear-gradient(to right,transparent,#000 38px,#000); }
+#view-download .delivery-filmstrip .archive-file-list.strip-fade-left.strip-fade-right { mask-image:linear-gradient(to right,transparent,#000 38px,#000 calc(100% - 38px),transparent); -webkit-mask-image:linear-gradient(to right,transparent,#000 38px,#000 calc(100% - 38px),transparent); }
+.delivery-strip-navigation { display:flex; gap:6px; }
+.delivery-strip-navigation[hidden] { display:none !important; }
+.delivery-strip-navigation button { display:grid; place-items:center; width:30px; height:30px; border-radius:8px; border:1px solid #b5d5ff26; background:#b5d5ff06; color:#bdd5f4; cursor:pointer; }
+.delivery-strip-navigation button:disabled { opacity:.3; cursor:default; }
+.delivery-strip-navigation button svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+#view-download .delivery-filmstrip .archive-file-row.is-active { border-color:#b5d5ff70 !important; background:#b5d5ff0a !important; box-shadow:0 0 20px #a4b9f009 !important; }
+#view-download .delivery-filmstrip .archive-file-left { display:flex; flex-direction:column; align-items:stretch; gap:9px; width:100%; min-width:0; }
+#view-download .delivery-filmstrip .archive-file-icon { width:100%; height:88px; flex:0 0 88px; border-radius:7px; background:linear-gradient(135deg,#a2caff0c,#cbb9ef0b); }
+#view-download .delivery-filmstrip .archive-file-icon > svg { width:25px; height:25px; color:#cbb9ef !important; stroke:#cbb9ef !important; }
+#view-download .delivery-filmstrip .archive-file-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; font-size:10px; }
+#view-download .delivery-filmstrip .archive-active-pill { display:none; }
+#view-download .delivery-filmstrip .archive-file-right { display:flex; flex-wrap:wrap; gap:5px; width:100%; margin:0; }
+#view-download .delivery-filmstrip .archive-size-badge { flex:1 0 100%; background:none; padding:0; font-size:9px; }
+#view-download .delivery-filmstrip :is(.btn-archive-preview-single,.btn-archive-dl-single) { flex:1; justify-content:center; padding:6px !important; font-size:9px !important; }
+#view-download :is(.btn-archive-preview-single,.btn-archive-dl-single) { color:#bdd5f4 !important; border-color:#b5d5ff28 !important; background:#b5d5ff05 !important; }
+#view-download .archive-file-row.is-active { box-shadow:inset 2px 0 #b5d5ff !important; background:#b5d5ff09 !important; }
+#view-download .dl-actions { position:static; padding:0; margin-top:22px !important; border:0; border-radius:0; background:transparent; backdrop-filter:none; }
+#view-download #dlCopyStreamBtn { color:#b5d5ff !important; border-color:#b5d5ff26 !important; background:#b5d5ff04 !important; min-height:40px !important; }
+#view-download .btn-light-splash::after { background:radial-gradient(circle,#b5d5ff35,#cbb9ef14 45%,transparent 72%); }
+#view-download :is(button,a,input,.archive-file-row):focus-visible { outline:2px solid #b5d5ff; outline-offset:3px; }
+/* Single images use the same open stage, with tools outside the pin overlay. */
+#view-download .dl-preview-image-wrapper { padding:0 !important; margin:0 !important; gap:20px; border:0 !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; overflow:visible !important; }
+#view-download .proofing-media-container:has(> #proofingImageEl) { position:relative; width:fit-content; max-width:100%; max-height:none !important; margin:0 auto; border:1px solid #b5d5ff20 !important; border-radius:14px !important; box-shadow:0 20px 55px #0004 !important; overflow:hidden; }
+#view-download #proofingImageEl { width:auto !important; height:auto !important; max-width:100% !important; max-height:min(600px,58dvh) !important; border-radius:12px !important; box-shadow:none !important; transform:none !important; }
+#view-download .dl-preview-toolbar { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:fit-content; max-width:100%; padding:8px !important; margin:0 auto !important; border:1px solid #b5d5ff1c !important; border-radius:13px; background:#b5d5ff04 !important; }
+#view-download .dl-preview-image-wrapper .proofing-drawer { align-self:stretch; }
+#view-download .dl-preview-toolbar .dl-tool-pill { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:35px; padding:8px 12px !important; border:1px solid #b5d5ff26 !important; border-radius:9px !important; background:#b5d5ff05 !important; color:#bdd5f4 !important; box-shadow:none !important; font-size:11px; font-weight:500; text-decoration:none; }
+#view-download .dl-preview-toolbar .dl-tool-pill:hover { background:#b5d5ff12 !important; transform:none !important; }
+#view-download .dl-preview-toolbar .dl-tool-pill svg { color:inherit !important; stroke:currentColor !important; }
+#view-download .proofing-drawer { background:#152235 !important; border-color:#b5d5ff20 !important; border-radius:12px; }
+#view-download .proofing-drawer :is(.proofing-link-btn,.btn-drawer-close) { color:#bdd5f4; background:#b5d5ff06; border-color:#b5d5ff24; border-radius:7px; box-shadow:none; }
+#view-download .dl-preview-image-wrapper .proofing-overlay { cursor:default !important; }
+body:has(#view-download:not([hidden])) #proofingCommentModal .signature-modal-box { background:#162337 !important; border:1px solid #b5d5ff30 !important; border-radius:18px; box-shadow:0 25px 70px #0006; }
+body:has(#view-download:not([hidden])) #proofingCommentModal .btn-primary { background:#b5d5ff12 !important; color:#d5e6ff !important; border:1px solid #b5d5ff4a !important; border-radius:9px !important; box-shadow:none !important; }
+@media(max-width:650px) {
+    #view-download #proofingImageEl { max-height:52dvh !important; }
+    #view-download .dl-preview-toolbar { gap:6px; }
+    #view-download { padding:24px 16px 40px; }
+    #view-download .dl-header-unified { padding-right:0 !important; }
+    .delivery-header-actions { position:static; margin-top:20px; }
+    #view-download .delivery-header-actions #dlDownloadBtn { width:100% !important; }
+    #view-download #archiveStageMediaContainer { height:clamp(200px,32dvh,300px); }
+    #view-download .delivery-filmstrip .archive-file-row { flex-basis:146px; }
+    #view-download .upload-container.download-card { padding:0 !important; }
+}

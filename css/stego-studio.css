@@ -445,6 +445,401 @@
     border-color: rgba(255, 255, 255, 0.25);
 }
 
+/* ============================================================================
+ * STEGO COCKPIT & WORKSPACE DECK COMPATIBILITY (TOOLBOX DECK)
+ * ============================================================================ */
+.stego-cockpit {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+/* Zakładki Stego (Tryb Kamuflażu vs Odzyskiwanie) */
+.stego-tab-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(10, 15, 26, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 4px;
+    width: fit-content;
+}
+
+.stego-nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94A3B8;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.stego-nav-tab:hover {
+    color: #F1F5F9;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.stego-nav-tab.active {
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.14) 0%, rgba(168, 218, 191, 0.05) 100%);
+    border-color: rgba(196, 231, 212, 0.3);
+    color: #C4E7D4;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.stego-nav-tab svg {
+    color: currentColor;
+    flex-shrink: 0;
+}
+
+/* Karty Upuszczania (Drop Cards) */
+.stego-drop-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 28px 20px;
+    border-radius: 16px;
+    border: 1.5px dashed rgba(196, 231, 212, 0.2);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 180px;
+}
+
+.stego-drop-card.wide {
+    width: 100%;
+}
+
+.stego-drop-card:hover,
+.stego-drop-card.drag-over {
+    border-color: rgba(196, 231, 212, 0.45);
+    background: rgba(196, 231, 212, 0.04);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stego-drop-card.is-loaded {
+    border-style: solid;
+    border-color: rgba(196, 231, 212, 0.35);
+    background: rgba(15, 23, 42, 0.7);
+}
+
+.stego-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(196, 231, 212, 0.08);
+    border: 1px solid rgba(196, 231, 212, 0.2);
+    color: #C4E7D4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease;
+}
+
+.stego-drop-card:hover .stego-card-icon {
+    transform: scale(1.08);
+}
+
+.stego-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin-bottom: 4px;
+}
+
+.stego-card-sub {
+    font-size: 12px;
+    color: #94A3B8;
+    line-height: 1.4;
+    max-width: 280px;
+}
+
+/* Podgląd załadowanego pliku w drop-card */
+.stego-card-preview {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    width: 100%;
+}
+
+.stego-drop-card.is-loaded .stego-card-preview {
+    display: flex;
+}
+
+.stego-drop-card.is-loaded .stego-card-icon,
+.stego-drop-card.is-loaded .stego-card-sub {
+    display: none;
+}
+
+.stego-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(196, 231, 212, 0.3);
+    background: #000;
+}
+
+/* Ukrywaj pusty element img gdy src jest pusty */
+.stego-thumb:not([src]),
+.stego-thumb[src=""],
+.stego-thumb[src="#"] {
+    display: none !important;
+}
+
+.stego-file-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stego-file-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #C4E7D4;
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stego-file-specs {
+    font-size: 11px;
+    color: #94A3B8;
+}
+
+/* Karta Pojemności LSB */
+.stego-capacity-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stego-cap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+}
+
+.stego-cap-label {
+    color: #94A3B8;
+    font-weight: 600;
+}
+
+.stego-cap-val {
+    color: #C4E7D4;
+    font-weight: 700;
+    font-family: inherit;
+}
+
+.stego-progress-bar-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.stego-progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #C4E7D4, #7DD3FC);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.stego-progress-bar-fill.warning {
+    background: linear-gradient(90deg, #FDE68A, #F59E0B);
+}
+
+.stego-progress-bar-fill.danger {
+    background: #F87171;
+}
+
+.stego-cap-subtext {
+    font-size: 11.5px;
+    color: #64748B;
+}
+
+/* Karta Hasła Szyfrującego */
+.stego-password-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px 18px;
+}
+
+.stego-password-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94A3B8;
+    flex-shrink: 0;
+}
+
+.stego-password-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.stego-pwd-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #CBD5E1;
+}
+
+.stego-pwd-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: #FFFFFF;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.18s ease;
+}
+
+.stego-pwd-input:focus {
+    border-color: #C4E7D4;
+}
+
+/* Karty Wyników */
+.stego-result-card {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(196, 231, 212, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 16px;
+    animation: stegoFadeIn 0.28s ease;
+}
+
+.stego-result-card.active,
+.stego-result-card[style*="display: block"],
+.stego-result-card[style*="display: flex"] {
+    display: flex !important;
+}
+
+.stego-result-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stego-res-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #F8FAFC;
+}
+
+.stego-result-body {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.stego-res-thumb {
+    width: 90px;
+    height: 90px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(196, 231, 212, 0.3);
+    background: #000;
+    flex-shrink: 0;
+}
+
+.stego-res-thumb:not([src]),
+.stego-res-thumb[src=""],
+.stego-res-thumb[src="#"] {
+    display: none !important;
+}
+
+.stego-res-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.stego-res-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #C4E7D4;
+}
+
+.stego-res-meta {
+    font-size: 12px;
+    color: #94A3B8;
+}
+
+.stego-res-desc {
+    font-size: 12px;
+    color: #64748B;
+    line-height: 1.45;
+    margin: 4px 0 0 0;
+}
+
+.stego-res-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stego-reveal-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-top: 14px;
+}
+
+.stego-reveal-pass-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 @media (max-width: 640px) {
     .stego-mode-nav {
         width: 100%;

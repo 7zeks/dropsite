@@ -104,18 +104,15 @@ body {
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #0B0F19;
+    background-color: #090E17;
     
-    /* Bogate, przestrzenne, energetyczne tło pełne życia i pozytywnego blasku */
-    background-image: 
-        radial-gradient(ellipse 90% 55% at 50% -5%, rgba(56, 189, 248, 0.18) 0%, transparent 65%),
-        radial-gradient(circle at 12% 35%, rgba(52, 211, 153, 0.16) 0%, transparent 45%),
-        radial-gradient(circle at 88% 30%, rgba(129, 140, 248, 0.15) 0%, transparent 45%),
-        radial-gradient(circle at 50% 85%, rgba(56, 189, 248, 0.1) 0%, transparent 55%),
-        radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        radial-gradient(rgba(52, 211, 153, 0.08) 2px, transparent 2px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 30px 30px, 80px 80px;
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+    /* Czyste, nowoczesne tło spójne ze stroną główną w całym serwisie */
+    background-image:
+        radial-gradient(ellipse at 18% 18%, rgba(196, 231, 212, 0.18), transparent 48%),
+        radial-gradient(ellipse at 88% 28%, rgba(56, 189, 248, 0.17), transparent 48%),
+        radial-gradient(ellipse at 50% 90%, rgba(110, 231, 183, 0.09), transparent 55%),
+        linear-gradient(135deg, #131D2E, #090E17);
+    background-size: 100% 100%;
     background-attachment: fixed;
     
     color: var(--text-main);

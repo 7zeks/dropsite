@@ -317,12 +317,15 @@
     }
 
     window.openVideoCompressor = function (file) {
-        const modal = document.getElementById('videoCompressModal');
-        if (modal) {
-            modal.classList.add('open');
-            document.body.style.overflow = 'hidden';
-            if (file) handleSelectedVideo(file);
+        if (window.switchToolTab) {
+            window.switchToolTab('video-compress');
+        } else if (window.openToolTab) {
+            window.openToolTab('video-compress');
+        } else {
+            const btn = document.getElementById('btnSidebarVideoCompress');
+            if (btn) btn.click();
         }
+        if (file) handleSelectedVideo(file);
     };
 
     window.DropsiteCompressor = {

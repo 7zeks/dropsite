@@ -175,7 +175,8 @@
     padding: clamp(28px, 3.2vh, 42px) clamp(24px, 2.8vw, 44px) !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease !important;
+    transform: translateZ(0);
     position: relative !important;
     z-index: 2 !important;
     overflow: visible !important;

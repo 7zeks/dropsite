@@ -39,6 +39,10 @@
 /checksum               /index.html 200
 /integralnosc           /index.html 200
 /sha256                 /index.html 200
+/upscale                /index.html 200
+/upscaler               /index.html 200
+/powieksz-zdjecie       /index.html 200
+/super-resolution       /index.html 200
 /skrzynka-wrzutowa      /index.html 200
 /drop-request           /index.html 200
 /pobierz-wideo          /index.html 200

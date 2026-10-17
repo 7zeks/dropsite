@@ -3,7 +3,7 @@
  * Cache-First / Stale-While-Revalidate with auto-invalidation.
  */
 
-const CACHE_NAME = 'dropsite-studio-v3.5.1';
+const CACHE_NAME = 'dropsite-studio-v3.5.18-delicate-success';
 
 const PRECACHE_ASSETS = [
     './',
@@ -20,7 +20,36 @@ const PRECACHE_ASSETS = [
     './css/widgets.css',
     './css/motion.css',
     './css/motion-premium.css',
+    './css/motion-home.css',
+    './css/motion-delivery.css',
+    './css/delivery-glass.css',
+    './js/archive-thumbnails.js',
+    './js/delivery-gallery.js',
+    './css/delivery-gallery.css',
+    './css/delivery-lightbox.css',
+    './css/tools-atelier.css',
+    './css/glass-dock.css',
+    './css/pro-experience.css',
+    './js/pro-experience.js',
+    './js/pro-ribbon-scene.js',
+    './js/glass-dock.js',
+    './js/tools-atelier.js',
+    './js/tools-gallery.js',
+    './css/tools-gallery.css',
+    './css/workspace-glass.css',
+    './js/tools-atelier-scene.js',
+    './js/vendor/three.module.min.js',
+    './js/motion-home.js',
     './css/my-files.css',
+    './css/files-workspace.css',
+    './css/features.css',
+    './css/pricing.css',
+    './css/transfer-history.css',
+    './css/contact.css',
+    './css/notebook.css',
+    './js/files-workspace.js',
+    './js/files-selection.js',
+    './js/files-bulk-delete.js',
     './css/telemetry.css',
     './css/bento-showcase.css',
     './css/concierge.css',

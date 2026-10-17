@@ -55,7 +55,7 @@ To narzędzie dla nowoczesnych profesjonalistów, twórców, agencji i wymagają
 * **Akcje pomocnicze jako Ghost Actions / Czysty Tekst z Ikoną**:
   - Przyciski pomocnicze (np. *Udostępnij*, *Nowy plik*, *Powiększ*, *Direct link*) mają postać lekkich, szklanych akcji bez ciężkich teł, które elegancko rozświetlają się dopiero przy najechaniu lub dotknięciu.
 * **Estetyka klasy Awwwards**:
-  - Interfejs ma sprawiać wrażenie lewitującego, krystalicznie czystego kokpitu – przestronny, minimalistyczny, z idealnym balansem światła i cienia.
+  - Interfejs ma sprawiać wrażenieta<!--  --> krystalicznie czystego kokpitu – przestronny, minimalistyczny, z idealnym balansem światła i cienia.
 
 ### 3.2. Paleta Barw – Żywa, Pozytywna Mięta i Świeży Kosmos
 * **Głębokie tło Obsidian Glass**:

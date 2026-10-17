@@ -1,0 +1,96 @@
+/* Notebook studio. Storage, synchronization and editing remain owned by account-vault. */
+.mod-modal:not(.is-admin-dashboard) .account-vault-modal-container { width:min(1240px,96vw) !important; max-width:1240px !important; height:88dvh; max-height:900px; padding:0 !important; border:0 !important; border-radius:20px; }
+.account-vault-wrap { background:#132029; border:1px solid #d4e9ee1c; border-radius:18px; box-shadow:none; color:#e6f0ea; }
+.account-vault-wrap .vault-topbar { padding:22px 64px 22px 24px; gap:18px; background:linear-gradient(110deg,#bcebd807,transparent); border-color:#d4e9ee12; backdrop-filter:none; }
+.account-vault-wrap .vault-badge-icon { width:40px; height:40px; border-radius:13px; background:#e8c4790a; border-color:#e8c47927; color:#e8c479; box-shadow:none; }
+.account-vault-wrap .vault-main-title { font-size:17px; font-weight:550; letter-spacing:-.4px; }
+.account-vault-wrap .vault-sparkle { display:none; }
+.account-vault-wrap .vault-user-chip { margin-top:5px; font-size:10px; color:#8fa99b; }
+.account-vault-wrap .vault-sync-indicator { box-shadow:none; font-size:10px; font-weight:500; border-radius:7px; }
+.account-vault-wrap .vault-sync-indicator.synced { background:#bcebd807; border-color:#bcebd81b; color:#b5d8c5; }
+.account-vault-wrap .vault-sync-indicator.synced .vault-sync-dot { background:#bcebd8; box-shadow:none; }
+.account-vault-wrap .vault-btn-primary { background:#c3eddb; color:#13281f; border:1px solid #d9f5e7; border-radius:9px; padding:10px 14px; font-size:12px; font-weight:600; box-shadow:none; }
+.account-vault-wrap .vault-btn-primary:hover { background:#d9f5e7; box-shadow:none; }
+.account-vault-wrap .vault-btn-ghost { border-radius:9px; border-color:#d4e9ee18; background:transparent; color:#aac0b4; box-shadow:none; padding:10px 12px; }
+.account-vault-wrap .vault-split-body { min-height:360px; }
+.account-vault-wrap .vault-sidebar { width:290px; min-width:240px; background:#101b23; border-color:#d4e9ee12; }
+.account-vault-wrap .vault-sidebar-search { padding:20px 16px 12px; border:0; }
+.account-vault-wrap .vault-search-box { background:#d4e9ee04; border:1px solid #d4e9ee14; border-radius:9px; color:#8ba99a; box-shadow:none; }
+.account-vault-wrap .vault-search-box:focus-within { border-color:#bcebd84a; box-shadow:none; }
+.account-vault-wrap .vault-search-input { font-size:12px; color:#d8e8df; }
+.account-vault-wrap .vault-category-chips { padding:8px 16px 16px; gap:6px; border-color:#d4e9ee0a; }
+.account-vault-wrap .vault-cat-chip { border-radius:7px; padding:6px 8px; font-size:10px; background:transparent; border-color:transparent; color:#91aa9d; box-shadow:none; }
+.account-vault-wrap .vault-cat-chip.active { color:#c3eddb; background:#c3eddb0c; border-color:#c3eddb22; box-shadow:none; }
+.account-vault-wrap .vault-notes-list { padding:10px; scrollbar-width:thin; scrollbar-color:#bcebd825 transparent; }
+.account-vault-wrap .vault-note-item { position:relative; padding:17px 15px; margin-bottom:6px; border:1px solid transparent; border-radius:11px; background:transparent; box-shadow:none; }
+.account-vault-wrap .vault-note-item:hover { background:#d4e9ee04; border-color:#d4e9ee0d; transform:none; }
+.account-vault-wrap .vault-note-item.active { background:#bcebd809; border-color:#bcebd824; box-shadow:none; }
+.account-vault-wrap .vault-note-item.active::before { content:''; position:absolute; top:18px; bottom:18px; left:0; width:2px; border-radius:3px; background:#c3eddb; }
+.account-vault-wrap .vault-note-item-title { font-size:13px; font-weight:550; color:#c8dcd0; }
+.account-vault-wrap .vault-note-item.active .vault-note-item-title { color:#e8f4ec; }
+.account-vault-wrap .vault-note-snippet { margin-top:8px; color:#819c8d; font-size:11px; line-height:1.7; }
+.account-vault-wrap .vault-note-item.active .vault-note-snippet { color:#9cb6a7; }
+.account-vault-wrap .vault-note-meta-row { margin-top:12px; font-size:9px; color:#769284; }
+.account-vault-wrap .vault-note-category-tag { border-radius:5px; font-size:9px; font-weight:500; }
+.account-vault-wrap .vault-editor-pane { min-width:0; background:#16242d; }
+.account-vault-wrap .vault-editor-header { padding:24px 28px 18px; border-color:#d4e9ee10; background:transparent; }
+.account-vault-wrap .vault-title-input { font-size:clamp(20px,2.6vw,28px); font-weight:550; letter-spacing:-.6px; color:#edf5f2; background:transparent; border-color:transparent; }
+.account-vault-wrap .vault-title-input:focus { border-color:#bcebd830; box-shadow:none; }
+.account-vault-wrap .vault-editor-tools { gap:6px; flex-wrap:wrap; }
+.account-vault-wrap .vault-tool-btn { border-radius:8px; border-color:transparent; background:transparent; color:#92afa0; box-shadow:none; }
+.account-vault-wrap .vault-tool-btn:hover { background:#d4e9ee07; border-color:#d4e9ee15; color:#c3eddb; }
+.account-vault-wrap .vault-tool-btn.active { color:#c3eddb; background:#c3eddb0b; border-color:#c3eddb21; }
+.account-vault-wrap .vault-textarea-wrap { background:transparent; }
+.account-vault-wrap .vault-textarea { padding:22px 28px; background-image:none; font-size:14px; line-height:28px; letter-spacing:0; color:#d2e3d8; caret-color:#c3eddb; }
+.account-vault-wrap .vault-textarea::placeholder { color:#6e897b; }
+.account-vault-wrap .vault-line-numbers { padding-top:22px; padding-bottom:22px; background:#d4e9ee02; border-color:#d4e9ee09; line-height:28px; }
+.account-vault-wrap .vault-line-num { line-height:28px; height:28px; color:#6d897a; }
+.account-vault-wrap .vault-statusbar { padding:12px 20px; background:#101b23; border-color:#d4e9ee12; color:#7f9d8b; font-size:10px; }
+.account-vault-wrap .vault-stat-item strong { color:#a9c8b6; font-weight:500; }
+.account-vault-wrap .vault-generator-popover,.account-vault-wrap .vault-format-popover { background:#1b2c34; border-color:#bcebd829; border-radius:13px; box-shadow:0 18px 60px #0005; }
+.account-vault-wrap .vault-empty-list { color:#8faa9c; font-size:13px; line-height:1.9; }
+.account-vault-wrap :is(button,input):focus-visible { outline:2px solid #bcebd8; outline-offset:3px; }
+.account-vault-wrap textarea:focus-visible { outline:0; box-shadow:inset 2px 0 #bcebd830; }
+.account-vault-wrap #vaultToolDeleteBtn,
+.account-vault-wrap #vaultToolDeleteBtn.confirming-delete {
+    width:108px; min-width:108px; height:32px; flex:0 0 108px;
+    box-sizing:border-box; padding:5px 9px; justify-content:center;
+    white-space:nowrap; animation:none; box-shadow:none;
+}
+.account-vault-wrap #vaultToolDeleteBtn::after { content:'Usu\0144'; font-size:11px; }
+.account-vault-wrap #vaultToolDeleteBtn.confirming-delete::after { content:'Potwierd\017a'; }
+.account-vault-wrap #vaultToolDeleteBtn .vault-delete-confirm-label { display:none; }
+.account-vault-wrap #vaultToolDeleteBtn.confirming-delete,
+.account-vault-wrap #vaultToolDeleteBtn.confirming-delete:hover { background:#f2ddd5; border-color:#c98e7d; color:#873c2b; }
+@media(max-width:768px) {
+    .account-vault-wrap .vault-topbar { padding:16px 48px 16px 16px; gap:12px; }
+    .account-vault-wrap .vault-sidebar { width:100%; min-width:0; }
+    .account-vault-wrap .vault-editor-header { padding:18px; }
+    .account-vault-wrap .vault-textarea { padding:16px 18px; font-size:16px; line-height:28px; }
+    .account-vault-wrap .vault-line-numbers { padding-top:16px; padding-bottom:16px; }
+    .account-vault-wrap .vault-main-title { font-size:14px; }
+    .account-vault-wrap .vault-statusbar { flex-wrap:wrap; gap:8px; padding:10px 12px; }
+}
+@media(prefers-reduced-motion:reduce) { .account-vault-wrap * { transition:none !important; animation:none !important; } }
+
+/* Cool slate with soft blue accents. */
+.account-vault-wrap { background:#18212d; border-color:#afc7df24; color:#e4ecf5; }
+.account-vault-wrap .vault-topbar { background:linear-gradient(110deg,#718fb812,transparent); border-color:#afc7df18; }
+.account-vault-wrap .vault-badge-icon { background:#a7c9f010; border-color:#a7c9f02a; color:#a7c9f0; }
+.account-vault-wrap .vault-sidebar,.account-vault-wrap .vault-statusbar { background:#141d28; border-color:#afc7df18; }
+.account-vault-wrap .vault-editor-pane { background:#1d2836; }
+.account-vault-wrap .vault-user-chip,.account-vault-wrap .vault-note-snippet,.account-vault-wrap .vault-statusbar { color:#8d9eb4; }
+.account-vault-wrap .vault-search-box { background:#afc7df05; border-color:#afc7df20; color:#91a8c4; }
+.account-vault-wrap .vault-btn-primary { background:#b1cdf0; border-color:#c9def5; color:#1c3049; }
+.account-vault-wrap .vault-btn-primary:hover { background:#c9def5; }
+.account-vault-wrap .vault-note-item.active,.account-vault-wrap .vault-cat-chip.active,.account-vault-wrap .vault-tool-btn.active { background:#a7c9f010; border-color:#a7c9f030; color:#c0d7f2; }
+.account-vault-wrap .vault-note-item.active::before { background:#a7c9f0; }
+.account-vault-wrap .vault-note-item-title,.account-vault-wrap .vault-note-item.active .vault-note-item-title { color:#d8e5f4; }
+.account-vault-wrap .vault-title-input { color:#e7eff9; }
+.account-vault-wrap .vault-textarea { color:#cad8e9; caret-color:#b1cdf0; }
+.account-vault-wrap .vault-textarea::placeholder { color:#72849c; }
+.account-vault-wrap .vault-line-numbers { background:#afc7df03; border-color:#afc7df10; }
+.account-vault-wrap .vault-line-num { color:#778ca6; }
+.account-vault-wrap .vault-tool-btn,.account-vault-wrap .vault-btn-ghost,.account-vault-wrap .vault-cat-chip { color:#98adc7; }
+.account-vault-wrap .vault-generator-popover,.account-vault-wrap .vault-format-popover { background:#233247; border-color:#afc7df30; }
+.account-vault-wrap :is(button,input):focus-visible { outline-color:#b1cdf0; }

@@ -1,0 +1,48 @@
+/* Transfer history: a quiet timeline with one scrollable surface. */
+#historyModalWrap { background:#040b12bd; backdrop-filter:blur(18px); }
+#historyModalWrap .mod-container {
+    width:min(800px,94vw); max-width:800px !important; max-height:86dvh;
+    padding:32px !important; border-radius:22px;
+    background:radial-gradient(ellipse at 100% 0%,#b8d9f10c,transparent 55%),#111e27 !important;
+    border:1px solid #d4e9ee21 !important; box-shadow:0 30px 100px #0006 !important;
+}
+#historyModalWrap .mod-container::before,#historyModalWrap .mod-container::after { display:none; }
+#historyModalWrap .mod-header { margin:0 0 18px; padding:0 0 22px; border-bottom:1px solid #d4e9ee12; }
+#historyModalWrap .mod-header > div { gap:16px !important; }
+#historyModalWrap .mod-header > div > svg { flex-shrink:0; width:24px; height:24px; padding:12px; box-sizing:content-box; border:1px solid #e8c4792b; border-radius:15px; background:#e8c4790b; stroke:#e8c479; }
+#historyModalWrap .mod-header h2 { font-size:clamp(21px,3vw,28px); font-weight:600; line-height:1.2; letter-spacing:-.8px; color:#edf5f2; }
+#historyModalWrap .mod-close { flex-shrink:0; width:34px; height:34px; border:1px solid #d4e9ee16; border-radius:10px; background:#d4e9ee05; color:#a8bbb3; }
+#historyModalWrap [data-i18n="history_modal_sub"] { color:#97ada3 !important; font-size:12px !important; line-height:1.8; margin-bottom:24px !important; max-width:540px; }
+#historyModalWrap #userHistoryList { display:flex; flex-direction:column; gap:0; margin:0; padding:0 5px 0 0; max-height:none !important; overflow:visible; list-style:none; }
+#historyModalWrap .mod-file-item { position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:20px 10px !important; margin:0; border:0 !important; border-bottom:1px solid #d4e9ee0d !important; border-radius:0 !important; background:transparent !important; box-shadow:none !important; transition:background .2s; }
+#historyModalWrap .mod-file-item:last-child { border-bottom:0 !important; }
+#historyModalWrap .mod-file-item:hover { background:#d4e9ee04 !important; transform:none; }
+#historyModalWrap .mod-file-main { min-width:0; gap:16px; }
+#historyModalWrap .mod-preview-icon { flex:0 0 44px; width:44px; height:44px; border:1px solid #d4e9ee12; border-radius:13px; background:#d4e9ee05; box-shadow:none; }
+#historyModalWrap .mod-preview-icon svg { width:21px; height:21px; }
+#historyModalWrap .mod-file-info { min-width:0; gap:8px; }
+#historyModalWrap .mod-file-name { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#dfece6; font-size:14px; font-weight:500; letter-spacing:-.15px; }
+#historyModalWrap .mod-file-name:hover { color:#c3eddb; }
+#historyModalWrap .mod-meta-row { gap:8px; flex-wrap:wrap; }
+#historyModalWrap .mod-badge-size { padding:0; border:0; background:transparent; color:#81988d; font-size:11px; }
+#historyModalWrap .mod-badge-exp { padding:3px 8px; border-radius:6px; font-size:10px; font-weight:500; box-shadow:none; }
+#historyModalWrap .exp-perm { color:#bcebd8; background:#bcebd80b; border:1px solid #bcebd81a; }
+#historyModalWrap .exp-30d { color:#b8d9f1; background:#b8d9f10b; border:1px solid #b8d9f11a; }
+#historyModalWrap .exp-1d,#historyModalWrap .exp-burn { color:#e8c479; background:#e8c4790b; border:1px solid #e8c4791a; }
+#historyModalWrap .mod-actions { flex-shrink:0; }
+#historyModalWrap .btn-copy-mod { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 13px; border:1px solid #c3eddb22; border-radius:9px; background:#c3eddb06; color:#bce0cf; font-family:inherit; font-size:11px; font-weight:500; box-shadow:none; white-space:nowrap; }
+#historyModalWrap .btn-copy-mod:hover { background:#c3eddb13; border-color:#c3eddb44; transform:none; box-shadow:none; }
+#historyModalWrap .history-footer { padding-top:22px; margin-top:16px !important; border-top:1px solid #d4e9ee14; }
+#historyModalWrap :is(#cleanExpiredHistoryBtn,#clearHistoryBtn) { width:auto; margin:0; min-height:38px; padding:9px 13px !important; border-radius:9px; border:1px solid #d4e9ee15; background:transparent; color:#99afa3; box-shadow:none; font-size:11px !important; }
+#historyModalWrap #clearHistoryBtn:hover { color:#efb2ad; border-color:#efb2ad35; background:#efb2ad07; }
+#historyModalWrap :is(button,a):focus-visible { outline:2px solid #c3eddb; outline-offset:4px; }
+#historyModalWrap #userHistoryList > p { width:100%; box-sizing:border-box; padding:48px 24px; border:1px dashed #c3eddb22; border-radius:14px; background:#c3eddb03; line-height:1.8; }
+@media(max-width:580px) {
+    #historyModalWrap .mod-container { padding:24px 18px !important; width:96vw; max-height:90dvh; }
+    #historyModalWrap .mod-header > div { gap:12px !important; }
+    #historyModalWrap .mod-header > div > svg { width:20px; height:20px; padding:9px; }
+    #historyModalWrap .mod-file-item { flex-wrap:wrap; gap:12px; padding:18px 4px !important; }
+    #historyModalWrap .mod-file-main { width:100%; }
+    #historyModalWrap .mod-actions { padding-left:60px; }
+}
+@media(prefers-reduced-motion:reduce) { #historyModalWrap * { transition:none !important; animation:none !important; } }

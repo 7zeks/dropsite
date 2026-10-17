@@ -152,8 +152,8 @@
         }
 
         function animate() {
-            // Wstrzymaj animację cząsteczek na urządzeniach mobilnych, w trybie Eco lub podczas aktywnego uploadu
-            if (isEcoMode() || !isVisible || window._isUploadingActive || window.innerWidth <= 768) {
+            // Wstrzymaj animację cząsteczek na urządzeniach mobilnych, w trybie Eco, podczas uploadu lub otwartego modala
+            if (isEcoMode() || !isVisible || window._isUploadingActive || window.innerWidth <= 768 || document.body.classList.contains('is-modal-active')) {
                 animFrameId = null;
                 return;
             }
@@ -162,7 +162,7 @@
         }
 
         function startAnimation() {
-            if (animFrameId || window._isUploadingActive || window.innerWidth <= 768) return;
+            if (animFrameId || window._isUploadingActive || window.innerWidth <= 768 || document.body.classList.contains('is-modal-active')) return;
             animate();
         }
 
@@ -177,7 +177,16 @@
         window.addEventListener('dropsite:upload-state-changed', (e) => {
             if (e.detail?.isUploading) {
                 stopAnimation();
-            } else if (isVisible && window.innerWidth > 768 && !isEcoMode()) {
+            } else if (isVisible && window.innerWidth > 768 && !isEcoMode() && !document.body.classList.contains('is-modal-active')) {
+                startAnimation();
+            }
+        });
+
+        // Wstrzymaj cząsteczki w tle, gdy użytkownik otworzy pełnoekranowy modal (Moje Pliki, Sejf itp.)
+        window.addEventListener('dropsite:modal-state-changed', (e) => {
+            if (e.detail?.isOpen) {
+                stopAnimation();
+            } else if (isVisible && window.innerWidth > 768 && !isEcoMode() && !window._isUploadingActive) {
                 startAnimation();
             }
         });
@@ -637,6 +646,12 @@
     // INITIALIZATION
     // =========================================================================
     function init() {
+        // The new homepage owns its motion; keep the download experience available.
+        if (document.getElementById('motionHero')) {
+            initDownloadStageMotion();
+            initDownloadViewObserver();
+            return;
+        }
         initParticleField();
         initLiquidRipple();
         initStaggeredReveals();

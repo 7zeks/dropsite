@@ -8,27 +8,33 @@
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
     max-width: clamp(520px, 44vw, 780px) !important;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease !important;
+    transform: translateZ(0) !important;
 }
 
-.siri-glow-frame:has(#successFlow:not([hidden])) .siri-fluid-plasma {
-    opacity: 0.15 !important;
-    filter: blur(64px) !important;
+.siri-glow-frame:has(#successFlow:not([hidden])) .siri-fluid-plasma,
+.siri-glow-frame:has(#successFlow:not([hidden])) .siri-plasma-blob,
+.siri-glow-frame:has(#successFlow:not([hidden])) .siri-plasma-aura {
+    opacity: 0.12 !important;
+    animation-play-state: paused !important;
+    will-change: auto !important;
 }
 
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
     width: 100% !important;
     padding: clamp(28px, 3.2vh, 42px) clamp(24px, 2.8vw, 44px) !important;
-    background: linear-gradient(180deg, rgba(26, 38, 58, 0.65) 0%, rgba(12, 19, 32, 0.82) 100%) !important;
-    backdrop-filter: blur(36px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: linear-gradient(180deg, rgba(16, 24, 38, 0.88) 0%, rgba(10, 16, 26, 0.94) 100%) !important;
+    backdrop-filter: blur(14px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     box-shadow: 
-        0 30px 80px -15px rgba(0, 0, 0, 0.78),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
-        inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+        0 24px 60px -15px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.3) !important;
     border-radius: clamp(24px, 2.2vw, 32px) !important;
+    contain: layout !important;
+    transform: translateZ(0);
 }
 
 /* Ukryj przełącznik trybów Chmura/Beam gdy plik jest już wrzucony (niepotrzebny clutter) */
@@ -120,8 +126,7 @@
     right: 2px;
     color: #38BDF8;
     filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
-    animation: sparkleBurst 0.6s 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               sparkleTwinkle 2.6s 0.85s ease-in-out infinite alternate;
+    animation: sparkleBurst 0.6s 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .vault-sparkle.sparkle-2 {
@@ -129,8 +134,7 @@
     left: 2px;
     color: #6EE7B7;
     filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.75));
-    animation: sparkleBurst 0.6s 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               sparkleTwinkle 3s 0.95s ease-in-out infinite alternate-reverse;
+    animation: sparkleBurst 0.6s 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .vault-sparkle.sparkle-3 {
@@ -138,8 +142,7 @@
     left: -4px;
     color: #BAE6FD;
     filter: drop-shadow(0 0 4px rgba(186, 230, 253, 0.75));
-    animation: sparkleBurst 0.55s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               sparkleTwinkle 2.2s 1s ease-in-out infinite alternate;
+    animation: sparkleBurst 0.55s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .vault-badge-circle {
@@ -156,7 +159,7 @@
     align-items: center;
     justify-content: center;
     color: #38BDF8;
-    animation: checkLevitate 3.2s 0.55s ease-in-out infinite;
+    transform: translateZ(0);
 }
 
 .vault-check-svg {
@@ -165,8 +168,8 @@
     color: #38BDF8;
     filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 2px #38BDF8);
     animation: drawCheckmark 0.45s 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               checkGlowBreath 3.2s 0.55s ease-in-out infinite;
+               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: translateZ(0);
 }
 
 @keyframes checkPopIn {
@@ -297,12 +300,11 @@
 }
 
 .sfc-thumb-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
-    background: rgba(56, 189, 248, 0.08);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    color: #38BDF8;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -311,20 +313,94 @@
     position: relative;
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    contain: paint layout;
+    transform: translateZ(0);
 }
 
 .sfc-thumb-box:hover {
-    background: rgba(56, 189, 248, 0.2);
-    border-color: rgba(56, 189, 248, 0.45);
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(52, 211, 153, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .sfc-live-thumb {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
+    display: block;
+    transform: translateZ(0);
+    image-rendering: auto;
+}
+
+.sfc-video-badge-wrap,
+.sfc-audio-badge-wrap,
+.sfc-zip-badge-wrap,
+.sfc-pdf-badge-wrap,
+.sfc-doc-badge-wrap,
+.sfc-collage-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.sfc-video-badge-wrap { background: radial-gradient(circle, rgba(167, 139, 250, 0.18) 0%, rgba(15, 23, 42, 0.7) 100%); }
+.sfc-audio-badge-wrap { background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.7) 100%); }
+.sfc-zip-badge-wrap   { background: radial-gradient(circle, rgba(251, 191, 36, 0.18) 0%, rgba(15, 23, 42, 0.7) 100%); }
+.sfc-pdf-badge-wrap   { background: radial-gradient(circle, rgba(251, 113, 133, 0.18) 0%, rgba(15, 23, 42, 0.7) 100%); }
+.sfc-doc-badge-wrap   { background: radial-gradient(circle, rgba(148, 163, 184, 0.15) 0%, rgba(15, 23, 42, 0.7) 100%); }
+.sfc-album-badge-bg   { background: radial-gradient(circle, rgba(52, 211, 153, 0.18) 0%, rgba(15, 23, 42, 0.7) 100%); }
+
+.sfc-media-badge-pill {
+    position: absolute;
+    bottom: 2px;
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1;
+    padding: 1.5px 3.5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.65);
+    color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+}
+
+.sfc-collage-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 1.5px 4px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #34D399;
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    pointer-events: none;
+}
+
+.sfc-play-badge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.32);
+    color: #FFFFFF;
+    border-radius: 10px;
+    pointer-events: none;
+    transition: background 0.2s ease;
 }
 
 .sfc-info-col {
@@ -552,12 +628,12 @@
     user-select: none;
 }
 
-/* Shimmer beam przechodzący przez przycisk Kopiuj */
+/* Shimmer beam przechodzący przez przycisk Kopiuj (GPU-accelerated na hover) */
 .clean-copy-btn::before {
     content: '';
     position: absolute;
     top: 0;
-    left: -120%;
+    left: 0;
     width: 80%;
     height: 100%;
     background: linear-gradient(
@@ -568,18 +644,21 @@
         rgba(196, 231, 212, 0.4) 75%,
         transparent 100%
     );
-    transform: skewX(-20deg);
-    animation: buttonSheenLoop 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    transform: translateX(-150%) skewX(-20deg);
     pointer-events: none;
     z-index: 1;
 }
 
-@keyframes buttonSheenLoop {
-    0%, 35% {
-        left: -120%;
+.clean-copy-btn:hover::before {
+    animation: buttonSheenHover 0.75s ease forwards;
+}
+
+@keyframes buttonSheenHover {
+    0% {
+        transform: translateX(-150%) skewX(-20deg);
     }
-    75%, 100% {
-        left: 220%;
+    100% {
+        transform: translateX(250%) skewX(-20deg);
     }
 }
 
@@ -956,14 +1035,14 @@
 
 .upload-container:has(#successFlow:not([hidden])),
 .studio-hero-right .upload-container:has(#successFlow:not([hidden])) {
-    background: linear-gradient(180deg, rgba(26, 38, 58, 0.65) 0%, rgba(12, 19, 32, 0.82) 100%) !important;
-    backdrop-filter: blur(36px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: linear-gradient(180deg, rgba(16, 24, 38, 0.88) 0%, rgba(10, 16, 26, 0.94) 100%) !important;
+    backdrop-filter: blur(14px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     box-shadow:
-        0 30px 80px -15px rgba(0, 0, 0, 0.78),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
-        inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+        0 24px 60px -15px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ===== OPCJA A – WZMOCNIONY MOMENT TRIUMFU (Czysty, luksusowy sygnet) ===== */
@@ -986,10 +1065,10 @@
     inset: -14px !important;
     border-radius: 50% !important;
     background: radial-gradient(circle,
-        rgba(196, 231, 212, 0.45) 0%,
-        rgba(52, 211, 153, 0.2) 40%,
+        rgba(196, 231, 212, 0.35) 0%,
+        rgba(52, 211, 153, 0.15) 40%,
         transparent 70%) !important;
-    filter: blur(14px) !important;
+    transform: translateZ(0) !important;
     pointer-events: none !important;
 }
 
@@ -1016,21 +1095,10 @@
     height: 36px !important;
     color: #C4E7D4 !important;
     stroke: #C4E7D4 !important;
-    filter: drop-shadow(0 0 10px rgba(196, 231, 212, 0.85)) drop-shadow(0 0 2px rgba(196, 231, 212, 1)) !important;
+    filter: drop-shadow(0 2px 8px rgba(196, 231, 212, 0.65)) !important;
     animation: drawCheckmark 0.45s 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-               checkGlowBreathMint 3.2s 0.55s ease-in-out infinite !important;
-}
-
-@keyframes checkGlowBreathMint {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 0.9;
-    }
-    50% {
-        transform: scale(1.05);
-        opacity: 1;
-    }
+               checkPopIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    transform: translateZ(0) !important;
 }
 
 .vault-sparkle.sparkle-1 { color: #E2F5EC !important; filter: drop-shadow(0 0 6px rgba(196, 231, 212, 0.85)) !important; }
@@ -1064,7 +1132,8 @@
         0 12px 32px -6px rgba(0, 0, 0, 0.45),
         inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
     overflow: hidden !important;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease !important;
+    transform: translateZ(0) !important;
 }
 
 .success-vault-pass:hover {

@@ -52,8 +52,10 @@
     const spotlightSelector = '.upload-container, .bento-card, .toolbox-tool-card, .hud-showcase-card, .grabber-stage-wrapper';
 
     document.addEventListener('pointermove', (e) => {
-        if (document.documentElement.classList.contains('eco-mode')) return;
+        if (document.documentElement.classList.contains('eco-mode') || document.body.classList.contains('is-modal-active')) return;
         if (e.pointerType === 'touch') return; // Wyłącz na ekranach dotykowych
+        const sFlow = document.getElementById('successFlow');
+        if (sFlow && !sFlow.hidden) return; // Optymalizacja GPU: wyłącz ciągłe odświeżanie --spot-x/y na oknie sukcesu
 
         const card = e.target.closest(spotlightSelector);
         if (!card) {

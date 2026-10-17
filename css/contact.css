@@ -1,0 +1,46 @@
+/* Contact and support, consistent with the feature and pricing galleries. */
+#view-kontakt > .main-wrapper { width:100%; max-width:1100px !important; padding:48px 28px 60px; box-sizing:border-box; }
+#view-kontakt .contact-gallery { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:22px; padding:0 !important; background:transparent; border:0; box-shadow:none; }
+#view-kontakt .upload-header { grid-column:1/-1; text-align:center; max-width:760px; margin:0 auto 20px; }
+#view-kontakt .upload-header::before { content:'DROPSITE'; display:inline-block; padding:7px 13px; margin-bottom:20px; border:1px solid #bcebd82b; border-radius:30px; background:#bcebd808; color:#b7dece; font-size:10px; font-weight:600; letter-spacing:2.5px; }
+#view-kontakt .upload-header h1 { margin:0 0 18px; font-size:clamp(34px,4.5vw,54px); font-weight:600; line-height:1.12; letter-spacing:-.045em; color:#edf5f2; background:none; -webkit-text-fill-color:currentColor; }
+#view-kontakt .upload-header p { max-width:550px; margin:auto; color:#9eafa9; font-size:15px; line-height:1.8; }
+#view-kontakt .contact-box { position:relative; isolation:isolate; overflow:hidden; align-items:flex-start; justify-content:center; gap:18px; margin:0; padding:34px; text-align:left; background:radial-gradient(ellipse at 100% 0%,#78c9a925,transparent 70%),#13251f; border:1px solid #bcebd82b; border-radius:20px; box-shadow:none; }
+#view-kontakt .contact-box::before { content:''; position:absolute; z-index:-1; right:-55px; top:-65px; width:220px; height:220px; border:1px solid #bcebd80c; border-radius:50%; pointer-events:none; }
+#view-kontakt .contact-email-title { margin:0; color:#bad9ca; font-size:11px; font-weight:500; letter-spacing:1px; text-transform:uppercase; }
+#view-kontakt .contact-email-pill { display:flex; align-items:center; gap:14px; max-width:100%; box-sizing:border-box; padding:0; background:transparent; border:0; border-radius:0; color:#edf5f2 !important; font-size:clamp(17px,2.6vw,25px); font-weight:550; letter-spacing:-.6px; box-shadow:none; overflow-wrap:anywhere; }
+#view-kontakt .contact-email-icon { flex-shrink:0; width:24px; height:24px; color:#bcebd8; }
+#view-kontakt .contact-email-pill:hover { color:#c3eddb !important; background:transparent; border:0; transform:none; box-shadow:none; }
+#view-kontakt .contact-email-pill:hover .contact-email-icon { transform:translateY(-2px); }
+#view-kontakt .contact-hours-text { margin:0; padding-top:18px; border-top:1px solid #bcebd816; width:100%; color:#96afa1; font-size:12px; line-height:1.8; }
+#view-kontakt .contact-documents { display:flex; flex-direction:column; justify-content:center; gap:20px !important; margin:0 !important; padding:30px !important; border:1px solid #b8d9f11f !important; border-radius:20px; background:radial-gradient(ellipse at 100% 0%,#6293ba18,transparent 70%),#111f29; }
+#view-kontakt .contact-documents > span { color:#a1b9c8 !important; font-size:11px !important; font-weight:500 !important; letter-spacing:1px !important; }
+#view-kontakt .contact-documents > div { display:grid !important; grid-template-columns:minmax(0,1fr); gap:10px !important; }
+#view-kontakt .btn-legal-pill { display:flex; justify-content:flex-start; gap:12px; width:100%; padding:12px 14px; border:1px solid #b8d9f11c; border-radius:10px; background:#b8d9f104; color:#d3e3ec; font-size:12px; font-family:inherit; box-shadow:none; }
+#view-kontakt .btn-legal-pill:hover { background:#b8d9f10b; border-color:#b8d9f136; transform:none; box-shadow:none; }
+#view-kontakt .legal-pill-icon { color:#b8d9f1; }
+#view-kontakt .faq-section { grid-column:1/-1; margin-top:24px !important; padding-top:32px !important; border-top:1px solid #d4e9ee14 !important; }
+#view-kontakt .faq-section-header { text-align:left; margin-bottom:28px; }
+#view-kontakt .faq-header-badge { padding:0; margin-bottom:14px; border:0; border-radius:0; background:transparent; color:#b7dece; font-size:10px; letter-spacing:1px; box-shadow:none; }
+#view-kontakt .faq-header-title { font-size:clamp(24px,3vw,32px); line-height:1.25; font-weight:550; letter-spacing:-.8px; margin:0 0 10px; color:#edf5f2; background:none; -webkit-text-fill-color:currentColor; }
+#view-kontakt .faq-header-subtitle { max-width:650px; margin:0; font-size:13px; color:#9eafa9; line-height:1.8; }
+#view-kontakt .faq-accordion-list { display:flex; flex-direction:column; gap:10px; }
+#view-kontakt .faq-card-item { border:1px solid #d4e9ee13; border-radius:13px; background:#11202be0; box-shadow:none; overflow:hidden; }
+#view-kontakt .faq-card-item:hover { border-color:#bcebd830; background:#14252e; box-shadow:none; transform:none; }
+#view-kontakt .faq-card-item[open] { border-color:#bcebd83b; background:#14252b; box-shadow:none; }
+#view-kontakt .faq-card-item summary { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:21px 24px; color:#dfece6; font-size:14px; font-weight:500; line-height:1.6; list-style:none; cursor:pointer; }
+#view-kontakt .faq-question-wrap { display:flex; align-items:baseline; gap:18px; }
+#view-kontakt .faq-num-pill { padding:0; min-width:20px; background:transparent; border:0; color:#779487; font-size:11px; font-weight:500; }
+#view-kontakt .faq-toggle-circle { flex-shrink:0; width:28px; height:28px; border:1px solid #bcebd81a; border-radius:8px; background:transparent; color:#aac7b9; box-shadow:none; }
+#view-kontakt .faq-card-item[open] .faq-toggle-circle { background:#bcebd80c; border-color:#bcebd82b; color:#c3eddb; transform:rotate(45deg); }
+#view-kontakt .faq-content-body { padding:0 65px 24px 62px; margin:0; border:0; background:transparent; color:#a4bbb0; font-size:13px; line-height:1.9; }
+#view-kontakt :is(button,a,summary):focus-visible { outline:2px solid #c3eddb; outline-offset:4px; }
+@media(max-width:700px) {
+    #view-kontakt > .main-wrapper { padding:30px 18px 40px; }
+    #view-kontakt .contact-gallery { grid-template-columns:minmax(0,1fr); gap:16px; }
+    #view-kontakt .contact-box,#view-kontakt .contact-documents { padding:26px !important; }
+    #view-kontakt .faq-card-item summary { padding:18px; font-size:13px; }
+    #view-kontakt .faq-question-wrap { gap:12px; }
+    #view-kontakt .faq-content-body { padding:0 22px 22px 50px; }
+}
+@media(prefers-reduced-motion:reduce) { #view-kontakt * { animation:none !important; transition:none !important; } }

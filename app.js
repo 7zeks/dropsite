@@ -47,12 +47,24 @@ window.triggerConfetti = triggerConfetti;
 // =========================================================================
 window.__dropsiteModalStack = window.__dropsiteModalStack || [];
 
+let _ignoreNextModalPopstate = false;
+
 window.registerOpenModal = function(modalEl) {
     if (!modalEl) return;
     if (!Array.isArray(window.__dropsiteModalStack)) window.__dropsiteModalStack = [];
     window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl && document.body.contains(el));
     window.__dropsiteModalStack.push(modalEl);
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('is-modal-active');
+    window.dispatchEvent(new CustomEvent('dropsite:modal-state-changed', { detail: { isOpen: true, count: window.__dropsiteModalStack.length, modal: modalEl.id } }));
+
+    // Obsługa historii przeglądarki na telefonach (gest Wstecz zamyka modal zamiast opuszczać stronę)
+    if (window.history && typeof window.history.pushState === 'function') {
+        const curState = window.history.state;
+        if (!curState || curState._dropsiteModal !== modalEl.id) {
+            window.history.pushState({ _dropsiteModal: modalEl.id }, '');
+        }
+    }
 };
 
 window.unregisterClosedModal = function(modalEl) {
@@ -60,11 +72,35 @@ window.unregisterClosedModal = function(modalEl) {
     window.__dropsiteModalStack = window.__dropsiteModalStack.filter(el => el !== modalEl);
     if (window.__dropsiteModalStack.length === 0) {
         document.body.style.overflow = '';
+        document.body.classList.remove('is-modal-active');
+        window.dispatchEvent(new CustomEvent('dropsite:modal-state-changed', { detail: { isOpen: false, count: 0 } }));
     }
     if (modalEl && modalEl.id === 'modModal' && typeof pauseAllModalVideos === 'function') {
         pauseAllModalVideos();
     }
+
+    // Jeśli użytkownik zamknął modal przyciskiem lub tapnięciem, synchronizuj historię
+    if (window.history && window.history.state && window.history.state._dropsiteModal === modalEl.id) {
+        _ignoreNextModalPopstate = true;
+        try {
+            window.history.back();
+        } catch (_) {}
+    }
 };
+
+// Globalna obsługa przycisku Wstecz / gestu swipe-back na smartfonach
+window.addEventListener('popstate', (e) => {
+    if (_ignoreNextModalPopstate) {
+        _ignoreNextModalPopstate = false;
+        return;
+    }
+    if (Array.isArray(window.__dropsiteModalStack) && window.__dropsiteModalStack.length > 0) {
+        const closed = window.closeTopmostWindowOrModal();
+        if (closed && e && typeof e.preventDefault === 'function') {
+            e.preventDefault();
+        }
+    }
+});
 
 window.smoothOpenModal = function(modalEl, displayType = 'flex') {
     if (!modalEl) return;
@@ -172,6 +208,28 @@ window.closeModalByElement = function(targetModal) {
         targetModal.classList.remove('open', 'is-open');
         targetModal.setAttribute('aria-hidden', 'true');
         targetModal.style.display = 'none';
+        return true;
+    }
+    if (targetModal.id === 'dlLightboxModal') {
+        if (typeof window.closeDownloadImageLightbox === 'function') {
+            window.closeDownloadImageLightbox();
+            return true;
+        }
+        const cBtn = document.getElementById('dlLightboxCloseBtn');
+        if (cBtn && typeof cBtn.click === 'function') {
+            cBtn.click();
+            return true;
+        }
+    }
+    if (targetModal.id === 'videoPreviewModal') {
+        const vid = targetModal.querySelector('video');
+        if (vid) { try { vid.pause(); vid.src = ''; } catch(_) {} }
+        if (typeof window.smoothCloseModal === 'function') {
+            window.smoothCloseModal(targetModal);
+            return true;
+        }
+        targetModal.style.display = 'none';
+        targetModal.hidden = true;
         return true;
     }
 
@@ -285,6 +343,12 @@ window.closeTopmostWindowOrModal = function() {
     const dlLightboxModal = document.getElementById('dlLightboxModal');
     if (dlLightboxModal && window.isModalElementVisible(dlLightboxModal)) {
         window.closeModalByElement(dlLightboxModal);
+        return true;
+    }
+
+    const videoPreviewModal = document.getElementById('videoPreviewModal');
+    if (videoPreviewModal && window.isModalElementVisible(videoPreviewModal)) {
+        window.closeModalByElement(videoPreviewModal);
         return true;
     }
 
@@ -499,14 +563,6 @@ if (dockLogoutBtn) {
                 showNotification('Wylogowano pomyślnie', 'info');
             });
         }
-    });
-}
-
-const dockUserInfo = document.getElementById('dockUserInfo');
-if (dockUserInfo) {
-    dockUserInfo.addEventListener('click', () => {
-        const openUserPanelBtn = document.getElementById('openUserPanelBtn');
-        if (openUserPanelBtn) openUserPanelBtn.click();
     });
 }
 
@@ -1164,12 +1220,14 @@ window.openProModal = function(context = null) {
         }
 
         window.smoothOpenModal(modal);
+        window.DropsiteProExperience?.reveal();
     }
 };
 
 window.closeProModal = function() {
     const modal = document.getElementById('proModalWrap');
     if (modal) {
+        if (window.DropsiteProExperience?.close()) return;
         window.smoothCloseModal(modal);
     }
 };
@@ -1905,27 +1963,34 @@ function updateSoundButtonUI() {
         soundToggleBtn.setAttribute('title', soundEnabled ? 'Dźwięki włączone (kliknij, aby wyciszyć)' : 'Dźwięki wyciszone (kliknij, aby włączyć)');
         soundToggleBtn.setAttribute('aria-label', soundEnabled ? 'Wycisz dźwięki interfejsu' : 'Włącz dźwięki interfejsu');
     }
-    if (navDropdownSoundBtn) {
-        navDropdownSoundBtn.classList.toggle('is-active', soundEnabled);
-        const iconOn = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-on');
-        const iconOff = navDropdownSoundBtn.querySelector('.dropdown-sound-icon-off');
+    const dropBtn = document.getElementById('navDropdownSoundBtn') || navDropdownSoundBtn;
+    if (dropBtn) {
+        dropBtn.classList.toggle('is-active', soundEnabled);
+        const iconOn = dropBtn.querySelector('.dropdown-sound-icon-on');
+        const iconOff = dropBtn.querySelector('.dropdown-sound-icon-off');
         const soundSwitch = document.getElementById('dropdownSoundSwitch');
         if (iconOn) iconOn.style.display = soundEnabled ? 'inline-block' : 'none';
         if (iconOff) iconOff.style.display = soundEnabled ? 'none' : 'inline-block';
         if (soundSwitch) {
             soundSwitch.classList.toggle('is-active', soundEnabled);
         }
-        if (dropdownSoundState) {
-            dropdownSoundState.textContent = soundEnabled ? 'Włączone' : 'Wyciszone';
-            dropdownSoundState.style.color = soundEnabled ? '#C4E7D4' : '#94A3B8';
-            dropdownSoundState.style.background = 'transparent';
+        const stateEl = document.getElementById('dropdownSoundState') || dropdownSoundState;
+        if (stateEl) {
+            stateEl.textContent = soundEnabled ? 'Włączone' : 'Wyciszone';
+            stateEl.style.color = soundEnabled ? '#C4E7D4' : '#94A3B8';
+            stateEl.style.background = 'transparent';
         }
         const soundLed = document.getElementById('dropdownSoundLed');
         if (soundLed) {
             soundLed.classList.toggle('is-active', soundEnabled);
         }
     }
+    const mobileSoundBtn = document.getElementById('mobileSoundToggleBtn');
+    if (mobileSoundBtn) {
+        mobileSoundBtn.classList.toggle('is-active', soundEnabled);
+    }
 }
+window.updateSoundButtonUI = updateSoundButtonUI;
 
 function toggleGlobalSound() {
     soundEnabled = !soundEnabled;
@@ -1933,9 +1998,9 @@ function toggleGlobalSound() {
     updateSoundButtonUI();
     if (soundEnabled) playSound('copy');
 }
+window.toggleGlobalSound = toggleGlobalSound;
 
 if (soundToggleBtn) {
-    updateSoundButtonUI();
     soundToggleBtn.addEventListener('click', toggleGlobalSound);
 }
 
@@ -1946,6 +2011,10 @@ if (navDropdownSoundBtn) {
         toggleGlobalSound();
     });
 }
+
+// Zapewnij natychmiastową i pełną inicjalizację stanu dźwięków w UI (Quick Tiles)
+updateSoundButtonUI();
+document.addEventListener('DOMContentLoaded', updateSoundButtonUI);
 
 if (navDropdownHistoryBtn) {
     navDropdownHistoryBtn.addEventListener('click', (e) => {
@@ -2001,6 +2070,8 @@ if (navToolsMenuEl && navDropdownGliderEl) {
         dropdownItem.classList.add('is-open');
         const btn = dropdownItem.querySelector('a[aria-haspopup]');
         if (btn) btn.setAttribute('aria-expanded', 'true');
+        if (typeof window.updateSoundButtonUI === 'function') window.updateSoundButtonUI();
+        if (typeof updatePerformanceModeUI === 'function') updatePerformanceModeUI();
     }
 
     function closeDropdown() {
@@ -2850,6 +2921,21 @@ window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
 window._rawMultiFiles = null;
 window._multiUploadMode = 'collection'; // 'collection' | 'zip'
 window._collectionCustomTitle = '';
+window._zipCustomBundleName = '';
+
+window.setCustomZipName = function(name) {
+    if (!name) return;
+    let finalName = name.trim();
+    if (!finalName.toLowerCase().endsWith('.zip')) finalName += '.zip';
+    window._zipCustomBundleName = finalName;
+    if (selectedFile) {
+        try {
+            selectedFile = new File([selectedFile], finalName, { type: selectedFile.type || 'application/zip' });
+        } catch (_) {}
+    }
+    const fsName = document.getElementById('fsName');
+    if (fsName) fsName.textContent = finalName;
+};
 
 function renderMultiFileDropzone(filesList, mode) {
     if (!filesList || filesList.length === 0) return;
@@ -2861,7 +2947,7 @@ function renderMultiFileDropzone(filesList, mode) {
     for (let f of filesList) {
         totalRawSize += (f.size || 0);
         if (/\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || '')) videoCount++;
-        else if (/\.(jpg|jpeg|png|webp|heic|bmp|gif)$/i.test(f.name || '')) imageCount++;
+        else if (/\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || '')) imageCount++;
     }
     
     const isMultiPhotoAlbum = imageCount === filesList.length;
@@ -2881,18 +2967,26 @@ function renderMultiFileDropzone(filesList, mode) {
 
     const currentTitle = window._collectionCustomTitle || defaultCollectionTitle;
 
-    // Switcher HTML
+    // Switcher HTML with safe stopPropagation and "Zmień pliki" button
     const switcherHtml = `
-        <div class="mf-mode-switcher">
-            <button type="button" class="mf-mode-tab ${mode === 'collection' ? 'active' : ''}" onclick="window.setMultiUploadMode('collection')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
-                <span>${isEng ? 'Showcase / Album' : '🎬 Kolekcja / Album'}</span>
-                <span class="mf-mode-badge ${mode === 'collection' ? 'mf-badge-highlight' : ''}">${isEng ? 'Player 4K' : 'Player Online'}</span>
-            </button>
-            <button type="button" class="mf-mode-tab ${mode === 'zip' ? 'active' : ''}" onclick="window.setMultiUploadMode('zip')">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>
-                <span>${isEng ? 'ZIP Archive' : '📦 Paczka ZIP'}</span>
-                <span class="mf-mode-badge">${isEng ? '1 Archive' : '1 Archiwum'}</span>
+        <div class="mf-mode-switcher-wrap">
+            <div class="mf-mode-switcher">
+                <button type="button" class="mf-mode-tab ${mode === 'collection' ? 'active' : ''}" onclick="event.stopPropagation(); window.setMultiUploadMode('collection')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+                    <span>${isMultiPhotoAlbum ? (isEng ? 'Photo Album' : '📸 Album Zdjęć') : (isEng ? 'Showcase / Album' : '🎬 Kolekcja / Album')}</span>
+                    <span class="mf-mode-badge ${mode === 'collection' ? 'mf-badge-highlight' : ''}">${isEng ? 'Player 4K' : 'Player Online'}</span>
+                </button>
+                <button type="button" class="mf-mode-tab ${mode === 'zip' ? 'active' : ''}" onclick="event.stopPropagation(); window.setMultiUploadMode('zip')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect></svg>
+                    <span>${isEng ? 'ZIP Archive' : '📦 Paczka ZIP'}</span>
+                    <span class="mf-mode-badge">${isEng ? '1 Archive' : '1 Archiwum'}</span>
+                </button>
+            </div>
+            <button type="button" class="mf-btn-change" onclick="event.stopPropagation(); if(typeof resetUploadFlow === 'function') resetUploadFlow();" title="${isEng ? 'Choose different files' : 'Zmień pliki'}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>${isEng ? 'Change' : 'Zmień'}</span>
             </button>
         </div>
     `;
@@ -2900,24 +2994,49 @@ function renderMultiFileDropzone(filesList, mode) {
     let bodyHtml = '';
 
     if (mode === 'collection') {
-        // Render Collection Grid
-        const cardsHtml = Array.from(filesList).map((f) => {
+        // Render Collection Grid (Zero-RAM: ultralekkie wektory i miniatury bez ładowania całych filmów/zdjęć)
+        const cardsHtml = Array.from(filesList).map((f, idx) => {
             const isVid = /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || '');
-            const isImg = /\.(jpg|jpeg|png|webp|heic|bmp|gif)$/i.test(f.name || '');
+            const isImg = /\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || '');
             const ext = (f.name.split('.').pop() || 'FILE').toUpperCase();
 
             let thumbContent = '';
             if (isVid) {
-                const vidUrl = URL.createObjectURL(f);
+                // NIGDY nie wstawiamy <video src="#t=0.1"> dla każdego pliku - powodowało to ładowanie całych filmów do RAM-u!
                 thumbContent = `
-                    <video src="${vidUrl}#t=0.1" preload="metadata" muted playsinline></video>
-                    <div class="mf-collection-play-icon">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <div class="mf-video-clean-thumb" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(168, 85, 247, 0.08); color:#C084FC;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                        </svg>
+                        <div class="mf-collection-play-icon">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        </div>
                     </div>
                 `;
             } else if (isImg) {
-                const imgUrl = URL.createObjectURL(f);
-                thumbContent = `<img src="${imgUrl}" alt="${escapeHtml(f.name)}" loading="lazy">`;
+                const cacheKey = window.DropsiteThumbnailCache ? window.DropsiteThumbnailCache.getFileKey(f) : '';
+                const cached = window.DropsiteThumbnailCache ? window.DropsiteThumbnailCache.get(cacheKey) : null;
+                if (cached) {
+                    thumbContent = `<img src="${cached}" alt="${escapeHtml(f.name)}" loading="lazy" decoding="async">`;
+                } else if (f.size && f.size < 12 * 1024 * 1024 && window.DropsiteThumbnailCache) {
+                    const safeId = `mfThumb_${idx}_${Math.random().toString(36).slice(2, 6)}`;
+                    thumbContent = `<div id="${safeId}" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(56, 189, 248, 0.08); color:#38BDF8;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>`;
+                    setTimeout(() => {
+                        window.DropsiteThumbnailCache.generateFromImage(f, 96).then(thumb => {
+                            const el = document.getElementById(safeId);
+                            if (el && thumb) {
+                                el.outerHTML = `<img src="${thumb}" alt="${escapeHtml(f.name)}" loading="lazy" decoding="async">`;
+                            }
+                        }).catch(()=>{});
+                    }, idx * 20);
+                } else {
+                    thumbContent = `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(56, 189, 248, 0.08); color:#38BDF8;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>`;
+                }
             } else {
                 thumbContent = `<span style="font-size: 26px;">📄</span>`;
             }
@@ -2938,11 +3057,32 @@ function renderMultiFileDropzone(filesList, mode) {
 
         bodyHtml = `
             <div class="mf-collection-custom-title-wrap">
-                <input type="text" id="mfCollectionTitleInput" class="mf-collection-input" 
-                       value="${escapeHtml(currentTitle)}" 
-                       placeholder="${isEng ? 'Enter album / showcase title...' : 'Wpisz tytuł kolekcji / albumu...'}" 
-                       oninput="window._collectionCustomTitle = this.value;"
-                       title="${isEng ? 'Collection Title' : 'Tytuł Kolekcji'}">
+                <div class="mf-title-input-header">
+                    <label for="mfCollectionTitleInput" class="mf-title-input-label">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        <span>${isMultiPhotoAlbum ? (isEng ? 'Photo Album Name' : 'Tytuł albumu zdjęć') : (isEng ? 'Collection Title' : 'Tytuł kolekcji')}</span>
+                    </label>
+                    <span class="mf-title-edit-hint">${isEng ? 'Tap to edit' : 'Dotknij, aby zmienić'}</span>
+                </div>
+                <div class="mf-title-input-box">
+                    <input type="text" id="mfCollectionTitleInput" class="mf-collection-input" 
+                           value="${escapeHtml(currentTitle)}" 
+                           placeholder="${isEng ? 'Enter album / showcase title...' : 'Wpisz tytuł kolekcji / albumu...'}" 
+                           autocomplete="off"
+                           autocorrect="on"
+                           spellcheck="false"
+                           enterkeyhint="done"
+                           onclick="event.stopPropagation();"
+                           onpointerdown="event.stopPropagation();"
+                           ontouchstart="event.stopPropagation();"
+                           onfocus="event.stopPropagation();"
+                           onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
+                           oninput="window._collectionCustomTitle = this.value; const fn = document.getElementById('fsName'); if(fn) fn.textContent = this.value.trim() || '${escapeHtml(defaultCollectionTitle)}';"
+                           title="${isEng ? 'Collection Title' : 'Tytuł Kolekcji'}">
+                </div>
             </div>
             <div class="mf-collection-grid">
                 ${cardsHtml}
@@ -2968,19 +3108,44 @@ function renderMultiFileDropzone(filesList, mode) {
         uploadBtn.classList.remove('loading', 'empty-state');
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) {
-            btnTextSpan.textContent = isEng ? `Create Collection (${filesList.length} files)` : `🎬 Stwórz Kolekcję (${filesList.length} plików)`;
+            btnTextSpan.textContent = isEng 
+                ? (isMultiPhotoAlbum ? `Create Album (${filesList.length} photos)` : `Create Collection (${filesList.length} files)`)
+                : (isMultiPhotoAlbum ? `📸 Stwórz Album (${filesList.length} zdjęć)` : `🎬 Stwórz Kolekcję (${filesList.length} plików)`);
         }
 
     } else {
         // Render ZIP Preview
         let previewInnerHtml = '';
         if (isMultiPhotoAlbum) {
-            const thumbItemsHtml = Array.from(filesList).slice(0, 8).map(f => {
-                const url = URL.createObjectURL(f);
+            const thumbItemsHtml = Array.from(filesList).slice(0, 8).map((f, idx) => {
+                const cacheKey = window.DropsiteThumbnailCache ? window.DropsiteThumbnailCache.getFileKey(f) : '';
+                const cached = window.DropsiteThumbnailCache ? window.DropsiteThumbnailCache.get(cacheKey) : null;
+                const ext = (f.name.split('.').pop() || 'IMG').toUpperCase();
+                if (cached) {
+                    return `
+                        <div class="mf-album-tile">
+                            <img src="${cached}" alt="${escapeHtml(f.name)}" loading="lazy" decoding="async">
+                            <span class="mf-album-tile-badge">${ext}</span>
+                        </div>
+                    `;
+                }
+                const tileId = `mosaicTile_${idx}_${Math.random().toString(36).slice(2, 6)}`;
+                if (f.size && f.size < 12 * 1024 * 1024 && window.DropsiteThumbnailCache) {
+                    setTimeout(() => {
+                        window.DropsiteThumbnailCache.generateFromImage(f, 96).then(thumb => {
+                            const tile = document.getElementById(tileId);
+                            if (tile && thumb) {
+                                tile.innerHTML = `<img src="${thumb}" alt="${escapeHtml(f.name)}" loading="lazy" decoding="async"><span class="mf-album-tile-badge">${ext}</span>`;
+                            }
+                        }).catch(()=>{});
+                    }, idx * 25);
+                }
                 return `
-                    <div class="mf-album-tile">
-                        <img src="${url}" alt="${escapeHtml(f.name)}">
-                        <span class="mf-album-tile-badge">${(f.name.split('.').pop() || 'IMG').toUpperCase()}</span>
+                    <div class="mf-album-tile" id="${tileId}">
+                        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(56, 189, 248, 0.08); color:#38BDF8;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </div>
+                        <span class="mf-album-tile-badge">${ext}</span>
                     </div>
                 `;
             }).join('');
@@ -3026,7 +3191,36 @@ function renderMultiFileDropzone(filesList, mode) {
             }
         }
 
+        const currentZipName = window._zipCustomBundleName || bundleName;
+
         bodyHtml = `
+            <div class="mf-collection-custom-title-wrap mf-zip-title-wrap">
+                <div class="mf-title-input-header">
+                    <label for="mfZipTitleInput" class="mf-title-input-label">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect>
+                        </svg>
+                        <span>${isEng ? 'ZIP Archive Name' : 'Nazwa paczki ZIP'}</span>
+                    </label>
+                    <span class="mf-title-edit-hint">${isEng ? 'Tap to edit' : 'Dotknij, aby zmienić'}</span>
+                </div>
+                <div class="mf-title-input-box">
+                    <input type="text" id="mfZipTitleInput" class="mf-collection-input" 
+                           value="${escapeHtml(currentZipName)}" 
+                           placeholder="${isEng ? 'Enter ZIP file name...' : 'Wpisz nazwę archiwum ZIP...'}" 
+                           autocomplete="off"
+                           autocorrect="on"
+                           spellcheck="false"
+                           enterkeyhint="done"
+                           onclick="event.stopPropagation();"
+                           onpointerdown="event.stopPropagation();"
+                           ontouchstart="event.stopPropagation();"
+                           onfocus="event.stopPropagation();"
+                           onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
+                           oninput="if(window.setCustomZipName) window.setCustomZipName(this.value);"
+                           title="${isEng ? 'ZIP Archive Name' : 'Nazwa Archiwum ZIP'}">
+                </div>
+            </div>
             <div class="mf-header">
                 <div class="mf-folder-icon-box ${isMultiPhotoAlbum ? 'mf-album-icon-box' : ''}">
                     ${isMultiPhotoAlbum ? `
@@ -3036,7 +3230,7 @@ function renderMultiFileDropzone(filesList, mode) {
                     `}
                 </div>
                 <div class="mf-title-box">
-                    <strong class="mf-bundle-title">${isMultiPhotoAlbum ? `Kolekcja zdjęć (${filesList.length} fotografii)` : bundleName}</strong>
+                    <strong class="mf-bundle-title">${isMultiPhotoAlbum ? `Kolekcja zdjęć (${filesList.length} fotografii)` : currentZipName}</strong>
                     <span class="mf-bundle-sub">${filesList.length} ${filesList.length === 1 ? 'plik' : (isMultiPhotoAlbum ? 'zdjęć w pełnej jakości' : 'plików')} &bull; ${formatBytes(totalRawSize)}</span>
                 </div>
             </div>
@@ -3054,7 +3248,7 @@ function renderMultiFileDropzone(filesList, mode) {
 }
 
 async function prepareZipBundle(filesList) {
-    const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name || ''));
+    const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || ''));
     uploadBtn.disabled = true;
     window._isUploadingAlbum = Boolean(isMultiPhotoAlbum);
     const btnTextSpan = uploadBtn.querySelector('.btn-text');
@@ -3064,6 +3258,10 @@ async function prepareZipBundle(filesList) {
     if (filesList[0]?.fullRelativePath?.includes('/')) {
         const topDir = filesList[0].fullRelativePath.split('/')[0];
         if (topDir) bundleName = `${topDir}.zip`;
+    }
+    if (window._zipCustomBundleName) {
+        bundleName = window._zipCustomBundleName.trim();
+        if (!bundleName.toLowerCase().endsWith('.zip')) bundleName += '.zip';
     }
 
     let totalRawSize = 0;
@@ -3149,9 +3347,13 @@ window.setMultiUploadMode = function(mode) {
         selectedFile = null;
         uploadBtn.disabled = false;
         uploadBtn.classList.remove('loading');
+        const isEng = (typeof t === 'function' && t('lang_code') === 'en') || (localStorage.getItem('dropsite_lang') === 'en');
+        const isMultiPhotoAlbum = window._rawMultiFiles.length > 1 && Array.from(window._rawMultiFiles).every(f => /\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || ''));
         const btnTextSpan = uploadBtn.querySelector('.btn-text');
         if (btnTextSpan) {
-            btnTextSpan.textContent = `🎬 Stwórz Kolekcję (${window._rawMultiFiles.length} plików)`;
+            btnTextSpan.textContent = isEng 
+                ? (isMultiPhotoAlbum ? `Create Album (${window._rawMultiFiles.length} photos)` : `Create Collection (${window._rawMultiFiles.length} files)`)
+                : (isMultiPhotoAlbum ? `📸 Stwórz Album (${window._rawMultiFiles.length} zdjęć)` : `🎬 Stwórz Kolekcję (${window._rawMultiFiles.length} plików)`);
         }
     }
 };
@@ -3329,9 +3531,12 @@ async function uploadCollectionMultiFiles(filesList) {
     const proKey = getProKey();
 
     const titleInput = document.getElementById('mfCollectionTitleInput');
-    const hasVideos = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi)$/i.test(f.name || ''));
-    const defaultTitle = hasVideos ? `Kolekcja Wideo (${filesList.length} materiałów)` : `Kolekcja Multimedialna (${filesList.length} plików)`;
-    const collectionTitle = (titleInput?.value || '').trim() || defaultTitle;
+    const hasVideos = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || ''));
+    const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || ''));
+    const defaultTitle = isMultiPhotoAlbum 
+        ? `Album Fotograficzny (${filesList.length} zdjęć)`
+        : (hasVideos ? `Kolekcja Wideo (${filesList.length} materiałów)` : `Kolekcja Multimedialna (${filesList.length} plików)`);
+    const collectionTitle = (titleInput?.value || window._collectionCustomTitle || '').trim() || defaultTitle;
     window._collectionCustomTitle = collectionTitle;
 
     window._isUploadingActive = true;
@@ -3369,6 +3574,7 @@ async function uploadCollectionMultiFiles(filesList) {
     const uploadStartTime = Date.now();
     let overallLoaded = 0;
     const uploadedFileKeys = [];
+    const uploadedFilesMeta = [];
 
     const updateCollectionTelemetry = (currentFileLoaded, fileIndex) => {
         const currentTotalLoaded = overallLoaded + currentFileLoaded;
@@ -3447,6 +3653,14 @@ async function uploadCollectionMultiFiles(filesList) {
             }
 
             uploadedFileKeys.push(fileKey);
+            uploadedFilesMeta.push({
+                key: fileKey,
+                name: curFile.name,
+                size: curFile.size,
+                mime: curFile.type,
+                directUrl: `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${fileKey}`,
+                pageUrl: `${PUBLIC_APP_URL || 'https://dropsite.pages.dev'}/?f=${encodeURIComponent(fileKey)}`
+            });
             overallLoaded += curFile.size;
             updateCollectionTelemetry(0, i + 1 >= filesList.length ? i : i + 1);
         }
@@ -3466,6 +3680,7 @@ async function uploadCollectionMultiFiles(filesList) {
                 title: collectionTitle,
                 description: fileNote || '',
                 fileKeys: uploadedFileKeys,
+                files: uploadedFilesMeta,
                 theme: 'gallery',
                 password: filePassword || ''
             })
@@ -3529,7 +3744,7 @@ async function updateSelectedFile(filesList) {
         setupImageCompression(null);
         window._rawMultiFiles = Array.from(filesList);
 
-        const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|bmp|gif)$/i.test(f.name || ''));
+        const isMultiPhotoAlbum = filesList.length > 1 && Array.from(filesList).every(f => /\.(jpg|jpeg|png|webp|heic|heif|bmp|gif)$/i.test(f.name || ''));
         const hasVideos = Array.from(filesList).some(f => /\.(mp4|webm|mov|mkv|avi|m4v)$/i.test(f.name || ''));
         
         // Domyślny tryb: kolekcja dla filmów i zdjęć, ZIP dla folderów/plików mieszanych
@@ -3884,8 +4099,32 @@ window.addEventListener('drop', async (e) => {
 // Bezpośredni dropzone na stronie głównej
 if (dropzone) {
     dropzone.addEventListener('click', (e) => {
-        // Jeśli dropzone wyświetla już załadowane multimedia (odtwarzacz wideo, audio), nie otwieraj okna
-        if (e.target.closest('video, audio, a, input[type="range"]')) return;
+        // 1. Jeśli kliknięto w link do Cyber Rentgen lub jakikolwiek link
+        if (e.target.closest('a')) return;
+
+        // 2. Jeśli kliknięto w jakiekolwiek pole formularza (tekst, hasło itp.), odtwarzacz lub kontrolkę
+        if (e.target.closest('input, textarea, select, label, video, audio, [contenteditable="true"]')) {
+            return;
+        }
+
+        // 3. Jeśli kliknięto w jakikolwiek button inny niż główny #btnSelectFiles
+        if (e.target.closest('button') && !e.target.closest('#btnSelectFiles')) {
+            return;
+        }
+
+        // 4. Jeśli w dropzone załadowano już pliki (kolekcja/album zdjęć, paczka ZIP, showcase wideo/obrazu)
+        // Kategorycznie NIE wywołujemy fileInput.click() - zapobiega to otwieraniu systemowego pickera uprawnień zamiast klawiatury na telefonach!
+        if (
+            dropzone.querySelector('.multifile-upload-preview') ||
+            dropzone.querySelector('.media-showcase-card') ||
+            dropzone.classList.contains('has-media-loaded') ||
+            (window._rawMultiFiles && window._rawMultiFiles.length > 0) ||
+            Boolean(selectedFile)
+        ) {
+            return;
+        }
+
+        // 5. Dopiero w stanie pustym (domyślnym) dropzone wywołujemy wybór plików
         const fileInput = document.getElementById('fileInput');
         if (fileInput) {
             fileInput.click();
@@ -5368,6 +5607,476 @@ function initAdvancedTransferListeners() {
 }
 document.addEventListener('DOMContentLoaded', initAdvancedTransferListeners);
 
+// === DROPSITE HIGH-PERFORMANCE THUMBNAIL CACHE & GENERATOR ===
+// Zapobiega alokacjom pamięci, wyciekom URL i lagom UI przy otwieraniu okna sukcesu oraz podglądu
+const DropsiteThumbnailCache = {
+    _memCache: new Map(),
+    _sessionPrefix: 'ds_thumb_',
+
+    get(key) {
+        if (!key) return null;
+        if (this._memCache.has(key)) return this._memCache.get(key);
+        try {
+            const stored = sessionStorage.getItem(this._sessionPrefix + key);
+            if (stored) {
+                this._memCache.set(key, stored);
+                return stored;
+            }
+        } catch (e) {}
+        return null;
+    },
+
+    set(key, dataUrl) {
+        if (!key || !dataUrl) return;
+        if (this._memCache.size > 60) {
+            const firstKey = this._memCache.keys().next().value;
+            this._memCache.delete(firstKey);
+        }
+        this._memCache.set(key, dataUrl);
+        try {
+            if (dataUrl.length < 120000) {
+                sessionStorage.setItem(this._sessionPrefix + key, dataUrl);
+            }
+        } catch (e) {}
+    },
+
+    getFileKey(file, extra = '') {
+        if (!file) return extra || ('thumb_' + Date.now());
+        return `${file.name || 'f'}_${file.size || 0}_${file.lastModified || 0}${extra ? '_' + extra : ''}`;
+    },
+
+    async generateFromImage(file, maxSize = 120) {
+        if (!file) return null;
+        const key = this.getFileKey(file);
+        const cached = this.get(key);
+        if (cached) return cached;
+
+        return new Promise((resolve) => {
+            let tempUrl = null;
+            const cleanup = () => {
+                if (tempUrl) {
+                    try { URL.revokeObjectURL(tempUrl); } catch (e) {}
+                    tempUrl = null;
+                }
+            };
+
+            const processSource = (imgSource, naturalWidth, naturalHeight) => {
+                try {
+                    let w = naturalWidth || 120;
+                    let h = naturalHeight || 120;
+                    if (w > h) {
+                        if (w > maxSize) {
+                            h = Math.round((h * maxSize) / w);
+                            w = maxSize;
+                        }
+                    } else {
+                        if (h > maxSize) {
+                            w = Math.round((w * maxSize) / h);
+                            h = maxSize;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, w);
+                    canvas.height = Math.max(1, h);
+                    const ctx = canvas.getContext('2d', { alpha: false });
+                    if (ctx) {
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'medium';
+                        ctx.drawImage(imgSource, 0, 0, w, h);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                        this.set(key, dataUrl);
+                        cleanup();
+                        resolve(dataUrl);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('[DropsiteThumbnailCache] Błąd skalowania canvas:', e);
+                }
+                cleanup();
+                resolve(null);
+            };
+
+            if (typeof createImageBitmap === 'function') {
+                createImageBitmap(file, { resizeWidth: maxSize, resizeQuality: 'medium' })
+                    .then((bmp) => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = bmp.width;
+                        canvas.height = bmp.height;
+                        const ctx = canvas.getContext('2d', { alpha: false });
+                        if (ctx) {
+                            ctx.drawImage(bmp, 0, 0);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                            this.set(key, dataUrl);
+                            try { bmp.close(); } catch (e) {}
+                            resolve(dataUrl);
+                            return;
+                        }
+                        try { bmp.close(); } catch (e) {}
+                        resolve(null);
+                    })
+                    .catch(() => {
+                        loadViaImageElement();
+                    });
+                return;
+            }
+
+            function loadViaImageElement() {
+                try {
+                    tempUrl = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.decoding = 'async';
+                    img.onload = () => {
+                        processSource(img, img.naturalWidth, img.naturalHeight);
+                    };
+                    img.onerror = () => {
+                        cleanup();
+                        resolve(null);
+                    };
+                    img.src = tempUrl;
+                } catch (err) {
+                    cleanup();
+                    resolve(null);
+                }
+            }
+
+            loadViaImageElement();
+        });
+    },
+
+    async generateFromVideo(file, maxSize = 140) {
+        if (!file) return null;
+        // Limit bezpieczeństwa: dla filmów > 35 MB nie dekodujemy klatek w pamięci RAM!
+        if (file.size && file.size > 35 * 1024 * 1024) return null;
+        const key = this.getFileKey(file, 'vid');
+        const cached = this.get(key);
+        if (cached) return cached;
+
+        return new Promise((resolve) => {
+            let tempUrl = null;
+            let timeoutId = null;
+
+            const cleanup = () => {
+                if (timeoutId) clearTimeout(timeoutId);
+                if (tempUrl) {
+                    try { URL.revokeObjectURL(tempUrl); } catch (e) {}
+                    tempUrl = null;
+                }
+            };
+
+            try {
+                tempUrl = URL.createObjectURL(file);
+                const video = document.createElement('video');
+                video.muted = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                video.src = tempUrl;
+
+                timeoutId = setTimeout(() => {
+                    cleanup();
+                    try { video.src = ''; video.load(); } catch (e) {}
+                    resolve(null);
+                }, 1600);
+
+                video.onloadedmetadata = () => {
+                    try {
+                        const seekTime = Math.min(1.0, video.duration > 2 ? 1.0 : video.duration * 0.25);
+                        video.currentTime = isFinite(seekTime) ? seekTime : 0.1;
+                    } catch (e) {
+                        video.currentTime = 0.1;
+                    }
+                };
+
+                video.onseeked = () => {
+                    try {
+                        let w = video.videoWidth || 140;
+                        let h = video.videoHeight || 100;
+                        if (w > h) {
+                            if (w > maxSize) {
+                                h = Math.round((h * maxSize) / w);
+                                w = maxSize;
+                            }
+                        } else {
+                            if (h > maxSize) {
+                                w = Math.round((w * maxSize) / h);
+                                h = maxSize;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, w);
+                        canvas.height = Math.max(1, h);
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.drawImage(video, 0, 0, w, h);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                            this.set(key, dataUrl);
+                            cleanup();
+                            try { video.src = ''; video.load(); } catch (e) {}
+                            resolve(dataUrl);
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn('[DropsiteThumbnailCache] Błąd klatki wideo:', err);
+                    }
+                    cleanup();
+                    try { video.src = ''; video.load(); } catch (e) {}
+                    resolve(null);
+                };
+
+                video.onerror = () => {
+                    cleanup();
+                    try { video.src = ''; video.load(); } catch (e) {}
+                    resolve(null);
+                };
+            } catch (err) {
+                cleanup();
+                resolve(null);
+            }
+        });
+    },
+
+    async generateAlbumCollage(filesList, maxSize = 120) {
+        if (!filesList || filesList.length === 0) return null;
+        const key = 'album_' + filesList.length + '_' + (filesList[0].name || '') + '_' + (filesList[0].size || 0);
+        const cached = this.get(key);
+        if (cached) return cached;
+
+        const imgFiles = Array.from(filesList).filter(f => f.type && f.type.startsWith('image/')).slice(0, 4);
+        if (imgFiles.length === 0) return null;
+
+        if (imgFiles.length === 1) {
+            const thumb = await this.generateFromImage(imgFiles[0], maxSize);
+            if (thumb) this.set(key, thumb);
+            return thumb;
+        }
+
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(null);
+
+            ctx.fillStyle = '#0F172A';
+            ctx.fillRect(0, 0, maxSize, maxSize);
+
+            const half = Math.floor(maxSize / 2);
+            const positions = [
+                { x: 0, y: 0, w: half - 1, h: half - 1 },
+                { x: half + 1, y: 0, w: half - 1, h: half - 1 },
+                { x: 0, y: half + 1, w: half - 1, h: half - 1 },
+                { x: half + 1, y: half + 1, w: half - 1, h: half - 1 }
+            ];
+
+            let loadedCount = 0;
+            const total = imgFiles.length;
+
+            imgFiles.forEach((file, idx) => {
+                this.generateFromImage(file, half).then((thumbData) => {
+                    if (thumbData) {
+                        const img = new Image();
+                        img.onload = () => {
+                            const pos = positions[idx];
+                            if (pos) {
+                                ctx.drawImage(img, pos.x, pos.y, pos.w, pos.h);
+                            }
+                            loadedCount++;
+                            if (loadedCount >= total) {
+                                const collageUrl = canvas.toDataURL('image/jpeg', 0.82);
+                                this.set(key, collageUrl);
+                                resolve(collageUrl);
+                            }
+                        };
+                        img.onerror = () => {
+                            loadedCount++;
+                            if (loadedCount >= total) {
+                                const collageUrl = canvas.toDataURL('image/jpeg', 0.82);
+                                this.set(key, collageUrl);
+                                resolve(collageUrl);
+                            }
+                        };
+                        img.src = thumbData;
+                    } else {
+                        loadedCount++;
+                        if (loadedCount >= total) {
+                            const collageUrl = canvas.toDataURL('image/jpeg', 0.82);
+                            this.set(key, collageUrl);
+                            resolve(collageUrl);
+                        }
+                    }
+                }).catch(() => {
+                    loadedCount++;
+                    if (loadedCount >= total) resolve(null);
+                });
+            });
+
+            setTimeout(() => {
+                try {
+                    const collageUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    resolve(collageUrl);
+                } catch (e) {
+                    resolve(null);
+                }
+            }, 1800);
+        });
+    }
+};
+window.DropsiteThumbnailCache = DropsiteThumbnailCache;
+
+// === DELIKATNY, BŁYSKAWICZNY SYSTEM PODGLĄDU NA EKRANIE SUKCESU (ZERO LAGÓW) ===
+function renderDelicateSuccessPreview(fileObj, fileKey, directUrl) {
+    const sfcIconBox = document.getElementById('sfcIconBox');
+    if (!sfcIconBox) return;
+
+    // 1. Nazwa i rozszerzenie pliku
+    const fileName = (fileObj && fileObj.name) 
+        ? fileObj.name 
+        : (typeof fileKey === 'string' ? (fileKey.split('/').pop() || fileKey) : 'plik');
+    const ext = (fileName.split('.').pop() || '').toLowerCase();
+
+    // 2. Wykrywanie formatów (zarówno po MIME type, jak i rozszerzeniu)
+    const isImage = (fileObj && fileObj.type && fileObj.type.startsWith('image/')) ||
+                    ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp', 'ico'].includes(ext);
+    const isVideo = (fileObj && fileObj.type && fileObj.type.startsWith('video/')) ||
+                    ['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v', '3gp'].includes(ext);
+    const isAudio = (fileObj && fileObj.type && fileObj.type.startsWith('audio/')) ||
+                    ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'aac'].includes(ext);
+    const isZip = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext);
+    const isPdf = ext === 'pdf';
+
+    // 3. Sprawdź czy to transfer kolekcji / albumu
+    const isAlbum = (typeof fileKey === 'string' && fileKey.startsWith('alb_')) ||
+                    (window._rawMultiFiles && window._rawMultiFiles.length > 1);
+
+    if (isAlbum) {
+        const count = window._rawMultiFiles ? window._rawMultiFiles.length : 2;
+        let albumPreviewSrc = null;
+        if (window._rawMultiFiles && window._rawMultiFiles.length > 0) {
+            const firstImg = Array.from(window._rawMultiFiles).find(f => 
+                (f.type && f.type.startsWith('image/')) || /\.(jpe?g|png|webp|gif|avif)$/i.test(f.name || '')
+            );
+            if (firstImg) {
+                try { albumPreviewSrc = URL.createObjectURL(firstImg); } catch (e) {}
+            }
+        }
+        if (albumPreviewSrc) {
+            sfcIconBox.innerHTML = `
+                <div class="sfc-collage-wrap">
+                    <img src="${albumPreviewSrc}" alt="Album" class="sfc-live-thumb" loading="eager" decoding="async" />
+                    <span class="sfc-collage-badge">📸 ${count}</span>
+                </div>
+            `;
+        } else {
+            sfcIconBox.innerHTML = `
+                <div class="sfc-collage-wrap sfc-album-badge-bg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="2" width="20" height="20" rx="3"></rect>
+                        <line x1="7" y1="2" x2="7" y2="22"></line>
+                        <line x1="17" y1="2" x2="17" y2="22"></line>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                    <span class="sfc-collage-badge">${count}</span>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    // 4. Podgląd pojedynczego obrazu (Natychmiastowy, 0ms, 0% CPU)
+    if (isImage) {
+        let imgSrc = null;
+        if (fileObj instanceof Blob || fileObj instanceof File) {
+            try { imgSrc = URL.createObjectURL(fileObj); } catch (e) {}
+        } else if (directUrl && typeof directUrl === 'string') {
+            imgSrc = directUrl;
+        } else if (window._lastPreviewObjectUrl) {
+            imgSrc = window._lastPreviewObjectUrl;
+        }
+
+        if (imgSrc) {
+            const safeName = typeof escapeHtml === 'function' ? escapeHtml(fileName) : fileName;
+            sfcIconBox.innerHTML = `
+                <img src="${imgSrc}" alt="${safeName}" class="sfc-live-thumb" loading="eager" decoding="async" 
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'sfc-doc-badge-wrap\\'><span class=\\'sfc-media-badge-pill\\'>${ext.toUpperCase() || 'IMG'}</span></div>';" />
+            `;
+            return;
+        }
+    }
+
+    // 5. Podgląd wideo (Lekka, luksusowa kapsułka wideo - ZERO zacięć dekodera!)
+    if (isVideo) {
+        sfcIconBox.innerHTML = `
+            <div class="sfc-video-badge-wrap" title="Plik wideo gotowy do odbioru">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                    <rect x="1" y="5" width="15" height="14" rx="2.5" ry="2.5"></rect>
+                </svg>
+                <span class="sfc-media-badge-pill">${ext.toUpperCase() || 'VID'}</span>
+            </div>
+        `;
+        return;
+    }
+
+    // 6. Podgląd audio
+    if (isAudio) {
+        sfcIconBox.innerHTML = `
+            <div class="sfc-audio-badge-wrap" title="Plik audio">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                <span class="sfc-media-badge-pill">${ext.toUpperCase() || 'AUDIO'}</span>
+            </div>
+        `;
+        return;
+    }
+
+    // 7. Podgląd archiwum ZIP/RAR
+    if (isZip) {
+        sfcIconBox.innerHTML = `
+            <div class="sfc-zip-badge-wrap" title="Archiwum ZIP">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span class="sfc-media-badge-pill">${ext.toUpperCase() || 'ZIP'}</span>
+            </div>
+        `;
+        return;
+    }
+
+    // 8. Podgląd dokumentu PDF
+    if (isPdf) {
+        sfcIconBox.innerHTML = `
+            <div class="sfc-pdf-badge-wrap" title="Dokument PDF">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FB7185" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span class="sfc-media-badge-pill">PDF</span>
+            </div>
+        `;
+        return;
+    }
+
+    // 9. Domyślny, czysty dokument
+    sfcIconBox.innerHTML = `
+        <div class="sfc-doc-badge-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span class="sfc-media-badge-pill">${(ext || 'PLIK').toUpperCase().slice(0, 4)}</span>
+        </div>
+    `;
+}
+window.renderDelicateSuccessPreview = renderDelicateSuccessPreview;
+
 // === WSPÓLNA LOGIKA PO ZAKOŃCZENIU ===
 function showSuccessScreen(finalUrlStr, fileKey, duration) {
     uploadBtn.classList.remove('loading');
@@ -5555,7 +6264,17 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         if (uploadBoxContainer) {
             uploadBoxContainer.classList.remove('transition-to-success');
         }
-        dropzone.hidden = true;
+        if (dropzone) {
+            dropzone.hidden = true;
+            // Zwolnij zasoby dekoderów wideo i pamięć RAM z dropzone
+            dropzone.querySelectorAll('video').forEach(v => {
+                try { v.pause(); v.src = ''; v.load(); v.remove(); } catch(e){}
+            });
+            if (typeof _lastPreviewObjectUrl !== 'undefined' && _lastPreviewObjectUrl) {
+                try { URL.revokeObjectURL(_lastPreviewObjectUrl); } catch(e){}
+                _lastPreviewObjectUrl = null;
+            }
+        }
         if (optionsContainer) optionsContainer.hidden = true;
         if (imageCompressPanel) imageCompressPanel.hidden = true;
         const customSlugWrap = document.querySelector('.custom-slug-wrap');
@@ -5616,33 +6335,16 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         if (isAlbumTransfer) {
             if (sfcFileName) sfcFileName.textContent = window._collectionCustomTitle || 'Kolekcja Multimedialna';
             if (sfcFileSize) sfcFileSize.textContent = window._rawMultiFiles ? `${window._rawMultiFiles.length} materiałów` : 'Kolekcja';
-            if (sfcIconBox) {
-                sfcIconBox.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>`;
-            }
         } else if (selectedFile) {
             if (sfcFileName) sfcFileName.textContent = selectedFile.name;
-            if (sfcFileSize) sfcFileSize.textContent = formatBytes(selectedFile.size);
-            if (sfcIconBox) {
-                const ext = (selectedFile.name.split('.').pop() || '').toLowerCase();
-                if (selectedFile.type && selectedFile.type.startsWith('image/')) {
-                    const thumbUrl = URL.createObjectURL(selectedFile);
-                    sfcIconBox.innerHTML = `<img src="${thumbUrl}" alt="Thumbnail" class="sfc-live-thumb" />`;
-                } else if (['mp4', 'webm', 'mov', 'mkv', 'avi'].includes(ext)) {
-                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>`;
-                } else if (['mp3', 'wav', 'flac', 'm4a', 'ogg'].includes(ext)) {
-                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>`;
-                } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
-                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
-                } else if (ext === 'pdf') {
-                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
-                } else {
-                    sfcIconBox.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
-                }
-            }
+            if (sfcFileSize) sfcFileSize.textContent = (typeof formatBytes === 'function' && selectedFile.size) ? formatBytes(selectedFile.size) : '';
         } else {
-            if (sfcFileName) sfcFileName.textContent = fileKey.split('/').pop() || 'plik';
-            if (sfcFileSize) sfcFileSize.textContent = '';
+            if (sfcFileName) sfcFileName.textContent = (typeof fileKey === 'string' ? fileKey.split('/').pop() : 'plik') || 'plik';
+            if (sfcFileSize) sfcFileSize.textContent = 'Gotowy do odbioru';
         }
+
+        // Błyskawiczny, lekki podgląd (delikatny, 0ms lag, bez dekoderów wideo/canvas)
+        renderDelicateSuccessPreview(selectedFile, fileKey, finalUrlStr);
 
         if (sfcRetention) {
             if (duration === 'burn' || window._activeSpyMode) {
@@ -5687,14 +6389,16 @@ function showSuccessScreen(finalUrlStr, fileKey, duration) {
         if (window.initDropsiteAds) window.initDropsiteAds();
         
         triggerConfetti({
-            particleCount: 90,
-            spread: 75,
+            particleCount: 40,
+            spread: 65,
             origin: { y: 0.6 },
             colors: ['#34D399', '#38BDF8', '#FFFFFF']
         });
     }, 280);
     
-    fetchDiskStats();
+    if (sessionStorage.getItem('adminSecret') || document.getElementById('adminPanel')) {
+        fetchDiskStats();
+    }
 }
 
 function showError(msg) {
@@ -6423,8 +7127,8 @@ async function fetchModFiles() {
         if (statsGrid) statsGrid.style.display = 'none';
 
         const tHeroTitle = typeof window.t === 'function' ? window.t('myfiles_hero_title', 'Twoja Prywatna Chmura') : 'Twoja Prywatna Chmura';
-        const tHeroSub = typeof window.t === 'function' ? window.t('myfiles_hero_subtitle', 'Wszystkie Twoje transfery, bezpieczne i pod ręką ✨') : 'Wszystkie Twoje transfery, bezpieczne i pod ręką ✨';
-        if (titleEl) titleEl.innerHTML = `${isProUser() ? '⭐ ' : ''}${tHeroTitle} <span class="myfiles-title-sparkle">✦</span>`;
+        const tHeroSub = typeof window.t === 'function' ? window.t('myfiles_hero_subtitle', 'Wszystkie Twoje transfery, bezpieczne i pod ręką') : 'Wszystkie Twoje transfery, bezpieczne i pod ręką';
+        if (titleEl) titleEl.textContent = tHeroTitle;
         if (subtitleEl) subtitleEl.textContent = tHeroSub;
         
         modModal.classList.remove('is-admin-dashboard');
@@ -8633,6 +9337,50 @@ let modFilesScrollObserver = null;
 // ULTRA-LIGHTWEIGHT ON-DEMAND VIDEO PREVIEW LOADER (ZERO NETWORK THREAD LOCK)
 // =========================================================================
 let videoLazyObserver = null;
+let videoLoadQueue = [];
+let activeVideoLoads = 0;
+const MAX_CONCURRENT_VIDEO_LOADS = 2;
+
+function processVideoQueue() {
+    while (activeVideoLoads < MAX_CONCURRENT_VIDEO_LOADS && videoLoadQueue.length > 0) {
+        const video = videoLoadQueue.shift();
+        if (!video || !video.isConnected) continue;
+        const src = video.getAttribute('data-video-src');
+        if (!src || video.src) continue;
+
+        activeVideoLoads++;
+        video.preload = 'metadata';
+        video.src = src;
+
+        let finished = false;
+        const markLoaded = () => {
+            if (finished) return;
+            finished = true;
+            video.classList.add('is-loaded');
+            try { video.pause(); } catch (_) {}
+            activeVideoLoads = Math.max(0, activeVideoLoads - 1);
+            processVideoQueue();
+        };
+
+        video.onloadeddata = markLoaded;
+        video.oncanplay = markLoaded;
+        video.onerror = () => {
+            if (finished) return;
+            finished = true;
+            video.style.display = 'none';
+            activeVideoLoads = Math.max(0, activeVideoLoads - 1);
+            processVideoQueue();
+        };
+
+        try { video.load(); } catch (_) {
+            if (!finished) {
+                finished = true;
+                activeVideoLoads = Math.max(0, activeVideoLoads - 1);
+                processVideoQueue();
+            }
+        }
+    }
+}
 
 function setupVideoLazyObserver(container) {
     if (!container) return;
@@ -8645,31 +9393,16 @@ function setupVideoLazyObserver(container) {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const video = entry.target;
-                    const src = video.getAttribute('data-video-src');
-                    if (src && !video.src) {
-                        video.preload = 'metadata';
-                        video.src = src;
-
-                        const markLoaded = () => {
-                            video.classList.add('is-loaded');
-                            try { video.pause(); } catch (_) {}
-                        };
-
-                        video.onloadedmetadata = markLoaded;
-                        video.onloadeddata = markLoaded;
-                        video.oncanplay = markLoaded;
-                        video.onerror = () => {
-                            video.style.display = 'none';
-                        };
-
-                        try { video.load(); } catch (_) {}
-                    }
                     obs.unobserve(video);
+                    if (!video.src) {
+                        videoLoadQueue.push(video);
+                        processVideoQueue();
+                    }
                 }
             });
         }, {
             root: scrollRoot,
-            rootMargin: '200px 0px 200px 0px',
+            rootMargin: '80px 0px 80px 0px',
             threshold: 0.01
         });
     }
@@ -8681,6 +9414,8 @@ function setupVideoLazyObserver(container) {
 }
 
 function pauseAllModalVideos() {
+    videoLoadQueue = [];
+    activeVideoLoads = 0;
     if (videoLazyObserver) {
         videoLazyObserver.disconnect();
         videoLazyObserver = null;
@@ -8782,29 +9517,85 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                     </div>
                 `;
             } else {
-                cardMediaHtml = `
-                    <div class="card-icon-art card-preview-placeholder">
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        <span class="card-type-tag">${ext}</span>
-                    </div>
-                    <img src="${directMediaUrl}" class="card-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()">
-                `;
+                let imgThumb = null;
+                if (window.DropsiteThumbnailCache) {
+                    imgThumb = window.DropsiteThumbnailCache.get(file.key) ||
+                               window.DropsiteThumbnailCache.get(file.name) ||
+                               window.DropsiteThumbnailCache.get(directMediaUrl);
+                }
+                const isHeavyImage = file.size && file.size > 6 * 1024 * 1024;
+                if (imgThumb) {
+                    cardMediaHtml = `
+                        <div class="card-icon-art card-preview-placeholder">
+                            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span class="card-type-tag">${ext}</span>
+                        </div>
+                        <img src="${imgThumb}" class="card-preview-img is-loaded" alt="" loading="lazy" decoding="async">
+                    `;
+                } else if (!isHeavyImage) {
+                    cardMediaHtml = `
+                        <div class="card-icon-art card-preview-placeholder">
+                            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span class="card-type-tag">${ext}</span>
+                        </div>
+                        <img src="${directMediaUrl}" class="card-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()">
+                    `;
+                } else {
+                    cardMediaHtml = `
+                        <div class="card-icon-art">
+                            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span class="card-type-tag">${ext}</span>
+                        </div>
+                    `;
+                }
             }
         } else if (isVideo) {
-            cardMediaHtml = `
-                <div class="card-icon-art card-preview-placeholder">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                    <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
-                </div>
-                ${isFileExpired ? '' : `
+            let vidThumb = null;
+            if (window.DropsiteThumbnailCache) {
+                vidThumb = window.DropsiteThumbnailCache.get(file.key) ||
+                           window.DropsiteThumbnailCache.get(file.name) ||
+                           window.DropsiteThumbnailCache.get(directMediaUrl);
+            }
+            const isHeavyVideo = file.size && file.size > 30 * 1024 * 1024;
+            if (vidThumb) {
+                cardMediaHtml = `
+                    <div class="card-icon-art card-preview-placeholder">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                        <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
+                    </div>
+                    <img src="${vidThumb}" class="card-preview-img is-loaded" alt="" loading="lazy" decoding="async">
+                    <div class="card-video-play-btn">
+                        <svg class="card-video-play-icon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                        </svg>
+                    </div>
+                `;
+            } else if (!isFileExpired && !isHeavyVideo) {
+                cardMediaHtml = `
+                    <div class="card-icon-art card-preview-placeholder">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                        <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
+                    </div>
                     <video class="card-preview-video" preload="none" data-video-src="${directMediaUrl}#t=0.1" muted playsinline></video>
                     <div class="card-video-play-btn">
                         <svg class="card-video-play-icon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
                             <polygon points="6 4 20 12 6 20 6 4"></polygon>
                         </svg>
                     </div>
-                `}
-            `;
+                `;
+            } else {
+                cardMediaHtml = `
+                    <div class="card-icon-art">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                        <span class="card-type-tag" style="background: rgba(56, 189, 248, 0.2); color: #7DD3FC;">${ext}</span>
+                    </div>
+                    <div class="card-video-play-btn">
+                        <svg class="card-video-play-icon" width="34" height="34" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                        </svg>
+                    </div>
+                `;
+            }
         } else if (isPdf) {
             cardMediaHtml = `
                 <div class="card-icon-art">
@@ -8843,7 +9634,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
         }
 
         return `
-            <li class="mod-file-card ${isSelected ? 'is-selected' : ''}">
+            <li class="mod-file-card ${isSelected ? 'is-selected' : ''}" data-file-key="${escapeHtml(fileKey)}" data-expired="${isFileExpired}">
                 <div class="card-preview-area" onclick="${previewAction}" title="Kliknij, aby otworzyć podgląd">
                     <div class="card-select-checkbox-wrap" onclick="event.stopPropagation(); const cb = this.querySelector('input'); if (cb && event.target !== cb) { cb.checked = !cb.checked; if (window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum(cb.getAttribute('data-key'), cb.checked, cb); }">
                         ${checkboxHtml}
@@ -8862,7 +9653,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                 </div>
                 <div class="card-action-dock">
                     <button type="button" class="card-action-btn btn-act-preview" onclick="${previewAction}" title="${i18nTexts.tPreview}">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </button>
                     <button type="button" class="card-action-btn btn-act-copy" onclick="copyDirectLink('${dropsitePageUrl}', 'Skopiowano link do strony pliku!')" oncontextmenu="event.preventDefault(); copyDirectLink('${directMediaUrl}', 'Skopiowano bezpośredni link R2/pub do pliku!');" title="${i18nTexts.tCopyLink}">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -8887,14 +9678,35 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                     </div>
                 `;
             } else {
-                listPreviewHtml = `
-                    <div class="mod-preview-thumb-wrap">
-                        <img src="${directMediaUrl}" class="mod-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()" onclick="${previewAction}" title="Powiększ zdjęcie">
-                        <div class="mod-preview-icon">
+                let imgThumb = null;
+                if (window.DropsiteThumbnailCache) {
+                    imgThumb = window.DropsiteThumbnailCache.get(file.key) ||
+                               window.DropsiteThumbnailCache.get(file.name) ||
+                               window.DropsiteThumbnailCache.get(directMediaUrl);
+                }
+                const isHeavyImage = file.size && file.size > 6 * 1024 * 1024;
+                if (imgThumb) {
+                    listPreviewHtml = `
+                        <div class="mod-preview-thumb-wrap">
+                            <img src="${imgThumb}" class="mod-preview-img is-loaded" alt="" loading="lazy" decoding="async" onclick="${previewAction}" title="Powiększ zdjęcie">
+                        </div>
+                    `;
+                } else if (!isHeavyImage) {
+                    listPreviewHtml = `
+                        <div class="mod-preview-thumb-wrap">
+                            <img src="${directMediaUrl}" class="mod-preview-img" alt="" loading="lazy" decoding="async" fetchpriority="low" onload="this.classList.add('is-loaded')" onerror="this.remove()" onclick="${previewAction}" title="Powiększ zdjęcie">
+                            <div class="mod-preview-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    listPreviewHtml = `
+                        <div class="mod-preview-icon" style="background: rgba(94, 234, 212, 0.12); cursor: pointer;" onclick="${previewAction}" title="Otwórz podgląd">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
         } else if (isVideo) {
             if (isFileExpired) {
@@ -8904,14 +9716,38 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                     </div>
                 `;
             } else {
-                listPreviewHtml = `
-                    <div class="mod-preview-thumb-wrap" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
-                        <video class="mod-preview-video" preload="none" data-video-src="${directMediaUrl}#t=0.1" muted playsinline></video>
-                        <div class="mod-preview-icon video-icon">
+                let vidThumb = null;
+                if (window.DropsiteThumbnailCache) {
+                    vidThumb = window.DropsiteThumbnailCache.get(file.key) ||
+                               window.DropsiteThumbnailCache.get(file.name) ||
+                               window.DropsiteThumbnailCache.get(directMediaUrl);
+                }
+                const isHeavyVideo = file.size && file.size > 30 * 1024 * 1024;
+                if (vidThumb) {
+                    listPreviewHtml = `
+                        <div class="mod-preview-thumb-wrap" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
+                            <img src="${vidThumb}" class="mod-preview-img is-loaded" alt="" loading="lazy" decoding="async">
+                            <div class="mod-preview-icon video-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                            </div>
+                        </div>
+                    `;
+                } else if (!isHeavyVideo) {
+                    listPreviewHtml = `
+                        <div class="mod-preview-thumb-wrap" onclick="${previewAction}" title="Odtwórz wideo" style="cursor: pointer;">
+                            <video class="mod-preview-video" preload="none" data-video-src="${directMediaUrl}#t=0.1" muted playsinline></video>
+                            <div class="mod-preview-icon video-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    listPreviewHtml = `
+                        <div class="mod-preview-icon" style="background: rgba(56, 189, 248, 0.12); cursor: pointer;" onclick="${previewAction}" title="Odtwórz wideo">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
         } else {
             let iconSvg = '';
@@ -8933,7 +9769,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
         const listCheckCol = isFileExpired ? `<div class="file-select-checkbox-spacer"></div>` : checkboxHtml;
 
         return `
-            <li class="mod-file-item ${isFileExpired ? 'is-expired-item' : ''} ${isSelected ? 'is-selected' : ''}">
+            <li class="mod-file-item ${isFileExpired ? 'is-expired-item' : ''} ${isSelected ? 'is-selected' : ''}" data-file-key="${escapeHtml(fileKey)}" data-expired="${isFileExpired}">
                 <div class="mod-file-main">
                     <div class="mod-file-check-col" onclick="event.stopPropagation(); const cb = this.querySelector('input'); if (cb && event.target !== cb) { cb.checked = !cb.checked; if (window.toggleFileSelectionForAlbum) window.toggleFileSelectionForAlbum(cb.getAttribute('data-key'), cb.checked, cb); }">
                         ${listCheckCol}
@@ -8949,7 +9785,7 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
                 </div>
                 <div class="mod-actions">
                     <button type="button" class="btn-copy-mod btn-mod-action" onclick="${previewAction}" title="${i18nTexts.tPreview}">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                         <span>${i18nTexts.tPreview}</span>
                     </button>
                     ${isFileExpired ? `
@@ -8979,16 +9815,51 @@ function renderModFileSingleHtml(file, isGridView, selectedSet, expiryLabels, i1
     }
 }
 
+let isModContainerScrolling = false;
+let modScrollEndTimer = null;
+let pendingSentinelIntersect = false;
+
+function initModContainerScrollEnd(scrollContainer, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
+    if (!scrollContainer || scrollContainer._scrollEndBound) return;
+    scrollContainer._scrollEndBound = true;
+
+    const onScrollRest = () => {
+        isModContainerScrolling = false;
+        if (typeof processVideoQueue === 'function') processVideoQueue();
+        if (pendingSentinelIntersect) {
+            pendingSentinelIntersect = false;
+            renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+        }
+    };
+
+    scrollContainer.addEventListener('scroll', () => {
+        isModContainerScrolling = true;
+        clearTimeout(modScrollEndTimer);
+        modScrollEndTimer = setTimeout(onScrollRest, 140);
+    }, { passive: true });
+
+    if ('onscrollend' in window) {
+        scrollContainer.addEventListener('scrollend', onScrollRest, { passive: true });
+    }
+}
+
 function setupModFilesScrollObserver(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin) {
     const sentinel = document.getElementById('modFilesScrollSentinel');
     if (!sentinel) return;
 
     const scrollContainer = document.getElementById('modContainer') || (modFileList ? modFileList.closest('.mod-container') : null);
+    if (scrollContainer) {
+        initModContainerScrollEnd(scrollContainer, isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+    }
 
     modFilesScrollObserver = new IntersectionObserver((entries) => {
         const entry = entries[0];
         if (entry && entry.isIntersecting) {
-            renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+            if (isModContainerScrolling) {
+                pendingSentinelIntersect = true;
+            } else {
+                renderNextModFilesChunk(isGridView, selectedSet, expiryLabels, i18nTexts, isEffectiveAdmin);
+            }
         }
     }, {
         root: scrollContainer,
@@ -9033,7 +9904,7 @@ function renderModFilesList(files) {
     if (files.length === 0) {
         currentFilteredFiles = [];
         currentRenderedCount = 0;
-        const tEmptyTitle = typeof window.t === 'function' ? window.t('myfiles_empty_title', 'Twój sejf czeka na pierwsze pliki! ✨') : 'Twój sejf czeka na pierwsze pliki! ✨';
+        const tEmptyTitle = typeof window.t === 'function' ? window.t('myfiles_empty_title', 'Twój sejf czeka na pierwsze pliki!') : 'Twój sejf czeka na pierwsze pliki!';
         const tEmptyDesc = typeof window.t === 'function' ? window.t('myfiles_empty_desc', 'Przeciągnij i upuść pliki w to okno lub kliknij przycisk poniżej, aby rozpocząć bezpieczne udostępnianie.') : 'Przeciągnij i upuść pliki w to okno lub kliknij przycisk poniżej, aby rozpocząć bezpieczne udostępnianie.';
         const tEmptyCta = typeof window.t === 'function' ? window.t('myfiles_empty_cta', 'Prześlij pierwszy plik') : 'Prześlij pierwszy plik';
 
@@ -9044,8 +9915,6 @@ function renderModFilesList(files) {
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
                     </svg>
-                    <span class="empty-sparkle sparkle-1">✦</span>
-                    <span class="empty-sparkle sparkle-2">✨</span>
                 </div>
                 <h3 class="empty-title">${tEmptyTitle}</h3>
                 <p class="empty-desc">${tEmptyDesc}</p>
@@ -9595,7 +10464,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Luksusowy efekt Ripple Button na przyciskach akcji
     document.addEventListener('click', (e) => {
-        const button = e.target.closest('.btn-copy-mod, .btn-primary, .btn-select, .btn-secondary, .proofing-link-btn, [data-ripple]');
+        const button = e.target.closest('.btn-copy-mod, .btn-primary, .btn-select, .btn-secondary, .proofing-link-btn, .btn-archive-preview-single, .btn-archive-dl-single, [data-ripple]');
         if (button) {
             if (button.disabled || button.getAttribute('disabled') !== null) return;
             triggerButtonLightSplash(button, e);
@@ -11330,6 +12199,7 @@ function _executeResetUploadFlow() {
     window._rawMultiFiles = null;
     window._multiUploadMode = null;
     window._collectionCustomTitle = null;
+    window._zipCustomBundleName = null;
 
     if (window.DropsiteOmniDropzone && typeof window.DropsiteOmniDropzone.hide === 'function') {
         window.DropsiteOmniDropzone.hide();
@@ -11420,11 +12290,14 @@ window.resetUploadFlow = resetUploadFlow;
 function navigateToHome(resetUpload = true) {
     stopAllMediaPlayback();
 
-    // 1. Wyczyść parametry URL (?f=..., ?file=..., ?pro_success=1 itp.)
-    if (window.location.search || window.location.hash) {
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.history.pushState({}, document.title, cleanUrl);
+    // 1. Wyczyść URL do czystej strony głównej (usuń /narzedzia, /cennik, ?tool=..., ?tab=..., hashe itp.)
+    const cleanHomeUrl = window.location.origin + '/';
+    if (window.location.pathname !== '/' || window.location.search || window.location.hash) {
+        try {
+            window.history.pushState({}, document.title, cleanHomeUrl);
+        } catch (_) {}
     }
+    document.title = 'Dropsite — Bezpieczny Transfer Plików do 10 GB | Szyfrowanie Zero-Knowledge';
 
     // 2. Zresetuj proces wgrywania pliku
     if (resetUpload) {
@@ -11507,6 +12380,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
+    const VIEW_PATH_MAP = {
+        'view-glowna': '/',
+        'view-narzedzia': '/narzedzia',
+        'view-cennik': '/cennik',
+        'view-funkcje': '/funkcje',
+        'view-kontakt': '/kontakt',
+        'view-regulamin': '/regulamin',
+        'view-polityka': '/polityka-prywatnosci',
+        'view-beam': '/beam',
+        'view-pobieracz': '/pobierz-wideo'
+    };
+
     function switchView(targetId, updateHistory = false) {
         stopAllMediaPlayback();
 
@@ -11527,9 +12412,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (updateHistory && (window.location.search || window.location.hash)) {
-            const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.pushState({}, document.title, cleanUrl);
+        if (updateHistory) {
+            const targetPath = VIEW_PATH_MAP[targetId] || window.location.pathname;
+            const targetUrl = window.location.origin + targetPath;
+            if (window.location.pathname !== targetPath || window.location.search || window.location.hash) {
+                try {
+                    window.history.pushState({}, document.title, targetUrl);
+                } catch (_) {}
+            }
         }
 
         const allNavs = document.querySelectorAll('.nav-btn');
@@ -11975,6 +12865,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // 0. Główna / Root (czyszczenie widoku np. przy kliknięciu "Wstecz" w przeglądarce)
+            if (path === '/' || path === '' || path === '/index.html') {
+                if (!toolParam && !hash && !params.get('drop') && !params.get('album')) {
+                    if (window.switchView) window.switchView('view-glowna');
+                    else if (window.navigateToHome) window.navigateToHome(false);
+                    return;
+                }
+            }
+
             // Dropsite Beam P2P
             const beamParam = params.get('beam');
             if (path === '/beam' || hash.includes('beam') || beamParam) {
@@ -12059,31 +12958,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 9. Kompresor Wideo (Client-Side 25MB)
             if (path === '/kompresor-wideo' || hash.includes('kompresor-wideo') || hash.includes('video-compress')) {
-                if (window.switchView) window.switchView('view-glowna');
                 setSeoMeta('Lokalny Kompresor Wideo do 25 MB — Discord & E-mail w RAM | Dropsite', 'Zmniejsz rozmiar wideo MP4, WebM i MOV pod limit 25 MB bezpośrednio w przeglądarce bez wysyłania pliku na serwer.');
                 setTimeout(() => {
-                    if (window.openVideoCompressor) {
+                    if (window.switchToolTab) {
+                        window.switchToolTab('video-compress');
+                    } else if (window.openVideoCompressor) {
                         window.openVideoCompressor();
-                    } else {
-                        const m = document.getElementById('videoCompressModal');
-                        if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; }
                     }
-                }, 200);
+                }, 160);
                 return;
             }
 
             // 10. Studio Kodów QR (4K & Vector SVG)
             if (path === '/generator-qr' || path === '/qr-studio' || hash.includes('generator-qr') || hash.includes('qr-studio')) {
-                if (window.switchView) window.switchView('view-glowna');
                 setSeoMeta('Generator Kodów QR 4K & Wektor SVG z Logo — Bezpłatnie | Dropsite', 'Generuj kody QR w jakości 4K Ultra HD oraz wektorowym formacie SVG dla stron WWW, sieci Wi-Fi, wizytówek vCard z własnym logo.');
                 setTimeout(() => {
-                    const modal = document.getElementById('qrStudioModal');
-                    if (modal) {
-                        modal.classList.add('open');
-                        document.body.style.overflow = 'hidden';
-                        if (window.initQRStudio) window.initQRStudio();
+                    if (window.switchToolTab) {
+                        window.switchToolTab('qr-studio');
+                    } else if (window.openQRStudio) {
+                        window.openQRStudio();
                     }
-                }, 200);
+                }, 160);
                 return;
             }
 
@@ -12428,7 +13323,12 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
 
     function wakeAnimation() {
         if (document.documentElement.classList.contains('eco-mode')) return;
-        if (!animId && isRunning && isHeroVisible && !isScrolling) {
+        const modM = document.getElementById('modModal');
+        if (modM && !modM.hidden && modM.style.display !== 'none') return;
+        const sFlow = document.getElementById('successFlow');
+        if (sFlow && !sFlow.hidden) return;
+        if (document.body.classList.contains('is-modal-active')) return;
+        if (!animId && isRunning && !isScrolling) {
             animId = requestAnimationFrame(animate);
         }
     }
@@ -12449,6 +13349,9 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
         if (document.documentElement.classList.contains('eco-mode')) return;
         const modM = document.getElementById('modModal');
         if (modM && !modM.hidden && modM.style.display !== 'none') return;
+        const sFlow = document.getElementById('successFlow');
+        if (sFlow && !sFlow.hidden) return;
+        if (document.body.classList.contains('is-modal-active')) return;
         mouse.x = e.clientX;
         mouse.y = e.clientY;
         mouse.active = true;
@@ -12487,29 +13390,15 @@ document.addEventListener('DOMContentLoaded', updatePerformanceModeUI);
         }, { passive: true });
     }
 
-    // INTERSECTION OBSERVER: wyłącz animację canvas, gdy użytkownik przewinie stronę poniżej hero
-    if ('IntersectionObserver' in window) {
-        const heroEl = document.getElementById('view-glowna') || document.getElementById('uploadBox');
-        if (heroEl) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    isHeroVisible = entry.isIntersecting;
-                    if (isHeroVisible) {
-                        resetIdleTimer();
-                    } else if (animId) {
-                        cancelAnimationFrame(animId);
-                        animId = null;
-                    }
-                });
-            }, { rootMargin: '100px 0px 100px 0px' });
-            observer.observe(heroEl);
-        }
-    }
+    // Animacja tła canvas jest aktywna we wszystkich sekcjach serwisu
+
 
     function animate() {
         const modM = document.getElementById('modModal');
         const isModOpen = modM && !modM.hidden && modM.style.display !== 'none';
-        if (!isRunning || isScrolling || !isHeroVisible || isModOpen || document.documentElement.classList.contains('eco-mode')) {
+        const sFlow = document.getElementById('successFlow');
+        const isSuccessOpen = sFlow && !sFlow.hidden;
+        if (!isRunning || isScrolling || isModOpen || isSuccessOpen || document.body.classList.contains('is-modal-active') || document.documentElement.classList.contains('eco-mode')) {
             animId = null;
             return;
         }
@@ -12798,6 +13687,23 @@ function getLocalHistory() {
     }
 }
 
+function compactHistoryFile(f) {
+    if (!f) return null;
+    return {
+        key: f.key || f.name,
+        name: f.name || f.key,
+        size: Number(f.size) || 0,
+        uploaded: f.uploaded || f.date || Date.now(),
+        duration: f.duration || 7,
+        directUrl: f.directUrl || f.url || '',
+        pageUrl: f.pageUrl || '',
+        folder: f.folder || '',
+        status: f.status || 'active',
+        existsOnDisk: f.existsOnDisk !== false,
+        ...(f.albumId ? { albumId: f.albumId } : {})
+    };
+}
+
 async function syncUserHistory() {
     const userEmail = (typeof getCurrentUserEmail === 'function') ? getCurrentUserEmail() : ((typeof auth !== 'undefined' && auth?.currentUser?.email) || localStorage.getItem('dropsite_user_email') || '');
     if (userEmail) {
@@ -12838,7 +13744,9 @@ async function syncUserHistory() {
                         }
                     });
 
-                    const finalCombined = isAutoClean ? combined.filter(item => !checkIfFileIsExpired(item)) : combined;
+                    const finalCombined = (isAutoClean ? combined.filter(item => !checkIfFileIsExpired(item)) : combined)
+                        .map(compactHistoryFile)
+                        .filter(Boolean);
                     const newSlice = finalCombined.slice(0, 500);
                     const currentSerialized = JSON.stringify(local);
                     const newSerialized = JSON.stringify(newSlice);
@@ -12872,11 +13780,12 @@ function saveToUserHistory(item) {
         return true;
     });
 
-    filtered.unshift({
+    const compact = compactHistoryFile({
         ...item,
         status: item.status || 'active',
         existsOnDisk: item.existsOnDisk !== false
     });
+    if (compact) filtered.unshift(compact);
     // Zwiększony limit do 500 wpisów
     if (filtered.length > 500) filtered.pop();
     localStorage.setItem(key, JSON.stringify(filtered));
@@ -13058,6 +13967,34 @@ async function initDownloadRouter() {
             'zip': 'application/zip'
         };
         return map[ext] || 'application/octet-stream';
+    }
+
+    function archiveListThumbnail(file) {
+        const fallback = getMiniFileSvg(file ? file.name : '');
+        if (!file) return fallback;
+        const url = file.streamUrl;
+        
+        // 1. Sprawdź czy mamy lekką miniaturkę w cache z sesji wysyłania (0ms, 0 RAM)
+        if (window.DropsiteThumbnailCache) {
+            const cached = (url && window.DropsiteThumbnailCache.get(url)) ||
+                           window.DropsiteThumbnailCache.get(file.name) ||
+                           (file.key && window.DropsiteThumbnailCache.get(file.key));
+            if (cached) {
+                return `<img class="archive-list-thumbnail" src="${cached}" alt="" loading="lazy" decoding="async">${fallback}`;
+            }
+        }
+        
+        // 2. Jeśli serwer dostarczył gotowy, miniaturowy thumbnail
+        if (file.thumbnailUrl) {
+            return `<img class="archive-list-thumbnail" src="${escapeHtml(file.thumbnailUrl)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">${fallback}`;
+        }
+        
+        // 3. W innym wypadku ZAWSZE używamy ultralekkiego, responsywnego SVG!
+        // NIGDY nie pobieramy całego wielomegawajtowego pliku z serwera tylko po to, by narysować ikonkę w spisie!
+        if (file.isVideo) {
+            return `<span class="archive-list-video-slot" aria-hidden="true">${fallback}</span><span class="archive-thumbnail-play" aria-hidden="true">&#9654;</span>`;
+        }
+        return fallback;
     }
 
     function getMiniFileSvg(filename) {
@@ -13922,11 +14859,13 @@ async function initDownloadRouter() {
         const commentInput = document.getElementById('proofingCommentInput');
 
         if (!modal) return;
+        modal.dataset.proofingOwner = "recipient";
+        sideCurrentPendingPin = null;
 
         const lightboxModal = document.getElementById('dlLightboxModal');
         const lightboxOpen = lightboxModal && !lightboxModal.hidden && lightboxModal.style.display !== 'none';
         if (lightboxOpen) {
-            modal.style.setProperty('z-index', '100001', 'important');
+            modal.style.setProperty('z-index', '2000200', 'important');
         } else {
             modal.style.removeProperty('z-index');
         }
@@ -14192,15 +15131,18 @@ async function initDownloadRouter() {
         const saveBtn = document.getElementById('proofingModalSaveBtn');
         const commentInput = document.getElementById('proofingCommentInput');
 
-        if (closeBtn) closeBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeProofingModal(); };
-        if (cancelBtn) cancelBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeProofingModal(); };
-        if (saveBtn) saveBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } saveProofingPin(); };
+        const closeOwnedModal = () => modal?.dataset.proofingOwner === 'side' ? closeSideProofingModal() : closeProofingModal();
+        const saveOwnedPin = () => modal?.dataset.proofingOwner === 'side' ? saveSideProofingPin() : saveProofingPin();
+
+        if (closeBtn) closeBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeOwnedModal(); };
+        if (cancelBtn) cancelBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeOwnedModal(); };
+        if (saveBtn) saveBtn.onclick = (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } saveOwnedPin(); };
 
         if (commentInput) {
             commentInput.onkeydown = (e) => {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
-                    saveProofingPin();
+                    saveOwnedPin();
                 }
             };
         }
@@ -14208,7 +15150,7 @@ async function initDownloadRouter() {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal || e.target.id === 'proofingModalBackdrop') {
-                    closeProofingModal();
+                    closeOwnedModal();
                 }
             });
         }
@@ -14399,7 +15341,7 @@ async function initDownloadRouter() {
                     if (stage) {
                         stage.innerHTML = `
                             <div class="proofing-video-error-fallback" style="padding: 30px 15px;">
-                                <div class="video-error-icon">🎬</div>
+                                <div class="video-error-icon"></div>
                                 <div class="video-error-title">Format wideo wymaga pobrania na dysk</div>
                                 <div class="video-error-desc">Twoja przeglądarka nie posiada dekodera dla tego kodeka (np. MKV, ProRes lub Apple HEVC). Plik jest w 100% nienaruszony i możesz go pobrać poniżej.</div>
                                 <button type="button" onclick="const b=document.getElementById('dlDownloadBtn'); if(b) b.click();" class="btn-primary btn-error-fallback" style="margin-top: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
@@ -14579,7 +15521,7 @@ async function initDownloadRouter() {
                     if (frameBox) {
                         frameBox.innerHTML = `
                             <div class="proofing-video-error-fallback">
-                                <div class="video-error-icon">🎬</div>
+                                <div class="video-error-icon"></div>
                                 <div class="video-error-title">Podgląd wideo niedostępny w oknie przeglądarki</div>
                                 <div class="video-error-desc">Kodek tego materiału może nie być natywnie wspierany przez wbudowany silnik przeglądarki lub wystąpił błąd odtwarzacza.</div>
                                 <button type="button" onclick="const b=document.getElementById('dlDownloadBtn'); if(b) b.click();" class="btn-primary btn-error-fallback" style="margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer;">
@@ -14621,7 +15563,9 @@ async function initDownloadRouter() {
                         stage.style.setProperty('height', Math.round(renderH) + 'px', 'important');
                     } else {
                         // Karta pobierania w trybie standardowym
-                        const maxH = Math.min(600, Math.round(window.innerHeight * 0.72));
+                        // Keep the image and annotation coordinates inside the styled preview frame.
+                        const frameMaxH = parseFloat(getComputedStyle(frameBox).maxHeight);
+                        const maxH = Math.min(600, Math.round(window.innerHeight * 0.72), Number.isFinite(frameMaxH) ? frameMaxH : Infinity);
                         const naturalH = boxW / vAspect;
                         let renderW, renderH;
                         if (naturalH <= maxH) {
@@ -15171,6 +16115,9 @@ function openSideProofingModal(pendingData) {
     const commentInput = document.getElementById('proofingCommentInput');
 
     if (!modal) return;
+    initProofingModalListeners();
+    modal.dataset.proofingOwner = "side";
+    currentPendingPin = null;
 
     if (pendingData.formattedTime) {
         if (timeBadge) {
@@ -15460,31 +16407,8 @@ function initSideProofingListeners() {
     const backdrop = document.getElementById('sideProofingDrawerBackdrop');
     if (backdrop) backdrop.addEventListener('click', closeSideProofingDrawer);
 
-    // Modal buttons
-    const modalCloseBtn = document.getElementById('proofingModalCloseBtn');
-    const modalCancelBtn = document.getElementById('proofingModalCancelBtn');
-    const modalSaveBtn = document.getElementById('proofingModalSaveBtn');
-    const commentInput = document.getElementById('proofingCommentInput');
-
-    if (modalCloseBtn) modalCloseBtn.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeSideProofingModal(); });
-    if (modalCancelBtn) modalCancelBtn.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } closeSideProofingModal(); });
-    if (modalSaveBtn) modalSaveBtn.addEventListener('click', (e) => { if (e) { e.preventDefault(); e.stopPropagation(); } saveSideProofingPin(); });
-
-    if (commentInput) {
-        commentInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                saveSideProofingPin();
-            }
-        });
-    }
-
-    const modal = document.getElementById('proofingCommentModal');
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeSideProofingModal();
-        });
-    }
+    // The recipient and side drawer share one owner-aware dialog controller.
+    initProofingModalListeners();
 
     // Overlay click for video/image pin placement
     const overlay = document.getElementById('sideProofingOverlay');
@@ -16059,7 +16983,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         </button>
                         <button type="button" class="dl-tool-pill dl-tool-hide-pins" id="btnProofingToggleVisibility" data-i18n-title="btn_hide_pins" title="Ukryj / Pokaż pinezki z uwagami (H)">
                             <svg id="proofingEyeOpenIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                             <svg id="proofingEyeOffIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
@@ -16326,6 +17250,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 const files = cdInfo.files;
                 const videoFiles = files.filter(f => f.isVideo);
                 const imgFiles = files.filter(f => f.isImage);
+                const audioFiles = files.filter(f => f.isAudio);
                 const totalBytes = cdInfo.totalSize || files.reduce((acc, f) => acc + (f.size || 0), 0);
 
                 if (imgFiles.length > 1 && (imgFiles.length / files.length >= 0.7)) {
@@ -16333,54 +17258,64 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 }
                 if (isAlbumMode) dlPreviewContainer.classList.add('has-album');
 
-                // A) TRYB WIDEO SHOWCASE: Jeśli w paczce są filmy (np. MP4, WEBM, MOV, MKV)
-                if (videoFiles.length > 0) {
-                    // Rozwiń szerokość karty do 1060px dla komfortowego seansu kinowego
+                // A) TRYB INTERAKTYWNEGO PODGLĄDU SHOWCASE: Jeśli w paczce są filmy, zdjęcia lub multimedia
+                const hasPreviewable = videoFiles.length > 0 || imgFiles.length > 0 || audioFiles.length > 0;
+                if (videoFiles.length > 0 || (!isAlbumMode && hasPreviewable)) {
+                    // Rozwiń szerokość karty do 1060px dla komfortowego seansu kinowego / podglądu multimediów
                     dlPreviewContainer.classList.add('has-proofing-video');
                     const dlCard = document.querySelector('.download-card');
                     if (dlCard) dlCard.classList.add('has-proofing-video');
                     const mainWrap = dlPreviewContainer.closest('.main-wrapper');
                     if (mainWrap) mainWrap.classList.add('has-proofing-video');
 
+                    window._activeArchiveFiles = files;
                     window._activeArchiveVideoFiles = videoFiles;
-                    const firstVideo = videoFiles[0];
+                    const initialMedia = videoFiles[0] || imgFiles[0] || audioFiles[0] || files[0];
+                    window._currentActiveArchiveFile = initialMedia;
+
+                    const initialIsVideo = initialMedia.isVideo;
+                    const initialIsImage = initialMedia.isImage;
+                    const initialIsAudio = initialMedia.isAudio;
+                    const initialCleanName = initialMedia.name.split('/').pop() || initialMedia.name;
 
                     dlPreviewContainer.innerHTML = `
-                        <div class="archive-video-showcase-card" style="width: 100%; border-radius: 14px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 12px 36px rgba(0,0,0,0.55); overflow: hidden; margin-bottom: 14px; backdrop-filter: blur(12px);">
+                        <div class="archive-video-showcase-card archive-media-showcase-card" id="archiveMediaShowcaseCard" style="width: 100%; border-radius: 14px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 12px 36px rgba(0,0,0,0.55); overflow: hidden; margin-bottom: 14px; backdrop-filter: blur(12px);">
                             <div style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); flex-wrap: wrap; gap: 10px;">
-                                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
-                                    <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; color: #38BDF8; flex-shrink: 0;">
+                                <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; max-width: calc(100% - 240px); min-width: 200px;">
+                                    <div id="archiveActiveIconBox" style="width: 36px; height: 36px; border-radius: 9px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); display: flex; align-items: center; justify-content: center; color: #38BDF8; flex-shrink: 0; transition: all 0.25s ease;">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                                     </div>
                                     <div style="overflow: hidden;">
-                                        <strong style="font-size: 14px; color: #F8FAFC; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="archiveActiveVideoTitle">${escapeHtml(firstVideo.name)}</strong>
-                                        <span style="font-size: 11.5px; color: var(--text-muted); display: block;" id="archiveActiveVideoSub">Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(firstVideo.size)}</span>
+                                        <strong style="font-size: 14px; color: #F8FAFC; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="archiveActiveVideoTitle" title="${escapeHtml(initialMedia.name)}">${escapeHtml(initialCleanName)}</strong>
+                                        <span style="font-size: 11.5px; color: var(--text-muted); display: block;" id="archiveActiveVideoSub">
+                                            ${initialIsVideo ? `Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(initialMedia.size)}` : (initialIsImage ? `Podgląd zdjęcia z paczki ZIP • ${formatBytes(initialMedia.size)}` : `Plik z paczki archiwalnej • ${formatBytes(initialMedia.size)}`)}
+                                        </span>
                                     </div>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-size: 11px; font-weight: 600; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                                    <span id="archiveActiveBadge" style="font-size: 11px; font-weight: 600; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; transition: all 0.25s ease;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; display: inline-block;"></span>
-                                        🎬 Wideo z paczki ZIP
+                                        Wideo z paczki ZIP
                                     </span>
-                                    <button type="button" class="btn-archive-dl-single" id="btnDownloadActiveVideo" onclick="window.downloadSingleFromArchive('${encodeURIComponent(firstVideo.name)}', '${encodeURIComponent(firstVideo.name)}')" title="Pobierz ten pojedynczy film na dysk" style="padding: 5px 12px; font-size: 11.5px;">
+                                    <button type="button" class="btn-archive-dl-single" id="btnDownloadActiveVideo" onclick="window.downloadSingleFromArchive('${encodeURIComponent(initialMedia.name)}', '${encodeURIComponent(initialCleanName)}')" title="Pobierz ten pojedynczy plik na dysk" style="padding: 5px 12px; font-size: 11.5px;">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        <span>Pobierz ten film</span>
+                                        <span id="btnDownloadActiveVideoText">${initialIsVideo ? 'Pobierz ten film' : (initialIsImage ? 'Pobierz to zdjęcie' : 'Pobierz ten plik')}</span>
                                     </button>
                                 </div>
                             </div>
 
-                            <div style="position: relative; width: 100%; background: #000; display: flex; align-items: center; justify-content: center; max-height: 480px; min-height: 260px;">
-                                <video id="archiveVideoPlayer" src="${firstVideo.streamUrl}" controls playsinline preload="metadata" style="width: 100%; max-height: 480px; object-fit: contain; outline: none; background: #000;"></video>
+                            <div id="archiveStageMediaContainer" style="position: relative; width: 100%; background: #000; display: flex; align-items: center; justify-content: center; max-height: 520px; min-height: 280px; overflow: hidden;">
+                                <!-- Dynamicznie wypełniane przez activateArchiveFile -->
                             </div>
 
                             ${videoFiles.length > 1 ? `
                             <div style="padding: 10px 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; gap: 8px; overflow-x: auto;">
-                                <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; margin-right: 4px;">Wybierz wideo (${videoFiles.length}):</span>
+                                <span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); white-space: nowrap; margin-right: 4px;">Wideo w paczce (${videoFiles.length}):</span>
                                 <div id="archivePlaylistPills" style="display: flex; gap: 8px; flex-wrap: wrap;">
                                     ${videoFiles.map((vf, idx) => `
-                                        <button type="button" class="btn-archive-playlist-pill ${idx === 0 ? 'active' : ''}" onclick="window.switchArchiveVideo(${idx})" data-idx="${idx}" style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; border-radius: 8px; border: 1px solid ${idx === 0 ? '#38BDF8' : 'rgba(255,255,255,0.1)'}; background: ${idx === 0 ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255,255,255,0.04)'}; color: ${idx === 0 ? '#38BDF8' : '#CBD5E1'}; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <button type="button" class="btn-archive-playlist-pill ${vf.name === initialMedia.name ? 'active' : ''}" data-file-path="${encodeURIComponent(vf.name)}" onclick="window.activateArchiveFile('${encodeURIComponent(vf.name)}', { autoPlay: true, scrollIntoView: true })" data-idx="${idx}" style="padding: 6px 12px; font-size: 11.5px; font-weight: 500; border-radius: 8px; border: 1px solid ${vf.name === initialMedia.name ? '#38BDF8' : 'rgba(255,255,255,0.1)'}; background: ${vf.name === initialMedia.name ? 'rgba(56, 189, 248, 0.22)' : 'rgba(255,255,255,0.04)'}; color: ${vf.name === initialMedia.name ? '#38BDF8' : '#CBD5E1'}; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                                            <span>${escapeHtml(vf.name)} (${formatBytes(vf.size)})</span>
+                                            <span>${escapeHtml(vf.name.split('/').pop() || vf.name)} (${formatBytes(vf.size)})</span>
                                         </button>
                                     `).join('')}
                                 </div>
@@ -16409,45 +17344,227 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                         </div>
                     `;
 
-                    window.switchArchiveVideo = function(idx) {
-                        const vfiles = window._activeArchiveVideoFiles || [];
-                        const vf = vfiles[idx];
-                        if (!vf) return;
-                        const player = document.getElementById('archiveVideoPlayer');
+                    // Aktywacja wybranego pliku bezpośrednio na żywej scenie podglądu (bez otwierania uciążliwych okien modalnych)
+                    window.activateArchiveFile = function(pathOrName, options = {}) {
+                        const rawPath = typeof pathOrName === 'string' ? decodeURIComponent(pathOrName) : '';
+                        const allFiles = window._activeArchiveFiles || (window._activeArchiveInfo && window._activeArchiveInfo.files) || [];
+                        
+                        let f = allFiles.find(item => item.name === rawPath || item.name.endsWith('/' + rawPath) || rawPath.endsWith('/' + item.name));
+                        if (!f && window._activeArchiveVideoFiles) {
+                            f = window._activeArchiveVideoFiles.find(item => item.name === rawPath || item.name.endsWith('/' + rawPath));
+                        }
+                        if (!f && allFiles.length > 0) {
+                            const base = rawPath.split('/').pop();
+                            f = allFiles.find(item => item.name.split('/').pop() === base);
+                        }
+                        if (!f) return;
+
+                        window._currentActiveArchiveFile = f;
+
                         const titleEl = document.getElementById('archiveActiveVideoTitle');
                         const subEl = document.getElementById('archiveActiveVideoSub');
+                        const badgeEl = document.getElementById('archiveActiveBadge');
+                        const iconBox = document.getElementById('archiveActiveIconBox');
                         const dlBtn = document.getElementById('btnDownloadActiveVideo');
-                        if (player) {
-                            player.src = vf.streamUrl;
-                            player.play().catch(()=>{});
-                            player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        const dlText = document.getElementById('btnDownloadActiveVideoText');
+                        const mediaContainer = document.getElementById('archiveStageMediaContainer');
+                        const showcaseCard = document.getElementById('archiveMediaShowcaseCard') || document.querySelector('.archive-video-showcase-card');
+
+                        const cleanFilename = f.name.split('/').pop() || f.name;
+
+                        if (titleEl) {
+                            titleEl.textContent = cleanFilename;
+                            titleEl.title = f.name;
                         }
-                        if (titleEl) titleEl.textContent = vf.name;
-                        if (subEl) subEl.textContent = `Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(vf.size)}`;
+                        if (subEl) {
+                            if (f.isVideo) subEl.textContent = `Odtwarzanie strumieniowe bez rozpakowywania na dysk • ${formatBytes(f.size)}`;
+                            else if (f.isImage) subEl.textContent = `Podgląd zdjęcia w pełnej rozdzielczości • ${formatBytes(f.size)}`;
+                            else if (f.isAudio) subEl.textContent = `Odtwarzanie strumieniowe dźwięku • ${formatBytes(f.size)}`;
+                            else subEl.textContent = `Plik z paczki archiwalnej • ${formatBytes(f.size)}`;
+                        }
+                        if (iconBox) {
+                            if (f.isVideo) {
+                                iconBox.style.background = 'rgba(56, 189, 248, 0.15)';
+                                iconBox.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+                                iconBox.style.color = '#38BDF8';
+                                iconBox.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+                            } else if (f.isImage) {
+                                iconBox.style.background = 'rgba(52, 211, 153, 0.15)';
+                                iconBox.style.borderColor = 'rgba(52, 211, 153, 0.35)';
+                                iconBox.style.color = '#34D399';
+                                iconBox.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+                            } else if (f.isAudio) {
+                                iconBox.style.background = 'rgba(167, 139, 250, 0.15)';
+                                iconBox.style.borderColor = 'rgba(167, 139, 250, 0.35)';
+                                iconBox.style.color = '#A78BFA';
+                                iconBox.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+                            } else {
+                                iconBox.style.background = 'rgba(251, 191, 36, 0.15)';
+                                iconBox.style.borderColor = 'rgba(251, 191, 36, 0.35)';
+                                iconBox.style.color = '#FBBF24';
+                                iconBox.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
+                            }
+                        }
+                        if (badgeEl) {
+                            if (f.isVideo) {
+                                badgeEl.style.color = '#38BDF8';
+                                badgeEl.style.background = 'rgba(56, 189, 248, 0.12)';
+                                badgeEl.style.borderColor = 'rgba(56, 189, 248, 0.25)';
+                                badgeEl.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: #38BDF8; display: inline-block;"></span> Wideo z paczki ZIP';
+                            } else if (f.isImage) {
+                                badgeEl.style.color = '#34D399';
+                                badgeEl.style.background = 'rgba(52, 211, 153, 0.12)';
+                                badgeEl.style.borderColor = 'rgba(52, 211, 153, 0.25)';
+                                badgeEl.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: #34D399; display: inline-block;"></span> Zdjęcie z paczki ZIP';
+                            } else if (f.isAudio) {
+                                badgeEl.style.color = '#A78BFA';
+                                badgeEl.style.background = 'rgba(167, 139, 250, 0.12)';
+                                badgeEl.style.borderColor = 'rgba(167, 139, 250, 0.25)';
+                                badgeEl.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: #A78BFA; display: inline-block;"></span> Audio z paczki ZIP';
+                            } else {
+                                badgeEl.style.color = '#FBBF24';
+                                badgeEl.style.background = 'rgba(251, 191, 36, 0.12)';
+                                badgeEl.style.borderColor = 'rgba(251, 191, 36, 0.25)';
+                                badgeEl.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: #FBBF24; display: inline-block;"></span> Plik z paczki ZIP';
+                            }
+                        }
                         if (dlBtn) {
-                            dlBtn.onclick = () => window.downloadSingleFromArchive(encodeURIComponent(vf.name), encodeURIComponent(vf.name));
+                            dlBtn.onclick = (e) => {
+                                if (e) e.stopPropagation();
+                                window.downloadSingleFromArchive(encodeURIComponent(f.name), encodeURIComponent(cleanFilename));
+                            };
                         }
+                        if (dlText) {
+                            if (f.isVideo) dlText.textContent = 'Pobierz ten film';
+                            else if (f.isImage) dlText.textContent = 'Pobierz to zdjęcie';
+                            else if (f.isAudio) dlText.textContent = 'Pobierz ten utwór';
+                            else dlText.textContent = 'Pobierz ten plik';
+                        }
+
+                        // Bezpiecznie zatrzymaj poprzednie media
+                        const prevVideo = document.getElementById('archiveVideoPlayer');
+                        if (prevVideo) {
+                            try { prevVideo.pause(); } catch(_) {}
+                        }
+                        const prevAudio = document.getElementById('archiveAudioPlayer');
+                        if (prevAudio) {
+                            try { prevAudio.pause(); } catch(_) {}
+                        }
+
+                        // Wypełnij scenę w zależności od typu
+                        if (mediaContainer) {
+                            if (f.isVideo) {
+                                mediaContainer.innerHTML = `
+                                    <video id="archiveVideoPlayer" src="${f.streamUrl}" controls playsinline preload="metadata" style="width: 100%; max-height: 520px; object-fit: contain; outline: none; background: #000; display: block;"></video>
+                                `;
+                                const newPlayer = document.getElementById('archiveVideoPlayer');
+                                if (newPlayer && options.autoPlay === true) {
+                                    newPlayer.play().catch(()=>{});
+                                }
+                            } else if (f.isImage) {
+                                mediaContainer.innerHTML = `
+                                    <div class="archive-stage-img-wrap" style="position: relative; width: 100%; min-height: 280px; max-height: 520px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(30, 41, 59, 0.7) 0%, #030712 100%); overflow: hidden; padding: 12px 0;">
+                                        <img id="archiveActiveImg" src="${f.streamUrl}" alt="${escapeHtml(cleanFilename)}" onclick="window.openDownloadImageLightbox('${f.streamUrl}', '${escapeHtml(cleanFilename)}', '${escapeHtml(f.name)}')" title="Kliknij, aby powiększyć na pełny ekran" style="max-width: 100%; max-height: 500px; object-fit: contain; display: block; border-radius: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); animation: archiveFadeIn 0.25s ease;" />
+                                        <div style="position: absolute; bottom: 12px; right: 14px; display: flex; gap: 8px; z-index: 10;">
+                                            <button type="button" class="btn-archive-stage-fullscreen" onclick="window.openDownloadImageLightbox('${f.streamUrl}', '${escapeHtml(cleanFilename)}', '${escapeHtml(f.name)}')" title="Powiększ na pełny ekran" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); color: #F8FAFC; padding: 6px 13px; border-radius: 8px; font-size: 11.5px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.4);">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                                                <span>Pełny ekran</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            } else if (f.isAudio) {
+                                mediaContainer.innerHTML = `
+                                    <div class="archive-stage-audio-wrap" style="width: 100%; padding: 44px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(30, 41, 59, 0.65) 0%, #030712 100%); min-height: 250px;">
+                                        <div style="width: 60px; height: 60px; border-radius: 14px; background: rgba(167, 139, 250, 0.16); border: 1px solid rgba(167, 139, 250, 0.35); display: flex; align-items: center; justify-content: center; color: #A78BFA; margin-bottom: 14px;">
+                                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                        </div>
+                                        <strong style="color: #F8FAFC; font-size: 14.5px; margin-bottom: 4px; text-align: center; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(cleanFilename)}</strong>
+                                        <span style="font-size: 12px; color: var(--text-muted); margin-bottom: 18px;">Strumieniowanie audio • ${formatBytes(f.size)}</span>
+                                        <audio id="archiveAudioPlayer" src="${f.streamUrl}" controls autoplay style="width: 100%; max-width: 440px;"></audio>
+                                    </div>
+                                `;
+                            } else {
+                                const ext = cleanFilename.split('.').pop().toLowerCase();
+                                if (ext === 'pdf') {
+                                    mediaContainer.innerHTML = `
+                                        <div style="width: 100%; min-height: 480px; max-height: 560px; background: #0b0f19;">
+                                            <iframe src="${f.streamUrl}#toolbar=1" style="width: 100%; height: 500px; border: none; display: block;"></iframe>
+                                        </div>
+                                    `;
+                                } else {
+                                    mediaContainer.innerHTML = `
+                                        <div style="padding: 44px 20px; text-align: center; width: 100%; background: radial-gradient(circle at center, rgba(30, 41, 59, 0.65) 0%, #030712 100%);">
+                                            <div style="font-size: 42px; margin-bottom: 12px;">📦</div>
+                                            <strong style="font-size: 15px; color: #F8FAFC; display: block; margin-bottom: 4px;">${escapeHtml(cleanFilename)}</strong>
+                                            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Plik gotowy do bezpośredniego pobrania (${formatBytes(f.size)})</p>
+                                            <button type="button" class="btn-primary" onclick="window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(cleanFilename)}')" style="display: inline-flex; align-items: center; gap: 8px; margin: 0 auto; padding: 8px 18px; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                <span>Pobierz ten plik</span>
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        }
+
+                        // Aktualizacja aktywnego wiersza w spisie plików
+                        document.querySelectorAll('#archiveFileList .archive-file-row').forEach(row => {
+                            const rowPath = decodeURIComponent(row.dataset.filePath || '');
+                            const isCurrent = (rowPath === f.name || rowPath.endsWith('/' + f.name) || f.name.endsWith('/' + rowPath));
+                            if (isCurrent) {
+                                row.classList.add('is-active');
+                                let pill = row.querySelector('.archive-active-pill');
+                                if (!pill) {
+                                    const left = row.querySelector('.archive-file-left');
+                                    if (left) {
+                                        pill = document.createElement('span');
+                                        pill.className = 'archive-active-pill';
+                                        pill.textContent = 'Aktywny';
+                                        left.appendChild(pill);
+                                    }
+                                }
+                            } else {
+                                row.classList.remove('is-active');
+                                const pill = row.querySelector('.archive-active-pill');
+                                if (pill) pill.remove();
+                            }
+                        });
+
+                        // Aktualizacja playlist pills dla wideo
                         document.querySelectorAll('.btn-archive-playlist-pill').forEach(btn => {
-                            const bIdx = parseInt(btn.dataset.idx, 10);
-                            if (bIdx === idx) {
+                            const btnPath = decodeURIComponent(btn.dataset.filePath || '');
+                            const isCurrent = (btnPath === f.name || btnPath.endsWith('/' + f.name) || f.name.endsWith('/' + btnPath));
+                            if (isCurrent) {
                                 btn.style.borderColor = '#38BDF8';
                                 btn.style.background = 'rgba(56, 189, 248, 0.22)';
                                 btn.style.color = '#38BDF8';
+                                btn.classList.add('active');
                             } else {
                                 btn.style.borderColor = 'rgba(255,255,255,0.1)';
                                 btn.style.background = 'rgba(255,255,255,0.04)';
                                 btn.style.color = '#CBD5E1';
+                                btn.classList.remove('active');
                             }
                         });
+
+                        // Płynne przewinięcie jeśli użytkownik kliknął na małym ekranie i podgląd zjechał w górę
+                        if (options.scrollIntoView || (window.innerWidth <= 768 && showcaseCard && showcaseCard.getBoundingClientRect().top < 0)) {
+                            showcaseCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    };
+
+                    // Wstępna inicjalizacja pierwszego pliku na scenie
+                    window.activateArchiveFile(initialMedia.name, { autoPlay: false, scrollIntoView: false });
+
+                    window.switchArchiveVideo = function(idx) {
+                        const vfiles = window._activeArchiveVideoFiles || [];
+                        const vf = vfiles[idx];
+                        if (vf) window.activateArchiveFile(vf.name, { autoPlay: true, scrollIntoView: true });
                     };
 
                     window.switchArchiveVideoByPath = function(encodedPath) {
-                        const path = decodeURIComponent(encodedPath);
-                        const vfiles = window._activeArchiveVideoFiles || [];
-                        const idx = vfiles.findIndex(f => f.name === path);
-                        if (idx !== -1) {
-                            window.switchArchiveVideo(idx);
-                        }
+                        window.activateArchiveFile(decodeURIComponent(encodedPath), { autoPlay: true, scrollIntoView: true });
                     };
 
                     const renderFileListRows = (entriesToRender) => {
@@ -16457,27 +17574,36 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                             listEl.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 12px;">Brak plików pasujących do zapytania</div>';
                             return;
                         }
+                        const currentActive = window._currentActiveArchiveFile;
+                        const currentActiveName = currentActive ? currentActive.name : (initialMedia ? initialMedia.name : null);
+
                         listEl.innerHTML = entriesToRender.map(f => {
+                            const isActive = Boolean(currentActiveName && (f.name === currentActiveName || f.name.endsWith('/' + currentActiveName) || currentActiveName.endsWith('/' + f.name)));
+                            const cleanName = f.name.split('/').pop() || f.name;
                             return `
-                                <div class="archive-file-row">
+                                <div class="archive-file-row ${isActive ? 'is-active' : ''}" 
+                                     data-file-path="${encodeURIComponent(f.name)}"
+                                     onclick="window.activateArchiveFile('${encodeURIComponent(f.name)}', { autoPlay: true, scrollIntoView: false })"
+                                     title="Kliknij, aby wyświetlić ten plik w podglądzie powyżej">
                                     <div class="archive-file-left">
-                                        <span class="archive-file-icon">${getMiniFileSvg(f.name)}</span>
-                                        <span class="archive-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                                        <span class="archive-file-icon">${archiveListThumbnail(f)}</span>
+                                        <span class="archive-file-name" title="${escapeHtml(f.name)}">${escapeHtml(cleanName)}</span>
+                                        ${isActive ? `<span class="archive-active-pill">Aktywny</span>` : ''}
                                     </div>
                                     <div class="archive-file-right">
                                         <span class="archive-size-badge">${formatBytes(f.size)}</span>
                                         ${f.isVideo ? `
-                                        <button type="button" class="btn-archive-preview-single" onclick="window.switchArchiveVideoByPath('${encodeURIComponent(f.name)}')" title="Odtwórz ten film w odtwarzaczu">
+                                        <button type="button" class="btn-archive-preview-single" onclick="event.stopPropagation(); window.activateArchiveFile('${encodeURIComponent(f.name)}', { autoPlay: true, scrollIntoView: true })" title="Odtwórz ten film w podglądzie powyżej">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                                             <span>Odtwórz</span>
                                         </button>
                                         ` : (f.isAudio || f.isImage) ? `
-                                        <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Podgląd pliku">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        <button type="button" class="btn-archive-preview-single" onclick="event.stopPropagation(); window.activateArchiveFile('${encodeURIComponent(f.name)}', { autoPlay: true, scrollIntoView: true })" title="Wyświetl ten plik w podglądzie powyżej">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                             <span>Podgląd</span>
                                         </button>
                                         ` : ''}
-                                        <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Pobierz ten pojedynczy plik na dysk">
+                                        <button type="button" class="btn-archive-dl-single" onclick="event.stopPropagation(); window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(cleanName)}')" title="Pobierz ten pojedynczy plik na dysk">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                             <span>Pobierz</span>
                                         </button>
@@ -16533,10 +17659,12 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                 </div>
                             </div>
                             <div class="archive-file-list album-gallery-grid" id="archiveFileList" style="display: grid;">
-                                ${window._albumPhotosList.map((item, idx) => `
+                                ${window._albumPhotosList.map((item, idx) => {
+                                    const cachedSrc = (window.DropsiteThumbnailCache && (window.DropsiteThumbnailCache.get(item.path) || window.DropsiteThumbnailCache.get(item.filename) || window.DropsiteThumbnailCache.get(item.blobUrl))) || item.blobUrl;
+                                    return `
                                     <div class="album-grid-card" onclick="window.openAlbumLightbox(${idx})">
                                         <div class="album-grid-img-wrap">
-                                            <img src="${item.blobUrl}" class="album-grid-img" loading="lazy" alt="${escapeHtml(item.filename)}">
+                                            <img src="${cachedSrc}" class="album-grid-img" loading="lazy" decoding="async" alt="${escapeHtml(item.filename)}" onerror="this.src='${item.blobUrl}'">
                                             <div class="album-grid-hover-overlay">
                                                 <span class="album-grid-zoom-pill">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
@@ -16552,7 +17680,8 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                             <span class="album-grid-size">${formatBytes(item.size)}</span>
                                         </div>
                                     </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     `;
@@ -16602,20 +17731,20 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                     }
                     listEl.innerHTML = entriesToRender.map(f => {
                         return `
-                            <div class="archive-file-row">
+                            <div class="archive-file-row" onclick="window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" style="cursor: pointer;" title="Kliknij, aby otworzyć podgląd pliku">
                                 <div class="archive-file-left">
-                                    <span class="archive-file-icon">${getMiniFileSvg(f.name)}</span>
+                                    <span class="archive-file-icon">${archiveListThumbnail(f)}</span>
                                     <span class="archive-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
                                 </div>
                                 <div class="archive-file-right">
                                     <span class="archive-size-badge">${formatBytes(f.size)}</span>
                                     ${(f.isVideo || f.isAudio || f.isImage) ? `
-                                    <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Podgląd">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    <button type="button" class="btn-archive-preview-single" onclick="event.stopPropagation(); window.previewSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Podgląd">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                         <span>Podgląd</span>
                                     </button>
                                     ` : ''}
-                                    <button type="button" class="btn-archive-dl-single" onclick="window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Pobierz ten plik">
+                                    <button type="button" class="btn-archive-dl-single" onclick="event.stopPropagation(); window.downloadSingleFromArchive('${encodeURIComponent(f.name)}', '${encodeURIComponent(f.name)}')" title="Pobierz ten plik">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                         <span>Pobierz</span>
                                     </button>
@@ -16795,7 +17924,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                                                     <span class="archive-size-badge">${formatBytes(size)}</span>
                                                     ${hasPreview ? `
                                                     <button type="button" class="btn-archive-preview-single" onclick="window.previewSingleFromArchive('${encodeURIComponent(path)}', '${encodeURIComponent(filename)}')">
-                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                                         Podgląd
                                                     </button>
                                                     ` : ''}
@@ -16995,7 +18124,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 const playerTitle = unboxSec.querySelector('.unboxing-player-meta strong');
                 const playerIcon = unboxSec.querySelector('.unboxing-player-meta span');
                 if (playerTitle) playerTitle.textContent = typeof t === 'function' ? t('unboxing_player_title', 'Powitanie od nadawcy transferu') : 'Powitanie od nadawcy transferu';
-                if (playerIcon) playerIcon.textContent = '🎬';
+                if (playerIcon) playerIcon.textContent = '';
             }
 
             const expandUnboxPlayer = async () => {
@@ -17360,7 +18489,7 @@ document.addEventListener('DOMContentLoaded', initSideProofingListeners);
                 }
                 if (typeof showNotification === 'function') {
                     showNotification(
-                        typeof t === 'function' ? t('timelock_unlocked_toast') : '✨ Kapsuła Czasu została otwarta! Plik jest gotowy.',
+                        typeof t === 'function' ? t('timelock_unlocked_toast') : 'Kapsuła Czasu została otwarta! Plik jest gotowy.',
                         'success'
                     );
                 }
@@ -18168,10 +19297,16 @@ function initDownloadLightboxSystem() {
             }
         });
 
-        // Obsługa gestów dotykowych (Pinch to zoom + Pan na smartfonach)
+        let isPullingDown = false;
+        let pullDownStartY = 0;
+        let pullDownCurrentY = 0;
+        let lastTapTime = 0;
+
+        // Obsługa gestów dotykowych (Pinch to zoom + Pan + Swipe Down to dismiss na smartfonach)
         bodyEl.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
                 isDragging = false;
+                isPullingDown = false;
                 const t1 = e.touches[0];
                 const t2 = e.touches[1];
                 lastPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -18180,6 +19315,9 @@ function initDownloadLightboxSystem() {
                 hasDragged = false;
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
+                pullDownStartY = e.touches[0].clientY;
+                pullDownCurrentY = 0;
+                isPullingDown = false;
                 startPanX = panX;
                 startPanY = panY;
             }
@@ -18195,16 +19333,30 @@ function initDownloadLightboxSystem() {
                 const factor = dist / lastPinchDist;
                 zoomAtPoint(scale * factor, midX, midY, false);
                 lastPinchDist = dist;
-            } else if (e.touches.length === 1 && isDragging && scale > 1.05) {
+            } else if (e.touches.length === 1 && isDragging) {
                 const dx = e.touches[0].clientX - startX;
                 const dy = e.touches[0].clientY - startY;
                 if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
                     hasDragged = true;
                 }
-                panX = startPanX + dx;
-                panY = startPanY + dy;
-                clampPan();
-                updateTransform(false);
+
+                if (scale <= 1.05) {
+                    // Płynny gest przesunięcia w dół do zamknięcia (Swipe Down to dismiss)
+                    if (dy > 8 && dy > Math.abs(dx) * 1.3) {
+                        isPullingDown = true;
+                        pullDownCurrentY = dy;
+                        if (targetTransformEl) {
+                            targetTransformEl.style.transition = 'none';
+                            targetTransformEl.style.transform = `translate3d(0, ${dy}px, 0) scale(${Math.max(0.68, 1 - dy / 900)})`;
+                        }
+                        modal.style.backgroundColor = `rgba(2, 3, 6, ${Math.max(0.35, 0.98 - dy / 400)})`;
+                    }
+                } else {
+                    panX = startPanX + dx;
+                    panY = startPanY + dy;
+                    clampPan();
+                    updateTransform(false);
+                }
             }
         }, { passive: true });
 
@@ -18214,8 +19366,42 @@ function initDownloadLightboxSystem() {
             }
             if (e.touches.length === 0) {
                 isDragging = false;
-                if (scale < 1.05) {
+                if (isPullingDown) {
+                    isPullingDown = false;
+                    modal.style.backgroundColor = '';
+                    if (pullDownCurrentY > 75) {
+                        if (targetTransformEl) {
+                            targetTransformEl.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.8, 0.25, 1)';
+                            targetTransformEl.style.transform = 'translate3d(0, 360px, 0) scale(0.6)';
+                        }
+                        setTimeout(closeModal, 180);
+                        return;
+                    } else {
+                        resetZoom(true);
+                    }
+                } else if (scale < 1.05) {
                     resetZoom(true);
+                }
+
+                // Podwójne tapnięcie przybliża / oddala (Double-tap to zoom)
+                if (!hasDragged && e.changedTouches && e.changedTouches.length === 1) {
+                    const now = Date.now();
+                    if (now - lastTapTime < 320) {
+                        const touch = e.changedTouches[0];
+                        toggleZoom(touch.clientX, touch.clientY);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
+                    }
+                }
+            }
+        });
+
+        // Kliknięcie w puste tło kadru (ciemne obramowanie wokół zdjęcia) zamyka podgląd
+        bodyEl.addEventListener('click', (e) => {
+            if (e.target === bodyEl || e.target === stageEl || e.target.id === 'dlLightboxBackdrop') {
+                if (!hasDragged && !isPullingDown && scale <= 1.05) {
+                    closeModal();
                 }
             }
         });
@@ -18236,6 +19422,7 @@ function initDownloadLightboxSystem() {
     if (addPinBtn) {
         addPinBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            window._proofingPinModeActive = true;
             if (typeof window.openProofingModal === 'function') {
                 window.openProofingModal({
                     time: null,
@@ -18289,14 +19476,22 @@ function initDownloadLightboxSystem() {
         };
     }
 
-    // Kliknięcie na nakładkę zdjęcia w Lightboxie – jeśli nie przeciągano, pozwala postawić uwagę
+    // Kliknięcie na nakładkę zdjęcia w Lightboxie – na smartfonach nie otwiera uwag bez celowego włączenia trybu pinezek
     if (proofingOverlay) {
         proofingOverlay.addEventListener('click', (e) => {
             if (e.target.closest('.proofing-pin')) return;
-            if (hasDragged) {
+            if (hasDragged || isPullingDown) {
                 hasDragged = false;
                 return;
             }
+
+            // Na ekranach dotykowych zwykłe stuknięcie w zdjęcie nie powinno otwierać okna dodawania uwag
+            const isTouchScreen = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+            if (isTouchScreen && !window._proofingPinModeActive) {
+                return;
+            }
+            window._proofingPinModeActive = false;
+
             // Oblicz pozycję kliknięcia względem zdjęcia
             const rect = proofingOverlay.getBoundingClientRect();
             const xPct = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
@@ -18328,6 +19523,7 @@ function initDownloadLightboxSystem() {
 
     const closeModal = () => {
         resetZoom(false);
+        window._proofingPinModeActive = false;
         if (lightboxDrawer) {
             lightboxDrawer.hidden = true;
             lightboxDrawer.style.display = 'none';
@@ -18343,6 +19539,7 @@ function initDownloadLightboxSystem() {
             if (imgEl) imgEl.src = '';
         }
     };
+    window.closeDownloadImageLightbox = closeModal;
 
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (backdrop) backdrop.addEventListener('click', closeModal);
@@ -18419,6 +19616,8 @@ window.openDownloadImageLightbox = function(imageUrl, title, path) {
     const dlSingleBtn = document.getElementById('dlLightboxDownloadSingle');
 
     if (!modal || !imgEl) return;
+
+    window._proofingPinModeActive = false;
 
     if (window._resetLightboxPanZoom) {
         window._resetLightboxPanZoom(false);
@@ -18539,49 +19738,6 @@ window.openAlbumLightbox = function(index) {
             window.renderProofingTasksList();
         }
     }, 50);
-};
-
-window.previewSingleFromArchive = function(encodedPath, encodedFilename) {
-    const path = decodeURIComponent(encodedPath);
-    const filename = decodeURIComponent(encodedFilename);
-    if (!window._activeUnzippedArchive || !window._activeUnzippedArchive[path]) return;
-
-    if (window._albumPhotosList && window._albumPhotosList.length > 0) {
-        const foundIdx = window._albumPhotosList.findIndex(p => p.path === path);
-        if (foundIdx !== -1) {
-            window.openAlbumLightbox(foundIdx);
-            return;
-        }
-    }
-
-    const data = window._activeUnzippedArchive[path];
-    const ext = filename.split('.').pop().toLowerCase();
-    const mime = ext === 'png' ? 'image/png' : (ext === 'webp' ? 'image/webp' : (ext === 'gif' ? 'image/gif' : (ext === 'svg' ? 'image/svg+xml' : 'image/jpeg')));
-    const blob = new Blob([data], { type: mime });
-    const blobUrl = URL.createObjectURL(blob);
-    window.openDownloadImageLightbox(blobUrl, filename, path);
-};
-
-window.downloadSingleFromArchive = function(encodedPath, encodedFilename) {
-    const path = decodeURIComponent(encodedPath);
-    const filename = decodeURIComponent(encodedFilename);
-    if (!window._activeUnzippedArchive || !window._activeUnzippedArchive[path]) return;
-
-    const data = window._activeUnzippedArchive[path];
-    const ext = filename.split('.').pop().toLowerCase();
-    const mime = ext === 'png' ? 'image/png' : (ext === 'webp' ? 'image/webp' : (ext === 'gif' ? 'image/gif' : 'application/octet-stream'));
-    const blob = new Blob([data], { type: mime });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-        try {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
-        } catch (_) {}
-    }, 1000);
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18721,7 +19877,12 @@ window.openCreateAlbumModal = function() {
     if (passInput) passInput.value = '';
     if (themeSelect) themeSelect.value = 'gallery';
     const themeLabel = document.getElementById('albumThemeLabel');
-    if (themeLabel) themeLabel.textContent = '🖼️ Kinowa Siatka Zdjęć & Wideo';
+    if (themeLabel) {
+        themeLabel.innerHTML = `
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 6px;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span>Kinowa Siatka Zdjęć & Wideo</span>
+        `;
+    }
     const themeMenu = document.getElementById('albumThemeMenu');
     if (themeMenu) {
         themeMenu.querySelectorAll('.custom-select-option').forEach(o => {
@@ -18769,6 +19930,29 @@ window.executeCreateAlbum = async function() {
     const originalText = btn ? btn.innerText : '';
     if (btn) { btn.disabled = true; btn.innerText = 'Tworzenie...'; }
 
+    const selectedKeys = Array.from(window.selectedFilesForAlbum || []);
+    const selectedFiles = selectedKeys.map(key => {
+        const found = (typeof loadedModFiles !== 'undefined' && Array.isArray(loadedModFiles))
+            ? loadedModFiles.find(f => (f.key === key || f.name === key))
+            : null;
+        const rawName = found ? found.name : (key.split('/').pop() || key);
+        let directUrl = found?.directUrl;
+        if (!directUrl || directUrl.includes('?f=') || !directUrl.startsWith('http')) {
+            directUrl = `https://pub-db4c47e6a54d440a9120992639865dd0.r2.dev/${key}`;
+        }
+        const pageUrl = (typeof getDropsitePageUrl === 'function' && found)
+            ? getDropsitePageUrl(found)
+            : `${window.location.origin}${window.location.pathname}?f=${encodeURIComponent(key)}`;
+        return {
+            key: key,
+            name: rawName,
+            size: found?.size || 0,
+            directUrl: directUrl,
+            pageUrl: pageUrl,
+            mime: found?.type || found?.mime || ''
+        };
+    });
+
     try {
         const response = await fetch(`${WORKER_URL}/api/albums/create`, {
             method: 'POST',
@@ -18781,7 +19965,8 @@ window.executeCreateAlbum = async function() {
                 description: desc,
                 theme: theme,
                 password: password,
-                fileKeys: Array.from(window.selectedFilesForAlbum)
+                fileKeys: selectedKeys,
+                files: selectedFiles
             })
         });
 
@@ -18862,9 +20047,21 @@ window.loadMyAlbums = async function() {
         grid.style.display = 'grid';
 
         const themeConfig = {
-            'gallery': { icon: '🖼️', name: 'Galeria Mediów', cls: 'theme-gallery' },
-            'cinematic': { icon: '🎬', name: 'Pokaz Kinowy', cls: 'theme-cinematic' },
-            'list': { icon: '📁', name: 'Lista & Archiwum', cls: 'theme-list' }
+            'gallery': {
+                iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
+                name: 'Galeria Mediów',
+                cls: 'theme-gallery'
+            },
+            'cinematic': {
+                iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+                name: 'Pokaz Kinowy',
+                cls: 'theme-cinematic'
+            },
+            'list': {
+                iconSvg: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+                name: 'Lista & Archiwum',
+                cls: 'theme-list'
+            }
         };
 
         grid.innerHTML = albums.map(alb => {
@@ -18874,14 +20071,66 @@ window.loadMyAlbums = async function() {
             const itemsCount = alb.itemCount || 0;
             const itemsWord = itemsCount === 1 ? 'plik' : (itemsCount > 1 && itemsCount < 5 ? 'pliki' : 'plików');
 
+            // Dynamiczny podgląd kolarza miniatur zdjęć lub ikon w banerze
+            let previewCollageHtml = '';
+            const previewFiles = Array.isArray(alb.previewFiles) ? alb.previewFiles : [];
+            const previewImages = previewFiles.filter(f => /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(f.name || ''));
+
+            if (previewImages.length >= 4) {
+                previewCollageHtml = `
+                    <div class="album-preview-collage collage-4">
+                        <img src="${previewImages[0].directUrl}" alt="" loading="lazy">
+                        <img src="${previewImages[1].directUrl}" alt="" loading="lazy">
+                        <img src="${previewImages[2].directUrl}" alt="" loading="lazy">
+                        <img src="${previewImages[3].directUrl}" alt="" loading="lazy">
+                    </div>
+                `;
+            } else if (previewImages.length === 3) {
+                previewCollageHtml = `
+                    <div class="album-preview-collage collage-3">
+                        <img src="${previewImages[0].directUrl}" alt="" loading="lazy" class="collage-hero">
+                        <div class="collage-sub-col">
+                            <img src="${previewImages[1].directUrl}" alt="" loading="lazy">
+                            <img src="${previewImages[2].directUrl}" alt="" loading="lazy">
+                        </div>
+                    </div>
+                `;
+            } else if (previewImages.length === 2) {
+                previewCollageHtml = `
+                    <div class="album-preview-collage collage-2">
+                        <img src="${previewImages[0].directUrl}" alt="" loading="lazy">
+                        <img src="${previewImages[1].directUrl}" alt="" loading="lazy">
+                    </div>
+                `;
+            } else if (previewImages.length === 1) {
+                previewCollageHtml = `
+                    <div class="album-preview-collage collage-1">
+                        <img src="${previewImages[0].directUrl}" alt="" loading="lazy" class="collage-cover">
+                    </div>
+                `;
+            } else if (previewFiles.length > 0) {
+                previewCollageHtml = `
+                    <div class="album-preview-fallback">
+                        ${previewFiles.slice(0, 3).map(f => {
+                            const ext = (f.name || '').includes('.') ? f.name.split('.').pop().toUpperCase() : 'PLIK';
+                            return `<div class="album-preview-fallback-pill"><span class="ext-badge">${ext}</span><span class="file-name">${escapeHtml(f.name || '')}</span></div>`;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                previewCollageHtml = `<div class="album-preview-abstract theme-${alb.theme || 'gallery'}"></div>`;
+            }
+
             return `
             <div class="album-card ${theme.cls}" id="albumCard_${alb.id}">
-                <div class="album-card-banner">
+                <div class="album-card-banner" onclick="window.openPublicAlbum('${alb.id}')" title="Kliknij, aby otworzyć podgląd albumu">
+                    ${previewCollageHtml}
+                    <div class="album-card-banner-vignette"></div>
                     <div class="album-card-banner-badges">
-                        <span class="album-banner-theme-tag">${theme.icon} ${theme.name}</span>
+                        <span class="album-banner-theme-tag">${theme.iconSvg} <span>${theme.name}</span></span>
                         ${alb.hasPassword ? `
                             <span class="album-banner-lock-tag" title="Album chroniony hasłem dostępu">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                                 <span>Hasło</span>
                             </span>
                         ` : ''}
@@ -18891,7 +20140,7 @@ window.loadMyAlbums = async function() {
                     </div>
                 </div>
 
-                <div class="album-card-body">
+                <div class="album-card-body" onclick="window.openPublicAlbum('${alb.id}')" title="Kliknij, aby otworzyć podgląd albumu">
                     <div class="album-card-title-group">
                         <h4 class="album-card-title" title="${escapeHtml(alb.title)}">${escapeHtml(alb.title)}</h4>
                         ${alb.description ? `<p class="album-card-desc" title="${escapeHtml(alb.description)}">${escapeHtml(alb.description)}</p>` : ''}
@@ -18910,17 +20159,17 @@ window.loadMyAlbums = async function() {
                 </div>
 
                 <div class="album-card-dock">
-                    <button type="button" class="btn-dock-copy" onclick="window.copyAlbumLink('${alb.id}')" title="Kopiuj publiczny link do schowka">
+                    <button type="button" class="btn-dock-copy" onclick="event.stopPropagation(); window.copyAlbumLink('${alb.id}')" title="Kopiuj publiczny link do schowka">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         <span>Kopiuj link</span>
                     </button>
-                    <button type="button" class="btn-dock-icon" onclick="if(window.openQrModal) window.openQrModal('${publicUrl}');" title="Pokaż kod QR do zeskanowania na telefonie">
+                    <button type="button" class="btn-dock-icon" onclick="event.stopPropagation(); if(window.openQrModal) window.openQrModal('${publicUrl}');" title="Pokaż kod QR do zeskanowania na telefonie">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     </button>
-                    <button type="button" class="btn-dock-icon" onclick="window.open('${publicUrl}', '_blank')" title="Otwórz podgląd albumu w nowej karcie">
+                    <button type="button" class="btn-dock-icon" onclick="event.stopPropagation(); window.open('${publicUrl}', '_blank')" title="Otwórz podgląd albumu w nowej karcie">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     </button>
-                    <button type="button" class="btn-dock-icon btn-dock-delete" onclick="window.handleDeleteAlbum('${alb.id}')" title="Usuń ten album">
+                    <button type="button" class="btn-dock-icon btn-dock-delete" onclick="event.stopPropagation(); window.handleDeleteAlbum('${alb.id}')" title="Usuń ten album">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                 </div>
@@ -18991,14 +20240,15 @@ window.closePublicAlbumModal = function() {
 window.loadPublicAlbumData = async function(albumId, password = '') {
     window._currentLockedAlbumId = albumId;
 
-    const spinner = document.getElementById('publicAlbumLoadingSpinner');
-    const grid = document.getElementById('publicAlbumItemsGrid');
-    const gate = document.getElementById('publicAlbumPasswordGate');
+    const spinner = document.getElementById('albumPublicLoadingSpinner') || document.getElementById('publicAlbumLoadingSpinner');
+    const grid = document.getElementById('albumPublicItemsGrid') || document.getElementById('publicAlbumItemsGrid');
+    const gate = document.getElementById('albumPasswordGate') || document.getElementById('publicAlbumPasswordGate');
     const statsBar = document.getElementById('publicAlbumStatsBar');
-    const downloadZipBtn = document.getElementById('btnPublicAlbumDownloadZip');
-    const titleEl = document.getElementById('publicAlbumTitle');
-    const descEl = document.getElementById('publicAlbumDesc');
-    const passErr = document.getElementById('publicAlbumPasswordError');
+    const downloadZipBtn = document.getElementById('btnAlbumDownloadAllZip') || document.getElementById('btnPublicAlbumDownloadZip');
+    const titleEl = document.getElementById('albumPublicTitle') || document.getElementById('publicAlbumTitle');
+    const descEl = document.getElementById('albumPublicDesc') || document.getElementById('publicAlbumDesc');
+    const countBadge = document.getElementById('albumPublicItemCountBadge') || document.getElementById('publicAlbumItemsSummary');
+    const passErr = document.getElementById('albumPublicPasswordError') || document.getElementById('publicAlbumPasswordError');
 
     if (spinner) spinner.style.display = 'block';
     if (grid) grid.style.display = 'none';
@@ -19025,7 +20275,7 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
                 passErr.innerText = 'Nieprawidłowe hasło. Spróbuj ponownie.';
                 passErr.style.display = 'block';
             }
-            const passInput = document.getElementById('publicAlbumPasswordInput');
+            const passInput = document.getElementById('albumGatePasswordInput') || document.getElementById('publicAlbumPasswordInput');
             if (passInput) setTimeout(() => passInput.focus(), 150);
             return;
         }
@@ -19040,13 +20290,14 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
             const ownerMeta = document.getElementById('publicAlbumOwnerMeta');
             if (ownerMeta) ownerMeta.innerText = `Udostępnione przez: ${alb.ownerEmail || 'Użytkownika Dropsite'}`;
 
-            const itemsSummary = document.getElementById('publicAlbumItemsSummary');
-            if (itemsSummary) itemsSummary.innerText = `${(alb.files || []).length} plików • ${new Date(alb.created).toLocaleDateString('pl-PL')}`;
+            const filesList = Array.isArray(alb.files) ? alb.files : [];
+            const countWord = filesList.length === 1 ? 'plik' : (filesList.length > 1 && filesList.length < 5 ? 'pliki' : 'plików');
+            if (countBadge) countBadge.innerText = `${filesList.length} ${countWord}`;
 
             if (statsBar) statsBar.style.display = 'flex';
             if (downloadZipBtn) downloadZipBtn.style.display = 'inline-flex';
 
-            const modalBox = document.querySelector('#modalPublicAlbumView .signature-modal-box');
+            const modalBox = document.querySelector('#modalPublicAlbumView .mod-container') || document.querySelector('#modalPublicAlbumView .signature-modal-box');
             if (modalBox) {
                 modalBox.classList.remove('theme-gallery', 'theme-cinematic', 'theme-list');
                 modalBox.classList.add(`theme-${alb.theme || 'gallery'}`);
@@ -19054,14 +20305,16 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
 
             if (grid) {
                 grid.style.display = 'grid';
-                if (!alb.files || alb.files.length === 0) {
+                if (!filesList || filesList.length === 0) {
                     grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px 0;">Pliki w tym albumie już wygasły lub zostały usunięte.</p>';
                     return;
                 }
 
-                grid.innerHTML = alb.files.map(file => {
-                    const isImg = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
+                grid.innerHTML = filesList.map(file => {
+                    const isImg = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(file.name);
                     const isVid = /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
+                    const isAudio = /\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(file.name);
+                    const isPdf = /\.pdf$/i.test(file.name);
 
                     let thumbHtml = '';
                     if (isImg) {
@@ -19069,10 +20322,32 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
                     } else if (isVid) {
                         thumbHtml = `
                             <video src="${file.directUrl}#t=0.1" preload="metadata" muted></video>
-                            <div class="album-item-thumb-play" onclick="if(window.openVideoPreview) window.openVideoPreview('${file.directUrl}')">▶</div>
+                            <div class="album-item-thumb-play" onclick="if(window.openVideoPreview) window.openVideoPreview('${file.directUrl}')">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                            </div>
+                        `;
+                    } else if (isPdf) {
+                        thumbHtml = `
+                            <div class="album-item-icon-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#FF4439;">
+                                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                                <span style="font-size:10px;font-weight:800;margin-top:4px;">PDF</span>
+                            </div>
+                        `;
+                    } else if (isAudio) {
+                        thumbHtml = `
+                            <div class="album-item-icon-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#5EEAD4;">
+                                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                <span style="font-size:10px;font-weight:800;margin-top:4px;">AUDIO</span>
+                            </div>
                         `;
                     } else {
-                        thumbHtml = `<span style="font-size: 32px;">📄</span>`;
+                        const ext = (file.name && file.name.includes('.')) ? file.name.split('.').pop().toUpperCase() : 'PLIK';
+                        thumbHtml = `
+                            <div class="album-item-icon-wrap" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#94A3B8;">
+                                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                <span style="font-size:10px;font-weight:800;margin-top:4px;">${ext}</span>
+                            </div>
+                        `;
                     }
 
                     return `
@@ -19112,12 +20387,13 @@ window.loadPublicAlbumData = async function(albumId, password = '') {
 };
 
 window.unlockPublicAlbum = function() {
-    const input = document.getElementById('publicAlbumPasswordInput');
+    const input = document.getElementById('albumGatePasswordInput') || document.getElementById('publicAlbumPasswordInput');
     const pwd = (input?.value || '').trim();
     if (window._currentLockedAlbumId) {
         window.loadPublicAlbumData(window._currentLockedAlbumId, pwd);
     }
 };
+window.submitAlbumPassword = window.unlockPublicAlbum;
 
 window.downloadCurrentAlbumAsZip = async function() {
     const album = window._currentActiveAlbum;
@@ -19131,7 +20407,7 @@ window.downloadCurrentAlbumAsZip = async function() {
         return;
     }
 
-    const btn = document.getElementById('btnPublicAlbumDownloadZip');
+    const btn = document.getElementById('btnAlbumDownloadAllZip') || document.getElementById('btnPublicAlbumDownloadZip');
     const oldText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -19352,9 +20628,9 @@ function initDropsiteBeamUI() {
                     new QRious({
                         element: qrCanvas,
                         value: beamUrl,
-                        size: 110,
-                        background: 'white',
-                        foreground: '#0F172A'
+                        size: 130,
+                        background: 'transparent',
+                        foreground: '#BAE6FD'
                     });
                 }
                 if (btnBeamCopyLink) {
@@ -19394,6 +20670,7 @@ function initDropsiteBeamUI() {
                 }
             },
             onError: (err) => {
+                    if (typeof window.beamTriggerPinShake === "function") window.beamTriggerPinShake();
                 if (typeof showError === 'function') showError(err);
                 else alert(err);
             }
@@ -19428,6 +20705,7 @@ function initDropsiteBeamUI() {
         const triggerReceive = () => {
             const rawPin = pinInput.value.replace(/[^0-9]/g, '').trim();
             if (rawPin.length !== 6) {
+                if (typeof window.beamTriggerPinShake === "function") window.beamTriggerPinShake();
                 if (typeof showError === 'function') showError('Wpisz pełny 6-cyfrowy kod PIN transferu.');
                 return;
             }
@@ -19485,6 +20763,126 @@ function initDropsiteBeamUI() {
         pinInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') triggerReceive();
         });
+
+        // ====================================================================
+        // GHOST SEGMENTED OTP VAULT + SYNTHETIC HAPTIC SOUNDS (WEB AUDIO API)
+        // ====================================================================
+        const vaultWrap = document.getElementById('beamSegmentedVault');
+        const slots = vaultWrap ? vaultWrap.querySelectorAll('.beam-slot') : [];
+        let audioCtx = null;
+
+        function playKeyTick(freq = 880, dur = 0.04) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + dur);
+            } catch (_) {}
+        }
+
+        function playErrorThud() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.26);
+            } catch (_) {}
+        }
+
+        function playSuccessChord() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.05));
+                    gain.gain.setValueAtTime(0.06, audioCtx.currentTime + (i * 0.05));
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + (i * 0.05));
+                    osc.stop(audioCtx.currentTime + 0.6);
+                });
+            } catch (_) {}
+        }
+
+        function syncSlots() {
+            if (!slots.length) return;
+            const val = pinInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+            pinInput.value = val;
+            slots.forEach((slot, idx) => {
+                const char = val[idx] || '';
+                slot.textContent = char;
+                slot.classList.toggle('is-filled', !!char);
+                slot.classList.toggle('is-active', idx === val.length || (val.length === 6 && idx === 5));
+            });
+            if (vaultWrap) vaultWrap.classList.remove('has-error');
+        }
+
+        if (vaultWrap && pinInput) {
+            vaultWrap.addEventListener('click', () => pinInput.focus());
+
+            pinInput.addEventListener('input', (e) => {
+                const val = pinInput.value.replace(/[^0-9]/g, '');
+                playKeyTick(650 + (val.length * 60));
+                syncSlots();
+
+                // Auto-submit natychmiast po wbiciu 6 cyfr
+                if (val.length === 6) {
+                    playSuccessChord();
+                    setTimeout(() => triggerReceive(), 160);
+                }
+            });
+
+            pinInput.addEventListener('focus', syncSlots);
+            pinInput.addEventListener('blur', () => {
+                slots.forEach(s => s.classList.remove('is-active'));
+            });
+
+            // Obsługa inteligentnego wklejania (Paste)
+            pinInput.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+                const cleanDigits = pasteData.replace(/[^0-9]/g, '').slice(0, 6);
+                if (cleanDigits) {
+                    pinInput.value = cleanDigits;
+                    syncSlots();
+                    playSuccessChord();
+                    if (cleanDigits.length === 6) {
+                        setTimeout(() => triggerReceive(), 180);
+                    }
+                }
+            });
+
+            // Wyświetlenie animacji błędu i dźwięku
+            const origShowError = window.showError;
+            window.beamTriggerPinShake = () => {
+                if (vaultWrap) {
+                    vaultWrap.classList.add('has-error');
+                    playErrorThud();
+                    setTimeout(() => vaultWrap.classList.remove('has-error'), 500);
+                }
+            };
+        }
     }
 }
 window.initDropsiteBeamUI = initDropsiteBeamUI;

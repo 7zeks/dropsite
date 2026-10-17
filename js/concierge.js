@@ -189,11 +189,10 @@
                 'wizytówka qr', 'qr z logo', 'druk qr', 'wektorowy qr', 'svg qr', '4k qr'
             ],
             action: function () {
-                const modal = document.getElementById('qrStudioModal');
-                if (modal) {
-                    modal.classList.add('open');
-                    document.body.style.overflow = 'hidden';
-                    if (typeof window.initQRStudio === 'function') window.initQRStudio();
+                if (typeof window.openQRStudio === 'function') {
+                    window.openQRStudio();
+                } else if (typeof window.switchToolTab === 'function') {
+                    window.switchToolTab('qr-studio');
                 }
             }
         },
@@ -248,6 +247,26 @@
             action: function () {
                 if (typeof window.switchToolTab === 'function') {
                     window.switchToolTab('convert', true);
+                } else {
+                    navigateToTargetView('view-narzedzia');
+                }
+            }
+        },
+        {
+            id: 'TOOL_AI_UPSCALER',
+            category: 'image',
+            titlePl: 'AI Upscaler Zdjęć & Super-Resolution 4K',
+            titleEn: 'AI Image Upscaler & 4K Super-Resolution',
+            descPl: 'Powiększaj zdjęcia i grafikę 2x, 4x do jakości 4K Ultra HD z wyostrzaniem CAS na swoim GPU.',
+            descEn: 'Upscale pictures and artwork 2x, 4x up to 4K Ultra HD with hardware CAS sharpening.',
+            keywords: [
+                'upscale', 'upscaler', 'powieksz', 'powiększ', 'jakosc zdjecia', 'jakość zdjęcia', 'popraw jakosc',
+                'popraw jakość', 'super resolution', '4k', 'wyostrz', 'wyostrzanie', 'rozdzielczosc', 'rozdzielczość',
+                'enlarge', 'enhance photo'
+            ],
+            action: function () {
+                if (typeof window.switchToolTab === 'function') {
+                    window.switchToolTab('upscale', true);
                 } else {
                     navigateToTargetView('view-narzedzia');
                 }

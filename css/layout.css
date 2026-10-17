@@ -1078,58 +1078,58 @@
 
 /* 1. Mięta PDF Studio (Narzędzia PDF) */
 .nav-dropdown-icon.icon-mint {
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.13) 0%, rgba(168, 218, 191, 0.06) 100%);
-    border: 1px solid rgba(196, 231, 212, 0.24);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(168, 218, 191, 0.04) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.22);
     color: #C4E7D4;
-    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 2. Jasny błękit / Ice Sky (Pobierz wideo HD) */
 .nav-dropdown-icon.icon-sky {
-    background: linear-gradient(135deg, rgba(186, 230, 253, 0.13) 0%, rgba(125, 211, 252, 0.06) 100%);
-    border: 1px solid rgba(186, 230, 253, 0.24);
-    color: #BAE6FD;
-    box-shadow: 0 2px 10px rgba(186, 230, 253, 0.08);
+    background: linear-gradient(135deg, rgba(147, 197, 253, 0.12) 0%, rgba(125, 211, 252, 0.04) 100%);
+    border: 1px solid rgba(147, 197, 253, 0.22);
+    color: #BFDBFE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 3. Jasna lawenda / Pastel Lavender (Historia transferów) */
 .nav-dropdown-icon.icon-purple {
-    background: linear-gradient(135deg, rgba(224, 219, 254, 0.13) 0%, rgba(196, 181, 253, 0.06) 100%);
-    border: 1px solid rgba(224, 219, 254, 0.24);
+    background: linear-gradient(135deg, rgba(216, 180, 254, 0.12) 0%, rgba(196, 181, 253, 0.04) 100%);
+    border: 1px solid rgba(216, 180, 254, 0.22);
     color: #DDD6FE;
-    box-shadow: 0 2px 10px rgba(224, 219, 254, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 4. Ciepłe jasne złoto / Soft Amber-Gold (Sejf Notatek & Kodów) */
 .nav-dropdown-icon.icon-amber {
-    background: linear-gradient(135deg, rgba(254, 240, 199, 0.13) 0%, rgba(253, 230, 138, 0.06) 100%);
-    border: 1px solid rgba(254, 240, 199, 0.24);
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.11) 0%, rgba(245, 158, 11, 0.04) 100%);
+    border: 1px solid rgba(253, 230, 138, 0.2);
     color: #FDE68A;
-    box-shadow: 0 2px 10px rgba(254, 240, 199, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 5. Jasny platynowy szron / Platinum Slate (Kontakt) */
 .nav-dropdown-icon.icon-slate {
-    background: linear-gradient(135deg, rgba(226, 232, 240, 0.12) 0%, rgba(203, 213, 225, 0.06) 100%);
-    border: 1px solid rgba(226, 232, 240, 0.22);
-    color: #E2E8F0;
-    box-shadow: 0 2px 10px rgba(226, 232, 240, 0.08);
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.1) 0%, rgba(203, 213, 225, 0.04) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.18);
+    color: #CBD5E1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 6. Jasny pastelowy szmaragd / Soft Jade (Dźwięki) */
 .nav-dropdown-icon.icon-emerald {
-    background: linear-gradient(135deg, rgba(167, 243, 208, 0.13) 0%, rgba(110, 231, 183, 0.06) 100%);
-    border: 1px solid rgba(167, 243, 208, 0.24);
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.11) 0%, rgba(110, 231, 183, 0.04) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.2);
     color: #A7F3D0;
-    box-shadow: 0 2px 10px rgba(167, 243, 208, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 7. Jasny pastelowy turkus / Aqua Breeze (Tryb Płynności) */
 .nav-dropdown-icon.icon-cyan {
-    background: linear-gradient(135deg, rgba(165, 243, 252, 0.13) 0%, rgba(103, 232, 249, 0.06) 100%);
-    border: 1px solid rgba(165, 243, 252, 0.24);
+    background: linear-gradient(135deg, rgba(165, 243, 252, 0.11) 0%, rgba(103, 232, 249, 0.04) 100%);
+    border: 1px solid rgba(165, 243, 252, 0.2);
     color: #A5F3FC;
-    box-shadow: 0 2px 10px rgba(165, 243, 252, 0.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon {
@@ -1137,35 +1137,31 @@
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-mint {
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.24) 0%, rgba(168, 218, 191, 0.14) 100%);
-    border-color: rgba(196, 231, 212, 0.45);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.2) 0%, rgba(168, 218, 191, 0.1) 100%);
+    border-color: rgba(196, 231, 212, 0.4);
     color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
-    filter: drop-shadow(0 0 6px rgba(196, 231, 212, 0.45));
+    box-shadow: 0 0 14px rgba(196, 231, 212, 0.2);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-sky {
-    background: linear-gradient(135deg, rgba(186, 230, 253, 0.24) 0%, rgba(125, 211, 252, 0.14) 100%);
-    border-color: rgba(186, 230, 253, 0.45);
+    background: linear-gradient(135deg, rgba(147, 197, 253, 0.2) 0%, rgba(125, 211, 252, 0.1) 100%);
+    border-color: rgba(147, 197, 253, 0.4);
     color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(186, 230, 253, 0.35);
-    filter: drop-shadow(0 0 6px rgba(186, 230, 253, 0.45));
+    box-shadow: 0 0 14px rgba(147, 197, 253, 0.2);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-purple {
-    background: linear-gradient(135deg, rgba(224, 219, 254, 0.24) 0%, rgba(196, 181, 253, 0.14) 100%);
-    border-color: rgba(224, 219, 254, 0.45);
+    background: linear-gradient(135deg, rgba(216, 180, 254, 0.2) 0%, rgba(196, 181, 253, 0.1) 100%);
+    border-color: rgba(216, 180, 254, 0.4);
     color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(224, 219, 254, 0.35);
-    filter: drop-shadow(0 0 6px rgba(224, 219, 254, 0.45));
+    box-shadow: 0 0 14px rgba(216, 180, 254, 0.2);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-amber {
-    background: linear-gradient(135deg, rgba(254, 240, 199, 0.24) 0%, rgba(253, 230, 138, 0.14) 100%);
-    border-color: rgba(254, 240, 199, 0.45);
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.2) 0%, rgba(253, 230, 138, 0.1) 100%);
+    border-color: rgba(253, 230, 138, 0.38);
     color: #FFFFFF;
-    box-shadow: 0 0 16px rgba(254, 240, 199, 0.35);
-    filter: drop-shadow(0 0 6px rgba(254, 240, 199, 0.45));
+    box-shadow: 0 0 14px rgba(253, 230, 138, 0.18);
 }
 
 .nav-dropdown-link:hover .nav-dropdown-icon.icon-slate {
@@ -1463,58 +1459,58 @@
 }
 
 .cc-app-icon.icon-mint {
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.16) 0%, rgba(168, 218, 191, 0.06) 100%);
-    border: 1px solid rgba(196, 231, 212, 0.28);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(168, 218, 191, 0.04) 100%);
+    border: 1px solid rgba(196, 231, 212, 0.22);
     color: #C4E7D4;
-    box-shadow: 0 2px 10px rgba(196, 231, 212, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .cc-app-card:hover .cc-app-icon.icon-mint {
-    border-color: rgba(196, 231, 212, 0.45);
-    box-shadow: 0 0 16px rgba(196, 231, 212, 0.35);
+    border-color: rgba(196, 231, 212, 0.4);
+    box-shadow: 0 0 14px rgba(196, 231, 212, 0.2);
 }
 
 .cc-app-icon.icon-sky {
-    background: linear-gradient(135deg, rgba(186, 230, 253, 0.16) 0%, rgba(125, 211, 252, 0.06) 100%);
-    border: 1px solid rgba(186, 230, 253, 0.28);
-    color: #BAE6FD;
-    box-shadow: 0 2px 10px rgba(186, 230, 253, 0.1);
+    background: linear-gradient(135deg, rgba(147, 197, 253, 0.12) 0%, rgba(125, 211, 252, 0.04) 100%);
+    border: 1px solid rgba(147, 197, 253, 0.22);
+    color: #BFDBFE;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .cc-app-card:hover .cc-app-icon.icon-sky {
-    border-color: rgba(186, 230, 253, 0.45);
-    box-shadow: 0 0 16px rgba(186, 230, 253, 0.35);
+    border-color: rgba(147, 197, 253, 0.4);
+    box-shadow: 0 0 14px rgba(147, 197, 253, 0.2);
 }
 
 .cc-app-icon.icon-amber {
-    background: linear-gradient(135deg, rgba(254, 240, 199, 0.16) 0%, rgba(253, 230, 138, 0.06) 100%);
-    border: 1px solid rgba(254, 240, 199, 0.28);
+    background: linear-gradient(135deg, rgba(253, 230, 138, 0.11) 0%, rgba(245, 158, 11, 0.04) 100%);
+    border: 1px solid rgba(253, 230, 138, 0.2);
     color: #FDE68A;
-    box-shadow: 0 2px 10px rgba(254, 240, 199, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .cc-app-card:hover .cc-app-icon.icon-amber {
-    border-color: rgba(254, 240, 199, 0.45);
-    box-shadow: 0 0 16px rgba(254, 240, 199, 0.35);
+    border-color: rgba(253, 230, 138, 0.38);
+    box-shadow: 0 0 14px rgba(253, 230, 138, 0.18);
 }
 
 .cc-app-icon.icon-purple {
-    background: linear-gradient(135deg, rgba(224, 219, 254, 0.16) 0%, rgba(196, 181, 253, 0.06) 100%);
-    border: 1px solid rgba(224, 219, 254, 0.28);
+    background: linear-gradient(135deg, rgba(216, 180, 254, 0.12) 0%, rgba(192, 132, 252, 0.04) 100%);
+    border: 1px solid rgba(216, 180, 254, 0.22);
     color: #DDD6FE;
-    box-shadow: 0 2px 10px rgba(224, 219, 254, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .cc-app-card:hover .cc-app-icon.icon-purple {
-    border-color: rgba(224, 219, 254, 0.45);
-    box-shadow: 0 0 16px rgba(224, 219, 254, 0.35);
+    border-color: rgba(216, 180, 254, 0.4);
+    box-shadow: 0 0 14px rgba(216, 180, 254, 0.2);
 }
 
 .cc-app-icon.icon-emerald {
-    background: linear-gradient(135deg, rgba(167, 243, 208, 0.16) 0%, rgba(110, 231, 183, 0.06) 100%);
-    border: 1px solid rgba(167, 243, 208, 0.28);
+    background: linear-gradient(135deg, rgba(167, 243, 208, 0.11) 0%, rgba(110, 231, 183, 0.04) 100%);
+    border: 1px solid rgba(167, 243, 208, 0.2);
     color: #A7F3D0;
-    box-shadow: 0 2px 10px rgba(167, 243, 208, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 .cc-app-card:hover .cc-app-icon.icon-emerald {
-    border-color: rgba(167, 243, 208, 0.45);
-    box-shadow: 0 0 16px rgba(167, 243, 208, 0.35);
+    border-color: rgba(167, 243, 208, 0.38);
+    box-shadow: 0 0 14px rgba(167, 243, 208, 0.18);
 }
 
 .cc-app-content {
@@ -1551,38 +1547,33 @@
 }
 
 .badge-mint {
-    background: rgba(196, 231, 212, 0.12);
+    background: rgba(196, 231, 212, 0.08);
     color: #C4E7D4;
-    border: 1px solid rgba(196, 231, 212, 0.26);
-    box-shadow: 0 0 10px rgba(196, 231, 212, 0.12);
+    border: 1px solid rgba(196, 231, 212, 0.2);
 }
 
 .badge-sky {
-    background: rgba(186, 230, 253, 0.12);
-    color: #BAE6FD;
-    border: 1px solid rgba(186, 230, 253, 0.26);
-    box-shadow: 0 0 10px rgba(186, 230, 253, 0.12);
+    background: rgba(147, 197, 253, 0.08);
+    color: #BFDBFE;
+    border: 1px solid rgba(147, 197, 253, 0.2);
 }
 
 .badge-amber {
-    background: rgba(254, 240, 199, 0.12);
+    background: rgba(253, 230, 138, 0.08);
     color: #FDE68A;
-    border: 1px solid rgba(254, 240, 199, 0.26);
-    box-shadow: 0 0 10px rgba(254, 240, 199, 0.12);
+    border: 1px solid rgba(253, 230, 138, 0.2);
 }
 
 .badge-purple {
-    background: rgba(224, 219, 254, 0.12);
+    background: rgba(216, 180, 254, 0.08);
     color: #DDD6FE;
-    border: 1px solid rgba(224, 219, 254, 0.26);
-    box-shadow: 0 0 10px rgba(224, 219, 254, 0.12);
+    border: 1px solid rgba(216, 180, 254, 0.2);
 }
 
 .badge-emerald {
-    background: rgba(167, 243, 208, 0.12);
+    background: rgba(167, 243, 208, 0.08);
     color: #A7F3D0;
-    border: 1px solid rgba(167, 243, 208, 0.26);
-    box-shadow: 0 0 10px rgba(167, 243, 208, 0.12);
+    border: 1px solid rgba(167, 243, 208, 0.2);
 }
 
 .cc-app-desc {
@@ -1645,27 +1636,33 @@
 
 /* KAFELEK DŹWIĘKÓW - AKTYWNY (BRAND MINT #C4E7D4) */
 #navDropdownSoundBtn.is-active {
-    background: linear-gradient(135deg, rgba(196, 231, 212, 0.12) 0%, rgba(79, 164, 137, 0.06) 100%);
-    border-color: rgba(196, 231, 212, 0.36);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3),
-                0 0 18px rgba(196, 231, 212, 0.12),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(196, 231, 212, 0.16) 0%, rgba(52, 211, 153, 0.08) 100%) !important;
+    border-color: rgba(196, 231, 212, 0.45) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35),
+                0 0 20px rgba(196, 231, 212, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 #navDropdownSoundBtn.is-active .cc-tile-icon-box {
-    background: #C4E7D4;
-    color: #0B141E;
-    border-color: #C4E7D4;
-    box-shadow: 0 0 12px rgba(196, 231, 212, 0.45);
+    background: #C4E7D4 !important;
+    color: #0B141E !important;
+    border-color: #C4E7D4 !important;
+    box-shadow: 0 0 14px rgba(196, 231, 212, 0.6) !important;
 }
 
-#navDropdownSoundBtn.is-active .cc-tile-led {
-    background: #C4E7D4;
-    box-shadow: 0 0 8px #C4E7D4;
+#navDropdownSoundBtn.is-active .cc-tile-icon-box svg {
+    stroke: #0B141E !important;
+}
+
+#navDropdownSoundBtn.is-active .cc-tile-led,
+#dropdownSoundLed.is-active {
+    background: #34D399 !important;
+    box-shadow: 0 0 8px #34D399, 0 0 14px rgba(52, 211, 153, 0.7) !important;
 }
 
 #navDropdownSoundBtn.is-active .cc-tile-val {
-    color: #C4E7D4;
+    color: #C4E7D4 !important;
+    font-weight: 600;
 }
 
 /* KAFELEK TRYBU ECO - AKTYWNY (ICE SKY #BAE6FD) */

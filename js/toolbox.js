@@ -50,7 +50,7 @@
 
             if (toolParam && toolParam.toLowerCase() === 'grabber') {
                 if (window.showToast) window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
-            } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'watermark', 'xray', 'convert', 'compress', 'stego', 'diff', 'ocr', 'audio-mask', 'audio'].includes(toolParam.toLowerCase())) {
+            } else if (toolParam && ['merge', 'split', 'organize', 'edit', 'watermark', 'xray', 'convert', 'compress', 'stego', 'diff', 'ocr', 'audio-mask', 'audio', 'upscale'].includes(toolParam.toLowerCase())) {
                 window.switchToolTab(toolParam.toLowerCase(), false);
             } else if (hash.includes('narzedzia') || hash.includes('tools') || hash.includes('toolbox')) {
                 const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
@@ -69,57 +69,97 @@
     window.switchToolTab = function(toolName, doScroll = true) {
         if (!toolName) return;
         let normalized = toolName.toLowerCase().trim();
-        if (normalized === 'audio' || normalized === 'anonimizator-audio' || normalized === 'voice') normalized = 'audio-mask';
-        if (normalized === 'kamuflaz' || normalized === 'steganografia') normalized = 'stego';
-        if (normalized === 'porownaj' || normalized === 'porownywarka') normalized = 'diff';
-        if (normalized === 'rozpoznaj-tekst' || normalized === 'skan') normalized = 'ocr';
-        if (normalized === 'checksum' || normalized === 'integralnosc' || normalized === 'sha256' || normalized === 'sumy-kontrolne') normalized = 'hash';
+        if (['audio', 'anonimizator-audio', 'glos', 'glos-audio', 'voice'].includes(normalized)) normalized = 'audio-mask';
+        if (['kamuflaz', 'steganografia', 'lsb'].includes(normalized)) normalized = 'stego';
+        if (['porownaj', 'porownywarka', 'radar-diff', 'diff-radar'].includes(normalized)) normalized = 'diff';
+        if (['rozpoznaj-tekst', 'skan', 'skan-tekst', 'tekst'].includes(normalized)) normalized = 'ocr';
+        if (['checksum', 'integralnosc', 'sha256', 'sumy-kontrolne', 'skrot'].includes(normalized)) normalized = 'hash';
+        if (['upscale', 'upscaler', 'super-resolution', 'powieksz', 'powieksz-zdjecie', 'ai-upscale'].includes(normalized)) normalized = 'upscale';
+        if (['qr', 'generator-qr', 'qr-code', 'qrcode'].includes(normalized)) normalized = 'qr-studio';
+        if (['video', 'wideo', 'kompresor-wideo', 'kompresuj-wideo', 'video-compression'].includes(normalized)) normalized = 'video-compress';
+        if (['podpis', 'signature', 'podpisz', 'podpisz-pdf', 'edytor', 'edytor-pdf', 'rodo', 'cenzura', 'cenzura-pdf', 'anonimizuj', 'anonimizuj-pdf'].includes(normalized)) normalized = 'edit';
+        if (['matrix', 'uklad', 'uklad-pdf', 'matryca', 'matryca-pdf', 'organizuj', 'organizuj-pdf'].includes(normalized)) normalized = 'organize';
+        if (['polacz', 'polacz-pdf', 'scal', 'scal-pdf', 'merger'].includes(normalized)) normalized = 'merge';
+        if (['podziel', 'podziel-pdf', 'rozdziel', 'rozdziel-pdf', 'splitter'].includes(normalized)) normalized = 'split';
+        if (['kompresuj', 'kompresor', 'kompresor-pdf', 'kompresuj-pdf', 'compression'].includes(normalized)) normalized = 'compress';
+        if (['znak-wodny', 'znak-wodny-pdf', 'znak', 'watermark-studio'].includes(normalized)) normalized = 'watermark';
+        if (['rentgen', 'cyber-rentgen', 'metadata', 'exif'].includes(normalized)) normalized = 'xray';
+        if (['konwertuj', 'konwerter', 'konwertuj-pdf', 'obrazy'].includes(normalized)) normalized = 'convert';
 
         if (normalized === 'grabber') {
             if (window.showToast) window.showToast('Moduł w procesie tworzenia — funkcja zostanie udostępniona w kolejnej aktualizacji Dropsite.', 'info');
             return;
         }
 
-        // 1. Aktywuj widok narzędzi w głównym routerze SPA
-        const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
-        if (navToolsBtn) {
-            navToolsBtn.click();
+        // 1. Aktywuj widok narzędzi w routerze SPA bez resetowania historii
+        const viewNarzedzia = document.getElementById('view-narzedzia');
+        if (viewNarzedzia && (viewNarzedzia.hidden || !viewNarzedzia.classList.contains('active'))) {
+            if (typeof window.switchView === 'function') {
+                window.switchView('view-narzedzia', false);
+            } else {
+                const navToolsBtn = document.querySelector('.nav-btn[data-target="view-narzedzia"]');
+                if (navToolsBtn) navToolsBtn.classList.add('active');
+                viewNarzedzia.hidden = false;
+                viewNarzedzia.classList.add('active');
+            }
         }
 
-        // 2. Kliknij odpowiednią zakładkę narzędzia
+        // 2. Zagwarantuj ukrycie Atelier Lobby i pokazanie Decku Workspace
+        if (typeof window._atelierShowWorkspace === 'function') {
+            window._atelierShowWorkspace(normalized);
+        } else if (viewNarzedzia) {
+            viewNarzedzia.classList.add('atelier-in-workspace');
+            const lobbyEl = viewNarzedzia.querySelector('.atelier-lobby');
+            if (lobbyEl) {
+                lobbyEl.hidden = true;
+                lobbyEl.classList.remove('is-exiting');
+            }
+            const workbarEl = viewNarzedzia.querySelector('.atelier-workbar');
+            if (workbarEl) workbarEl.hidden = false;
+        }
+
+        // 3. Kliknij odpowiednią zakładkę narzędzia lub aktywuj bezpośrednio panel
         const targetBtn = document.querySelector(`.tb-tool-card[data-tool="${normalized}"], .toolbox-tab-btn[data-tool="${normalized}"]`);
         if (targetBtn) {
             targetBtn.click();
+        } else {
+            document.querySelectorAll('.tool-panel').forEach(p => {
+                const isTarget = p.id === `toolPanel_${normalized}`;
+                p.hidden = !isTarget;
+                p.style.display = isTarget ? 'block' : 'none';
+            });
+            updateDeckHeader(normalized);
         }
 
-        // 3. Zaktualizuj URL bez przeładowania strony (?tool=...)
+        // 4. Bezpieczna inicjalizacja modułów studyjnych
+        try {
+            if (normalized === 'qr-studio' && window.initQRStudio) window.initQRStudio();
+            if (normalized === 'stego' && window.DropsiteStego?.init) window.DropsiteStego.init();
+            if (normalized === 'upscale' && window.DropsiteUpscaler?.init) window.DropsiteUpscaler.init();
+            if (normalized === 'xray' && window.DropsiteXRay?.init) window.DropsiteXRay.init();
+            if (normalized === 'diff' && window.DropsiteDiff?.init) window.DropsiteDiff.init();
+            if (normalized === 'ocr' && window.DropsiteOCR?.init) window.DropsiteOCR.init();
+            if (normalized === 'audio-mask' && window.DropsiteAudioMasker?.init) window.DropsiteAudioMasker.init();
+            if (normalized === 'hash' && window.initHashStudio) window.initHashStudio();
+        } catch (_) {}
+
+        // 5. Zaktualizuj URL bez przeładowania strony (/narzedzia?tool=...)
         try {
             const url = new URL(window.location);
+            if (url.pathname === '/' || url.pathname === '/index.html') {
+                url.pathname = '/narzedzia';
+            }
             url.searchParams.set('tool', normalized);
             window.history.replaceState({}, '', url);
         } catch (_) {}
 
-        // 4. Zawsze zachowaj widok na samej górze strony (zero automatycznego przewijania w dół)
+        // 6. Zawsze zachowaj widok na samej górze strony
         window.scrollTo({ top: 0, behavior: 'auto' });
     };
+    window.openToolTab = window.switchToolTab;
 
     // === MAPOWANIE NARZĘDZI DO KATEGORII GŁÓWNYCH & DECK HEADER INFO ===
-    const TOOL_CATEGORY_MAP = {
-        'merge': 'organize',
-        'split': 'organize',
-        'organize': 'organize',
-        'edit': 'security',
-        'watermark': 'security',
-        'xray': 'security',
-        'stego': 'security',
-        'diff': 'security',
-        'hash': 'security',
-        'compress': 'convert',
-        'convert': 'convert',
-        'ocr': 'convert',
-        'audio-mask': 'convert',
-        'audio': 'convert'
-    };
+    const TOOL_CATEGORY_MAP = {"edit": "organize", "merge": "organize", "split": "organize", "organize": "organize", "watermark": "organize", "compress": "organize", "ocr": "organize", "diff": "organize", "xray": "security", "stego": "security", "hash": "security", "audio-mask": "security", "convert": "convert", "video-compress": "convert", "qr-studio": "convert", "upscale": "convert", "audio": "security"};
 
     const TOOL_DECK_INFO = {
         'merge': { title: 'Łączenie dokumentów PDF', badge: 'Multi-PDF • Silnik RAM' },
@@ -135,7 +175,10 @@
         'audio-mask': { title: 'Audio Sanitizer & Voice Masker', badge: 'Pitch & Formant Shift • Metadata Clean • RAM' },
         'audio': { title: 'Audio Sanitizer & Voice Masker', badge: 'Pitch & Formant Shift • Metadata Clean • RAM' },
         'compress': { title: 'Kompresor PDF w RAM', badge: 'Redukcja wagi bezstratna • RAM' },
-        'convert': { title: 'Konwerter Obrazów & PDF', badge: 'PNG / JPG / WebP / PDF • RAM' }
+        'convert': { title: 'Konwerter Obrazów & PDF', badge: 'PNG / JPG / WebP / PDF • RAM' },
+        'video-compress': { title: 'Lokalny Kompresor Wideo', badge: 'Limit 25 MB • WebCodecs / RAM' },
+        'qr-studio': { title: 'Studio Kodów QR 4K & Wektor SVG', badge: '4K Ultra HD & Wektor SVG • RAM' },
+        'upscale': { title: 'Upscaler Zdjęć & Super-Resolution 4K', badge: 'Akceleracja Sprzętowa GPU • 100% RAM' }
     };
 
     let currentActiveCategory = 'all';
@@ -144,9 +187,14 @@
         const info = TOOL_DECK_INFO[targetTool];
         const titleEl = document.getElementById('deckActiveToolTitle');
         const badgeEl = document.getElementById('deckActiveToolBadge');
+        const isGentle = matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (info) {
-            if (titleEl) titleEl.textContent = info.title;
-            if (badgeEl) badgeEl.textContent = info.badge;
+            if (titleEl && titleEl.textContent !== info.title) {
+                titleEl.textContent = info.title;
+            }
+            if (badgeEl && badgeEl.textContent !== info.badge) {
+                badgeEl.textContent = info.badge;
+            }
         }
 
         // Aktualizacja statusu na kartach Bento (np. badge "Aktywne" vs "Wybierz")
@@ -161,6 +209,12 @@
             }
         });
     }
+
+    const CATEGORY_META = {
+        organize: { name: 'PDF', count: '8 narz\u0119dzi' },
+        security: { name: 'Bezpiecze\u0144stwo', count: '4 narz\u0119dzia' },
+        convert: { name: 'Media', count: '5 narz\u0119dzi' }
+    };
 
     function selectCategory(catId) {
         currentActiveCategory = catId;
@@ -185,8 +239,9 @@
             g.classList.toggle('active', isTarget);
         });
 
-        // Obsługa kart Bento Grid
-        bentoCards.forEach(c => {
+        // Obsługa kart Bento Grid (wyłącznie dla widoku Bento, nie dla paska bocznego)
+        const bentoOnly = document.querySelectorAll('.tb-bento-grid .tb-bento-card, .tb-bento-grid .tb-tool-card');
+        bentoOnly.forEach(c => {
             const tool = c.getAttribute('data-tool');
             const cardCat = c.getAttribute('data-category') || (tool ? TOOL_CATEGORY_MAP[tool] : null);
             if (catId === 'all' || cardCat === catId) {
@@ -197,6 +252,12 @@
                 c.classList.add('bento-filtered-out');
             }
         });
+
+        // Synchronizacja rozsuwania grup w pasku bocznym (upewnij się że grupa docelowa jest otwarta)
+        if (catId !== 'all') {
+            const targetGroup = document.querySelector(`.tb-sidebar-group[data-group="${catId}"]`);
+            if (targetGroup) targetGroup.classList.add('is-open');
+        }
     }
 
     // === PRZEŁĄCZANIE ZAKŁADEK I KATEGORII NARZĘDZI ===
@@ -223,35 +284,79 @@
             });
         });
 
+        // Obsługa kliknięć w nagłówki grup w pasku bocznym (rozwijanie / zwijanie akordeonu)
+        const sidebarGroupBtns = document.querySelectorAll('.tb-sidebar-group-btn');
+        sidebarGroupBtns.forEach(groupBtn => {
+            groupBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const groupEl = groupBtn.closest('.tb-sidebar-group');
+                if (!groupEl) return;
+                const wasOpen = groupEl.classList.contains('is-open');
+                const targetGroupId = groupBtn.getAttribute('data-toggle-group');
+
+                // Rozwiń klikniętą grupę i ewentualnie zwiń pozostałe dla czystości interfejsu
+                document.querySelectorAll('.tb-sidebar-group').forEach(g => {
+                    if (g === groupEl) {
+                        g.classList.toggle('is-open', !wasOpen);
+                    } else {
+                        g.classList.remove('is-open');
+                    }
+                });
+
+                // Browsing a group keeps the current document and tool selected.
+                document.querySelectorAll('.tb-sidebar-group-btn').forEach(button => {
+                    button.setAttribute('aria-expanded', String(button.closest('.tb-sidebar-group').classList.contains('is-open')));
+                });
+
+            });
+        });
+
+        // Funkcja pomocnicza: upewnij się, że grupa nadrzędna danego narzędzia jest rozwinięta
+        function ensureParentGroupOpen(toolCard) {
+            if (!toolCard) return;
+            const parentGroup = toolCard.closest('.tb-sidebar-group');
+            if (parentGroup && !parentGroup.classList.contains('is-open')) {
+                parentGroup.classList.add('is-open');
+            }
+        }
+
         // Obsługa kliknięć w poszczególne narzędzia
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetTool = btn.getAttribute('data-tool');
                 if (!targetTool) return;
-                if (targetTool === 'video-compress' || targetTool === 'qr-studio') {
-                    return; // Narzędzia otwierane modalnie
-                }
                 activeTool = targetTool;
+                document.dispatchEvent(new CustomEvent('dropsite:tool-selected', { detail: { tool: targetTool } }));
+
+                // Rozwiń grupę w pasku bocznym zawierającą wybrane narzędzie
+                ensureParentGroupOpen(btn);
 
                 // Jeśli użytkownik wybrał konkretną kategorię, w której narzędzia nie ma, przełącz:
                 const catId = TOOL_CATEGORY_MAP[targetTool] || 'organize';
-                if (currentActiveCategory !== 'all' && currentActiveCategory !== catId) {
+                if (currentActiveCategory !== catId) {
                     selectCategory(catId);
                 }
 
-                tabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tool') === targetTool));
-                panels.forEach(p => {
-                    const isTarget = p.id === `toolPanel_${targetTool}`;
-                    p.hidden = !isTarget;
-                    if (isTarget) {
-                        p.style.display = 'block';
-                        p.style.animation = 'none';
-                        void p.offsetWidth;
-                        p.style.animation = '';
-                    } else {
-                        p.style.display = 'none';
-                    }
-                });
+                const updatePanels = () => {
+                    tabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tool') === targetTool));
+                    panels.forEach(p => {
+                        const isTarget = p.id === `toolPanel_${targetTool}`;
+                        p.hidden = !isTarget;
+                        p.style.display = isTarget ? 'block' : 'none';
+                    });
+                };
+
+                updatePanels();
+
+                if (targetTool === 'qr-studio' && window.initQRStudio) {
+                    try { window.initQRStudio(); } catch (_) {}
+                }
+                if (targetTool === 'stego' && window.DropsiteStego && window.DropsiteStego.init) {
+                    try { window.DropsiteStego.init(); } catch (_) {}
+                }
+                if (targetTool === 'upscale' && window.DropsiteUpscaler && window.DropsiteUpscaler.init) {
+                    try { window.DropsiteUpscaler.init(); } catch (_) {}
+                }
 
                 updateDeckHeader(targetTool);
 
@@ -5698,13 +5803,16 @@
         setTimeout(() => circle.remove(), 600);
     }
 
-    // Delegacja zdarzeń kliknięcia dla przycisków w Zestawie Narzędzi
+    // Delegacja zdarzeń kliknięcia dla przycisków akcji w Zestawie Narzędzi (bez sidebaru nawigacji)
     document.addEventListener('pointerdown', (e) => {
         const viewNarzedzia = document.getElementById('view-narzedzia');
         if (!viewNarzedzia || viewNarzedzia.hidden) return;
 
+        // Wykluczamy elementy nawigacji (sidebar, rail), aby klikanie w opcje było płynne, stabilne i bez jaskrawego rozbłysku
+        if (e.target.closest('.tb-sidebar, .tb-rail-btn, .tb-cat-pill, .tb-sub-sidebar')) return;
+
         const btn = e.target.closest(
-            '.tool-action-btn, .tb-cat-pill, .tb-tool-card, .toolbox-cat-btn, .toolbox-tab-btn, .studio-ribbon-btn, ' +
+            '.tool-action-btn, .studio-ribbon-btn, ' +
             '.matrix-btn-download, .matrix-btn-tool, .btn-studio-op, .btn-studio-file, ' +
             '.btn-studio-nav, .btn-split-quick, .btn-sm-ghost, .btn-primary, .btn-choose-file, ' +
             '.format-chip, .compress-profile-card, .prop-btn-stamp, .wm-preset-chip, .wm-color-btn, .wm-angle-chip'

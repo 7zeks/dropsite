@@ -274,10 +274,19 @@
             banner.id = 'dropPortalBanner';
             banner.className = 'drop-portal-banner';
 
-            // Wstaw nad główny kontener wgrywania
-            const targetContainer = document.querySelector('.studio-hero-right') || document.querySelector('.upload-container');
-            if (targetContainer && targetContainer.parentNode) {
-                targetContainer.parentNode.insertBefore(banner, targetContainer);
+            // Wstaw wewnątrz kolumny prawej (.studio-hero-right) przed .siri-glow-frame,
+            // aby zachować 2-kolumnowy układ siatki na stronie głównej bez rozpychania layoutu
+            const heroRight = document.querySelector('.studio-hero-right');
+            const siriFrame = heroRight ? heroRight.querySelector('.siri-glow-frame') : null;
+            if (heroRight && siriFrame) {
+                heroRight.insertBefore(banner, siriFrame);
+            } else if (heroRight) {
+                heroRight.prepend(banner);
+            } else {
+                const targetContainer = document.querySelector('.upload-container');
+                if (targetContainer && targetContainer.parentNode) {
+                    targetContainer.parentNode.insertBefore(banner, targetContainer);
+                }
             }
         }
 

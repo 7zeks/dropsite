@@ -1,0 +1,42 @@
+/* Pricing shares the visual language of the feature gallery. */
+#view-cennik > .main-wrapper { width:100%; max-width:1100px !important; padding:48px 28px 60px; box-sizing:border-box; }
+#view-cennik .pricing-gallery { width:100%; padding:0; border:0; background:transparent; box-shadow:none; }
+#view-cennik .upload-header { max-width:760px; margin:0 auto 44px; text-align:center; }
+#view-cennik .upload-header::before { content:'DROPSITE'; display:inline-block; padding:7px 13px; margin-bottom:20px; border:1px solid #bcebd82b; border-radius:30px; background:#bcebd808; color:#b7dece; font-size:10px; font-weight:600; letter-spacing:2.5px; }
+#view-cennik .upload-header h1 { margin:0 0 18px; color:#edf5f2; background:none; -webkit-text-fill-color:currentColor; font-size:clamp(34px,4.5vw,54px); line-height:1.12; font-weight:600; letter-spacing:-.045em; }
+#view-cennik .upload-header p { margin:0; font-size:15px; line-height:1.8; color:#9eafa9; }
+#view-cennik .pricing-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:24px; margin:0; }
+#view-cennik .pricing-card { position:relative; isolation:isolate; display:flex; flex-direction:column; min-width:0; padding:34px; overflow:hidden; text-align:left; background:radial-gradient(ellipse at 100% 0%,#6293ba1c,transparent 65%),#111f29; border:1px solid #c9e4f221; border-radius:22px; box-shadow:none; transition:border-color .2s,transform .2s; }
+#view-cennik .pricing-card::before { content:''; position:absolute; z-index:-1; right:-65px; top:-75px; width:220px; height:220px; border:1px solid #b8d9f10d; border-radius:50%; pointer-events:none; }
+#view-cennik .pricing-card::after { content:''; position:absolute; top:0; left:28px; right:28px; height:1px; background:linear-gradient(90deg,transparent,#b8d9f14d,transparent); pointer-events:none; }
+#view-cennik .pricing-card.premium { background:radial-gradient(ellipse at 85% 0%,#d7a4492b,transparent 65%),#292218 !important; border:1px solid #e8c4794a !important; box-shadow:0 12px 50px #0002 !important; }
+#view-cennik .pricing-card.premium::after { background:linear-gradient(90deg,transparent,#e8c479a0,transparent); }
+#view-cennik .pricing-card:hover { transform:translateY(-3px); border-color:#c9e4f23b; box-shadow:none; }
+#view-cennik .pricing-card.premium:hover { border-color:#e8c47985 !important; }
+#view-cennik :is(.pricing-badge-free,.pricing-badge-gold) { position:static; align-self:flex-start; margin:0 0 27px; padding:6px 11px; border-radius:7px; font-size:10px; line-height:1.4; font-weight:600; letter-spacing:.5px; text-transform:uppercase; background:#b8d9f10b; color:#b8d9f1; border:1px solid #b8d9f121; box-shadow:none; }
+#view-cennik .pricing-badge-gold { background:#e8c47912; color:#f2d69b; border-color:#e8c47935; }
+#view-cennik .pricing-card h3 { margin:0 0 12px; color:#edf5f2; font-size:26px; font-weight:600; letter-spacing:-.8px; text-transform:none; }
+#view-cennik .pricing-card h2 { margin:0 0 28px; min-height:60px; display:flex; align-items:flex-start; padding:0 0 26px; border-bottom:1px solid #dcefff14; color:#b8d9f1; font-size:clamp(22px,2.6vw,30px); font-weight:500; line-height:1.4; letter-spacing:-.8px; }
+#view-cennik .pricing-card.premium h2 { color:#f2d69b; }
+#view-cennik .pricing-features { display:flex; flex-direction:column; gap:18px; margin:0 0 32px; padding:0; list-style:none; flex:1; }
+#view-cennik .pricing-features li { display:flex; align-items:flex-start; gap:12px; margin:0; color:#b1c2bb; font-size:13px; line-height:1.75; }
+#view-cennik .pricing-features li svg { flex:0 0 17px; width:17px; height:17px; padding:3px; margin-top:1px; box-sizing:content-box; border-radius:50%; stroke:#b8d9f1; background:#b8d9f10a; }
+#view-cennik .premium .pricing-features li svg { stroke:#e8c479; background:#e8c4790c; }
+#view-cennik .pricing-card :is(.btn-select,.btn-pro-action) { display:flex; justify-content:center; align-items:center; width:100%; min-height:48px; box-sizing:border-box; padding:13px 18px; margin:0; border-radius:11px; border:1px solid #b8d9f12e; background:#b8d9f108; color:#d2e7f4; font-family:inherit; font-size:13px; font-weight:600; line-height:1.5; cursor:pointer; box-shadow:none; transition:background .2s,transform .2s; }
+#view-cennik .pricing-card .btn-pro-action { background:linear-gradient(135deg,#f2d69b,#d9b368) !important; color:#302313 !important; border-color:#f5dfa9; box-shadow:0 4px 22px #e8c47918 !important; }
+#view-cennik .pricing-card .btn-pro-action:hover { background:#f5dfad !important; transform:translateY(-1px); }
+#view-cennik .pricing-card .btn-select:hover { background:#b8d9f115; }
+#view-cennik .pricing-card button:focus-visible { outline:2px solid #c3eddb; outline-offset:5px; }
+#view-cennik .pricing-trust-guarantee { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px 28px; margin:28px 0 0; padding:20px 0 0; background:transparent; border:0; box-shadow:none; }
+#view-cennik .trust-pill-item { color:#95aaa0; font-size:11px; gap:8px; }
+#view-cennik .trust-pill-item svg { stroke:#a4c9b8; }
+#view-cennik .trust-pill-sep { display:none; }
+@media(max-width:700px) {
+    #view-cennik > .main-wrapper { padding:30px 18px 40px; }
+    #view-cennik .upload-header { margin-bottom:30px; }
+    #view-cennik .pricing-grid { grid-template-columns:minmax(0,1fr); gap:18px; }
+    #view-cennik .pricing-card { padding:28px; }
+    #view-cennik .pricing-card h2 { min-height:0; }
+    #view-cennik .pricing-trust-guarantee { flex-direction:column; gap:14px; }
+}
+@media(prefers-reduced-motion:reduce) { #view-cennik .pricing-card,#view-cennik .pricing-card button { transition:none !important; transform:none !important; } }

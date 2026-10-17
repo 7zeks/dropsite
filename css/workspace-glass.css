@@ -1,0 +1,54 @@
+/* One glass frame, quiet working surfaces and consistent controls. */
+#view-narzedzia.atelier-enabled.atelier-in-workspace > .toolbox-clean-wrapper { max-width:1400px !important; padding:28px 30px 64px !important; }
+#view-narzedzia.atelier-enabled #toolboxWorkspaceDeck {
+    max-width:none; border-radius:22px; border:1px solid #d4eee52b;
+    border-top-color:#e9fff342; background:linear-gradient(135deg,#c4e7d40a,#b8d9f105),#111e2ad4;
+    backdrop-filter:blur(26px) saturate(120%); -webkit-backdrop-filter:blur(26px) saturate(120%);
+    box-shadow:0 24px 70px #0004,inset 0 1px #ffffff0c;
+}
+#view-narzedzia.atelier-enabled .tb-sidebar { width:248px; background:#111d2870 !important; border-radius:0; border-color:#d4eee512; }
+#toolboxWorkspaceDeck .tb-sidebar-header { padding:0 22px 20px; font-size:11px; font-weight:600; color:#b9d5c7; border-color:#d4eee510; }
+#toolboxWorkspaceDeck .tb-sidebar-scroll { padding:8px 12px; scrollbar-width:thin; }
+#toolboxWorkspaceDeck .tb-sidebar-group-btn { padding:17px 10px 12px; }
+#toolboxWorkspaceDeck .tb-sidebar-group-label { font-size:10px; font-weight:600; letter-spacing:1.3px; color:#8eaa9d; }
+#toolboxWorkspaceDeck .tb-sidebar-item { min-height:40px; padding:10px 12px; gap:12px; margin:3px 0; border:1px solid transparent; border-radius:9px; color:#9dafbf; transition:background .18s,border-color .18s,color .18s; }
+#toolboxWorkspaceDeck .tb-sidebar-item:hover { background:#d4eee508; color:#e0ece6; }
+#toolboxWorkspaceDeck .tb-sidebar-item.active { background:#c4e7d40b; border-color:#c4e7d422; color:#dceee4; box-shadow:none; }
+#toolboxWorkspaceDeck .tb-sidebar-label { font-size:12px; font-weight:500; white-space:normal; line-height:1.5; }
+#toolboxWorkspaceDeck .tb-sidebar-active-bar { display:none; }
+#toolboxWorkspaceDeck .tb-sidebar-divider { margin:12px 10px 0; background:#d4eee50c; }
+#toolboxWorkspaceDeck .tb-sidebar-footer { padding:17px 22px; background:transparent; border-top:1px solid #d4eee50e; font-size:9px; }
+#toolboxWorkspaceDeck .deck-top-bar { padding:18px 26px; background:#e3fff804; border-color:#d4eee510; }
+#toolboxWorkspaceDeck .deck-indicator-group { min-width:0; flex-wrap:wrap; gap:9px; }
+#toolboxWorkspaceDeck .deck-tool-label { font-size:14px; font-weight:550; letter-spacing:-.2px; }
+#toolboxWorkspaceDeck .deck-badge { font-size:9px; font-weight:500; padding:4px 7px; border-radius:5px; background:#c4e7d407; border-color:#c4e7d41a; }
+#toolboxWorkspaceDeck .deck-beacon-dot { width:6px; height:6px; background:#b9dfca; animation:none; box-shadow:none; }
+#toolboxWorkspaceDeck .deck-security-note { font-size:10px; color:#7c97a6; }
+#toolboxWorkspaceDeck .toolbox-cockpit-content { padding:30px; }
+#view-narzedzia #toolboxWorkspaceDeck .tool-panel .tool-card-box { padding:24px; background:#0d18233b !important; border:1px solid #d4eee510 !important; border-radius:16px !important; box-shadow:none !important; }
+#toolboxWorkspaceDeck :is(.stego-container,.xray-container,.qr-studio-container) { background:transparent !important; box-shadow:none !important; }
+#toolboxWorkspaceDeck :is(.tool-dropzone,.stego-drop-box) { border-radius:13px; background:#d4eee504; border-color:#c4e7d42b; box-shadow:none; }
+#toolboxWorkspaceDeck :is(.tool-dropzone,.stego-drop-box):hover { background:#c4e7d409; border-color:#c4e7d452; }
+#toolboxWorkspaceDeck :is(.btn-primary,.tool-action-btn,.stego-btn-download):not(:disabled) { background:linear-gradient(120deg,#ceeedd,#b7dcca) !important; color:#183127 !important; border:1px solid #e7f9ee40 !important; border-radius:10px !important; box-shadow:0 3px 10px #0002 !important; font-family:inherit; font-weight:600 !important; font-size:13px; text-shadow:none; transition:background .18s,box-shadow .18s; }
+#toolboxWorkspaceDeck :is(.btn-primary,.tool-action-btn,.stego-btn-download):not(:disabled):hover { background:#dbf3e6 !important; transform:none !important; box-shadow:0 4px 15px #0003 !important; }
+#toolboxWorkspaceDeck :is(.btn-primary,.tool-action-btn):disabled { background:#c4e7d407 !important; color:#a3b7ad80 !important; border:1px solid #c4e7d414 !important; border-radius:10px !important; box-shadow:none !important; opacity:1; cursor:not-allowed; }
+#toolboxWorkspaceDeck :is(.btn-secondary,.stego-btn-secondary) { background:#d4eee505 !important; color:#b7cec1 !important; border:1px solid #d4eee521 !important; border-radius:9px !important; box-shadow:none !important; text-shadow:none; }
+#toolboxWorkspaceDeck :is(.btn-secondary,.stego-btn-secondary):hover { background:#d4eee50b !important; transform:none !important; }
+#toolboxWorkspaceDeck .stego-mode-nav { padding:4px; border:1px solid #d4eee512; border-radius:10px; background:#09121d45; }
+#toolboxWorkspaceDeck .stego-tab-btn { border-radius:7px; font-size:12px; font-weight:500; box-shadow:none; }
+#toolboxWorkspaceDeck .stego-tab-btn.active { background:#c4e7d40c; color:#cce7d8; border-color:#c4e7d426; box-shadow:none; }
+#toolboxWorkspaceDeck :is(button,a,input,select):focus-visible { outline:2px solid #c4e7d4; outline-offset:3px; }
+.atelier-enabled .atelier-workbar-btn { background:#c4e7d406; border:1px solid #c4e7d423; border-radius:10px; box-shadow:none; backdrop-filter:blur(14px); min-height:40px; padding:10px 14px; font-weight:500; }
+.atelier-enabled .atelier-workbar-btn:hover { background:#c4e7d410; transform:none; box-shadow:none; }
+@media(max-width:900px) { #view-narzedzia.atelier-enabled .tb-sidebar { width:210px; } #toolboxWorkspaceDeck .toolbox-cockpit-content { padding:20px; } }
+@media(max-width:768px) {
+    #view-narzedzia.atelier-enabled.atelier-in-workspace > .toolbox-clean-wrapper { padding:16px 12px 40px !important; }
+    #view-narzedzia.atelier-enabled #toolboxWorkspaceDeck { flex-direction:column; border-radius:16px; }
+    #view-narzedzia.atelier-enabled .tb-sidebar { width:100%; border-right:0; border-bottom:1px solid #d4eee514; }
+    #toolboxWorkspaceDeck .tb-sidebar-scroll { max-height:240px; overflow:auto; }
+    #toolboxWorkspaceDeck .tb-sidebar-header,#toolboxWorkspaceDeck .tb-sidebar-footer { display:none; }
+    #toolboxWorkspaceDeck .deck-top-bar { padding:16px; }
+    #toolboxWorkspaceDeck .toolbox-cockpit-content { padding:14px; }
+    #view-narzedzia #toolboxWorkspaceDeck .tool-panel .tool-card-box { padding:16px; }
+}
+@media(prefers-reduced-motion:reduce) { #toolboxWorkspaceDeck * { animation:none !important; transition:none !important; } }

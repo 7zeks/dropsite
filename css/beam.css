@@ -1,0 +1,622 @@
+/* ============================================================================
+   DROPSITE BEAM P2P - OBSIDIAN GLASS + PASTEL ICE BLUE (ULTRA-CLEAN COHESION)
+   ============================================================================ */
+
+/* 1. Usunięcie niechcianego światła z góry i dopasowanie kontenera */
+.beam-container::before {
+    display: none !important;
+}
+
+.beam-container {
+    max-width: 600px !important;
+    margin: 28px auto 48px !important;
+    background: radial-gradient(ellipse at 50% 0%, rgba(186, 230, 253, 0.12), transparent 70%),
+                linear-gradient(145deg, rgba(22, 38, 58, 0.92), rgba(13, 22, 38, 0.95) 65%) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(186, 230, 253, 0.22) !important;
+    border-top: 1px solid rgba(224, 242, 254, 0.45) !important;
+    border-radius: 36px !important;
+    padding: 32px 28px !important;
+    box-shadow: 0 36px 90px -28px rgba(0, 0, 0, 0.75),
+                0 0 85px -35px rgba(56, 189, 248, 0.3),
+                inset 0 1px 0 rgba(224, 242, 254, 0.15) !important;
+    position: relative;
+    overflow: visible;
+}
+
+/* 2. Przełącznik Chmura / Beam - Pełna spójność ze stroną główną */
+#view-beam .transfer-mode-switcher {
+    background: rgba(9, 14, 23, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 20px !important;
+    padding: 5px !important;
+    margin-bottom: 22px !important;
+}
+
+#view-beam .mode-switch-btn {
+    border-radius: 15px !important;
+    font-size: 12px !important;
+    min-height: 44px !important;
+    border: 1px solid transparent !important;
+    color: #94A3B8 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    transition: all .25s ease !important;
+}
+
+#view-beam .mode-switch-btn.active {
+    background: rgba(186, 230, 253, 0.12) !important;
+    color: #F0F9FF !important;
+    border-color: rgba(186, 230, 253, 0.25) !important;
+    box-shadow: none !important;
+}
+
+#view-beam .mode-switch-btn .mode-icon {
+    color: currentColor !important;
+    filter: none !important;
+}
+
+/* 3. Badge & Typografia */
+.beam-header-badge {
+    background: rgba(186, 230, 253, 0.08) !important;
+    border: 1px solid rgba(186, 230, 253, 0.22) !important;
+    color: #BAE6FD !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    border-radius: 999px !important;
+    padding: 6px 16px !important;
+    box-shadow: none !important;
+    margin-bottom: 14px !important;
+}
+
+.beam-header-badge svg {
+    stroke: #BAE6FD !important;
+}
+
+#view-beam .upload-header h1 {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.04em !important;
+    color: #FFFFFF !important;
+    margin: 8px 0 10px 0 !important;
+}
+
+#view-beam .upload-subtitle {
+    color: #94A3B8 !important;
+    font-size: 12.5px !important;
+    line-height: 1.65 !important;
+    max-width: 440px;
+    margin: 0 auto !important;
+}
+
+/* 4. Przełącznik Wyślij / Odbierz */
+.beam-mode-tabs {
+    background: rgba(9, 14, 23, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 18px !important;
+    padding: 4px !important;
+    margin: 18px 0 24px 0 !important;
+}
+
+.beam-tab-btn {
+    border-radius: 14px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    min-height: 42px !important;
+    color: #94A3B8 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    transition: all .25s ease !important;
+}
+
+.beam-tab-btn:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.beam-tab-btn.active {
+    background: rgba(186, 230, 253, 0.12) !important;
+    border-color: rgba(186, 230, 253, 0.25) !important;
+    color: #F0F9FF !important;
+    box-shadow: none !important;
+}
+
+/* 5. Strefa Dropu (Dropzone) - Czysty pastelowy błękit */
+.beam-dropzone {
+    background: radial-gradient(ellipse at 50% 10%, rgba(186, 230, 253, 0.10), transparent 75%) !important;
+    border: 1px solid rgba(186, 230, 253, 0.18) !important;
+    border-radius: 26px !important;
+    padding: 32px 20px !important;
+    min-height: 220px !important;
+    box-shadow: inset 0 1px 20px rgba(0, 0, 0, 0.2) !important;
+    transition: all .35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    cursor: pointer !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.beam-dropzone:hover {
+    border-color: rgba(186, 230, 253, 0.45) !important;
+    background: radial-gradient(ellipse at 50% 15%, rgba(186, 230, 253, 0.16), transparent 75%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 36px -12px rgba(56, 189, 248, 0.25), inset 0 1px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+.beam-dropzone.dragover {
+    border-color: #BAE6FD !important;
+    background: radial-gradient(ellipse at 50% 30%, rgba(186, 230, 253, 0.22), transparent 75%) !important;
+    transform: scale(0.985) !important;
+    box-shadow: 0 0 40px -8px rgba(56, 189, 248, 0.4), inset 0 1px 20px rgba(186, 230, 253, 0.15) !important;
+}
+
+.beam-dropzone-icon {
+    width: 52px !important;
+    height: 52px !important;
+    background: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 12px !important;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.beam-dropzone-icon svg {
+    stroke: #BAE6FD !important;
+    width: 30px !important;
+    height: 30px !important;
+    transition: transform .35s cubic-bezier(0.16, 1, 0.3, 1), filter .35s ease;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
+}
+
+.beam-dropzone:hover .beam-dropzone-icon svg,
+.beam-dropzone.dragover .beam-dropzone-icon svg {
+    transform: translateY(-3px) scale(1.08);
+    stroke: #FFFFFF !important;
+    filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.85));
+}
+
+.beam-radar-ripple {
+    display: none !important;
+}
+
+.beam-dropzone h3 {
+    color: #FFFFFF !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    margin: 0 0 5px 0 !important;
+}
+
+.beam-dropzone p {
+    color: #94A3B8 !important;
+    font-size: 11.5px !important;
+    margin: 0 !important;
+}
+
+/* 6. Przyciski Główne (Pastel Ice Blue) */
+.beam-choose-btn,
+.beam-receive-submit-btn,
+.btn-save-beam {
+    background: linear-gradient(135deg, #F0F9FF, #BAE6FD) !important;
+    color: #0C2136 !important;
+    border: none !important;
+    border-radius: 17px !important;
+    padding: 13px 28px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2) !important;
+    cursor: pointer !important;
+    transition: all .25s ease !important;
+    margin-top: 18px !important;
+}
+
+.beam-choose-btn:hover,
+.beam-receive-submit-btn:hover,
+.btn-save-beam:hover {
+    background: #FFFFFF !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 0 28px rgba(56, 189, 248, 0.4) !important;
+}
+
+/* 6.5. Karta aktywnego transferu & Badge pliku (Pastel Ice Blue) */
+.beam-active-card {
+    background: rgba(13, 20, 32, 0.85) !important;
+    border: 1px solid rgba(186, 230, 253, 0.2) !important;
+    border-radius: 24px !important;
+    padding: 28px 24px !important;
+    box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.beam-file-summary {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(186, 230, 253, 0.12) !important;
+    border-radius: 14px !important;
+    padding: 12px 18px !important;
+    margin-bottom: 24px !important;
+    flex-wrap: wrap !important;
+}
+
+.beam-file-badge {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #BAE6FD !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.beam-file-badge svg {
+    stroke: #BAE6FD !important;
+}
+
+.beam-file-name {
+    color: #F8FAFC !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+
+.beam-file-size {
+    font-size: 12px !important;
+    color: #94A3B8 !important;
+    margin-left: auto !important;
+}
+
+/* 7. Kasetony Kodu PIN */
+.beam-pin-section label {
+    color: #CBD5E1 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+    text-transform: none !important;
+    margin-bottom: 12px !important;
+}
+
+.beam-pin-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0 22px 0;
+}
+
+.beam-pin-box {
+    width: 48px !important;
+    height: 58px !important;
+    background: rgba(10, 16, 26, 0.75) !important;
+    border: 1px solid rgba(186, 230, 253, 0.22) !important;
+    border-top: 1px solid rgba(224, 242, 254, 0.45) !important;
+    border-radius: 14px !important;
+    color: #FFFFFF !important;
+    font-size: 26px !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5) !important;
+}
+
+.beam-pin-divider {
+    color: rgba(186, 230, 253, 0.35) !important;
+    font-size: 18px !important;
+    margin: 0 4px !important;
+}
+
+/* 8. Ghost Segmented OTP Vault (Odbiorca) */
+.beam-segmented-vault {
+    position: relative;
+    max-width: 360px;
+    margin: 14px auto 22px;
+    cursor: text;
+}
+
+.beam-hidden-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0 !important;
+    z-index: 5;
+    cursor: default;
+}
+
+.beam-slots-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.beam-slot {
+    width: 48px;
+    height: 58px;
+    border-radius: 14px;
+    background: rgba(10, 16, 26, 0.75);
+    border: 1px solid rgba(186, 230, 253, 0.22);
+    border-top: 1px solid rgba(224, 242, 254, 0.45);
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #FFFFFF;
+    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.beam-slot.is-active {
+    border-color: #BAE6FD;
+    box-shadow: 0 0 20px -4px rgba(56, 189, 248, 0.4);
+}
+
+.beam-slot.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
+    background: #BAE6FD;
+    border-radius: 2px;
+    animation: beamCarretBlink 1s infinite;
+}
+
+@keyframes beamCarretBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.beam-slot.is-filled {
+    border-color: rgba(186, 230, 253, 0.45);
+    color: #F0F9FF;
+    animation: beamSlotPop .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes beamSlotPop {
+    0% { transform: scale(0.92); }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+/* 9. Radar & QR Code */
+.beam-connect-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin: 20px 0 22px 0;
+    flex-wrap: wrap;
+}
+
+.beam-radar-box {
+    position: relative;
+    width: 110px !important;
+    height: 110px !important;
+    border-radius: 50% !important;
+    background: rgba(186, 230, 253, 0.04) !important;
+    border: 1px solid rgba(186, 230, 253, 0.2) !important;
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.3) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.beam-radar-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(186, 230, 253, 0.15);
+}
+
+.beam-radar-sweep {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 55px;
+    height: 55px;
+    transform-origin: top left;
+    background: linear-gradient(135deg, rgba(186, 230, 253, 0.35) 0%, transparent 60%) !important;
+    animation: beamRadarSweep 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes beamRadarSweep {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.beam-radar-center {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
+}
+
+.beam-radar-center svg {
+    width: 22px !important;
+    height: 22px !important;
+    stroke: #BAE6FD !important;
+}
+
+/* Ciemna szklana karta QR Code */
+.beam-qr-box {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    background: rgba(10, 16, 26, 0.8) !important;
+    border: 1px solid rgba(186, 230, 253, 0.22) !important;
+    border-top: 1px solid rgba(224, 242, 254, 0.45) !important;
+    padding: 12px 14px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.beam-qr-box canvas {
+    display: block !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    padding: 4px !important;
+}
+
+.beam-qr-sub {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #94A3B8 !important;
+    margin-top: 8px !important;
+}
+
+/* 10. Status Pill & Progress */
+.beam-status-pill {
+    background: rgba(186, 230, 253, 0.08) !important;
+    border: 1px solid rgba(186, 230, 253, 0.22) !important;
+    color: #F0F9FF !important;
+    border-radius: 999px !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    margin-bottom: 18px !important;
+}
+
+.beam-status-dot {
+    background: #BAE6FD !important;
+    box-shadow: 0 0 8px #BAE6FD !important;
+}
+
+.beam-speed-pill {
+    background: rgba(186, 230, 253, 0.14) !important;
+    border: 1px solid rgba(186, 230, 253, 0.3) !important;
+    color: #BAE6FD !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+.beam-progress-track {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 999px !important;
+    height: 6px !important;
+}
+
+.beam-progress-bar {
+    background: linear-gradient(90deg, #BAE6FD 0%, #38BDF8 100%) !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+}
+
+/* 11. Przyciski Kopiuj oraz Neutralny Anuluj Transfer */
+.beam-actions-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.btn-copy-direct {
+    background: rgba(186, 230, 253, 0.12) !important;
+    border: 1px solid rgba(186, 230, 253, 0.28) !important;
+    color: #BAE6FD !important;
+    border-radius: 14px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 10px 18px !important;
+    cursor: pointer !important;
+    transition: all .2s ease !important;
+}
+
+.btn-copy-direct:hover {
+    background: rgba(186, 230, 253, 0.22) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* Neutralny, elegancki przycisk Anuluj (zamiast krzykliwego czerwonego) */
+.btn-neutral-cancel,
+.btn-outline-danger,
+#btnBeamCancelSend,
+.btn-outline-danger#btnBeamCancelSend {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #94A3B8 !important;
+    border-radius: 14px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 10px 18px !important;
+    cursor: pointer !important;
+    transition: all .2s ease !important;
+    box-shadow: none !important;
+}
+
+.btn-neutral-cancel:hover,
+.btn-outline-danger:hover,
+#btnBeamCancelSend:hover,
+.btn-outline-danger#btnBeamCancelSend:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #F8FAFC !important;
+}
+
+/* 12. Karty Cech Beam (Dół) - Spójne w tonacji pastelowego błękitu */
+.beam-feature-card {
+    background: rgba(13, 20, 32, 0.65) !important;
+    border: 1px solid rgba(186, 230, 253, 0.14) !important;
+    border-radius: 20px !important;
+    padding: 20px 22px !important;
+    backdrop-filter: blur(16px) !important;
+    transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1), border-color .25s ease !important;
+}
+
+.beam-feature-card:hover {
+    transform: translateY(-2px) !important;
+    border-color: rgba(186, 230, 253, 0.4) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.1) !important;
+}
+
+.beam-feat-icon {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    background: rgba(186, 230, 253, 0.08) !important;
+    border: 1px solid rgba(186, 230, 253, 0.2) !important;
+}
+
+.beam-feat-icon svg {
+    stroke: #BAE6FD !important;
+}
+
+.beam-feat-content h4 {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    margin: 0 0 4px 0 !important;
+}
+
+.beam-feat-content p {
+    color: #94A3B8 !important;
+    font-size: 12px !important;
+    line-height: 1.6 !important;
+}
+
+/* Ikona odbiorcy - pastelowy błękit */
+.beam-receive-icon {
+    background: rgba(186, 230, 253, 0.12) !important;
+    width: 54px !important;
+    height: 54px !important;
+}
+
+.beam-receive-icon svg {
+    stroke: #BAE6FD !important;
+}

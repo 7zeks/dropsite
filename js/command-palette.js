@@ -126,6 +126,15 @@
             keywords: ['hash', 'checksum', 'suma kontrolna', 'sha256', 'sha512', 'sha1', 'md5', 'crc32', 'integralność', 'autentyczność', 'weryfikacja pliku'],
             action: () => { if (window.switchToolTab) window.switchToolTab('hash'); }
         },
+        {
+            id: 'ai-upscaler',
+            category: 'Konwersja & Grafika',
+            title: 'AI Upscaler Zdjęć & Super-Resolution 4K',
+            desc: 'Sprzętowe powiększanie grafiki i zdjęć do 4K w RAM z filtrem AMD FidelityFX CAS',
+            tag: 'Super-Res 4K',
+            keywords: ['upscale', 'upscaler', 'powieksz', 'powiekszenie', '4k', 'super-resolution', 'cas', 'wyostrz', 'jakosc zdjecia', 'gpu', 'fidelityfx'],
+            action: () => { if (window.switchToolTab) window.switchToolTab('upscale'); }
+        },
 
         // 2. PRYWATNOŚĆ & TRANSFER B2B
         {
@@ -163,12 +172,8 @@
             tag: 'Narzędzie',
             keywords: ['qr', 'kod qr', 'wifi qr', 'vcard', 'svg', '4k'],
             action: () => {
-                const modal = document.getElementById('qrStudioModal');
-                if (modal) {
-                    modal.classList.add('open');
-                    document.body.style.overflow = 'hidden';
-                    if (window.initQRStudio) window.initQRStudio();
-                }
+                if (window.openQRStudio) window.openQRStudio();
+                else if (window.switchToolTab) window.switchToolTab('qr-studio');
             }
         },
         {
